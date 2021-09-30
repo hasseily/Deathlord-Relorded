@@ -1,14 +1,5 @@
 {
-	"1.1.4": {
-		"PC_PRINTSTR": "0x7aa1",
-		"PC_CARRIAGE_RETURN1": "0x7d5c",
-		"PC_CARRIAGE_RETURN2": "0x7db4",
-		"PC_COUT": "0x7998",
-		"A_PRINT_RIGHT": "0x05",
-		"PC_INITIATE_COMBAT": "0x159f",
-		"PC_END_COMBAT": "0x15eb"
-	},
-	"1.1.9": {
+	"1": {
 		"PC_PRINTSTR": "0x7ab4",
 		"PC_CARRIAGE_RETURN1": "0x7d6f",
 		"PC_CARRIAGE_RETURN2": "0x7dc7",

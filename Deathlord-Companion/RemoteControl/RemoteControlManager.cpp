@@ -51,9 +51,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 #define UNKNOWN_VOLUME_NAME "Unknown Volume"
-#define UNKNOWN_VERSION		"0.0.0"
-#define VERSION_STRING_FILE_OFFSET 0x37CA
-#define VERSION_STRING_LENGTH	5
+#define UNKNOWN_VERSION		"0"
 
  // The GameLink I/O structure
 struct Gamelink_Block {
@@ -171,14 +169,7 @@ void RemoteControlManager::setLoadedHDInfo(ImageInfo* imageInfo)
 		std::wstring wsTitle(szTitle);
 		HA::ConvertWStrToStr(&wsTitle, &g_infoHdv.VolumeName);
 		g_infoHdv.sig = 0x8ce1a6e3;		// Deathlord
-
-		// Now find the version string that is at offset 0x37CA of the HDV file
-		BYTE blockWithVersion[HD_BLOCK_SIZE];
-		imageInfo->pImageType->Read(imageInfo, VERSION_STRING_FILE_OFFSET / HD_BLOCK_SIZE, blockWithVersion);
-		g_infoHdv.sVersion = std::string(
-			std::begin(blockWithVersion) + (VERSION_STRING_FILE_OFFSET % HD_BLOCK_SIZE),
-			std::begin(blockWithVersion) + (VERSION_STRING_FILE_OFFSET % HD_BLOCK_SIZE) + VERSION_STRING_LENGTH);
-		HA::ConvertUpperAsciiToStr(g_infoHdv.sVersion);
+		g_infoHdv.sVersion = std::string("1");
 	}
 	else {
 		bHardDiskIsLoaded = false;
@@ -230,6 +221,7 @@ void RemoteControlManager::updateRunningProgramInfo()
 	// first, generate a version hash of the version string
 	// 1.1.9 becomes 0x00010109
 	// 1004  becomes 0x01000004
+	// 1	 becomes 0x00000001
 	UINT32 versionHash = 0;
 	int ix = 0;
 	for (std::string::reverse_iterator i = g_infoHdv.sVersion.rbegin(); i != g_infoHdv.sVersion.rend(); ++i) {
