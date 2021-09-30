@@ -1,0 +1,527 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "http://example.com/example.json",
+  "type": "object",
+  "title": "Root schema of Companion App",
+  "description": "The root schema comprises the entire JSON profile.",
+  "default": {},
+  "examples": [
+    {
+      "meta": {
+        "name": "NOXARCHAIST",
+        "author": "Rikkles",
+        "revision": 1,
+        "date": "2021.01.22",
+        "api_version": 2
+      },
+      "tables": {
+        "spells": {
+          "0x00": "Magic Missile"
+        }
+      },
+      "sidebars": [
+        {
+          "type": "Right",
+          "width":  "200",
+          "blocks": [
+            {
+              "type": "Header",
+              "template": "{} Skills",
+              "color": [
+                0.9,
+                0.9,
+                0.2,
+                1.0
+              ],
+              "vars": [
+                {
+                  "memstart": "0x1164B",
+                  "length": 15,
+                  "type": "ascii_high"
+                }
+              ]
+            },
+            {
+              "type": "Content",
+              "template": "M{} R{}",
+              "vars": [
+                {
+                  "memstart": "0x11619",
+                  "length": 1,
+                  "type": "int_bigendian"
+                },
+                {
+                  "memstart": "0x1161c",
+                  "length": 1,
+                  "type": "int_bigendian"
+                }
+              ]
+            },
+            {
+              "type": "Empty"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "required": [
+    "meta",
+    "sidebars"
+  ],
+  "properties": {
+    "meta": {
+      "$id": "#/properties/meta",
+      "type": "object",
+      "title": "The meta schema",
+      "description": "The meta object describes versions, author...",
+      "default": {},
+      "examples": [
+        {
+          "name": "NOXARCHAIST",
+          "author": "Rikkles",
+          "revision": 1,
+          "date": "2021.01.22",
+          "api_version": 2
+        }
+      ],
+      "required": [
+        "name",
+        "author",
+        "revision",
+        "date",
+        "api_version"
+      ],
+      "properties": {
+        "name": {
+          "$id": "#/properties/meta/properties/name",
+          "type": "string",
+          "title": "Name of the profile",
+          "description": "Name of the profile, generally the game this profile applies to.",
+          "default": "",
+          "examples": [
+            "NOX ARCHAIST"
+          ]
+        },
+        "author": {
+          "$id": "#/properties/meta/properties/author",
+          "type": "string",
+          "title": "Author",
+          "description": "Zho created this profile.",
+          "default": "",
+          "examples": [
+            "Rikkles"
+          ]
+        },
+        "revision": {
+          "$id": "#/properties/meta/properties/revision",
+          "type": "integer",
+          "title": "Revision",
+          "description": "Revision number of this file, for descriptive purposes only.",
+          "default": 0,
+          "examples": [
+            1
+          ]
+        },
+        "date": {
+          "$id": "#/properties/meta/properties/date",
+          "type": "string",
+          "title": "Date",
+          "description": "Date last modified, for descriptive purposes only.",
+          "default": "",
+          "examples": [
+            "2021.01.22"
+          ]
+        },
+        "api_version": {
+          "$id": "#/properties/meta/properties/api_version",
+          "type": "integer",
+          "title": "API Version",
+          "description": "The API version that this profile was created for",
+          "default": 0,
+          "examples": [
+            2
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "tables": {
+      "$id": "#/properties/tables",
+      "type": "object",
+      "title": "Tables Array",
+      "description": "Tables are lookup tables for content being referenced in the sidebars. This allows for mappings of ids to strings",
+      "default": {},
+      "examples": [
+        {
+          "spells": {
+            "0x00": "Magic Missile",
+            "0x66": "Armageddon"
+          }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "sidebars": {
+      "$id": "#/properties/sidebars",
+      "type": "array",
+      "title": "Sidebars Array",
+      "description": "Array of all sidebars. There is generally a max number of possible sidebars.",
+      "default": [],
+      "examples": [
+        [
+          {
+            "type": "Right",
+            "width": "200",
+            "blocks": [
+              {
+                "type": "Header",
+                "template": "{} Skills",
+                "color": [
+                  0.9,
+                  0.9,
+                  0.2,
+                  1.0
+                ],
+                "vars": [
+                  {
+                    "memstart": "0x1164B",
+                    "length": 15,
+                    "type": "ascii_high"
+                  }
+                ]
+              },
+              {
+                "type": "Content",
+                "template": "M{} R{}",
+                "vars": [
+                  {
+                    "memstart": "0x11619",
+                    "length": 1,
+                    "type": "int_bigendian"
+                  },
+                  {
+                    "memstart": "0x1161c",
+                    "length": 1,
+                    "type": "int_bigendian"
+                  }
+                ]
+              },
+              {
+                "type": "Empty"
+              }
+            ]
+          }
+        ]
+      ],
+      "additionalItems": true,
+      "items": {
+        "$id": "#/properties/sidebars/items",
+        "anyOf": [
+          {
+            "$id": "#/properties/sidebars/items/anyOf/0",
+            "type": "object",
+            "title": "Sidebar",
+            "description": "The schema of a sidebar",
+            "default": {},
+            "examples": [
+              {
+                "type": "Right",
+                "width": "200",
+                "blocks": [
+                  {
+                    "type": "Header",
+                    "template": "{} Skills",
+                    "color": [
+                      0.9,
+                      0.9,
+                      0.2,
+                      1.0
+                    ],
+                    "vars": [
+                      {
+                        "memstart": "0x1164B",
+                        "length": 15,
+                        "type": "ascii_high"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Content",
+                    "template": "M{} R{}",
+                    "vars": [
+                      {
+                        "memstart": "0x11619",
+                        "length": 1,
+                        "type": "int_bigendian"
+                      },
+                      {
+                        "memstart": "0x1161c",
+                        "length": 1,
+                        "type": "int_bigendian"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Empty"
+                  }
+                ]
+              }
+            ],
+            "required": [
+              "type",
+              "blocks"
+            ],
+            "properties": {
+              "type": {
+                "$id": "#/properties/sidebars/items/anyOf/0/properties/type",
+                "type": "string",
+                "enum": [ "Right", "Bottom" ],
+                "title": "Sidebar Type",
+                "description": "Type of sidebar to add, which will determine its position relative to the main screen.",
+                "default": "",
+                "examples": [
+                  "Right"
+                ]
+              },
+              "width": {
+                "$id": "#/properties/sidebars/items/anyOf/0/properties/type",
+                "type": "integer",
+                "title": "Right Sidebar Width",
+                "description": "Requested width of a right sidebar.",
+                "default": 200,
+                "examples": [
+                  140
+                ]
+              },
+              "height": {
+                "$id": "#/properties/sidebars/items/anyOf/0/properties/type",
+                "type": "integer",
+                "title": "Bottom Sidebar Height",
+                "description": "Requested height of a bottom sidebar.",
+                "default": 100,
+                "examples": [
+                  85
+                ]
+              },
+              "blocks": {
+                "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks",
+                "type": "array",
+                "title": "Blocks Array",
+                "description": "Array of blocks to display in the sidebar.",
+                "default": [],
+                "examples": [
+                  [
+                    {
+                      "type": "Header",
+                      "template": "{} Skills",
+                      "color": [
+                        0.9,
+                        0.9,
+                        0.2,
+                        1.0
+                      ],
+                      "vars": [
+                        {
+                          "memstart": "0x1164B",
+                          "length": 15,
+                          "type": "ascii_high"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Content",
+                      "template": "M{} R{}",
+                      "vars": [
+                        {
+                          "memstart": "0x11619",
+                          "length": 1,
+                          "type": "int_bigendian"
+                        },
+                        {
+                          "memstart": "0x1161c",
+                          "length": 1,
+                          "type": "int_bigendian"
+                        }
+                      ]
+                    }
+                  ]
+                ],
+                "additionalItems": true,
+                "items": {
+                  "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items",
+                  "anyOf": [
+                    {
+                      "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0",
+                      "type": "object",
+                      "title": "Block",
+                      "description": "Definition of a block.",
+                      "default": {},
+                      "examples": [
+                        {
+                          "type": "Header",
+                          "template": "{} Skills",
+                          "color": [
+                            0.9,
+                            0.9,
+                            0.2,
+                            1.0
+                          ],
+                          "vars": [
+                            {
+                              "memstart": "0x1164B",
+                              "length": 15,
+                              "type": "ascii_high"
+                            }
+                          ]
+                        }
+                      ],
+                      "required": [
+                        "type"
+                      ],
+                      "properties": {
+                        "type": {
+                          "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/type",
+                          "type": "string",
+                          "title": "Block Type",
+                          "enum": [ "Header", "Content", "Empty" ],
+                          "description": "Type of the block. Header and content types differ by default font and color.",
+                          "default": "Content",
+                          "examples": [
+                            "Header"
+                          ]
+                        },
+                        "template": {
+                          "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/template",
+                          "type": "string",
+                          "title": "Template String",
+                          "description": "Template string that has placeholders for vars. Placeholders are of the form {}.",
+                          "default": "",
+                          "examples": [
+                            "Food: {} - Gold: {}"
+                          ]
+                        },
+                        "color": {
+                          "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/color",
+                          "type": "array",
+                          "title": "Color RGBA",
+                          "description": "4 float (0-1) color RGBA",
+                          "default": [],
+                          "examples": [
+                            [
+                              0.9,
+                              0.9,
+                              0.2,
+                              1.0
+                            ]
+                          ],
+                          "additionalItems": true,
+                          "items": {
+                            "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/color/items",
+                            "anyOf": [
+                              {
+                                "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/color/items/anyOf/0",
+                                "type": "number",
+                                "title": "Color Parameter",
+                                "description": "One of 4 color parameters. Floating point 0-1.",
+                                "default": 1.0,
+                                "examples": [
+                                  0.9,
+                                  0.2,
+                                  0.2,
+                                  1.0
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        "vars": {
+                          "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/vars",
+                          "type": "array",
+                          "title": "Variables",
+                          "description": "Definition of variables whose values come from the shared memory of the emulator.",
+                          "default": [],
+                          "examples": [
+                            [
+                              {
+                                "memstart": "0x1164B",
+                                "length": 15,
+                                "type": "ascii_high"
+                              }
+                            ]
+                          ],
+                          "additionalItems": true,
+                          "items": {
+                            "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/vars/items",
+                            "anyOf": [
+                              {
+                                "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/vars/items/anyOf/0",
+                                "type": "object",
+                                "title": "Variable",
+                                "description": "Definition of a variable to extract from the game.",
+                                "default": {},
+                                "examples": [
+                                  {
+                                    "memstart": "0x1164B",
+                                    "length": 15,
+                                    "type": "ascii_high"
+                                  }
+                                ],
+                                "required": [
+                                  "memstart",
+                                  "length",
+                                  "type"
+                                ],
+                                "properties": {
+                                  "memstart": {
+                                    "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/vars/items/anyOf/0/properties/memstart",
+                                    "type": "string",
+                                    "title": "Var Memory Start",
+                                    "description": "Starting memory location of the variable, in hex.",
+                                    "default": "",
+                                    "examples": [
+                                      "0x1164B"
+                                    ]
+                                  },
+                                  "length": {
+                                    "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/vars/items/anyOf/0/properties/length",
+                                    "type": "integer",
+                                    "title": "Var Length",
+                                    "description": "The length in bytes of the variable in memory.",
+                                    "default": 1,
+                                    "examples": [
+                                      15
+                                    ]
+                                  },
+                                  "type": {
+                                    "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/vars/items/anyOf/0/properties/type",
+                                    "type": "string",
+                                    "title": "Var Type",
+                                    "enum": [ "ascii", "ascii_high", "int_littleendian", "int_bigendian", "int_littleendian_literal", "int_bigendian_literal", "lookup" ],
+                                    "description": "The type of the variable in memory.",
+                                    "default": "",
+                                    "examples": [
+                                      "ascii_high"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": true
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  ]
+                }
+              }
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    }
+  },
+  "additionalProperties": true
+}

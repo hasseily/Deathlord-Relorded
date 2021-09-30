@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<gamelink>
+
+	<card
+		title="DEATHLORD COMPANION"
+		short="DEATHLORD COMPANION"
+		titlelo="Deathlord Companion"
+		beta="true"
+		rev="1"
+	/>
+
+	<author><![CDATA[Rikkles]]></author>
+
+	<dsub>
+
+		<!-- Nox Archaist Companion running Nox Archaist HDV version 1.1.9 -->
+		<detect system="APPLE II" sys="40a3f909" prg="8ce1a6e3" ph3="8ce1a6e3" ph2="0" ph1="0" ph0="0">
+			<!-- 0:mapID 1:region 2:maptype 3:xpos 4:ypos -->
+			<peek bytes="2af9 0000 267d 6cec 6ced" />
+		</detect>
+
+	</dsub>
+
+	<regions>
+		<region id="1" name="Lorn" ground_floor="true" start_floor="G" auto_create="true" >
+			<grid width="16" height="16" tilex="8" tiley="8" repeating="false" origin_tl="true" />
+		</region>
+	</regions>
+
+	<views>
+		<class name="Standard">
+			<xpos offset="3" length="1" min="0" max="ff" />
+			<ypos offset="4" length="1" min="0" max="ff" />
+		</class>
+		
+		
+		<!-- Lorn (Overworld) -->
+		<packetview extends="Standard" region="1">
+			<check offset="0" length="1" value="0" />
+			<const_floor>G</const_floor>
+		</packetview>
+	</views>
+
+</gamelink>

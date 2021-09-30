@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+/.vs
+/Debug
+/x64
+/Deathlord-Companion/Debug
+/Deathlord-Companion/x64/Debug
