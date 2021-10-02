@@ -179,6 +179,9 @@
     <ClCompile Include="emulator\AY8910.cpp" />
     <ClCompile Include="emulator\CardManager.cpp" />
     <ClCompile Include="emulator\CPU.cpp" />
+    <ClCompile Include="Emulator\Disk.cpp" />
+    <ClCompile Include="Emulator\Disk2CardManager.cpp" />
+    <ClCompile Include="Emulator\DiskFormatTrack.cpp" />
     <ClCompile Include="emulator\DiskImage.cpp" />
     <ClCompile Include="emulator\DiskImageHelper.cpp" />
     <ClCompile Include="emulator\Harddisk.cpp" />
@@ -191,10 +194,12 @@
     <ClCompile Include="emulator\NTSC.cpp" />
     <ClCompile Include="emulator\NTSC_CharSet.cpp" />
     <ClCompile Include="emulator\RGBMonitor.cpp" />
+    <ClCompile Include="Emulator\SaveState.cpp" />
     <ClCompile Include="emulator\SoundCore.cpp" />
     <ClCompile Include="emulator\Speaker.cpp" />
     <ClCompile Include="emulator\SynchronousEventManager.cpp" />
     <ClCompile Include="emulator\Video.cpp" />
+    <ClCompile Include="Emulator\YamlHelper.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="HAUtils.cpp" />
     <ClCompile Include="LogWindow.cpp" />
@@ -219,9 +224,13 @@
     <ClInclude Include="emulator\CPU.h" />
     <ClInclude Include="emulator\cpu\cpu6502.h" />
     <ClInclude Include="emulator\cpu\cpu65C02.h" />
+    <ClInclude Include="Emulator\Disk.h" />
+    <ClInclude Include="Emulator\Disk2CardManager.h" />
     <ClInclude Include="emulator\DiskDefs.h" />
+    <ClInclude Include="Emulator\DiskFormatTrack.h" />
     <ClInclude Include="emulator\DiskImage.h" />
     <ClInclude Include="emulator\DiskImageHelper.h" />
+    <ClInclude Include="Emulator\DiskLog.h" />
     <ClInclude Include="emulator\Harddisk.h" />
     <ClInclude Include="emulator\Joystick.h" />
     <ClInclude Include="emulator\Keyboard.h" />
@@ -232,14 +241,19 @@
     <ClInclude Include="emulator\NTSC.h" />
     <ClInclude Include="emulator\NTSC_CharSet.h" />
     <ClInclude Include="emulator\RGBMonitor.h" />
+    <ClInclude Include="Emulator\SaveState.h" />
+    <ClInclude Include="Emulator\SaveState_Structs_common.h" />
+    <ClInclude Include="Emulator\SaveState_Structs_v1.h" />
     <ClInclude Include="emulator\SoundCore.h" />
     <ClInclude Include="emulator\Speaker.h" />
     <ClInclude Include="emulator\SSI263Phonemes.h" />
     <ClInclude Include="emulator\SynchronousEventManager.h" />
     <ClInclude Include="emulator\Video.h" />
+    <ClInclude Include="Emulator\YamlHelper.h" />
     <ClInclude Include="FindMedia.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="HAUtils.h" />
+    <ClInclude Include="libyaml\win32\config.h" />
     <ClInclude Include="LogWindow.h" />
     <ClInclude Include="NonVolatile.h" />
     <ClInclude Include="pch.h" />
@@ -337,6 +351,11 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.1</ShaderModel>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="libyaml\win32\yaml2019.vcxproj">
+      <Project>{0212e0df-06da-4080-bd1d-f3b01599f70f}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -3,7 +3,9 @@ class NonVolatile
 {
 public:
 	std::wstring profilePath;
-	std::wstring hdvPath;
+	std::wstring diskBootPath;
+	std::wstring diskScenAPath;
+	std::wstring diskScenBPath;
 	int speed = 1;
 	bool scanlines = false;
 	int video = 1;

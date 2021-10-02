@@ -21,6 +21,7 @@
 #define IDB_CHARSET82                   139
 #define IDB_CHARSET8C                   140
 #define IDB_CHARSET8M                   141
+#define IDR_DISK2_16SECTOR_FW           150
 #define IDC_LOGSTATIC                   1000
 #define ID_FILE_ACTIVATEPROFILE         32771
 #define ID_EMULATOR_PAUSE               32772

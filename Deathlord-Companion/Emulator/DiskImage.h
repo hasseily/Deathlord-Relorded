@@ -97,4 +97,4 @@ UINT ImagePhaseToTrack(ImageInfo* const pImageInfo, const float phase, const boo
 UINT ImageGetMaxNibblesPerTrack(ImageInfo* const pImageInfo);
 bool ImageIsBootSectorFormatSector13(ImageInfo* const pImageInfo);
 
-void GetImageTitle(LPCTSTR pPathname, std::string & pImageName, std::string & pFullName);
+void GetImageTitle(LPCTSTR pPathname, std::wstring & pImageName, std::wstring & pFullName);

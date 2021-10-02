@@ -1,0 +1,10 @@
+﻿  api.c
+  dumper.c
+  emitter.c
+  loader.c
+  parser.c
+  reader.c
+  scanner.c
+  writer.c
+  Generating Code...
+  yaml2019.vcxproj -> D:\Repos\Deathlord-Companion\Debug\yaml.lib

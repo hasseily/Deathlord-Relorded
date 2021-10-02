@@ -1,0 +1,18 @@
+﻿  api.c
+D:\Repos\AppleWin\libyaml\src\api.c(842,39): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\Repos\AppleWin\libyaml\src\api.c(1218,39): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\Repos\AppleWin\libyaml\src\api.c(1230,55): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+D:\Repos\AppleWin\libyaml\src\api.c(1275,55): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+D:\Repos\AppleWin\libyaml\src\api.c(1320,55): warning C4244: 'return': conversion from '__int64' to 'int', possible loss of data
+  dumper.c
+  emitter.c
+  loader.c
+D:\Repos\AppleWin\libyaml\src\loader.c(303,72): warning C4244: '=': conversion from '__int64' to 'int', possible loss of data
+D:\Repos\AppleWin\libyaml\src\loader.c(350,72): warning C4244: '=': conversion from '__int64' to 'int', possible loss of data
+D:\Repos\AppleWin\libyaml\src\loader.c(413,72): warning C4244: '=': conversion from '__int64' to 'int', possible loss of data
+  parser.c
+  reader.c
+  scanner.c
+D:\Repos\AppleWin\libyaml\src\scanner.c(1239,32): warning C4244: '=': conversion from 'ptrdiff_t' to 'int', possible loss of data
+  writer.c
+  yaml2019.vcxproj -> D:\Repos\AppleWinCompanion\x64\Release\yaml.lib
