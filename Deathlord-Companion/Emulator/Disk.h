@@ -244,7 +244,7 @@ private:
 	WORD m_magnetStates;	// state bits for stepper motor magnet states (phases 0 - 3)
 
 	bool m_saveDiskImage;
-	UINT m_slot;
+	UINT8 m_slot;
 	unsigned __int64 m_diskLastCycle;
 	unsigned __int64 m_diskLastReadLatchCycle;
 	FormatTrack m_formatTrack;

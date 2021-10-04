@@ -13,7 +13,7 @@ static nlohmann::json nv_json = R"(
     "diskBootPath":		  "",
     "diskScenAPath":	  "",
     "diskScenBPath":	  "",
-	"speed":			  0,
+	"speed":			  1,
 	"scanlines":		  false,
 	"video":			  0,
     "volumeSpeaker":	  4,
@@ -23,7 +23,7 @@ static nlohmann::json nv_json = R"(
   }
 )"_json;
 
-static std::string configfilename = "noxcompanion.conf";
+static std::string configfilename = "deathlordcompanion.conf";
 
 int NonVolatile::SaveToDisk()
 {

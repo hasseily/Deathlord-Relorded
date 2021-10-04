@@ -320,8 +320,15 @@
       <Filter>Assets</Filter>
     </None>
     <None Include="packages.config" />
-    <None Include="Emulator\Resources\Mockingboard-D.rom" />
-    <None Include="Emulator\Resources\Apple2e_Enhanced.rom" />
+    <None Include="Emulator\Resources\Apple2e_Enhanced.rom">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Emulator\Resources\Mockingboard-D.rom">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Emulator\Resources\DISK2.rom">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc">

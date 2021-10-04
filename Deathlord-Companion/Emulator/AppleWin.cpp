@@ -475,7 +475,13 @@ void EmulatorRepeatInitialization()
 	}
 
 	ApplyNonVolatileConfig();
-
+	Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
+	bool bRes = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskBootPath.c_str(), false, false);
+	if (bRes != eIMAGE_ERROR_NONE)
+	{
+		diskCard.UserSelectNewDiskImage(DRIVE_1, g_nonVolatile.diskBootPath.c_str());
+		return;
+	}
 
 	// Init palette color
 	VideoSwitchVideocardPalette(RGB_GetVideocard(), GetVideoType());
@@ -483,14 +489,6 @@ void EmulatorRepeatInitialization()
 	MemInitialize();
 	SoundCore_TweakVolumes();
 	VideoRedrawScreen();
-
-	Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-	bool bRes = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskBootPath.c_str(), false, false);
-	if (!bRes)
-	{
-		diskCard.UserSelectNewDiskImage(DRIVE_1, g_nonVolatile.diskBootPath.c_str());
-		return;
-	}
 }
 
 void EmulatorReboot()
@@ -502,7 +500,7 @@ void EmulatorReboot()
 	KeybReset();
 	MB_Reset();
 	SpkrReset();
-	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).Reset(false);
+	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).Reset(true);
 	SetActiveCpu(GetMainCpu());
 	SoundCore_SetFade(FADE_NONE);
 }

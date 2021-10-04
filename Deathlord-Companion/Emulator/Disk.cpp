@@ -673,7 +673,7 @@ ImageError_e Disk2InterfaceCard::InsertDisk(const int drive, LPCTSTR pszImageFil
 	if (Error == eIMAGE_ERROR_NONE)
 	{
 		GetImageTitle(pszImageFilename, pFloppy->m_imagename, pFloppy->m_fullname);
-		if (g_nAppMode == AppMode_e::MODE_LOGO)
+		if (g_nAppMode == AppMode_e::MODE_RUNNING)
 			InitFirmware(GetCxRomPeripheral());
 	}
 	SaveLastDiskImage(drive);
@@ -1532,7 +1532,7 @@ bool Disk2InterfaceCard::UserSelectNewDiskImage(const int drive, LPCWSTR pszFile
 						std::filesystem::directory_entry dir = std::filesystem::directory_entry(pszFilePath);
 						if (dir.is_regular_file())
 						{
-							LPCTSTR filename = dir.path().wstring().c_str();
+							LPCTSTR filename = dir.path().c_str();
 							SFGAOF fattr = 0;
 							pItem->GetAttributes(SFGAO_READONLY, &fattr);
 							ImageError_e Error = InsertDisk(drive, filename, fattr, IMAGE_CREATE);
@@ -1749,7 +1749,8 @@ void Disk2InterfaceCard::InitFirmware(LPBYTE pCxRomPeripheral)
 // TODO: LoadRom_Disk_Floppy()
 void Disk2InterfaceCard::Initialize(LPBYTE pCxRomPeripheral, UINT uSlot)
 {
-	GetFirmware(IDR_DISK2_16SECTOR_FW, m_16SectorFirmware);
+	bool res = GetFirmware(IDR_DISK2_16SECTOR_FW, m_16SectorFirmware);
+	_ASSERT(res);
 
 	// Note: We used to disable the track stepping delay in the Disk II controller firmware by
 	// patching $C64C with $A9,$00,$EA. Now not doing this since:

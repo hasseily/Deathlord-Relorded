@@ -415,9 +415,6 @@ public:
 	UINT GetNumTracksInImage(CImageBase* pImageType) { return pImageType->m_uNumTracksInImage; }
 	void SetNumTracksInImage(CImageBase* pImageType, UINT uNumTracks) { pImageType->m_uNumTracksInImage = uNumTracks; }
 
-	LPBYTE GetWorkBuffer(void) { return CImageBase::ms_pWorkBuffer; }
-	void SetWorkBuffer(LPBYTE pBuffer) { CImageBase::ms_pWorkBuffer = pBuffer; }
-
 private:
 	CMacBinaryHelper m_MacBinaryHelper;
 };

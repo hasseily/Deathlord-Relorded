@@ -32,6 +32,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "CardManager.h"
 #include "AppleWin.h"
 
+#include "Disk.h"
+
 void CardManager::Insert(UINT slot, SS_CARDTYPE type)
 {
 	if (type == CT_Empty)
@@ -41,6 +43,9 @@ void CardManager::Insert(UINT slot, SS_CARDTYPE type)
 
 	switch (type)
 	{
+	case CT_Disk2:
+		m_slot[slot] = new Disk2InterfaceCard(slot);
+		break;
 	case CT_MockingboardC:
 		m_slot[slot] = new DummyCard(type);
 		break;
