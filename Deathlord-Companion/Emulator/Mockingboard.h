@@ -1,20 +1,7 @@
 #pragma once
 
 #include "Card.h"
-
-
-struct IWORD
-{
-	union
-	{
-		struct
-		{
-			BYTE l;
-			BYTE h;
-		};
-		USHORT w;
-	};
-};
+#include <Emulator/SaveState_Structs_common.h>
 
 struct SY6522
 {

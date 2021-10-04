@@ -171,7 +171,7 @@ public:
 	int GetTrack(const int drive);
 	std::wstring GetCurrentTrackString(void);
 	std::wstring GetCurrentPhaseString(void);
-	bool UserSelectNewDiskImage(const int drive, LPCSTR pszFilename="");
+	bool UserSelectNewDiskImage(const int drive, LPCWSTR pszFilename=L"");
 	void UpdateDriveState(DWORD cycles);
 	bool DriveSwap(void);
 	bool IsDriveConnected(int drive) { return m_floppyDrive[drive].m_isConnected; }

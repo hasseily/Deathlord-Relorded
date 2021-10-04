@@ -41,6 +41,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "YamlHelper.h"
 #include "../Game.h"
 #include "../resource.h"
+#include <shobjidl_core.h>
+#include <filesystem>
 
 // About m_enhanceDisk:
 // . In general m_enhanceDisk==false is used for authentic disk access speed, whereas m_enhanceDisk==true is for enhanced speed.
@@ -93,6 +95,8 @@ int Disk2InterfaceCard::GetCurrentOffset(void) { return m_floppyDrive[m_currDriv
 BYTE Disk2InterfaceCard::GetCurrentLSSBitMask(void) { return m_floppyDrive[m_currDrive].m_disk.m_bitMask; }
 double Disk2InterfaceCard::GetCurrentExtraCycles(void) { return m_floppyDrive[m_currDrive].m_disk.m_extraCycles; }
 int Disk2InterfaceCard::GetTrack(const int drive)  { return ImagePhaseToTrack(m_floppyDrive[drive].m_disk.m_imagehandle, m_floppyDrive[drive].m_phasePrecise, false); }
+
+BOOL Floppy_Insert(const int iDrive, const std::wstring& pszImageFilename);
 
 std::wstring Disk2InterfaceCard::GetCurrentTrackString(void)
 {
@@ -1491,7 +1495,7 @@ void Disk2InterfaceCard::ResetSwitches(void)
 
 //===========================================================================
 
-bool Disk2InterfaceCard::UserSelectNewDiskImage(const int drive, LPCSTR pszFilename/*=""*/)
+bool Disk2InterfaceCard::UserSelectNewDiskImage(const int drive, LPCWSTR pszFilename/*=""*/)
 {
 	if (!IsDriveConnected(drive))
 	{
@@ -1499,45 +1503,62 @@ bool Disk2InterfaceCard::UserSelectNewDiskImage(const int drive, LPCSTR pszFilen
 		return false;
 	}
 
-	TCHAR directory[MAX_PATH];
-	TCHAR filename[MAX_PATH];
-	TCHAR title[40];
-
-	StringCbCopy(filename, MAX_PATH, pszFilename);
-
-	RegLoadString(TEXT(REG_PREFS), TEXT(REGVALUE_PREF_START_DIR), 1, directory, MAX_PATH, TEXT(""));
-	StringCbPrintf(title, 40, TEXT("Select Disk Image For Drive %d"), drive + 1);
-
-	OPENFILENAME ofn;
-	memset(&ofn, 0, sizeof(OPENFILENAME));
-	ofn.lStructSize     = sizeof(OPENFILENAME);
-	ofn.hwndOwner       = GetFrame().g_hFrameWindow;
-	ofn.hInstance       = GetFrame().g_hInstance;
-	ofn.lpstrFilter     = TEXT("All Images\0*.bin;*.do;*.dsk;*.nib;*.po;*.gz;*.woz;*.zip;*.2mg;*.2img;*.iie;*.apl\0")
-						  TEXT("Disk Images (*.bin,*.do,*.dsk,*.nib,*.po,*.gz,*.woz,*.zip,*.2mg,*.2img,*.iie)\0*.bin;*.do;*.dsk;*.nib;*.po;*.gz;*.woz;*.zip;*.2mg;*.2img;*.iie\0")
-						  TEXT("All Files\0*.*\0");
-	ofn.lpstrFile       = filename;
-	ofn.nMaxFile        = MAX_PATH;
-	ofn.lpstrInitialDir = directory;
-	ofn.Flags           = OFN_PATHMUSTEXIST;
-	ofn.lpstrTitle      = title;
-
 	bool bRes = false;
-
-	if (GetOpenFileName(&ofn))
+	HRESULT hr = CoInitializeEx(nullptr, COINIT_DISABLE_OLE1DDE);
+	if (SUCCEEDED(hr))
 	{
-		if ((!ofn.nFileExtension) || !filename[ofn.nFileExtension])
-			StringCbCat(filename, MAX_PATH, TEXT(".dsk"));
+		IFileOpenDialog* pFileOpen;
 
-		ImageError_e Error = InsertDisk(drive, filename, ofn.Flags & OFN_READONLY, IMAGE_CREATE);
-		if (Error == eIMAGE_ERROR_NONE)
+		// Create the FileOpenDialog object.
+		hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL,
+			IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
+
+		if (SUCCEEDED(hr))
 		{
-			bRes = true;
+			COMDLG_FILTERSPEC rgSpec[] =
+			{
+				{ L"All Images", L"*.bin;*.do;*.dsk;*.nib;*.po;*.gz;*.woz;*.zip;*.2mg;*.2img;*.iie;*.apl" },
+				{ L"Disk Images (*.bin,*.do,*.dsk,*.nib,*.po,*.gz,*.woz,*.zip,*.2mg,*.2img,*.iie)", L"*.bin;*.do;*.dsk;*.nib;*.po;*.gz;*.woz;*.zip;*.2mg;*.2img;*.iie" },
+				{ L"All Files", L"*.*" },
+			};
+			pFileOpen->SetFileTypes(ARRAYSIZE(rgSpec), rgSpec);
+			// Show the Open dialog box.
+			hr = pFileOpen->Show(nullptr);
+			// Get the file name from the dialog box.
+			if (SUCCEEDED(hr))
+			{
+				IShellItem* pItem;
+				hr = pFileOpen->GetResult(&pItem);
+				if (SUCCEEDED(hr))
+				{
+					PWSTR pszFilePath;
+					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+					// Display the file name to the user.
+					if (SUCCEEDED(hr))
+					{
+						std::filesystem::directory_entry dir = std::filesystem::directory_entry(pszFilePath);
+						if (dir.is_regular_file())
+						{
+							LPCTSTR filename = dir.path().wstring().c_str();
+							SFGAOF fattr = 0;
+							pItem->GetAttributes(SFGAO_READONLY, &fattr);
+							ImageError_e Error = InsertDisk(drive, filename, fattr, IMAGE_CREATE);
+							if (Error == eIMAGE_ERROR_NONE)
+							{
+								bRes = true;
+							}
+							else
+							{
+								NotifyInvalidImage(drive, filename, Error);
+							}
+						}
+					}
+					pItem->Release();
+				}
+			}
+			pFileOpen->Release();
 		}
-		else
-		{
-			NotifyInvalidImage(drive, filename, Error);
-		}
+		CoUninitialize();
 	}
 
 	return bRes;
@@ -1924,7 +1945,7 @@ std::string Disk2InterfaceCard::GetSnapshotCardName(void)
 void Disk2InterfaceCard::SaveSnapshotFloppy(YamlSaveHelper& yamlSaveHelper, UINT unit)
 {
 	YamlSaveHelper::Label label(yamlSaveHelper, "%s:\n", SS_YAML_KEY_FLOPPY);
-	yamlSaveHelper.SaveString(SS_YAML_KEY_FILENAME, m_floppyDrive[unit].m_disk.m_fullname);
+	yamlSaveHelper.SaveWString(SS_YAML_KEY_FILENAME, m_floppyDrive[unit].m_disk.m_fullname);
 	yamlSaveHelper.SaveHexUint16(SS_YAML_KEY_BYTE, m_floppyDrive[unit].m_disk.m_byte);
 	yamlSaveHelper.SaveHexUint16(SS_YAML_KEY_NIBBLES, m_floppyDrive[unit].m_disk.m_nibbles);
 	yamlSaveHelper.SaveHexUint32(SS_YAML_KEY_BIT_OFFSET, m_floppyDrive[unit].m_disk.m_bitOffset);	// v4
@@ -1981,7 +2002,7 @@ void Disk2InterfaceCard::SaveSnapshot(class YamlSaveHelper& yamlSaveHelper)
 
 bool Disk2InterfaceCard::LoadSnapshotFloppy(YamlLoadHelper& yamlLoadHelper, UINT unit, UINT version, std::vector<BYTE>& track)
 {
-	std::string filename = yamlLoadHelper.LoadString(SS_YAML_KEY_FILENAME);
+	std::wstring filename = yamlLoadHelper.LoadWString(SS_YAML_KEY_FILENAME);
 	bool bImageError = filename.empty();
 
 	if (!bImageError)

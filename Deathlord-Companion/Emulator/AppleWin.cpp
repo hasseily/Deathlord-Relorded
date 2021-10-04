@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "CardManager.h"
 #include "CPU.h"
 #include "DiskImage.h"
-#include "Harddisk.h"
+#include "Disk.h"
 #include "Keyboard.h"
 #include "Joystick.h"
 #include "LanguageCard.h"
@@ -361,9 +361,7 @@ void EmulatorOneTimeInitialization(HWND window)
 	SetApple2Type(A2TYPE_APPLE2EENHANCED);
 	GetCardMgr().Insert(SLOT4, CT_MockingboardC);
 	GetCardMgr().Insert(SLOT5, CT_MockingboardC);
-	HD_SetEnabled(true);
 
-	// TODO: load these as defaults or override from config file
 	RGB_SetVideocard(Video7_SL7, 15, 0);
 	SetVideoType(VT_COLOR_IDEALIZED);
 	SetVideoStyle(VS_COLOR_VERTICAL_BLEND);	// Always set vertical blend
@@ -486,10 +484,11 @@ void EmulatorRepeatInitialization()
 	SoundCore_TweakVolumes();
 	VideoRedrawScreen();
 
-	bool bRes = HD_Insert(HARDDISK_1, g_nonVolatile.hdvPath.c_str());
+	Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
+	bool bRes = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskBootPath.c_str(), false, false);
 	if (!bRes)
 	{
-		HD_Select(HARDDISK_1);
+		diskCard.UserSelectNewDiskImage(DRIVE_1, g_nonVolatile.diskBootPath.c_str());
 		return;
 	}
 }
@@ -497,13 +496,13 @@ void EmulatorRepeatInitialization()
 void EmulatorReboot()
 {
 	g_nAppMode = AppMode_e::MODE_RUNNING;
-	HD_Reset();
 	g_bFullSpeed = 0;	// Might've hit reset in middle of InternalCpuExecute() - so beep may get (partially) muted
 	MemReset();	// calls CpuInitialize(), CNoSlotClock.Reset()
 	VideoResetState();
 	KeybReset();
 	MB_Reset();
 	SpkrReset();
+	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).Reset(false);
 	SetActiveCpu(GetMainCpu());
 	SoundCore_SetFade(FADE_NONE);
 }

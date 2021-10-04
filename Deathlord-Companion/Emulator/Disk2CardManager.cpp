@@ -133,7 +133,7 @@ bool Disk2CardManager::IsAnyFirmware13Sector(void)
 	return false;
 }
 
-void Disk2CardManager::GetFilenameAndPathForSaveState(std::string& filename, std::string& path)
+void Disk2CardManager::GetFilenameAndPathForSaveState(std::wstring& filename, std::wstring& path)
 {
 	for (int i = NUM_SLOTS-1; i >= 0; i--)	// scan slots backwards: 7->0
 	{

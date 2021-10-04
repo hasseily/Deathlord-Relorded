@@ -3,6 +3,7 @@ class NonVolatile
 {
 public:
 	std::wstring profilePath;
+	std::wstring hdvPath;
 	std::wstring diskBootPath;
 	std::wstring diskScenAPath;
 	std::wstring diskScenBPath;

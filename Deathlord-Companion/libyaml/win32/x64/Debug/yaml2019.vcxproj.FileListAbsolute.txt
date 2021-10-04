@@ -1,3 +1,0 @@
-D:\Repos\AppleWinCompanion\x64\Debug\yaml.pdb
-D:\Repos\AppleWin\libyaml\win32\x64\Debug\yaml.pdb
-D:\Repos\AppleWin\x64\Debug\yaml.pdb

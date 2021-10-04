@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * Author: Copyright (c) 2004-2015 Tom Charlesworth
  */
 
-#include "StdAfx.h"
+#include "pch.h"
 
 #include "SaveState.h"
 #include "YamlHelper.h"
