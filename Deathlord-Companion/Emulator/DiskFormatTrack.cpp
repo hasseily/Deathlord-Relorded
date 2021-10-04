@@ -46,7 +46,6 @@ Writes the following: (in 1 continuous write operation)
 
 #include "DiskFormatTrack.h"
 #include "Disk.h"
-#include "YamlHelper.h"
 
 // Occurs on these conditions:
 // . ctor
@@ -323,50 +322,4 @@ void FormatTrack::DecodeLatchNibble(BYTE floppylatch, bool bIsWrite, bool bIsSyn
 			m_WriteDataFieldPrologueCount++;
 		_ASSERT(m_WriteDataFieldPrologueCount <= 16);
 	}
-}
-
-//===========================================================================
-
-#define SS_YAML_KEY_FORMAT_TRACK "Format Track state"
-// NB. No version - this is determined by the parent "Disk][" unit
-
-#define SS_YAML_KEY_WRITTEN_SECTOR_ADDR_FIELDS "Written Sector Address Fields"
-#define SS_YAML_KEY_WRITE_TRACK_START_IDX "Write Track Start Index"
-#define SS_YAML_KEY_WRITE_TRACK_HAS_WRAPPED "Write Track Wrapped"
-#define SS_YAML_KEY_WRITE_DATA_FIELD_PROLOGUE_COUNT "Write Data Field Prologue Count"
-#define SS_YAML_KEY_TRACK_STATE "Track State"
-#define SS_YAML_KEY_LAST3BYTES "Last 3 bytes"
-#define SS_YAML_KEY_VTSC_4AND4 "Vol,Trk,Sec,Chk (4 and 4)"
-#define SS_YAML_KEY_VTSC_4AND4_IDX "Index (4 and 4)"
-
-void FormatTrack::SaveSnapshot(class YamlSaveHelper& yamlSaveHelper)
-{
-	YamlSaveHelper::Label label(yamlSaveHelper, "%s:\n", SS_YAML_KEY_FORMAT_TRACK);
-
-	yamlSaveHelper.SaveHexUint16(SS_YAML_KEY_WRITTEN_SECTOR_ADDR_FIELDS, m_bmWrittenSectorAddrFields);
-	yamlSaveHelper.SaveHexUint16(SS_YAML_KEY_WRITE_TRACK_START_IDX, m_WriteTrackStartIndex);
-	yamlSaveHelper.SaveBool(SS_YAML_KEY_WRITE_TRACK_HAS_WRAPPED, m_WriteTrackHasWrapped);
-	yamlSaveHelper.SaveHexUint8(SS_YAML_KEY_WRITE_DATA_FIELD_PROLOGUE_COUNT, m_WriteDataFieldPrologueCount);
-	yamlSaveHelper.SaveHexUint8(SS_YAML_KEY_TRACK_STATE, m_trackState);
-	yamlSaveHelper.SaveHexUint24(SS_YAML_KEY_LAST3BYTES, m_uLast3Bytes);
-	yamlSaveHelper.SaveHexUint64(SS_YAML_KEY_VTSC_4AND4, *(UINT64*)m_VolTrkSecChk4and4);	// Stored in reverse order
-	yamlSaveHelper.SaveHexUint4(SS_YAML_KEY_VTSC_4AND4_IDX, m_4and4idx);
-}
-
-void FormatTrack::LoadSnapshot(class YamlLoadHelper& yamlLoadHelper)
-{
-	if (!yamlLoadHelper.GetSubMap(SS_YAML_KEY_FORMAT_TRACK))
-		throw std::string("Card: Expected key: ") + std::string(SS_YAML_KEY_FORMAT_TRACK);
-
-	m_bmWrittenSectorAddrFields   = yamlLoadHelper.LoadUint(SS_YAML_KEY_WRITTEN_SECTOR_ADDR_FIELDS);
-	m_WriteTrackStartIndex        = yamlLoadHelper.LoadUint(SS_YAML_KEY_WRITE_TRACK_START_IDX);
-	m_WriteTrackHasWrapped        = yamlLoadHelper.LoadBool(SS_YAML_KEY_WRITE_TRACK_HAS_WRAPPED);
-	m_WriteDataFieldPrologueCount = yamlLoadHelper.LoadUint(SS_YAML_KEY_WRITE_DATA_FIELD_PROLOGUE_COUNT);
-	m_trackState                  = (TRACKSTATE_e) yamlLoadHelper.LoadUint(SS_YAML_KEY_TRACK_STATE);
-	m_uLast3Bytes                 = yamlLoadHelper.LoadUint(SS_YAML_KEY_LAST3BYTES);
-	*(UINT64*)m_VolTrkSecChk4and4 = yamlLoadHelper.LoadUint64(SS_YAML_KEY_VTSC_4AND4);
-	m_4and4idx                    = yamlLoadHelper.LoadUint(SS_YAML_KEY_VTSC_4AND4_IDX);
-	m_bAddressPrologueIsDOS3_2    = false;	// Doesn't matter if this is wrong - for DOS 3.2 INIT, will just get a long (non-truncated) track-0
-
-	yamlLoadHelper.PopMap();
 }

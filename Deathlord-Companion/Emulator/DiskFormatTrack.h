@@ -43,8 +43,6 @@ public:
 	void DecodeLatchNibbleRead(BYTE floppylatch);
 	void DecodeLatchNibbleWrite(BYTE floppylatch, UINT uSpinNibbleCount, const class FloppyDisk* const pFloppy, bool bIsSyncFF);
 	std::wstring GetReadD5AAxxDetectedString(void) { std::wstring tmp = m_strReadD5AAxxDetected; m_strReadD5AAxxDetected = L""; return tmp; }
-	void SaveSnapshot(class YamlSaveHelper& yamlSaveHelper);
-	void LoadSnapshot(class YamlLoadHelper& yamlLoadHelper);
 
 private:
 	void UpdateOnWriteLatch(UINT uSpinNibbleCount, const class FloppyDisk* const pFloppy);
