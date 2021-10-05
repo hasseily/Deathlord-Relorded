@@ -359,8 +359,9 @@ void EmulatorOneTimeInitialization(HWND window)
 	MB_Initialize();
 	SpkrInitialize();
 	SetApple2Type(A2TYPE_APPLE2EENHANCED);
-	GetCardMgr().Insert(SLOT4, CT_MockingboardC);
-	GetCardMgr().Insert(SLOT5, CT_MockingboardC);
+	// Deathlord doesn't support Mockingboard
+	//GetCardMgr().Insert(SLOT4, CT_MockingboardC);
+	//GetCardMgr().Insert(SLOT5, CT_MockingboardC);
 
 	RGB_SetVideocard(Video7_SL7, 15, 0);
 	SetVideoType(VT_COLOR_IDEALIZED);
