@@ -6,14 +6,14 @@
 #define IDS_APP_TITLE                   3
 #define IDS_GAMELINK_TITLE              4
 #define IDD_LOGVIEW                     101
-#define IDD_DEATHLORD_DIALOG			102
+#define IDD_DEATHLORD_DIALOG            102
 #define IDD_ABOUTBOX                    103
 #define IDM_ABOUT                       104
 #define IDM_EXIT                        105
-#define IDI_DEATHLORDCOMPANION			107
+#define IDI_DEATHLORDCOMPANION          107
 #define IDI_SMALL                       108
-#define IDC_DEATHLORDCOMPANION			109
-#define IDR_ACCELERATOR1				110
+#define IDC_DEATHLORDCOMPANION          109
+#define IDR_ACCELERATOR1                110
 #define IDR_HDDRVR_FW                   128
 #define IDR_MOCKINGBOARD_D_FW           129
 #define IDR_APPLE2E_ENHANCED_ROM        130
@@ -39,7 +39,7 @@
 #define ID_LOGWINDOW_SHOW               32785
 #define ID_LOGWINDOW_LOAD               32786
 #define ID_LOGWINDOW_SAVE               32787
-#define ID_EMULATOR_SELECTNOXHDV        32788
+#define ID_EMULATOR_SELECTDEATHLORDFOLDER 32788
 #define ID_EMULATOR_SPEED               32789
 #define ID_SPEED_0                      32790
 #define ID_SPEED_1                      32791
@@ -68,7 +68,12 @@
 #define ID_VOLUMEMUSIC_75               32814
 #define ID_VOLUMEMUSIC_100              32815
 #define ID_LOGWINDOW_ALSOLOGCOMBAT      32816
-#define ID_VIDEO_INCREMENT				32817
+#define ID_VIDEO_INCREMENT              32817
+#define ID_EMULATOR_SELECTDEATHLORDHDV  32821
+#define ID_EMULATOR_INSERTBOOTDISK      32822
+#define ID_EMULATOR_INSERTSCENARIODISKS 32823
+#define ID_EMULATOR_INSERTINTODISK1     32824
+#define ID_EMULATOR_INSERTINTODISK2     32825
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -77,7 +82,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        143
-#define _APS_NEXT_COMMAND_VALUE         32821
+#define _APS_NEXT_COMMAND_VALUE         32830
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

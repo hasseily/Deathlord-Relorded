@@ -12,6 +12,8 @@
 #include "Keyboard.h"
 #include "LogWindow.h"
 #include "Emulator/AppleWin.h"
+#include "Emulator/CardManager.h"
+#include "Emulator/Disk.h"
 #include "Emulator/SoundCore.h"
 #include "Emulator/Keyboard.h"
 #include "Emulator/Harddisk.h"
@@ -96,10 +98,10 @@ void UpdateMenuBarStatus(HWND hwnd)
 	HMENU topMenu = GetMenu(hwnd);
 	HMENU emuMenu = GetSubMenu(topMenu, 1);	// Emulator menu
 	HMENU cmpMenu = GetSubMenu(topMenu, 2);	// Companion menu
-	HMENU speedMenu = GetSubMenu(emuMenu, 2);
-	HMENU videoMenu = GetSubMenu(emuMenu, 3);
-	HMENU volumeMenu = GetSubMenu(emuMenu, 4);
-	HMENU musicMenu = GetSubMenu(emuMenu, 5);
+	HMENU speedMenu = GetSubMenu(emuMenu, 7);
+	HMENU videoMenu = GetSubMenu(emuMenu, 8);
+	HMENU volumeMenu = GetSubMenu(emuMenu, 9);
+	HMENU musicMenu = GetSubMenu(emuMenu, 10);
 	HMENU logMenu = GetSubMenu(cmpMenu, 2);
 
 	CheckMenuRadioItem(speedMenu, 0, 10, g_nonVolatile.speed, MF_BYPOSITION);
@@ -484,11 +486,38 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			break;
 		}
-		case ID_EMULATOR_SELECTNOXHDV:
+		case ID_EMULATOR_SELECTDEATHLORDFOLDER:
 		{
-			HD_Select(HARDDISK_1);
+			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
+			diskCard.UserSelectNewDiskImage(DRIVE_1, g_nonVolatile.diskBootPath.c_str());
 			break;
 		}
+		case ID_EMULATOR_INSERTBOOTDISK:
+		{
+			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
+			diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskBootPath.c_str(), false, false);
+			break;
+		}
+		case ID_EMULATOR_INSERTSCENARIODISKS:
+		{
+			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
+			diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskScenAPath.c_str(), false, false);
+			diskCard.InsertDisk(DRIVE_2, g_nonVolatile.diskScenBPath.c_str(), false, false);
+			break;
+		}
+		case ID_EMULATOR_INSERTINTODISK1:
+		{
+			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
+			diskCard.UserSelectNewDiskImage(DRIVE_1, g_nonVolatile.diskBootPath.c_str());
+			break;
+		}
+		case ID_EMULATOR_INSERTINTODISK2:
+		{
+			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
+			diskCard.UserSelectNewDiskImage(DRIVE_2, g_nonVolatile.diskBootPath.c_str());
+			break;
+		}
+
 		case ID_EMULATOR_PAUSE:
 		{
 			switch (g_nAppMode)
@@ -564,7 +593,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_SPEED_3:
-			SetCurrentCLK6502();
 			g_nonVolatile.speed = 3;
 			g_nonVolatile.SaveToDisk();
 			UpdateMenuBarStatus(hWnd);
