@@ -13,18 +13,27 @@
 
 	<dsub>
 
-		<!-- Nox Archaist Companion running Nox Archaist HDV version 1.1.9 -->
-		<detect system="APPLE II" sys="40a3f909" prg="8ce1a6e3" ph3="8ce1a6e3" ph2="0" ph1="0" ph0="0">
-			<!-- 0:mapID 1:region 2:maptype 3:xpos 4:ypos -->
-			<peek bytes="2af9 0000 267d 6cec 6ced" />
+    <!-- Deathlord Companion version 1 -->
+    <detect system="APPLE II" sys="40a3f909" prg="8ce1a6e3" ph3="8ce1a6e3" ph2="1" ph1="0" ph0="0">
+      <!-- 0:mapID 1:region 2:maptype 3:xpos 4:ypos -->
+			<peek bytes="FC4E FC5E FC04 FC06 FC07" />
 		</detect>
 
 	</dsub>
 
 	<regions>
 		<region id="1" name="Lorn" ground_floor="true" start_floor="G" auto_create="true" >
-			<grid width="16" height="16" tilex="8" tiley="8" repeating="false" origin_tl="true" />
+			<grid width="16" height="16" tilex="16" tiley="16" repeating="false" origin_tl="true" />
 		</region>
+    <region id="2" name="Town 1" ground_floor="true" start_floor="G" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
+    <region id="3" name="Castle 2" ground_floor="true" start_floor="G" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
+    <region id="4" name="Town 3" ground_floor="true" start_floor="G" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
 	</regions>
 
 	<views>
@@ -36,9 +45,27 @@
 		
 		<!-- Lorn (Overworld) -->
 		<packetview extends="Standard" region="1">
-			<check offset="0" length="1" value="0" />
+			<check offset="2" length="1" value="1" />
 			<const_floor>G</const_floor>
 		</packetview>
+    <!-- Town 1 -->
+    <packetview extends="Standard" region="2">
+      <check offset="0" length="1" value="1b" />
+      <check offset="2" length="1" value="0" />
+      <const_floor>G</const_floor>
+    </packetview>
+    <!-- Castle 2 -->
+    <packetview extends="Standard" region="3">
+      <check offset="0" length="1" value="19" />
+      <check offset="2" length="1" value="0" />
+      <const_floor>G</const_floor>
+    </packetview>
+    <!-- Town 3 -->
+    <packetview extends="Standard" region="4">
+      <check offset="0" length="1" value="09" />
+      <check offset="2" length="1" value="0" />
+      <const_floor>G</const_floor>
+    </packetview>
 	</views>
 
 </gamelink>
