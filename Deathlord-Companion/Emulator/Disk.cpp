@@ -954,7 +954,7 @@ void __stdcall Disk2InterfaceCard::ReadWrite(WORD pc, WORD addr, BYTE bWrite, BY
 		m_formatTrack.DecodeLatchNibbleRead(m_floppyLatch);
 #endif
 	}
-	else if (!pFloppy->m_bWriteProtected) // && m_seqFunc.writeMode
+	else if (!pFloppy->m_bWriteProtected && g_wantsToSave) // && m_seqFunc.writeMode
 	{
 		if (!pDrive->m_spinning)
 			return;		// If not spinning then only 1 bit-cell gets written?

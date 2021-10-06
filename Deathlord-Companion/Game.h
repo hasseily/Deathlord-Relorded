@@ -23,6 +23,7 @@ enum class EmulatorLayout
 };
 
 extern bool g_isInGameMap;          // is the player in-game or on the loading/utilities screens?
+extern bool g_wantsToSave;          // only TRUE when the player is asking to save
 extern NonVolatile g_nonVolatile;
 static std::shared_ptr<LogWindow>m_logWindow;
 

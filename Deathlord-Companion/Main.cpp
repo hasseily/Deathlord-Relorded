@@ -246,6 +246,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static bool s_fullscreen = false;
 	// TODO: Set s_fullscreen to true if defaulting to fullscreen.
 
+	// Disallow saving by default when not in the game map
+	// It is allowed temporarily when hitting 'q'
+	g_wantsToSave = !(g_isInGameMap);
+
 	auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
 	switch (message)
@@ -416,11 +420,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_MOUSEHOVER:
 		Mouse::ProcessMessage(message, wParam, lParam);
 		break;
-	case WM_CHAR:		// Send to the applewin emulator
+	case WM_CHAR:			// Send to the applewin emulator
+		if (g_isInGameMap)	// Only enable write on scenario disks when saving via 'q'
+		{
+			switch (wParam)
+			{
+			case 'q':
+				//__fallthrough;
+			case 'Q':
+			{
+				// Enable read/write on the scenario disks
+				g_wantsToSave = true;
+				break;
+			}
+			default:
+				break;
+			}
+		}
 		KeybQueueKeypress(wParam, ASCII);
 		break;
-	case WM_KEYDOWN:	// Allow for arrow keys when on the game map
-		if (g_isInGameMap)
+	case WM_KEYDOWN:		// Send to the applewin emulator
+		if (g_isInGameMap)	// Allow for arrow keys when on the game map
 		{
 			switch (wParam)
 			{
