@@ -15,8 +15,10 @@
 
     <!-- Deathlord Companion version 1 -->
     <detect system="APPLE II" sys="40a3f909" prg="8ce1a6e3" ph3="8ce1a6e3" ph2="1" ph1="0" ph0="0">
-      <!-- 0:mapID 1:region 2:maptype 3:xpos 4:ypos -->
-			<peek bytes="FC4E FC5E FC04 FC06 FC07" />
+      <!-- 0:mapID 1:region 2:maptype 3:xpos_hibyte 4:xpos_lobyte 5:ypos_hibyte 6:ypos_lobyte -->
+      <!-- The x/y pos don't really have 2 bytes, but the companion app transforms them into 2 bytes -->
+      <!-- and merges all outdoors submaps into one huge map -->
+			<peek bytes="FC4E FC5E FC04 0000 FC06 0001 FC07" />
 		</detect>
 
 	</dsub>
@@ -34,12 +36,15 @@
     <region id="4" name="Town 3" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
+    <region id="5" name="Ruin 4" ground_floor="true" start_floor="G" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
 	</regions>
 
 	<views>
 		<class name="Standard">
-			<xpos offset="3" length="1" min="0" max="ff" />
-			<ypos offset="4" length="1" min="0" max="ff" />
+			<xpos offset="3" length="2" min="0" max="ffff" />
+			<ypos offset="5" length="2" min="0" max="ffff" />
 		</class>
 		
 		
@@ -63,6 +68,12 @@
     <!-- Town 3 -->
     <packetview extends="Standard" region="4">
       <check offset="0" length="1" value="09" />
+      <check offset="2" length="1" value="0" />
+      <const_floor>G</const_floor>
+    </packetview>
+    <!-- Ruin 4 -->
+    <packetview extends="Standard" region="5">
+      <check offset="0" length="1" value="33" />
       <check offset="2" length="1" value="0" />
       <const_floor>G</const_floor>
     </packetview>

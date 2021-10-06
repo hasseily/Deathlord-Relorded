@@ -572,6 +572,26 @@ void GameLink::UpdatePeekInfo(sSharedMMapPeek_R2* peek, const UINT8* p_sysmem)
 		// write data
 		peek->data[pindex] = data;
 	}
+	// When on the outdoors map, we need to do some additional work
+	// The outdoors map is a collection of submaps that use 0xFC4B
+	// and 0xFC4C as coordinates in a general map.
+	if (peek->data[2] == 1)	// It's the overland map
+	{
+		UINT xpos = peek->data[4] + p_sysmem[0xFC4B]*64 - 8;	// X
+		peek->data[3] = xpos >> 8;		// X high byte
+		peek->data[4] = (UINT8)xpos;	// X low byte
+		UINT ypos = peek->data[6] + p_sysmem[0xFC4C] * 64 - 8;	// Y
+		peek->data[5] = ypos >> 8;		// Y high byte
+		peek->data[6] = (UINT8)xpos;	// Y low byte
+		wchar_t buff[256] = {};
+		swprintf_s(buff, L"X: %X %X - Y: %X %X\n", peek->data[3], peek->data[4], peek->data[5], peek->data[6]);
+		OutputDebugStringW(buff);
+	}
+	else {
+		// No high bytes for X and Y pos in anything not the overland map
+		peek->data[3] = 0;
+		peek->data[5] = 0;
+	}
 }
 
 void GameLink::InitTerminal()
