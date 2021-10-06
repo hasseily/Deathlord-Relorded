@@ -329,6 +329,12 @@
     <None Include="Emulator\Resources\DISK2.rom">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Profiles\_Empty.json">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Profiles\_Profiles_Schema.json">
+      <Filter>Assets</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc">
@@ -362,5 +368,10 @@
     <FxCompile Include="Assets\VertexShader.hlsl">
       <Filter>Assets</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="Profiles\Grid Cartographer Profiles\Deathlord Companion.xml">
+      <Filter>Assets</Filter>
+    </Xml>
   </ItemGroup>
 </Project>

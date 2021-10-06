@@ -45,6 +45,8 @@ UINT64	g_debug_video_field = 0;
 UINT64	g_debug_video_data = 0;
 NonVolatile g_nonVolatile;
 
+bool g_isInGameMap;
+
 Game::Game() noexcept(false)
 {
     g_nonVolatile = NonVolatile();

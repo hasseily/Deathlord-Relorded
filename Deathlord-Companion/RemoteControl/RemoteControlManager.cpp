@@ -218,35 +218,7 @@ void RemoteControlManager::updateRunningProgramInfo()
 	// Updates which program is running
 	// Should only be called on re/boot
 
-	// first, generate a version hash of the version string
-	// 1.1.9 becomes 0x00010109
-	// 1004  becomes 0x01000004
-	// 1	 becomes 0x00000001
-	UINT32 versionHash = 0;
-	int ix = 0;
-	for (std::string::reverse_iterator i = g_infoHdv.sVersion.rbegin(); i != g_infoHdv.sVersion.rend(); ++i) {
-		if ((*i >= '0') && (*i <= '9'))		// digit between 0 and 9
-		{
-			versionHash += (*i - '0') << 8*ix;	// put each digit as one UINT8 of the UINT
-			ix++;
-		}
-		if (ix == sizeof(versionHash))
-			break;
-	}
-	//wchar_t szDbg[200];
-	//wsprintf(szDbg, L"version: 0x%08x\n", versionHash);
-	//OutputDebugString(szDbg);
-
-	if (bHardDiskIsLoaded)
-	{
-		GameLink::SetProgramInfo(g_infoHdv.VolumeName, 0, 0, versionHash, g_infoHdv.sig);
-	}
-	else
-	{
-		g_infoHdv.VolumeName = "";
-		GameLink::SetProgramInfo(g_infoHdv.VolumeName, 0, 0, 0, 0);
-	}
-
+	GameLink::SetProgramInfo("Deathlord", 0, 0, 1, 0x8ce1a6e3);
 }
 
 //===========================================================================

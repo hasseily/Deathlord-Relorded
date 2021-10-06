@@ -419,8 +419,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_CHAR:		// Send to the applewin emulator
 		KeybQueueKeypress(wParam, ASCII);
 		break;
-	case WM_KEYDOWN:	// Send to the applewin emulator
-		KeybQueueKeypress(wParam, NOT_ASCII);
+	case WM_KEYDOWN:	// Allow for arrow keys when on the game map
+		if (g_isInGameMap)
+		{
+			switch (wParam)
+			{
+			case VK_LEFT:
+				KeybQueueKeypress('j', ASCII);
+				break;
+			case VK_RIGHT:
+				KeybQueueKeypress('k', ASCII);
+				break;
+			case VK_UP:
+				KeybQueueKeypress('i', ASCII);
+				break;
+			case VK_DOWN:
+				KeybQueueKeypress('m', ASCII);
+				break;
+			default:
+				KeybQueueKeypress(wParam, NOT_ASCII);
+				break;
+			}
+		}
+		else {
+			KeybQueueKeypress(wParam, NOT_ASCII);
+		}
 		break;
 	case WM_KEYUP:
 		break;
@@ -495,14 +518,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_EMULATOR_INSERTBOOTDISK:
 		{
 			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskBootPath.c_str(), false, false);
+			diskCard.EjectDisk(DRIVE_2);
+			bool bRes = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskBootPath.c_str(), false, false);
+			if (bRes != eIMAGE_ERROR_NONE)
+			{
+				if (diskCard.UserSelectNewDiskImage(DRIVE_1, g_nonVolatile.diskBootPath.c_str()))
+					diskCard.SaveLastDiskImage(FLOPPY_BOOT);
+			}
 			break;
 		}
 		case ID_EMULATOR_INSERTSCENARIODISKS:
 		{
 			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskScenAPath.c_str(), false, false);
-			diskCard.InsertDisk(DRIVE_2, g_nonVolatile.diskScenBPath.c_str(), false, false);
+			bool resA = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskScenAPath.c_str(), false, false);
+			bool resB = diskCard.InsertDisk(DRIVE_2, g_nonVolatile.diskScenBPath.c_str(), false, false);
+			if ((resA == eIMAGE_ERROR_NONE) && (resB == eIMAGE_ERROR_NONE))
+				g_isInGameMap = true;
 			break;
 		}
 		case ID_EMULATOR_INSERTINTODISK1:
@@ -551,13 +582,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					Spkr_Mute();
 					MB_Mute();
-					if (MessageBox(HWND_TOP, TEXT("Dead again?\nAre you sure you want to reboot?"), TEXT("Reboot Deathlord"), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SYSTEMMODAL) == IDYES)
+					if (MessageBox(HWND_TOP, TEXT("Deathlord hates you.\nAre you sure you want to reboot?"), TEXT("Reboot Deathlord"), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SYSTEMMODAL) == IDYES)
 					{
 						// Uncheck the pause in all cases
 						CheckMenuItem(GetSubMenu(GetMenu(hWnd), 1), ID_EMULATOR_PAUSE, MF_BYCOMMAND | MF_UNCHECKED);
+						PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_INSERTBOOTDISK, 1);
+						EmulatorReboot();
 						Spkr_Demute();
 						MB_Demute();
-						EmulatorReboot();
 					}
 					else
 					{

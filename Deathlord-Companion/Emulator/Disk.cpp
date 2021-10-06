@@ -331,7 +331,7 @@ void Disk2InterfaceCard::EjectDisk(const int drive)
 		return;
 
 	EjectDiskInternal(drive);
-	SaveLastDiskImage(drive);
+	// SaveLastDiskImage(drive);
 }
 
 void Disk2InterfaceCard::UnplugDrive(const int drive)

@@ -176,8 +176,8 @@ public:
 	bool DriveSwap(void);
 	bool IsDriveConnected(int drive) { return m_floppyDrive[drive].m_isConnected; }
 
-	void LoadLastDiskImage(const int drive);
-	void SaveLastDiskImage(const int drive);
+	void LoadLastDiskImage(const int floppy);
+	void SaveLastDiskImage(const int floppy);
 
 	bool IsDiskImageWriteProtected(const int drive);
 	bool IsDriveEmpty(const int drive);

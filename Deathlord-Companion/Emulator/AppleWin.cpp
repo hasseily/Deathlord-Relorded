@@ -476,13 +476,7 @@ void EmulatorRepeatInitialization()
 	}
 
 	ApplyNonVolatileConfig();
-	Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-	bool bRes = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskBootPath.c_str(), false, false);
-	if (bRes != eIMAGE_ERROR_NONE)
-	{
-		diskCard.UserSelectNewDiskImage(DRIVE_1, g_nonVolatile.diskBootPath.c_str());
-		return;
-	}
+	PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_INSERTBOOTDISK, 1);
 
 	// Init palette color
 	VideoSwitchVideocardPalette(RGB_GetVideocard(), GetVideoType());
@@ -495,6 +489,7 @@ void EmulatorRepeatInitialization()
 void EmulatorReboot()
 {
 	g_nAppMode = AppMode_e::MODE_RUNNING;
+	g_isInGameMap = false;
 	g_bFullSpeed = 0;	// Might've hit reset in middle of InternalCpuExecute() - so beep may get (partially) muted
 	MemReset();	// calls CpuInitialize(), CNoSlotClock.Reset()
 	VideoResetState();

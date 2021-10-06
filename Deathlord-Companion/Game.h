@@ -22,6 +22,7 @@ enum class EmulatorLayout
 	NONE = UINT8_MAX
 };
 
+extern bool g_isInGameMap;          // is the player in-game or on the loading/utilities screens?
 extern NonVolatile g_nonVolatile;
 static std::shared_ptr<LogWindow>m_logWindow;
 
