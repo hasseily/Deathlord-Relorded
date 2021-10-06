@@ -124,8 +124,8 @@ static BYTE benchopcode[BENCHOPCODES] = {
 	0xDD,0xED,0xEE
 };
 
-noxcpuconstants cpuconstants;
 regsrec regs;
+
 unsigned __int64 g_nCumulativeCycles = 0;
 
 static ULONG g_nCyclesExecuted;	// # of cycles executed up to last IO access
@@ -301,6 +301,14 @@ static __forceinline void Fetch(BYTE& iOpcode, ULONG uExecutedCycles)
 	//wchar_t szDebug[100];
 	const USHORT PC = regs.pc;
 
+	// Disable the timer that makes you pass a turn
+	// It is a DEC opcode and 2 bytes of memory, so to be replaced by 3 NOP opcodes
+	if ((g_isInGameMap) && (PC >= PC_DECREMENT_TIMER) && (PC < PC_DECREMENT_TIMER+3))
+	{
+		iOpcode = 0xEA;	// NOP
+		goto NEXTINSTRUCTION;
+	}
+
 	iOpcode = ((PC & 0xF000) == 0xC000)
 		? IORead[(PC >> 4) & 0xFF](PC, PC, 0, 0, uExecutedCycles)	// Fetch opcode from I/O memory, but params are still from mem[]
 		: *(mem + PC);
@@ -309,7 +317,8 @@ static __forceinline void Fetch(BYTE& iOpcode, ULONG uExecutedCycles)
 	DebugHddEntrypoint(PC, iOpcode, uExecutedCycles);
 #endif
 
-	// This chunk of code extracts the conversation strings in Deathlord /////////////////////////////
+	/*
+	// This chunk of code extracts the conversation strings in Nox Archaist /////////////////////////////
 	// First, verify that we're in the combat routine by setting the flag
 	if (PC == cpuconstants.PC_INITIATE_COMBAT)
 		b_in_combat = true;
@@ -347,7 +356,8 @@ static __forceinline void Fetch(BYTE& iOpcode, ULONG uExecutedCycles)
 		m_logWindow->AppendLog('\n', true);
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	regs.pc++;
+	*/
+	NEXTINSTRUCTION: regs.pc++;
 }
 
 static __forceinline void NMI(ULONG& uExecutedCycles, BOOL& flagc, BOOL& flagn, BOOL& flagv, BOOL& flagz)

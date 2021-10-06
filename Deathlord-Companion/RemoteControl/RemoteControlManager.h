@@ -14,7 +14,6 @@ public:
 	void setLoadedHDInfo(ImageInfo* imageInfo);
 	void getInput();
 	void sendOutput(LPBITMAPINFO pFramebufferinfo, UINT8* pFramebufferbits);
-	void setVersionCPUConstants();
 	void updateRunningProgramInfo();
 	void setKeypressExclusionList(UINT8 exclusionList[], UINT8 length);
 

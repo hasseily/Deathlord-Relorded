@@ -3,17 +3,19 @@
 #include "Common.h"
 
 
-struct noxcpuconstants
-{
-	USHORT PC_PRINTSTR;			// program counter of PRINT.STR routine (can be overriden before screen output, especially in combat for variables)
-	USHORT PC_CARRIAGE_RETURN1;	// program counter of a CARRIAGE.RETURN that breaks the lines down in specific lengths (16 chars max). Only use it in battle!
-	USHORT PC_CARRIAGE_RETURN2;	// program counter of a CARRIAGE.RETURN that finishes a line
-	USHORT PC_COUT;				// program counter of COUT routine which is the lowest level and prints a single char at A
-	USHORT A_PRINT_RIGHT;		// A register's value for printing to right scroll area (where the conversations are)
-	USHORT PC_INITIATE_COMBAT;	// when combat routine starts
-	USHORT PC_END_COMBAT;		// when combat routine ends (don't log during combat)
-};
-extern noxcpuconstants cpuconstants;
+// Memory locations to hijack when processing the game
+// to change the behavior on the fly without patching the original code
+#define PC_DECREMENT_TIMER		0x621F		// routine to decrement a timer before it makes the player "wait" and pass a turn
+
+/* Those were for Nox Archaist
+#define PC_PRINTSTR				0x7aa1		// program counter of PRINT.STR routine (can be overriden before screen output, especially in combat for variables)
+#define PC_CARRIAGE_RETURN1		0x7d5c		// program counter of a CARRIAGE.RETURN that breaks the lines down in specific lengths (16 chars max). Only use it in battle!
+#define PC_CARRIAGE_RETURN2		0x7db4		// program counter of a CARRIAGE.RETURN that finishes a line
+#define PC_COUT					0x7998		// program counter of COUT routine which is the lowest level and prints a single char at A
+#define A_PRINT_RIGHT			0x05		// A register's value for printing to right scroll area (where the conversations are)
+#define PC_INITIATE_COMBAT		0x159f		// when combat routine starts
+#define PC_END_COMBAT			0x15eb		// when combat routine ends (don't log during combat)
+*/
 
 struct regsrec
 {

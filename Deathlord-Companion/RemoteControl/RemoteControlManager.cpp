@@ -177,40 +177,9 @@ void RemoteControlManager::setLoadedHDInfo(ImageInfo* imageInfo)
 		g_infoHdv.sVersion = std::string(UNKNOWN_VERSION);
 		g_infoHdv.sig = 0;
 	}
-	setVersionCPUConstants();
 	updateRunningProgramInfo();
 }
 
-//===========================================================================
-
-void RemoteControlManager::setVersionCPUConstants()
-{
-	fs::path constantsPath = fs::current_path();
-	constantsPath += "\\Assets\\Versions.json";
-	try
-	{
-		std::ifstream i(constantsPath);
-		nlohmann::json j;
-		i >> j;
-		const char* version = g_infoHdv.sVersion.c_str();
-		nlohmann::json ccv = j[version];
-		if (ccv.empty())
-			return;
-		cpuconstants.A_PRINT_RIGHT			= static_cast<USHORT>(std::stoi(ccv["A_PRINT_RIGHT"].get<std::string>(), nullptr, 0));
-		cpuconstants.PC_CARRIAGE_RETURN1	= static_cast<USHORT>(std::stoi(ccv["PC_CARRIAGE_RETURN1"].get<std::string>(), nullptr, 0));
-		cpuconstants.PC_CARRIAGE_RETURN2	= static_cast<USHORT>(std::stoi(ccv["PC_CARRIAGE_RETURN2"].get<std::string>(), nullptr, 0));
-		cpuconstants.PC_COUT				= static_cast<USHORT>(std::stoi(ccv["PC_COUT"].get<std::string>(), nullptr, 0));
-		cpuconstants.PC_END_COMBAT			= static_cast<USHORT>(std::stoi(ccv["PC_END_COMBAT"].get<std::string>(), nullptr, 0));
-		cpuconstants.PC_INITIATE_COMBAT		= static_cast<USHORT>(std::stoi(ccv["PC_INITIATE_COMBAT"].get<std::string>(), nullptr, 0));
-		cpuconstants.PC_PRINTSTR			= static_cast<USHORT>(std::stoi(ccv["PC_PRINTSTR"].get<std::string>(), nullptr, 0));
-	}
-	catch (nlohmann::detail::parse_error err) {
-		char buf[sizeof(err.what()) + 500];
-		snprintf(buf, 500, "Error parsing version CPU constants: %s\n", err.what());
-		OutputDebugStringA(buf);
-	}
-
-}
 //===========================================================================
 
 void RemoteControlManager::updateRunningProgramInfo()
