@@ -15,17 +15,19 @@
 
     <!-- Deathlord Companion version 1 -->
     <detect system="APPLE II" sys="40a3f909" prg="8ce1a6e3" ph3="8ce1a6e3" ph2="1" ph1="0" ph0="0">
-      <!-- 0:mapID 1:region 2:maptype 3:xpos_hibyte 4:xpos_lobyte 5:ypos_hibyte 6:ypos_lobyte -->
-      <!-- The x/y pos don't really have 2 bytes, but the companion app transforms them into 2 bytes -->
-      <!-- and merges all outdoors submaps into one huge map -->
-			<peek bytes="FC4E FC5E FC04 0000 FC06 0001 FC07" />
+      <!-- 0:mapID 1:region 2:maptype 3:xpos 4:ypos 5:overland_submap_xx 6:overland_submap_yy -->
+      <!-- The overland map is a stitched up 16x16 of 64x64 submaps using 8 overlapping margin tiles, with 5 and 6 -->
+      <!-- above being their x and y coords in the supermap. Here we merge 4 submaps at a time, with 16 levels of 200x200 maps -->
+      <!-- Note that for this to work, the x and y coords have been pre-processed in Deathlord Companion using -->
+      <!-- this function (here for x): peek->data[3] = peek->data[3] + (p_sysmem[0xFC4B] % 4)*56; -->
+			<peek bytes="FC4E FC5E FC04 FC06 FC07 FC4B FC4C" />
 		</detect>
 
 	</dsub>
 
 	<regions>
-		<region id="1" name="Lorn" ground_floor="true" start_floor="G" auto_create="true" >
-			<grid width="16" height="16" tilex="16" tiley="16" repeating="false" origin_tl="true" />
+		<region id="1" name="Lorn" ground_floor="true" start_floor="F1" auto_create="true" >
+			<grid width="58" height="58" tilex="4" tiley="4" repeating="false" origin_tl="true" />
 		</region>
     <region id="2" name="Town 1" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
@@ -43,16 +45,108 @@
 
 	<views>
 		<class name="Standard">
-			<xpos offset="3" length="2" min="0" max="ffff" />
-			<ypos offset="5" length="2" min="0" max="ffff" />
+			<xpos offset="3" length="1" min="0" max="ff" />
+			<ypos offset="4" length="1" min="0" max="ff" />
 		</class>
 		
 		
 		<!-- Lorn (Overworld) -->
 		<packetview extends="Standard" region="1">
 			<check offset="2" length="1" value="1" />
-			<const_floor>G</const_floor>
+      <check offset="5" length="1" value="4" op="LT" />
+      <check offset="6" length="1" value="4" op="LT" />
+      <const_floor>F1</const_floor>
 		</packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="8" op="LT" />
+      <check offset="6" length="1" value="4" op="LT" />
+      <const_floor>F2</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="12" op="LT" />
+      <check offset="6" length="1" value="4" op="LT" />
+      <const_floor>F3</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="16" op="LT" />
+      <check offset="6" length="1" value="4" op="LT" />
+      <const_floor>F4</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="4" op="LT" />
+      <check offset="6" length="1" value="8" op="LT" />
+      <const_floor>F5</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="8" op="LT" />
+      <check offset="6" length="1" value="8" op="LT" />
+      <const_floor>F6</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="12" op="LT" />
+      <check offset="6" length="1" value="8" op="LT" />
+      <const_floor>F7</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="16" op="LT" />
+      <check offset="6" length="1" value="8" op="LT" />
+      <const_floor>F8</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="4" op="LT" />
+      <check offset="6" length="1" value="12" op="LT" />
+      <const_floor>F9</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="8" op="LT" />
+      <check offset="6" length="1" value="12" op="LT" />
+      <const_floor>F10</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="12" op="LT" />
+      <check offset="6" length="1" value="12" op="LT" />
+      <const_floor>F11</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="16" op="LT" />
+      <check offset="6" length="1" value="12" op="LT" />
+      <const_floor>F12</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="4" op="LT" />
+      <check offset="6" length="1" value="16" op="LT" />
+      <const_floor>F13</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="8" op="LT" />
+      <check offset="6" length="1" value="16" op="LT" />
+      <const_floor>F14</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="12" op="LT" />
+      <check offset="6" length="1" value="16" op="LT" />
+      <const_floor>F15</const_floor>
+    </packetview>
+    <packetview extends="Standard" region="1">
+      <check offset="2" length="1" value="1" />
+      <check offset="5" length="1" value="16" op="LT" />
+      <check offset="6" length="1" value="16" op="LT" />
+      <const_floor>F16</const_floor>
+    </packetview>
     <!-- Town 1 -->
     <packetview extends="Standard" region="2">
       <check offset="0" length="1" value="1b" />
