@@ -18,6 +18,8 @@
 #include "Emulator/Keyboard.h"
 #include "Emulator/Harddisk.h"
 #include "Emulator/RGBMonitor.h"
+#include "DeathlordHacks.h"
+#include "TilesetCreator.h"
 
 using namespace DirectX;
 
@@ -44,6 +46,7 @@ int m_extraWindowHeight = 0;
 int m_initialWindowWidth = 0;
 int m_initialWindowHeight = 0;
 
+TilesetCreator g_tilesetCreator;
 
 namespace
 {
@@ -249,6 +252,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	// Disallow saving by default when not in the game map
 	// It is allowed temporarily when hitting 'q'
 	g_wantsToSave = !(g_isInGameMap);
+
+	DeathlordHacks dlHacks = DeathlordHacks();
 
 	auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
@@ -466,6 +471,49 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	case WM_KEYUP:
+		// For special no-repeat commands
+		if (g_isInGameMap)
+		{
+			switch (wParam)
+			{
+			case VK_NEXT:
+			{
+				// TODO: Set up map extraction method
+				dlHacks.saveMapDataToDisk();
+				break;
+			}
+			case VK_NUMPAD0:
+			{
+				// Parse tiles on the screen
+				g_tilesetCreator.parseTilesInFrameBuffer();
+				g_tilesetCreator.saveTileFile();
+				break;
+			}
+			case VK_NUMPAD1:
+			{
+				// Start the tile parser.
+				if (!g_tilesetCreator.isActive)
+					g_tilesetCreator.start();
+				break;
+			}
+			case VK_NUMPAD5:
+			{
+				// SReset the tile parser (clear the saved tiles)
+				if (g_tilesetCreator.isActive)
+					g_tilesetCreator.reset();
+				break;
+			}
+			case VK_NUMPAD9:
+			{
+				// Stop the tile parser.
+				if (g_tilesetCreator.isActive)
+					g_tilesetCreator.stop();
+				break;
+			}
+			default:
+				break;
+			}
+		}
 		break;
 	case WM_SYSKEYUP:
 		Keyboard::ProcessMessage(message, wParam, lParam);

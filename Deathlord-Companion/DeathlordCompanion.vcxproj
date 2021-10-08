@@ -174,6 +174,7 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DeathlordHacks.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="emulator\AppleWin.cpp" />
     <ClCompile Include="emulator\AY8910.cpp" />
@@ -209,10 +210,12 @@
     <ClCompile Include="Sidebar.cpp" />
     <ClCompile Include="SidebarContent.cpp" />
     <ClCompile Include="SidebarManager.cpp" />
+    <ClCompile Include="TilesetCreator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATGColors.h" />
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="DeathlordHacks.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="emulator\AppleWin.h" />
     <ClInclude Include="emulator\AY8910.h" />
@@ -260,6 +263,7 @@
     <ClInclude Include="SidebarManager.h" />
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="TilesetCreator.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\a2-12pt.spritefont">

@@ -325,9 +325,6 @@ void RemoteControlManager::sendOutput(LPBITMAPINFO pFramebufferinfo, UINT8 *pFra
 {
 	if (GameLink::GetGameLinkEnabled()) {
 		// here send the last drawn frame to GameLink
-		// We could efficiently send to GameLink g_pFramebufferbits with GetFrameBufferWidth/GetFrameBufferHeight, but the scanlines are reversed
-		// We instead memcpy each scanline of the bitmap of the frame in reverse into another buffer, and pass that to GameLink.
-		// When GridCartographer/GameLink allows to pass in flags specifying the x/y/w/h etc...,
 
 		if (pFramebufferinfo == NULL)
 		{
@@ -339,7 +336,7 @@ void RemoteControlManager::sendOutput(LPBITMAPINFO pFramebufferinfo, UINT8 *pFra
 		g_gamelink.want_mouse = false;
 		// TODO: only send the framebuffer out when not in trackonly_mode
 
-		if (g_pFramebufferbits != NULL)
+		if (pFramebufferbits != NULL)
 		{
 			GameLink::Out(
 				(UINT16)pFramebufferinfo->bmiHeader.biWidth,
