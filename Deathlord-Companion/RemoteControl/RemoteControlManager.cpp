@@ -344,7 +344,7 @@ void RemoteControlManager::sendOutput(LPBITMAPINFO pFramebufferinfo, UINT8 *pFra
 				1.0,								// image ratio
 				g_gamelink.want_mouse,
 				(const UINT8*)pFramebufferbits,
-				MemGetBankPtr(0));					// Main memory pointer
+				MemGetMainPtr(0));					// Main memory pointer
 		}
 	}
 }
