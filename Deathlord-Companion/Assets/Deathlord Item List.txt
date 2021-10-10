@@ -1,0 +1,106 @@
+	   Fightrs Thfs Magi
+		Id $$$ SKRYKSR YANS SZMG  Name           TH A/Dmg  +AC   
+			   1 	2     3 4 56
+		  ~ Melee Weapons (Slot 0) ~
+		00  10 +++++++ ++++ ..++  TANTO          -2 2x1-3  -1AC 
+		0a  20 +++++++ ++++ ++++  BO-STAFF            1-7  -1AC
+		26  -  +++++++ ++++ ..++  ROD OF LIGHT   +1   1-8        casts S3:MOAKARI (#24)
+		3b  -  ....... .... ..+.  POWERSTAFF     +2   1-12 +4AC  casts M3:ZUMA (#20)
+		46  -  +++++++ ++++ ..++  SUNSPEAR       +3   1-24 +3AC  slays Deathlord
+
+		02  30 +++++++ .... ++..  JO-STICK       -1   1-7
+		32  -  +++++++ .... ++..  ROD OF DEATH   +2 2x1-10 +1AC
+		49  -  +++++++ .... ++..  EMERALD ROD    +4   1-10 +6AC  slays demons,
+																   casts Z4:SANTATE
+		04  50 +++++++ ++++ ....  SAI               2x1-4
+		1c 100 ....... ..+. ....  NUNCHAKU       +3 2x1-9        
+		1d 400 .....+. .... ....  WAKIZASHI      +1 2x1-10       
+		27  -  +++++++ ++++ ....  DRAGONSLAYER   +1   1-12 +1AC  slays dragons
+		28  -  +++++++ ++++ ....  GIANTSLAYER    +1   1-12 +1AC  slays giants
+		29  -  +++++++ ++++ ....  DEFENDER       +1   1-10 +4AC  casts M5:HOHYO (#10)
+		31  -  +++++++ ++++ ....  SWORD OF FIRE  +1   1-12 +1AC  slays undead,
+																   casts Z4:HITATE (#10)
+		10  80 +++++++ .... ....  MASAKARI            1-8
+		13 120 +++++++ .... ....  GLAIVE              1-9
+		19 250 +++++++ .... ....  NAGINATA       +1   1-10 +1AC
+		1e 600 .....+. .... ....  KATANA         +1 2x1-14 +1AC  
+		2c  -  ....+.. .... ....  BERZERK SWORD  +1 4x1-8        
+		33  -  +++++++ .... ....  THUNDERBLADE   +2   1-14 +1AC  casts M3:ZUMA (#08)
+		37  -  ......+ .... ....  UNHOLY BLADE   +3   1-10 +2AC  casts M6:KOROSU (#06)
+		3c  -  +++++++ .... ....  RUNEBLADE      +2   1-15 +2AC  casts M6:KOROSU (#06)
+		38  -  .+..... .... ....  HOLY BLADE     +3   1-15 +2AC  slays demons, 
+																   casts S6:ALNASU (#06)
+		  ~ Missile Weapons (Slot 1) ~
+		08  30 +++++++ .... ++..  SLING          -2   1-6  +1AC
+		2f  -                     KOBITO HAMMER  +1   1-16 +2AC  KOBITO only
+
+		0d 110 +++++++ ++++ ....  LIGHT BOW      -1 2x1-4  +1AC
+		12 150 +++++++ ++++ ....  CROSSBOW       +1   1-10 +1AC
+		18  70 ....... ..+. ....  SHURIKEN          3x1-3  +1AC
+		2d  -  +++++++ ++++ ....  TOSHI BOW      +3 3x1-8  +2AC  TOHSI only
+
+		15 210 +++++++ .... ....  HEAVY BOW         2x1-6  +1AC
+		1a 300 +++++++ .... ....  GREAT BOW      +1 2x1-8  +1AC
+
+		  ~ Body Armor (Slot 2) ~
+		01  20 +++++++ ++++ ++++  CLOAK          +1AC
+		20  -  +++++++ ++++ ++++  TOSHI CLOAK    +2AC  casts G4:KAKUSU (#10)
+		2e  -  +++++++ ++++ ++++  SABLE CLOAK    +3AC
+
+		03  60 +++++++ ++.. ++..  HARA.ATE       +2AC
+		07 110 +++++++ ++.. ++..  HARAME.DO      +3AC
+		21  -  +++++++ ++.. ++..  HARA.ATE +1    +3AC
+		22  -  +++++++ ++.. ++..  HARAME.DO +1   +4AC
+
+		0c 210 +++.+++ .... ++..  HARAMAKIDO     +4AC
+		2b  -  +++.+++ .... ++..  HARAMAKIDO +1  +5AC
+		34  -  +++.+++ .... ++..  DO.MARU +1     +6AC
+		3a  -  +++.+++ .... ++..  DO.MARU +2     +7AC
+
+		17 410 ++...++ .... ....  DO.MARU        +5AC  -1 to hit
+		1b 610 ++...++ .... ....  YOROI          +6AC  -2 to hit
+		35  -  ++...++ .... ....  YOROI +1       +7AC  -1 to hit
+		40  -  ++...++ .... ....  GOLDEN YOROI   +10AC
+
+		  ~ Shields (Slot 3) ~
+		06  30 +++++++ ++++ ++..  SMALL SHIELD   +1AC
+		23  -  +++++++ ++++ ++..  BRONZE SHIELD  +3AC
+
+		0b  80 +++.+++ .... ++..  MEDIUM SHIELD  +2AC
+		30  -  +++.+++ .... ++..  SILVER SHIELD  +4AC
+		41  -  +++.+++ .... ++..  GOLDEN SHIELD  +5AC
+
+		11 120 ++...++ .... ....  GREAT SHIELD   +3AC  -1 to hit
+		42  -  ......+ .... ....  SKULL SHIELD   +6AC
+
+		  ~ Misc Armor (Slot 4) ~
+		05  10 +++++++ ++++ ++++  GLOVES         +1AC
+
+		24  -  +++++++ ++++ ++..  GOLD JINGASA   +2AC
+
+		09  70 +++++++ .... ++..  GAUNTLETS      +2AC
+		0e 100 +++++++ .... ++..  JINGASA        +1AC
+		39  -  +++++++ .... ++..  GOLDEN CROWN   +3AC
+
+		14 180 ++.++++ .... ....  KABUTO         +2AC
+		3d  -  ++.++++ .... ....  GOLDEN GLOVES  +3AC  +2 to hit
+		3e  -  ++.++++ .... ....  FALCON HELM    +4AC
+
+		  ~ Magic Items (Slot 5) ~
+		3f  -  ....... .... +...  RING OF LIFE   +1AC  casts S7:MOINOCHI (#06)
+		44  -  +++++++ ++++ ++++  SHARKTOOTH           reveals location of Hell Island
+		45  -  +++++++ ++++ ++++  BLUE CRYSTAL         (U)se to pass through Curtain
+		48  -  +++++++ ++++ ++++  RUBY RING      +2AC  casts Z4:HITATE
+		4a  -  +++++++ ++++ ++++  BLACK ORB            give to Emperor to win game
+
+		  ~ Tools (Slot 6) ~
+		0f  80 +++++++ ++++ ++++  LOCK PICK      allows (P)icklock action
+		16 100 ....... .... +...  HOLY SYMBOL    casts S2:TSUIHO (#12)
+		43  -  +++++++ ++++ ++++  LANTERN        illuminates the Hell dungeon
+
+		  ~ Scrolls (Slot 7) ~
+		1f  -  ....... .... +...  SCROLL.HEAL    casts S6:ALNASU (#01)
+		25  -  ....... .... ..+.  SCROLL.WARD    cases M5:HOHYO (#01)
+		2a  -  ....... .... .+..  SCROLL.CURE    casts S4:DONASU (#01)
+		36  -  ....... .... +...  SCROLL.RAISE   casts S5:INOCHI (#01)
+		47  -  +++++++ ++++ ++++  DOCUMENT       give to Emperor to get free boat

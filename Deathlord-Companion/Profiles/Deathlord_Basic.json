@@ -7,6 +7,11 @@
     "api_version": 3
   },
   "tables": {
+    "ready": {
+      "0x00": "Melee",
+      "0x01": "Ranged",
+      "0xff": "Fists"
+    },
     "equipment": {
       "0x00": "Tanto",
       "0x01": "Cloak",
@@ -137,14 +142,105 @@
         },
         {
           "type": "Content",
-          "template": "H: {}",
+          "template": "Power : {} / {}",
           "vars": [
             {
-              "mem": [ "0xFDEA" ],
+              "mem": [ "0xFD96" ],
+              "type": "int"
+            },
+            {
+              "mem": [ "0xFD9C" ],
+              "type": "int"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "Armor : {}",
+          "vars": [
+            {
+              "mem": [ "0xFE20" ],
               "type": "lookup",
               "lookup": "/tables/equipment"
             }
           ]
+        },
+        {
+          "type": "Content",
+          "template": "Helm  : {}",
+          "vars": [
+            {
+              "mem": [ "0xFE24" ],
+              "type": "lookup",
+              "lookup": "/tables/equipment"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "Gloves: {}",
+          "vars": [
+            {
+              "mem": [ "0xFE25" ],
+              "type": "lookup",
+              "lookup": "/tables/equipment"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "Shield: {}",
+          "vars": [
+            {
+              "mem": [ "0xFE23" ],
+              "type": "lookup",
+              "lookup": "/tables/equipment"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "Melee : {}",
+          "vars": [
+            {
+              "mem": [ "0xFE22" ],
+              "type": "lookup",
+              "lookup": "/tables/equipment"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "Ranged: {}",
+          "vars": [
+            {
+              "mem": [ "0xFE21" ],
+              "type": "lookup",
+              "lookup": "/tables/equipment"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "Ready : {}",
+          "vars": [
+            {
+              "mem": [ "0xFDEA" ],
+              "type": "lookup",
+              "lookup": "/tables/ready"
+            }
+          ]
+        },
+        {
+          "type": "Header",
+          "template": "========================",
+          "color": [
+            0.9,
+            0.2,
+            0.9,
+            1.0
+          ],
+          "vars": []
         },
         {
           "type": "Header",
@@ -186,6 +282,20 @@
             },
             {
               "mem": [ "0xFDDB", "0xFDE1" ],
+              "type": "int"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "Power: {} / {}",
+          "vars": [
+            {
+              "mem": [ "0xFD99" ],
+              "type": "int"
+            },
+            {
+              "mem": [ "0xFD9F" ],
               "type": "int"
             }
           ]
@@ -271,6 +381,20 @@
         },
         {
           "type": "Content",
+          "template": "Power: {} / {}",
+          "vars": [
+            {
+              "mem": [ "0xFD97" ],
+              "type": "int"
+            },
+            {
+              "mem": [ "0xFD9D" ],
+              "type": "int"
+            }
+          ]
+        },
+        {
+          "type": "Content",
           "template": "H: {}",
           "vars": [
             {
@@ -320,6 +444,20 @@
             },
             {
               "mem": [ "0xFDDC", "0xFDE2" ],
+              "type": "int"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "Power: {} / {}",
+          "vars": [
+            {
+              "mem": [ "0xFD9A" ],
+              "type": "int"
+            },
+            {
+              "mem": [ "0xFDA0" ],
               "type": "int"
             }
           ]
@@ -405,6 +543,20 @@
         },
         {
           "type": "Content",
+          "template": "Power: {} / {}",
+          "vars": [
+            {
+              "mem": [ "0xFD98" ],
+              "type": "int"
+            },
+            {
+              "mem": [ "0xFD9E" ],
+              "type": "int"
+            }
+          ]
+        },
+        {
+          "type": "Content",
           "template": "H: {}",
           "vars": [
             {
@@ -460,6 +612,20 @@
         },
         {
           "type": "Content",
+          "template": "Power: {} / {}",
+          "vars": [
+            {
+              "mem": [ "0xFD9B" ],
+              "type": "int"
+            },
+            {
+              "mem": [ "0xFDA1" ],
+              "type": "int"
+            }
+          ]
+        },
+        {
+          "type": "Content",
           "template": "H: {}",
           "vars": [
             {
@@ -506,7 +672,7 @@
         },
         {
           "type": "Header",
-          "template": "          by @rikkles",
+          "template": "          by @rikkles, with help from The Lost Sectors community!",
           "color": [
             0.9,
             0.2,
@@ -514,6 +680,12 @@
             1.0
           ],
           "vars": []
+        },
+        {
+          "type": "Empty"
+        },
+        {
+          "type": "Empty"
         }
       ]
     }

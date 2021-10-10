@@ -5,6 +5,7 @@
 #include <DirectXPackedVector.h>
 #include <DirectXMath.h>
 #include <Sidebar.h>
+#include "Game.h"   // for g_isInGameMap
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -248,11 +249,13 @@ nlohmann::json SidebarContent::ParseProfile(fs::path filepath)
 
 std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
 {
+	string s;
+    if (!g_isInGameMap)
+        return s;
     nlohmann::json j = *pvar;
     // initialize variables
     // OutputDebugStringA((j.dump()+string("\n")).c_str());
     int memOffset;
-    string s;
 	if (j.count("mem") != 1)
 		return s;
 	if (j.count("type") != 1)
@@ -278,11 +281,11 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
 		while (*(pmem + memOffset + i) < 0x80)
 		{
 			c = *(pmem + memOffset + i);
-			if (c == '\0')    // just in case
-				return s;
 			if (c < sizeof(deathlordCharMap))
 				s.append(1, deathlordCharMap[c]);
 			i++;
+            if (i > 1000) // don't go ballistic!
+                break;
 		}
 		// Last char with high bit set
         c = *(pmem + memOffset + i) - 0x80;
@@ -449,8 +452,8 @@ bool SidebarContent::UpdateBlock(SidebarManager* sbM, UINT8 sidebarId, UINT8 blo
             break;
         }
 
-        // OutputDebugStringA(s.c_str());
-        // OutputDebugStringA("\n");
+        //OutputDebugStringA(s.c_str());
+        //OutputDebugStringA("\n");
         if (sb.SetBlockText(s, blockId) == SidebarError::ERR_NONE)
         {
             return true;
