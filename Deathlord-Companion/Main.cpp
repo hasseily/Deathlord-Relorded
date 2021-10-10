@@ -264,7 +264,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	if (MemIsInitialized())
 	{
 		UINT8* memPtr = MemGetBankPtr(0);
-		g_isInGameMap = (memPtr[0xFFF0] == 0xB1);	// when not in game map, that area is all zeros
+		g_isInGameMap = (memPtr[0xFCE0] == 0xE5);	// when not in game map, that area is all zeros
 	}
 	// Disallow saving by default when not in the game map
 	// It is allowed temporarily when hitting 'q'
@@ -458,7 +458,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		KeybQueueKeypress(wParam, ASCII);
 		break;
 	case WM_KEYDOWN:		// Send to the applewin emulator
+/*
 		if (g_isInGameMap)	// Allow for arrow keys when on the game map
+			// TODO: DISABLED because selecting items in shops for example necessitates arrow keys
 		{
 			switch (wParam)
 			{
@@ -482,6 +484,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		else {
 			KeybQueueKeypress(wParam, NOT_ASCII);
 		}
+		*/
+					KeybQueueKeypress(wParam, NOT_ASCII);
+
 		break;
 	case WM_KEYUP:
 		// For special no-repeat commands
