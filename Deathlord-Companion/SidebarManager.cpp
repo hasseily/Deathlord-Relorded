@@ -102,9 +102,10 @@ SidebarError SidebarManager::ClearSidebar(UINT8 id)
     }
     catch (std::out_of_range const& exc)
     {
-        char buf[sizeof(exc.what()) + 300];
-        snprintf(buf, 300, "Sidebar %d doesn't exist: %s\n", id, exc.what());
-        OutputDebugStringA(buf);
+        char buf[sizeof(exc.what()) + 500];
+        snprintf(buf, 500, "Sidebar %d doesn't exist: %s\n", id, exc.what());
+        SidebarExceptionHandler(buf);
+        //OutputDebugStringA(buf);
         return SidebarError::ERR_OUT_OF_RANGE;
     }
 }

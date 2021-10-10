@@ -17,6 +17,8 @@ static string SIDEBAR_FORMAT_PLACEHOLDER("{}");
 static UINT8* pmem;
 static int memsize;
 
+static char deathlordCharMap[106] = "edgfa`cbmlonihkjutwvqpsr  ][yx*zEDGFA@CBMLONIHKJUTWVQPSR    YX-Z%$'&! #\" - , / .)(+*54761032 = < ? >98; :";
+
 SidebarContent::SidebarContent()
 {
     Initialize();
@@ -50,9 +52,10 @@ bool SidebarContent::setActiveProfile(SidebarManager* sbM, std::string* name)
     }
     catch (std::out_of_range const& exc) {
         m_activeProfile["meta"]["name"] = *name;
-        char buf[sizeof(exc.what()) + 500];
-        snprintf(buf, 500, "Profile %s doesn't exist: %s\n", name->c_str(), exc.what());
-        OutputDebugStringA(buf);
+        SidebarExceptionHandler(exc.what());
+        //char buf[sizeof(exc.what()) + 500];
+        //snprintf(buf, 500, "Profile %s doesn't exist: %s\n", name->c_str(), exc.what());
+        //OutputDebugStringA(buf);
         return false;
     }
 
@@ -227,7 +230,8 @@ nlohmann::json SidebarContent::ParseProfile(fs::path filepath)
     catch (nlohmann::detail::parse_error err) {
         char buf[sizeof(err.what()) + 500];
         snprintf(buf, 500, "Error parsing profile: %s\n", err.what());
-        OutputDebugStringA(buf);
+		SidebarExceptionHandler(buf);
+        //OutputDebugStringA(buf);
         return nullptr;
     }
 }
@@ -267,24 +271,24 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
 		return s;
 
     // now we have the memory offset and length, and we need to parse
+    // In Deathlord, a string has variable length and ends with the char having its high bit set
+    // We disregard the length attribute
     if (j["type"] == "ascii")
     {
-        for (size_t i = 0; i < length; i++)
+        size_t i = 0;
+        char c;
+        while (*(pmem + memoffset + i) < 0x80)
         {
-            if (*(pmem + memoffset + i) == '\0')
-                return s;
-            s.append(1, (*(pmem + memoffset + i)));
+            c = *(pmem + memoffset + i);
+			if (c == '\0')    // just in case
+				return s;
+            if (c < sizeof(deathlordCharMap))
+                s.append(1, deathlordCharMap[c]);
+            i++;
         }
-    }
-    else if (j["type"] == "ascii_high")
-    {
-        // ASCII-high is basically ASCII shifted by 0x80
-        for (size_t i = 0; i < length; i++)
-        {
-            if (*(pmem + memoffset + i) == '\0')
-                return s;
-            s.append(1, (*(pmem + memoffset + i) - 0x80));
-        }
+        // Last char with high bit set
+        c = *(pmem + memoffset + i) - 0x80;
+        s.append(1, deathlordCharMap[c]);
     }
     else if (j["type"] == "int_bigendian")
     {
@@ -342,7 +346,8 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
             std::string es = j.dump().substr(0, 4500);
             char buf[sizeof(e.what()) + 5000];
             sprintf_s(buf, "Error parsing lookup: %s\n%s\n", es.c_str(), e.what());
-            OutputDebugStringA(buf);
+            SidebarExceptionHandler(buf);
+            //OutputDebugStringA(buf);
         }
     }
     return s;

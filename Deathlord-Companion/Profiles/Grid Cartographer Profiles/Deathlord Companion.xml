@@ -20,7 +20,7 @@
       <!-- above being their x and y coords in the supermap. Here we merge 4 submaps at a time, with 16 levels of 200x200 maps -->
       <!-- Note that for this to work, the x and y coords have been pre-processed in Deathlord Companion using -->
       <!-- this function (here for x): peek->data[3] = peek->data[3] + (p_sysmem[0xFC4B] % 4)*56; -->
-			<peek bytes="FC4E FC5E FC04 FC06 FC07 FC4B FC4C" />
+			<peek bytes="FC4E 0000 FC04 FC06 FC07 FC4B FC4C" />
 		</detect>
 
 	</dsub>

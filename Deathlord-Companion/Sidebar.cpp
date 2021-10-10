@@ -3,6 +3,18 @@
 
 static BlockStruct m_defaultBlock;
 
+static void SidebarExceptionHandler(LPCSTR pError)
+{
+	// Need to convert char to wchar for MessageBox
+	wchar_t wc[4000];
+	size_t ctConverted;
+	mbstowcs_s(&ctConverted, wc, (const char*)pError, 4000);
+	MessageBox(HWND_TOP,
+		wc,
+		TEXT("Sidebar Parser Error"),
+		MB_ICONEXCLAMATION | MB_SETFOREGROUND);
+}
+
 Sidebar::Sidebar(UINT8 _id, SidebarTypes _type, int _width, int _height, UINT8 _maxBlocks, DirectX::XMFLOAT2 _position)
 {
 	id			= _id;
@@ -49,7 +61,8 @@ SidebarError Sidebar::SetBlock(BlockStruct bS, UINT8 _id)
 	{
 		char buf[sizeof(exc.what()) + 300];
 		sprintf_s(buf, "Block %d doesn't exist: %s\n", _id, exc.what());
-		OutputDebugStringA(buf);
+		SidebarExceptionHandler(buf);
+		//OutputDebugStringA(buf);
 		return SidebarError::ERR_OUT_OF_RANGE;
 	}
 
@@ -67,7 +80,8 @@ SidebarError Sidebar::SetBlockText(std::string str, UINT8 _id)
 	{
 		char buf[sizeof(exc.what()) + 300];
 		sprintf_s(buf, "Block %d doesn't exist: %s\n", _id, exc.what());
-		OutputDebugStringA(buf);
+		SidebarExceptionHandler(buf);
+		//OutputDebugStringA(buf);
 		return SidebarError::ERR_OUT_OF_RANGE;
 	}
 

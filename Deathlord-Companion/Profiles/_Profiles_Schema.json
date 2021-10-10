@@ -8,11 +8,11 @@
   "examples": [
     {
       "meta": {
-        "name": "NOXARCHAIST",
+        "name": "DEATHLORD",
         "author": "Rikkles",
         "revision": 1,
-        "date": "2021.01.22",
-        "api_version": 2
+        "date": "2021.10.10",
+        "api_version": 3
       },
       "tables": {
         "spells": {
@@ -36,8 +36,7 @@
               "vars": [
                 {
                   "memstart": "0x1164B",
-                  "length": 15,
-                  "type": "ascii_high"
+                  "type": "string"
                 }
               ]
             },
@@ -46,14 +45,16 @@
               "template": "M{} R{}",
               "vars": [
                 {
-                  "memstart": "0x11619",
-                  "length": 1,
-                  "type": "int_bigendian"
+                  "mem": [ "0x11619" ],
+                  "type": "int"
                 },
                 {
-                  "memstart": "0x1161c",
-                  "length": 1,
-                  "type": "int_bigendian"
+                  "mem": [
+                    "0x1161c",
+                    "0x1161b"
+
+                  ],
+                    "type":"int"
                 }
               ]
             },
@@ -78,11 +79,11 @@
       "default": {},
       "examples": [
         {
-          "name": "NOXARCHAIST",
+          "name": "DEATHLORD",
           "author": "Rikkles",
           "revision": 1,
-          "date": "2021.01.22",
-          "api_version": 2
+          "date": "2021.10.10",
+          "api_version": 3
         }
       ],
       "required": [
@@ -100,14 +101,14 @@
           "description": "Name of the profile, generally the game this profile applies to.",
           "default": "",
           "examples": [
-            "NOX ARCHAIST"
+            "DEATHLORD"
           ]
         },
         "author": {
           "$id": "#/properties/meta/properties/author",
           "type": "string",
           "title": "Author",
-          "description": "Zho created this profile.",
+          "description": "Who created this profile.",
           "default": "",
           "examples": [
             "Rikkles"
@@ -185,9 +186,8 @@
                 ],
                 "vars": [
                   {
-                    "memstart": "0x1164B",
-                    "length": 15,
-                    "type": "ascii_high"
+                    "mem": [ "0x1164B" ],
+                    "type": "string"
                   }
                 ]
               },
@@ -196,14 +196,12 @@
                 "template": "M{} R{}",
                 "vars": [
                   {
-                    "memstart": "0x11619",
-                    "length": 1,
-                    "type": "int_bigendian"
+                    "mem": [ "0x11619" ],
+                    "type": "int"
                   },
                   {
-                    "memstart": "0x1161c",
-                    "length": 1,
-                    "type": "int_bigendian"
+                    "mem": [ "0x1161c" ],
+                    "type": "int"
                   }
                 ]
               },
@@ -240,9 +238,8 @@
                     ],
                     "vars": [
                       {
-                        "memstart": "0x1164B",
-                        "length": 15,
-                        "type": "ascii_high"
+                        "mem": [ "0x1164B" ],
+                        "type": "string"
                       }
                     ]
                   },
@@ -251,14 +248,12 @@
                     "template": "M{} R{}",
                     "vars": [
                       {
-                        "memstart": "0x11619",
-                        "length": 1,
-                        "type": "int_bigendian"
+                        "mem": [ "0x11619" ],
+                        "type": "int"
                       },
                       {
-                        "memstart": "0x1161c",
-                        "length": 1,
-                        "type": "int_bigendian"
+                        "mem": [ "0x1161C" ],
+                        "type": "int"
                       }
                     ]
                   },
@@ -323,9 +318,8 @@
                       ],
                       "vars": [
                         {
-                          "memstart": "0x1164B",
-                          "length": 15,
-                          "type": "ascii_high"
+                          "mem": [ "0x1164B" ],
+                          "type": "string"
                         }
                       ]
                     },
@@ -334,14 +328,12 @@
                       "template": "M{} R{}",
                       "vars": [
                         {
-                          "memstart": "0x11619",
-                          "length": 1,
-                          "type": "int_bigendian"
+                          "mem": [ "0x11648", "0x11649" ],
+                          "type": "int"
                         },
                         {
-                          "memstart": "0x1161c",
-                          "length": 1,
-                          "type": "int_bigendian"
+                          "mem": [ "0x1164a", "0x1164b" ],
+                          "type": "int"
                         }
                       ]
                     }
@@ -369,9 +361,8 @@
                           ],
                           "vars": [
                             {
-                              "memstart": "0x1164B",
-                              "length": 15,
-                              "type": "ascii_high"
+                              "mem": [ "0x1164B" ],
+                              "type": "string"
                             }
                           ]
                         }
@@ -444,9 +435,8 @@
                           "examples": [
                             [
                               {
-                                "memstart": "0x1164B",
-                                "length": 15,
-                                "type": "ascii_high"
+                                "mem": [ "0x1164B" ],
+                                "type": "string"
                               }
                             ]
                           ],
@@ -462,46 +452,44 @@
                                 "default": {},
                                 "examples": [
                                   {
-                                    "memstart": "0x1164B",
-                                    "length": 15,
-                                    "type": "ascii_high"
+                                    "mem": [ "0x1164B" ],
+                                    "type": "string"
                                   }
                                 ],
                                 "required": [
-                                  "memstart",
-                                  "length",
+                                  "mem",
                                   "type"
                                 ],
                                 "properties": {
-                                  "memstart": {
-                                    "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/vars/items/anyOf/0/properties/memstart",
-                                    "type": "string",
-                                    "title": "Var Memory Start",
-                                    "description": "Starting memory location of the variable, in hex.",
+                                  "mem": {
+                                    "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/vars/items/anyOf/0/properties/mem",
+                                    "type": "array",
+                                    "title": "Var Memory locations",
+                                    "description": "Array of memory locations for the variable, starting at the low byte. The string type only needs the first memory location. The rest of the string is automatically retrieved",
                                     "default": "",
                                     "examples": [
-                                      "0x1164B"
-                                    ]
-                                  },
-                                  "length": {
-                                    "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/vars/items/anyOf/0/properties/length",
-                                    "type": "integer",
-                                    "title": "Var Length",
-                                    "description": "The length in bytes of the variable in memory.",
-                                    "default": 1,
-                                    "examples": [
-                                      15
+                                      [ "0x1164B" ],
+                                      [
+                                        "0x1164B",
+                                        "0x1164C"
+                                      ],
+                                      [
+                                        "0x1164B",
+                                        "0x1164A",
+                                        "0x11642",
+                                        "0x11641"
+                                      ]
                                     ]
                                   },
                                   "type": {
                                     "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/vars/items/anyOf/0/properties/type",
                                     "type": "string",
                                     "title": "Var Type",
-                                    "enum": [ "ascii", "ascii_high", "int_littleendian", "int_bigendian", "int_littleendian_literal", "int_bigendian_literal", "lookup" ],
+                                    "enum": [ "string", "int", "int_literal", "lookup" ],
                                     "description": "The type of the variable in memory.",
                                     "default": "",
                                     "examples": [
-                                      "ascii_high"
+                                      "string"
                                     ]
                                   }
                                 },

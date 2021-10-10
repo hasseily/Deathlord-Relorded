@@ -52,6 +52,7 @@ namespace
 {
 	std::unique_ptr<Game> g_game;
 	std::shared_ptr<LogWindow> g_logW;
+	std::shared_ptr<DeathlordHacks> g_dlHacks;
 }
 
 void ExitGame() noexcept;
@@ -71,6 +72,11 @@ static void ExceptionHandler(LPCSTR pError)
 std::shared_ptr<LogWindow> GetLogWindow()
 {
 	return g_logW;
+}
+
+std::shared_ptr<DeathlordHacks> GetDeathlordHacks()
+{
+	return g_dlHacks;
 }
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -188,9 +194,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			// Set up the accelerators
 			haccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_ACCELERATOR1));
 
-			// create the log window at the start
-			g_logW = std::make_unique<LogWindow>(g_hInstance, hwnd);
-
 			SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(g_game.get()));
 
 			WINDOWINFO wi;
@@ -201,6 +204,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 
 			g_game->Initialize(hwnd, wi.rcClient.right - wi.rcClient.left, wi.rcClient.bottom - wi.rcClient.top);
+
+			// create the log and hack windows at the start
+			g_logW = std::make_unique<LogWindow>(g_hInstance, hwnd);
+			g_dlHacks = std::make_unique<DeathlordHacks>(g_hInstance, hwnd);
 
 			// Game has now loaded the saved/default settings
 			// Update the menu bar with the settings
@@ -213,13 +220,16 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 		{
 			if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 			{
-				if (haccel && !TranslateAccelerator(
-					hwnd,		// handle to receiving window 
-					haccel,    // handle to active accelerator table 
-					&msg))         // message data 
+				if (!g_dlHacks->IsHacksWindowDisplayed() || !IsDialogMessage(g_dlHacks->hwndHacks, &msg))
 				{
-					TranslateMessage(&msg);
-					DispatchMessage(&msg);
+					if (haccel && !TranslateAccelerator(
+						hwnd,		// handle to receiving window 
+						haccel,    // handle to active accelerator table 
+						&msg))         // message data 
+					{
+						TranslateMessage(&msg);
+						DispatchMessage(&msg);
+					}
 				}
 			}
 			else
@@ -249,13 +259,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static bool s_fullscreen = false;
 	// TODO: Set s_fullscreen to true if defaulting to fullscreen.
 
+	auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+
+	if (MemIsInitialized())
+	{
+		UINT8* memPtr = MemGetBankPtr(0);
+		g_isInGameMap = (memPtr[0xFFF0] == 0xB1);	// when not in game map, that area is all zeros
+	}
 	// Disallow saving by default when not in the game map
 	// It is allowed temporarily when hitting 'q'
 	g_wantsToSave = !(g_isInGameMap);
-
-	DeathlordHacks dlHacks = DeathlordHacks();
-
-	auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
 	switch (message)
 	{
@@ -479,7 +492,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case VK_NEXT:
 			{
 				// TODO: Set up map extraction method
-				dlHacks.saveMapDataToDisk();
+				g_dlHacks->saveMapDataToDisk();
 				break;
 			}
 			case VK_NUMPAD0:
@@ -600,8 +613,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
 			bool resA = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskScenAPath.c_str(), false, false);
 			bool resB = diskCard.InsertDisk(DRIVE_2, g_nonVolatile.diskScenBPath.c_str(), false, false);
-			if ((resA == eIMAGE_ERROR_NONE) && (resB == eIMAGE_ERROR_NONE))
-				g_isInGameMap = true;
 			break;
 		}
 		case ID_EMULATOR_INSERTINTODISK1:
@@ -824,6 +835,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_logW->SaveToFile();
 			break;
 		}
+		case ID_COMPANION_HACKS:
+			game->MenuToggleHacksWindow();
+			break;
 		case IDM_ABOUT:
 			DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 			break;

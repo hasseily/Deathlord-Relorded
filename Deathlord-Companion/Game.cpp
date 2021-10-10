@@ -486,6 +486,14 @@ void Game::MenuToggleLogWindow()
         m_logWindow->ShowLogWindow();
 }
 
+void Game::MenuToggleHacksWindow()
+{
+	m_dlHacks = GetDeathlordHacks();
+	if (m_dlHacks->IsHacksWindowDisplayed())
+        m_dlHacks->HideHacksWindow();
+	else
+        m_dlHacks->ShowHacksWindow();
+}
 #pragma endregion
 
 #pragma region Direct3D Resources

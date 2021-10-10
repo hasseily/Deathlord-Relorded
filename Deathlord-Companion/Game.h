@@ -7,6 +7,7 @@
 #include "DeviceResources.h"
 #include "StepTimer.h"
 #include "LogWindow.h"
+#include "DeathlordHacks.h"
 #include "HAUtils.h"
 #include "NonVolatile.h"
 #include <Keyboard.h>
@@ -26,6 +27,7 @@ extern bool g_isInGameMap;          // is the player in-game or on the loading/u
 extern bool g_wantsToSave;          // only TRUE when the player is asking to save
 extern NonVolatile g_nonVolatile;
 static std::shared_ptr<LogWindow>m_logWindow;
+static std::shared_ptr<DeathlordHacks>m_dlHacks;
 
 // A basic game implementation that creates a D3D12 device and
 // provides a game loop.
@@ -66,6 +68,7 @@ public:
     void MenuDeactivateProfile();
     void MenuShowLogWindow();
 	void MenuToggleLogWindow();
+	void MenuToggleHacksWindow();
 
     // Other methods
     D3D12_RESOURCE_DESC ChooseTexture();

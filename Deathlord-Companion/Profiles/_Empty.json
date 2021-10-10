@@ -3,8 +3,8 @@
     "name": "EMPTY",
     "author": "Rikkles",
     "revision": 1,
-    "date": "2021.01.21",
-    "api_version": 2
+    "date": "2021.10.10",
+    "api_version": 3
   },
   "sidebars": [
     {
@@ -13,7 +13,7 @@
       "blocks": [
         {
           "type": "Header",
-          "template": "Nox Archaist Companion",
+          "template": "Deathlord Companion",
           "color": [
             0.9,
             0.9,
@@ -65,12 +65,11 @@
 /* EXAMPLES OF USAGE
 	    {
       "type": "Content",
-      "template": "Lockpicks: {}",
+      "template": "Food: {}",
       "vars": [
         {
-          "memstart": "0x421",
-          "length": 1,
-          "type": "int_bigendian"
+          "mem": ["0xFDD2"],
+          "type": "int"
         }
       ]
     },
@@ -79,8 +78,7 @@
       "template": "3: {}",
       "vars": [
         {
-          "memstart": "0x7035",
-          "length": 1,
+          "mem": ["0x7035"],
           "type": "lookup",
           "lookup": "/tables/spells"
         }
@@ -91,18 +89,8 @@
       "template": "Test: {}",
       "vars": [
         {
-          "memstart": "0x1242",
-          "length": 1,
-          "type": "int_bigendian",
-          "modifiers": [
-            {
-              "op": "*",
-              "rhs": 0.5
-            },
-            {
-              "op": "+",
-              "rhs": 100
-            }
+          "mem": ["0x1242"],
+          "type": "int",
           ]
         }
   */

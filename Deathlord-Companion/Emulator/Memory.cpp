@@ -218,6 +218,7 @@ static bool g_Annunciator[kNumAnnunciators] = {};
 
 BYTE __stdcall IO_Annunciator(WORD programcounter, WORD address, BYTE write, BYTE value, ULONG nCycles);
 
+static bool memIsInitialized = false;
 //=============================================================================
 
 // Default memory types on a VM restart
@@ -1567,6 +1568,11 @@ void MemInitializeCardSlotAndExpansionRomFromSnapshot(void)
 	// NB. Copied to /mem/ by UpdatePaging(TRUE)
 }
 
+bool MemIsInitialized(void)
+{
+	return memIsInitialized;
+}
+
 inline DWORD getRandomTime()
 {
 	return rand() ^ timeGetTime(); // We can't use g_nCumulativeCycles as it will be zero on a fresh execution.
@@ -1580,6 +1586,7 @@ inline DWORD getRandomTime()
 // . Snapshot_LoadState_v2()
 void MemReset()
 {
+	memIsInitialized = false;
 	// INITIALIZE THE PAGING TABLES
 	ZeroMemory(memshadow, 256*sizeof(LPBYTE));
 	ZeroMemory(memwrite , 256*sizeof(LPBYTE));
@@ -1732,6 +1739,8 @@ void MemReset()
 
 	if (g_NoSlotClock)
 		g_NoSlotClock->Reset();	// NB. Power-cycle, but not RESET signal
+
+	memIsInitialized = true;
 }
 
 //===========================================================================

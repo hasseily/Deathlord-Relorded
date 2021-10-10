@@ -12,6 +12,8 @@ constexpr UINT8 SIDEBAR_MAX_BLOCKS = 100;
 constexpr UINT8 SIDEBAR_OUTSIDE_MARGIN = 3; // margin around the sidebar not including block padding
 constexpr UINT8 SIDEBAR_BLOCK_PADDING = 2;   // PADDING around each block
 
+static void SidebarExceptionHandler(LPCSTR pError);
+
 enum class SidebarError
 {
 	ERR_NONE			= 0,

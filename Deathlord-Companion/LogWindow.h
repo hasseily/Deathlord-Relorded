@@ -18,6 +18,9 @@ public:
 	void PrintLog(std::wstring str);						// Print a string to the log
 
 	HWND hwndLog;				// handle to log window
+
+private:
+	bool isDisplayed;
 };
 
 // defined in Main.cpp
