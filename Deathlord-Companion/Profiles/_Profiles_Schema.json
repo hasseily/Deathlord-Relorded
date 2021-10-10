@@ -351,18 +351,13 @@
                       "default": {},
                       "examples": [
                         {
-                          "type": "Header",
-                          "template": "{} Skills",
-                          "color": [
-                            0.9,
-                            0.9,
-                            0.2,
-                            1.0
-                          ],
+                          "type": "Content",
+                          "template": "1: {}",
                           "vars": [
                             {
-                              "mem": [ "0x1164B" ],
-                              "type": "string"
+                              "mem": [ "0x7044" ],
+                              "type": "lookup",
+                              "lookup": "/tables/spells"
                             }
                           ]
                         }

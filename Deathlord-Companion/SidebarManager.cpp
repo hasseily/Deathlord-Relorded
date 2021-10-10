@@ -4,6 +4,7 @@
 #include <DirectXPackedVector.h>
 #include <DirectXMath.h>
 #include "Emulator/AppleWin.h"
+#include "Sidebar.h"
 
 using namespace DirectX;
 using namespace DirectX::PackedVector;

@@ -12,7 +12,17 @@ constexpr UINT8 SIDEBAR_MAX_BLOCKS = 100;
 constexpr UINT8 SIDEBAR_OUTSIDE_MARGIN = 3; // margin around the sidebar not including block padding
 constexpr UINT8 SIDEBAR_BLOCK_PADDING = 2;   // PADDING around each block
 
-static void SidebarExceptionHandler(LPCSTR pError);
+static void SidebarExceptionHandler(LPCSTR pError)
+{
+	// Need to convert char to wchar for MessageBox
+	wchar_t wc[4000];
+	size_t ctConverted;
+	mbstowcs_s(&ctConverted, wc, (const char*)pError, 4000);
+	MessageBox(HWND_TOP,
+		wc,
+		TEXT("Sidebar Parser Error"),
+		MB_ICONEXCLAMATION | MB_SETFOREGROUND);
+}
 
 enum class SidebarError
 {

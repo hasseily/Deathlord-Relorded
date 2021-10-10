@@ -251,105 +251,101 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
     nlohmann::json j = *pvar;
     // initialize variables
     // OutputDebugStringA((j.dump()+string("\n")).c_str());
+    int memOffset;
     string s;
-    if (j.count("length") != 1)
-        return s;
-    int length = j["length"];
-    if (j.count("memstart") != 1)
-        return s;
+	if (j.count("mem") != 1)
+		return s;
 	if (j.count("type") != 1)
 		return s;
-    int memoffset = std::stoul(j["memstart"].get<std::string>(), nullptr, 0);
-    if ((memoffset + length) >= memsize)    // overflow
+    auto numMemLocations = (UINT8)j["mem"].size();
+    if (numMemLocations == 0)
         return s;
-    if (length == 0)
-        return s;
-    // since the memory is contiguous, no need to check if the info is in main or aux mem
+
+	// since the memory is contiguous, no need to check if the info is in main or aux mem
     // and since we're only reading, we don't care if the mem is dirty
-    pmem = MemGetRealMainPtr(0);
+	pmem = MemGetRealMainPtr(0);
 	if (pmem == nullptr)
 		return s;
 
-    // now we have the memory offset and length, and we need to parse
-    // In Deathlord, a string has variable length and ends with the char having its high bit set
-    // We disregard the length attribute
-    if (j["type"] == "ascii")
-    {
-        size_t i = 0;
-        char c;
-        while (*(pmem + memoffset + i) < 0x80)
-        {
-            c = *(pmem + memoffset + i);
+    // Start with string and lookups, which don't use more than one mem location
+
+	// In Deathlord, a string has variable length and ends with the char having its high bit set
+	if (j["type"] == "string")
+	{
+		size_t i = 0;
+		char c;
+        memOffset = std::stoul(j["mem"][0].get<std::string>(), nullptr, 0);
+		while (*(pmem + memOffset + i) < 0x80)
+		{
+			c = *(pmem + memOffset + i);
 			if (c == '\0')    // just in case
 				return s;
-            if (c < sizeof(deathlordCharMap))
-                s.append(1, deathlordCharMap[c]);
-            i++;
-        }
-        // Last char with high bit set
-        c = *(pmem + memoffset + i) - 0x80;
-        s.append(1, deathlordCharMap[c]);
-    }
-    else if (j["type"] == "int_bigendian")
+			if (c < sizeof(deathlordCharMap))
+				s.append(1, deathlordCharMap[c]);
+			i++;
+		}
+		// Last char with high bit set
+        c = *(pmem + memOffset + i) - 0x80;
+		s.append(1, deathlordCharMap[c]);
+        return s;
+	}
+
+    // Similarly, lookups don't use more than one mem location (a lookup of more than 255 items is not supported)
+	if (j["type"] == "lookup")
+	{
+		memOffset = std::stoul(j["mem"][0].get<std::string>(), nullptr, 0);
+		try
+		{
+			int x = *(pmem + memOffset);
+			char buf[5000];
+			snprintf(buf, 5000, "%s/0x%02x", j["lookup"].get<std::string>().c_str(), x);
+			nlohmann::json::json_pointer jp(buf);
+			return m_activeProfile.value(jp, "-");  // Default value when unknown lookup is "-"
+		}
+		catch (exception e)
+		{
+			std::string es = j.dump().substr(0, 4500);
+			char buf[sizeof(e.what()) + 5000];
+			sprintf_s(buf, "Error parsing lookup: %s\n%s\n", es.c_str(), e.what());
+			SidebarExceptionHandler(buf);
+			//OutputDebugStringA(buf);
+            return s;
+		}
+	}
+
+    // Now loop through each memory location in case of integers
+    // Starting with the lowest byte
+    if (j["type"] == "int")
     {
-        int x = 0;
-        for (int i = 0; i < length; i++)
+		int x = 0;
+        for (size_t memIdx = 0; memIdx < numMemLocations; memIdx++)
         {
-            x += (*(pmem + memoffset + i)) * (int)pow(0x100, i);
+            memOffset = std::stoul(j["mem"][memIdx].get<std::string>(), nullptr, 0);
+            x += (*(pmem + memOffset)) * (int)pow(0x100, memIdx);
         }
-        s = to_string(x);
+		s = to_string(x);
+        return s;
     }
-    else if (j["type"] == "int_littleendian")
+
+	// int literal is like what is used in the Ultima games.
+    // Garriott stored ints as literals inside memory, so for example
+    // a hex 0x4523 is in fact the number 4523
+    if (j["type"] == "int_literal")
     {
-        int x = 0;
-        for (int i = 0; i < length; i++)
+        for (size_t memIdx = 0; memIdx < numMemLocations; memIdx++)
         {
-            x += (*(pmem + memoffset + i)) * (int)pow(0x100, (length - i - 1));
-        }
-        s = to_string(x);
-    }
-    else if (j["type"] == "int_bigendian_literal")
-    {
-        s = "";
-        char cbuf[3];
-        for (int i = 0; i < length; i++)
-        {
-            snprintf(cbuf, 3, "%.2x", *(pmem + memoffset + i));
+            memOffset = std::stoul(j["mem"][memIdx].get<std::string>(), nullptr, 0);
+
+            char cbuf[3];
+            snprintf(cbuf, 3, "%.2x", *(pmem + memOffset));
             s.insert(0, string(cbuf));
         }
+        return s;
     }
-    else if (j["type"] == "int_littleendian_literal")
-    {
-        // int literal is like what is used in the Ultima games.
-        // Garriott stored ints as literals inside memory, so for example
-        // a hex 0x4523 is in fact the number 4523
-        s = "";
-        char cbuf[3];
-        for (int i = 0; i < length; i++)
-        {
-            snprintf(cbuf, 3, "%.2x", *(pmem + memoffset + i));
-            s.append(string(cbuf));
-        }
-    }
-    else if (j["type"] == "lookup")
-    {
-        try
-        {
-            int x = *(pmem + memoffset);
-            char buf[5000];
-            snprintf(buf, 5000, "%s/0x%02x", j["lookup"].get<std::string>().c_str(), x);
-            nlohmann::json::json_pointer jp(buf);
-            return m_activeProfile.value(jp, "-");  // Default value when unknown lookup is "-"
-        }
-        catch (exception e)
-        {
-            std::string es = j.dump().substr(0, 4500);
-            char buf[sizeof(e.what()) + 5000];
-            sprintf_s(buf, "Error parsing lookup: %s\n%s\n", es.c_str(), e.what());
-            SidebarExceptionHandler(buf);
-            //OutputDebugStringA(buf);
-        }
-    }
+
+	char buf[500];
+	sprintf_s(buf, "Unknown Type");
+	SidebarExceptionHandler(buf);
     return s;
 }
 
@@ -361,14 +357,12 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
     "template" : "Left: {} - Right: {}",
     "vars" : [
                 {
-                    "memstart": "0x1165A",
-                    "length" : 4,
-                    "type" : "ascii_high"
+                    "mem": ["0x1165A"],
+                    "type" : "string"
                 },
                 {
-                    "memstart": "0x1165E",
-                    "length" : 4,
-                    "type" : "ascii_high"
+                    "mem": ["0x1165E"],
+                    "type" : "string"
                 }
             ]
 }
@@ -420,16 +414,14 @@ void SidebarContent::UpdateAllSidebarText(SidebarManager* sbM)
     "type": "Content",
     "template" : "Left: {} - Right: {}",
     "vars" : [
-                {
-                    "memstart": "0x1165A",
-                    "length" : 4,
-                    "type" : "ascii_high"
-                },
-                {
-                    "memstart": "0x1165E",
-                    "length" : 4,
-                    "type" : "ascii_high"
-                }
+				{
+					"mem": ["0x1165A"],
+					"type" : "string"
+				},
+				{
+					"mem": ["0x1165E"],
+					"type" : "string"
+				}
             ]
 }
 */
