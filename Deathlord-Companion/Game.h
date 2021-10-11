@@ -54,6 +54,7 @@ public:
     void OnDeviceLost() override;
     void OnDeviceRestored() override;
 
+    void ActivateLastUsedProfile();
     // Messages
     void OnActivated();
     void OnDeactivated();

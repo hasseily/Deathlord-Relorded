@@ -212,6 +212,9 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			// Game has now loaded the saved/default settings
 			// Update the menu bar with the settings
 			UpdateMenuBarStatus(hwnd);
+
+			// And autoload the last used profile
+			g_game->ActivateLastUsedProfile();
 		}
 
 		// Main message loop

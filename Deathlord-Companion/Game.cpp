@@ -463,12 +463,14 @@ void Game::MenuActivateProfile()
 {
     m_sbC.LoadProfileUsingDialog(&m_sbM);
     SetWindowSizeOnChangedProfile();
+	g_nonVolatile.SaveToDisk();
 }
 
 void Game::MenuDeactivateProfile()
 {
     m_sbC.ClearActiveProfile(&m_sbM);
     SetWindowSizeOnChangedProfile();
+	g_nonVolatile.SaveToDisk();
 }
 
 void Game::MenuShowLogWindow()
@@ -893,3 +895,17 @@ void Game::OnDeviceRestored()
     CreateWindowSizeDependentResources();
 }
 #pragma endregion
+
+#pragma region Utilities
+
+void Game::ActivateLastUsedProfile()
+{
+	// Autoload the last used profile
+	std::string profileName = m_sbC.OpenProfile(g_nonVolatile.profilePath);
+	m_sbC.setActiveProfile(&m_sbM, &profileName);
+    SetWindowSizeOnChangedProfile();
+}
+
+
+#pragma endregion
+

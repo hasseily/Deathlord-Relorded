@@ -205,6 +205,21 @@ void SidebarContent::LoadProfilesFromDisk()
     }
 }
 
+std::string SidebarContent::OpenProfile(std::wstring entry)
+{
+    if (entry.size() == 0)
+        return "";
+    try
+   {
+        fs::directory_entry thePath = fs::directory_entry(entry);
+	    return SidebarContent::OpenProfile(thePath);
+   }
+   catch (...)
+   {
+       return "";
+   }
+}
+
 std::string SidebarContent::OpenProfile(std::filesystem::directory_entry entry)
 {
     Initialize();   // Might have lost the shm

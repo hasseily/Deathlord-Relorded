@@ -2,9 +2,14 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <filesystem>
+#include <shobjidl_core.h> 
 #include "NonVolatile.h"
 #include "nlohmann/json.hpp"
 #include "HAUtils.h"
+
+using namespace std;
+namespace fs = std::filesystem;
 
 static nlohmann::json nv_json = R"(
   {
@@ -68,6 +73,11 @@ int NonVolatile::LoadFromDisk()
 	}
 
 	std::string _profilePath = nv_json["profilePath"].get<std::string>();
+	if (_profilePath.size() == 0) {
+		fs::path defaultPath = fs::current_path();
+		defaultPath += "\\Profiles\\Deathlord_Default.json";
+		_profilePath.assign(defaultPath.string());
+	}
 	HA::ConvertStrToWStr(&_profilePath, &profilePath);
 	std::string _hdvPath = nv_json["hdvPath"].get<std::string>();
 	HA::ConvertStrToWStr(&_hdvPath, &hdvPath);

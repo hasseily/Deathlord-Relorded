@@ -19,6 +19,7 @@ public:
 	void LoadProfileUsingDialog(SidebarManager* sbM);
 	bool setActiveProfile(SidebarManager* sbM, std::string* name);
 	std::string OpenProfile(std::filesystem::directory_entry entry);
+	std::string OpenProfile(std::wstring entry);
 	void ClearActiveProfile(SidebarManager* sbM);
 	void UpdateAllSidebarText(SidebarManager* sbM);
 	bool UpdateBlock(SidebarManager* sbM, UINT8 sidebarId, UINT8 blockId, nlohmann::json* pdata);
