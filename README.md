@@ -27,15 +27,23 @@ Ther are a number of emulation options, all directly accessible from the main me
 
 The key feature of the Companion is its profiles. A profile is a JSON document that specifies what the Companion should display, and where. The Companion has support for many types of data in memory, including being able to translate numeric identifiers into strings (something very useful when you want to show "Short Sword +1" instead of 0x0b).
 
-The documentation for profiles is sorely lacking, but I've included a number of profiles for Nox Archaist. Feel free to experiment and ping me for more info.
+The documentation for profiles is sorely lacking, but I've included a base profile that will autoload upon launch. Feel free to experiment and ping me for more info.
 
 ## Logging
 
+LOGGING ISN'T YET FUNCTIONAL FOR DEATHLORD
 The Companion automatically logs all conversations.
 You can show the log file from the menu. You can copy, paste, or otherwise modify the text within the log window. You can (also from the menu) load and save the log.
 
 WARNING: Save or copy the log window content somewhere else before you quit the app or it is lost forever!
 
+## Other unique things
+
+There's a hack window where you can modify a byte of memory, and save the current map to disk in the Maps/ folder.
+Also the current map will save if you hit PAGEDOWN.
+
+Finally, there's a tileset generator that will grab visible tiles that haven't yet been seen by the program and will append them to a tileset that is saved on disk inside the Maps/ folder. Contact me for more info.
+The tileset generator is started with NUMPAD 1. It acquires tiles with NUMPAD 0. Save the file with NUMPAD 9. Reset the whole file with NUMPAD 5.
 
 Happy retro RPG gaming, and see you on the Lost Sectors Discord server.
 
