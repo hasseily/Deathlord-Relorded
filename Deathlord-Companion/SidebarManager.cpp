@@ -33,9 +33,9 @@ SidebarManager::SidebarManager()
 {
     fontsAvailable = {
         L"a2-12pt.spritefont",
-        L"a2-bold-12pt.spritefont",
-        L"a2-italic-12pt.spritefont",
-        L"a2-bolditalic-12pt.spritefont"
+        L"a2-12pt-bold.spritefont",
+        L"a2-12pt-italic.spritefont",
+        L"a2-12pt-bolditalic.spritefont"
     };
     sidebars = {};
     SetBaseSize(GetFrameBufferWidth(), GetFrameBufferHeight());

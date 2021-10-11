@@ -298,34 +298,7 @@
     <None Include="emulator\resources\Hddrvr.bin">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Assets\a2.spritefont">
-      <Filter>Assets</Filter>
-    </None>
     <None Include="Assets\a2-12pt.spritefont">
-      <Filter>Assets</Filter>
-    </None>
-    <None Include="Assets\a2-bold-12pt.spritefont">
-      <Filter>Assets</Filter>
-    </None>
-    <None Include="Assets\a2-bolditalic-12pt.spritefont">
-      <Filter>Assets</Filter>
-    </None>
-    <None Include="Assets\a2-italic-12pt.spritefont">
-      <Filter>Assets</Filter>
-    </None>
-    <None Include="Assets\a2sharp.spritefont">
-      <Filter>Assets</Filter>
-    </None>
-    <None Include="Assets\a2-sharplarge.spritefont">
-      <Filter>Assets</Filter>
-    </None>
-    <None Include="Assets\a2-sharplarge-bold.spritefont">
-      <Filter>Assets</Filter>
-    </None>
-    <None Include="Assets\a2-sharplarge-bolditalic.spritefont">
-      <Filter>Assets</Filter>
-    </None>
-    <None Include="Assets\a2-sharplarge-italic.spritefont">
       <Filter>Assets</Filter>
     </None>
     <None Include="packages.config" />
@@ -342,6 +315,18 @@
       <Filter>Assets</Filter>
     </None>
     <None Include="Profiles\_Profiles_Schema.json">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Assets\a2-12pt-italic.spritefont">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Assets\a2-12pt-bold.spritefont">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Assets\a2-12pt-bolditalic.spritefont">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Profiles\Deathlord_Default.json">
       <Filter>Assets</Filter>
     </None>
   </ItemGroup>

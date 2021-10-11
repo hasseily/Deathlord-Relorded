@@ -239,6 +239,7 @@
                     "vars": [
                       {
                         "mem": [ "0x1164B" ],
+                        "fixelength": 12,
                         "type": "string"
                       }
                     ]
@@ -357,6 +358,7 @@
                             {
                               "mem": [ "0x7044" ],
                               "type": "lookup",
+                              "fixelength":  12,
                               "lookup": "/tables/spells"
                             }
                           ]
@@ -370,11 +372,31 @@
                           "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/type",
                           "type": "string",
                           "title": "Block Type",
-                          "enum": [ "Header", "Content", "Empty" ],
-                          "description": "Type of the block. Header and content types differ by default font and color.",
+                          "enum": [ "Header", "Content", "Italic", "BoldItalic", "Empty" ],
+                          "description": "Type of the block. Header and content types differ by default font and color. Header is bold.",
                           "default": "Content",
                           "examples": [
                             "Header"
+                          ]
+                        },
+                        "fixedlength": {
+                          "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/fixedlength",
+                          "type": "integer",
+                          "title": "Fixed Length",
+                          "description": "Fixed length of the output. Truncates or pads with space as needed.",
+                          "default": "Infinite",
+                          "examples": [
+                            "7"
+                          ]
+                        },
+                        "padchar": {
+                          "$id": "#/properties/sidebars/items/anyOf/0/properties/blocks/items/anyOf/0/properties/padchar",
+                          "type": "string",
+                          "title": "Padding Character",
+                          "description": "Character to use for fixedlength padding. Defaults to space",
+                          "default": " ",
+                          "examples": [
+                            "."
                           ]
                         },
                         "template": {

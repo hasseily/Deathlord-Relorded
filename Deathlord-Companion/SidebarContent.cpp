@@ -115,7 +115,19 @@ bool SidebarContent::setActiveProfile(SidebarManager* sbM, std::string* name)
                 bS.type = BlockType::Empty;
                 bS.fontId = FontDescriptors::A2FontRegular;
             }
-            else // default to "Content"
+            else if (bj["type"] == "Italic")
+			{
+				bS.color = Colors::GhostWhite;
+				bS.type = BlockType::Content;
+				bS.fontId = FontDescriptors::A2FontItalic;
+			}
+			else if (bj["type"] == "BoldItalic")
+			{
+				bS.color = Colors::GhostWhite;
+				bS.type = BlockType::Content;
+				bS.fontId = FontDescriptors::A2FontBoldItalic;
+			}
+		    else // default to "Content"
             {
                 bS.color = Colors::GhostWhite;
                 bS.type = BlockType::Content;
@@ -385,6 +397,16 @@ std::string SidebarContent::FormatBlockText(nlohmann::json* pdata)
     for (size_t i = 0; i < data["vars"].size(); i++)
     {
         sVars[i] = SerializeVariable(&(data["vars"][i]));
+        if (data["vars"][i].contains("fixedlength"))
+        {
+            char padchar = ' ';
+            if (data["vars"][i].contains("padchar"))
+            {
+                string sPadChar = data["vars"][i]["padchar"];
+                padchar = sPadChar.c_str()[0];
+            }
+            sVars[i].resize((int)data["vars"][i]["fixedlength"], padchar);
+        }
         txt.replace(txt.find(SIDEBAR_FORMAT_PLACEHOLDER), SIDEBAR_FORMAT_PLACEHOLDER.length(), sVars[i]);
     }
     return txt;
