@@ -6,6 +6,8 @@
 #include "resource.h"
 #include <string>
 #include <fstream>
+#include <filesystem>
+
 
 const wchar_t CLASS_NAME[] = L"Deathlord Hacks Class";
 
@@ -23,22 +25,32 @@ static HWND hwndMain = nullptr;				// handle to main window
 INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	UNREFERENCED_PARAMETER(wParam);
+	std::shared_ptr<DeathlordHacks>hw = GetDeathlordHacks();
 	switch (message)
 	{
 	case WM_INITDIALOG:
+	{
 		return TRUE;
+	}
+	case WM_ACTIVATE:
+	{
+		HWND hdlBExportMap = GetDlgItem(hwndDlg, IDC_BUTTON_EXPORT_MAP);
+		EnableWindow(hdlBExportMap, g_isInGameMap);
+		break;
+	}
 	case WM_NCDESTROY:
 		break;
 	case WM_CLOSE:
 	{
-		std::shared_ptr<DeathlordHacks>hw = GetDeathlordHacks();
 		hw->HideHacksWindow();
 		return false;   // don't destroy the window
 	}
 	case WM_COMMAND:
 	{
 		UINT8* memPtr = MemGetMainPtr(0);
-		if (LOWORD(wParam) == IDC_EDIT_MEMLOC)
+		switch (LOWORD(wParam))
+		{
+		case IDC_EDIT_MEMLOC:
 		{
 			HWND hdlMemLoc = GetDlgItem(hwndDlg, IDC_EDIT_MEMLOC);
 			HWND hdlMemVal = GetDlgItem(hwndDlg, IDC_MEMCURRENTVAL);
@@ -65,7 +77,9 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 				wbuf.append(xx);
 				OutputDebugString(wbuf.c_str());
 			}
-		} else if (LOWORD(wParam) == IDC_BUTTON_MEMSET)
+			break;
+		}
+		case IDC_BUTTON_MEMSET:
 		{
 			HWND hdlMemLoc = GetDlgItem(hwndDlg, IDC_EDIT_MEMLOC);
 			HWND hdlMemValNew = GetDlgItem(hwndDlg, IDC_EDIT_MEMVAL);
@@ -104,6 +118,15 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 				// and trigger an update to IDC_MEMCURRENTVAL
 				SetWindowText(hdlMemLoc, cMemLoc);
 			}
+			break;
+		}
+		case IDC_BUTTON_EXPORT_MAP:
+		{
+			hw->SaveMapDataToDisk();
+			break;
+		}
+		default:
+			break;
 		}
 		break;
 	}
@@ -179,7 +202,7 @@ bool DeathlordHacks::IsHacksWindowDisplayed()
 	return isDisplayed;
 }
 
-void DeathlordHacks::saveMapDataToDisk()
+void DeathlordHacks::SaveMapDataToDisk()
 {
 	std::string sMapData = "";
 	UINT8 *memPtr = MemGetBankPtr(0);
@@ -200,14 +223,16 @@ void DeathlordHacks::saveMapDataToDisk()
 	// std::wstring wbuf;
 	// HA::ConvertStrToWStr(&sMapData, &wbuf);
 	// OutputDebugString(wbuf.c_str());
-	std::string fileName = "Deathlord Map ";
+	std::string fileName = "\\Maps\\Deathlord Map ";
 	char nameSuffix[100];
 	if (memPtr[MAP_IS_OVERLAND] == 1)
 		sprintf_s(nameSuffix, 100, "%02X Overland %02X %02X.txt", memPtr[MAP_ID], memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
 	else
 		sprintf_s(nameSuffix, 100, "%02X.txt", memPtr[MAP_ID]);
 	fileName.append(nameSuffix);
-	std::fstream fsFile(fileName, std::ios::out | std::ios::binary);
+	std::filesystem::path tilesetPath = std::filesystem::current_path();
+	tilesetPath += fileName;
+	std::fstream fsFile(tilesetPath, std::ios::out | std::ios::binary);
 	fsFile.write(sMapData.c_str(), sMapData.size());
 	fsFile.close();
 

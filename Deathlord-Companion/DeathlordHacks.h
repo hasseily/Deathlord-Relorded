@@ -12,7 +12,7 @@ class DeathlordHacks
 public:
 	DeathlordHacks(HINSTANCE app, HWND hMainWindow);
 
-	void saveMapDataToDisk();
+	void SaveMapDataToDisk();
 	void ShowHacksWindow();
 	void HideHacksWindow();
 	bool IsHacksWindowDisplayed();
@@ -24,3 +24,4 @@ private:
 
 // defined in Main.cpp
 extern std::shared_ptr<DeathlordHacks> GetDeathlordHacks();
+extern bool g_isInGameMap;

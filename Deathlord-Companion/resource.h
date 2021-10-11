@@ -28,6 +28,8 @@
 #define IDC_EDIT_MEMVAL                 1002
 #define IDC_BUTTON_MEMSET               1003
 #define IDC_MEMCURRENTVAL               1004
+#define IDC_BUTTON1                     1005
+#define IDC_BUTTON_EXPORT_MAP           1005
 #define ID_FILE_ACTIVATEPROFILE         32771
 #define ID_EMULATOR_PAUSE               32772
 #define ID_EMULATOR_RESET               32773
@@ -89,7 +91,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        144
 #define _APS_NEXT_COMMAND_VALUE         32831
-#define _APS_NEXT_CONTROL_VALUE         1005
+#define _APS_NEXT_CONTROL_VALUE         1006
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

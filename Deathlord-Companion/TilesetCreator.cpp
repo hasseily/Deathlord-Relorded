@@ -4,7 +4,6 @@
 #include "Memory.h"
 #include <fstream>
 #include <filesystem>
-#include <shobjidl_core.h> 
 #include "RemoteControl/RemoteControlManager.h"
 
 

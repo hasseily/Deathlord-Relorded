@@ -500,7 +500,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case VK_NEXT:
 			{
 				// TODO: Set up map extraction method
-				g_dlHacks->saveMapDataToDisk();
+				g_dlHacks->SaveMapDataToDisk();
 				break;
 			}
 			case VK_NUMPAD0:
