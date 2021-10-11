@@ -3,7 +3,10 @@
 #include "Emulator/Applewin.h"
 #include "Memory.h"
 #include <fstream>
+#include <filesystem>
+#include <shobjidl_core.h> 
 #include "RemoteControl/RemoteControlManager.h"
+
 
 void TilesetCreator::start()
 {
@@ -46,7 +49,9 @@ void TilesetCreator::readTileFile()
 {
     if (isActive == false)
         return;
-    std::fstream fsFile("Deathlord Tileset - Auto.data", std::ios::in | std::ios::binary);
+    std::filesystem::path tilesetPath = std::filesystem::current_path();
+    tilesetPath += "\\Maps\\Deathlord Tileset - Auto.data";
+    std::fstream fsFile(tilesetPath, std::ios::in | std::ios::binary);
     if (!fsFile.is_open())
     {
         return;
@@ -59,7 +64,9 @@ void TilesetCreator::saveTileFile()
 {
     if (isActive == false)
         return;
-    std::fstream fsFile("Deathlord Tileset - Auto.data", std::ios::out | std::ios::binary);
+	std::filesystem::path tilesetPath = std::filesystem::current_path();
+	tilesetPath += "\\Maps\\Deathlord Tileset - Auto.data";
+    std::fstream fsFile(tilesetPath, std::ios::out | std::ios::binary);
     fsFile.write(pTilesetBuffer, PNGBUFFERSIZE);
     fsFile.close();
     std::wstring msg(L"Saved tile file\nRGBA file is at: Deathlord Tileset - Auto.data\nNumber of tiles loaded: ");
