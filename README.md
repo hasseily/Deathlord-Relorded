@@ -44,8 +44,6 @@ Also the current map will save if you hit PAGEDOWN.
 
 Another unique feature of the Deathlord Companion is that it doesn't skip a turn if you wait too long. The time and food usage pass normally though, so if you want to be away from your keyboard for a long time make sure you at least put yourself in a character stats screen (press 1-6 on the keyboard).
 
-Yet another unique feature (and it has yet to be extensively tested) is that the Companion prohibits Deathlord from saving until you, the user, say so.
-
 Finally, there's a tileset generator that will grab visible tiles that haven't yet been seen by the program and will append them to a tileset that is saved on disk inside the Maps/ folder. Contact me for more info.
 The tileset generator is started with NUMPAD 1. It acquires tiles with NUMPAD 0. Save the file with NUMPAD 9. Reset the whole file with NUMPAD 5.
 
