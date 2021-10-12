@@ -20,6 +20,7 @@ static UINT8* pmem;
 static int memsize;
 
 static char deathlordCharMap[106] = "edgfa`cbmlonihkjutwvqpsr  ][yx*zEDGFA@CBMLONIHKJUTWVQPSR    YX-Z%$'&! #\" - , / .)(+*54761032 = < ? >98; :";
+static char tempBuf[500] = "";
 
 SidebarContent::SidebarContent()
 {
@@ -280,6 +281,7 @@ nlohmann::json SidebarContent::ParseProfile(fs::path filepath)
 std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
 {
 	string s;
+    ZeroMemory(tempBuf, sizeof(tempBuf));
     if (!g_isInGameMap)
         return s;
     nlohmann::json j = *pvar;
@@ -329,20 +331,52 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
 		memOffset = std::stoul(j["mem"][0].get<std::string>(), nullptr, 0);
 		try
 		{
-			int x = *(pmem + memOffset);
-			char buf[5000];
-			snprintf(buf, 5000, "%s/0x%02x", j["lookup"].get<std::string>().c_str(), x);
+			char buf[500];
+			snprintf(buf, 500, "%s/0x%02x", j["lookup"].get<std::string>().c_str(), *(pmem + memOffset));
 			nlohmann::json::json_pointer jp(buf);
 			return m_activeProfile.value(jp, "-");  // Default value when unknown lookup is "-"
 		}
 		catch (exception e)
 		{
-			std::string es = j.dump().substr(0, 4500);
-			char buf[sizeof(e.what()) + 5000];
+			std::string es = j.dump().substr(0, 400);
+			char buf[sizeof(e.what()) + 500];
 			sprintf_s(buf, "Error parsing lookup: %s\n%s\n", es.c_str(), e.what());
 			SidebarExceptionHandler(buf);
 			//OutputDebugStringA(buf);
             return s;
+		}
+	}
+
+	// Lookup Aggregate is a summation of a lookup on all the requested mem areas
+    // So you loop through the mem areas, do a lookup on a table whose keys are mem areas and values are numbers
+    // and you add them up
+	if (j["type"] == "lookup_aggregate")
+	{
+		try
+		{
+			int aggregate = 0;
+            if (j.count("startvalue") == 1)
+                aggregate = j["startvalue"].get<int>();
+			for (size_t memIdx = 0; memIdx < numMemLocations; memIdx++)
+			{
+                memOffset = std::stoul(j["mem"][memIdx].get<std::string>(), nullptr, 0);
+                UINT8 theMem = *(pmem + memOffset);
+				snprintf(tempBuf, 500, "%s/0x%02x", j["lookup"].get<std::string>().c_str(), theMem);
+                nlohmann::json::json_pointer jp(tempBuf);
+                aggregate += m_activeProfile.value<int>(jp, 0); // Default value when unknown lookup is 0
+                OutputDebugStringA(tempBuf);
+			}
+			s = to_string(aggregate);
+			return s;
+		}
+		catch (exception e)
+		{
+			std::string es = j.dump().substr(0, 400);
+			char buf[sizeof(e.what()) + 500];
+			sprintf_s(buf, "Error parsing lookup: %s\n%s\n", es.c_str(), e.what());
+			SidebarExceptionHandler(buf);
+			//OutputDebugStringA(buf);
+			return s;
 		}
 	}
 

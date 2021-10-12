@@ -12,7 +12,7 @@
 #include "NonVolatile.h"
 #include <Keyboard.h>
 
-constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 60;  // Only render so many frames. Give the emulator all the rest of the time
+constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 30;  // Only render so many frames. Give the emulator all the rest of the time
 
 enum class EmulatorLayout
 {

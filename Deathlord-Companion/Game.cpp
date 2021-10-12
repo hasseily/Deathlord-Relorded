@@ -258,7 +258,7 @@ void Game::Render()
         tickOfLastRender = m_timer.GetTotalTicks();
 
         // First update the sidebar, it doesn't need to be updated until right before the render
-		m_sbC.UpdateAllSidebarText(&m_sbM);
+        m_sbC.UpdateAllSidebarText(&m_sbM);
 
 		// Prepare the command list to render a new frame.
 		m_deviceResources->Prepare();
