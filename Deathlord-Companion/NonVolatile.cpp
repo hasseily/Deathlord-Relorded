@@ -13,17 +13,16 @@ namespace fs = std::filesystem;
 
 static nlohmann::json nv_json = R"(
   {
-    "profilePath": "Profiles\\Deathlord.json",
+    "profilePath": "Profiles\\Deathlord_Default.json",
     "hdvPath":			  "",
-    "diskBootPath":		  "",
-    "diskScenAPath":	  "",
-    "diskScenBPath":	  "",
+    "diskBootPath":		  "Images\\Deathlord - Disk 1, Side A Boot disk.woz",
+    "diskScenAPath":	  "Images\\Deathlord Scenario A.nib",
+    "diskScenBPath":	  "Images\\Deathlord Scenario B.nib",
 	"speed":			  1,
 	"scanlines":		  false,
 	"video":			  0,
-    "volumeSpeaker":	  4,
-    "volumeMockingBoard": 4,
-	"useGameLink":        false,
+    "volumeSpeaker":	  2,
+	"useGameLink":        true,
 	"logCombat":		  false
   }
 )"_json;
@@ -33,18 +32,15 @@ static std::string configfilename = "deathlordcompanion.conf";
 int NonVolatile::SaveToDisk()
 {
 	std::string sprofPath;
-	std::string sHdvPath;
 	std::string sDiskBootPath;
 	std::string sDiskScenAPath;
 	std::string sDiskScenBPath;
 	HA::ConvertWStrToStr(&profilePath, &sprofPath);
-	HA::ConvertWStrToStr(&hdvPath, &sHdvPath);
 	HA::ConvertWStrToStr(&diskBootPath, &sDiskBootPath);
 	HA::ConvertWStrToStr(&diskScenAPath, &sDiskScenAPath);
 	HA::ConvertWStrToStr(&diskScenBPath, &sDiskScenBPath);
 
 	nv_json["profilePath"]			= sprofPath;
-	nv_json["hdvPath"]				= sHdvPath;
 	nv_json["diskBootPath"]			= sDiskBootPath;
 	nv_json["diskScenAPath"]		= sDiskScenAPath;
 	nv_json["diskScenBPath"]		= sDiskScenBPath;
@@ -52,7 +48,6 @@ int NonVolatile::SaveToDisk()
 	nv_json["scanlines"]			= scanlines;
 	nv_json["video"]				= video;
 	nv_json["volumeSpeaker"]		= volumeSpeaker;
-	nv_json["volumeMockingBoard"]	= volumeMockingBoard;
 	nv_json["useGameLink"]			= useGameLink;
 	nv_json["logCombat"]			= logCombat;
 	std::ofstream out(configfilename);
@@ -79,8 +74,6 @@ int NonVolatile::LoadFromDisk()
 		_profilePath.assign(defaultPath.string());
 	}
 	HA::ConvertStrToWStr(&_profilePath, &profilePath);
-	std::string _hdvPath = nv_json["hdvPath"].get<std::string>();
-	HA::ConvertStrToWStr(&_hdvPath, &hdvPath);
 	std::string _diskBootPath = nv_json["diskBootPath"].get<std::string>();
 	HA::ConvertStrToWStr(&_diskBootPath, &diskBootPath);
 	std::string _diskScenAPath = nv_json["diskScenAPath"].get<std::string>();
@@ -92,7 +85,6 @@ int NonVolatile::LoadFromDisk()
 	scanlines = nv_json["scanlines"].get<bool>();
 	video = nv_json["video"].get<int>();
 	volumeSpeaker = nv_json["volumeSpeaker"].get<int>();
-	volumeMockingBoard = nv_json["volumeMockingBoard"].get<int>();
 	useGameLink = nv_json["useGameLink"].get<bool>();
 	logCombat = nv_json["logCombat"].get<bool>();
 

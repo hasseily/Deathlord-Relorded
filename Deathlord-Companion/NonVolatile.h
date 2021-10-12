@@ -3,7 +3,6 @@ class NonVolatile
 {
 public:
 	std::wstring profilePath;
-	std::wstring hdvPath;
 	std::wstring diskBootPath;
 	std::wstring diskScenAPath;
 	std::wstring diskScenBPath;
@@ -11,7 +10,6 @@ public:
 	bool scanlines = false;
 	int video = 1;
 	int volumeSpeaker = 1;
-	int volumeMockingBoard = 1;
 	bool useGameLink = false;
 	bool logCombat = false;
 

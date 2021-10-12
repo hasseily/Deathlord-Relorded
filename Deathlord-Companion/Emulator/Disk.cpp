@@ -40,6 +40,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "../resource.h"
 #include <shobjidl_core.h>
 #include <filesystem>
+#include <string>
 
 // About m_enhanceDisk:
 // . In general m_enhanceDisk==false is used for authentic disk access speed, whereas m_enhanceDisk==true is for enhanced speed.
@@ -166,7 +167,7 @@ void Disk2InterfaceCard::SaveLastDiskImage(const int floppy)
 
 	int iDrive = (floppy == FLOPPY_SCENB ? DRIVE_2 : DRIVE_1);
 	wchar_t szPathName[MAX_PATH];
-	wcscpy(szPathName, GetFullDiskFilename(iDrive).c_str());
+	wcscpy(szPathName, DiskGetFullPathName(iDrive).c_str());
 	if (wcsrchr(szPathName, TEXT('\\')))
 	{
 		switch (floppy)
@@ -676,8 +677,6 @@ ImageError_e Disk2InterfaceCard::InsertDisk(const int drive, LPCTSTR pszImageFil
 		if (g_nAppMode == AppMode_e::MODE_RUNNING)
 			InitFirmware(GetCxRomPeripheral());
 	}
-	SaveLastDiskImage(drive);
-	
 	return Error;
 }
 
@@ -1488,7 +1487,7 @@ void Disk2InterfaceCard::ResetSwitches(void)
 
 //===========================================================================
 
-bool Disk2InterfaceCard::UserSelectNewDiskImage(const int drive, LPCWSTR pszFilename/*=""*/)
+bool Disk2InterfaceCard::UserSelectNewDiskImage(const int drive, std::wstring* wFilename, LPCWSTR sTitle)
 {
 	if (!IsDriveConnected(drive))
 	{
@@ -1508,6 +1507,7 @@ bool Disk2InterfaceCard::UserSelectNewDiskImage(const int drive, LPCWSTR pszFile
 
 		if (SUCCEEDED(hr))
 		{
+			pFileOpen->SetTitle(sTitle);
 			COMDLG_FILTERSPEC rgSpec[] =
 			{
 				{ L"All Images", L"*.bin;*.do;*.dsk;*.nib;*.po;*.gz;*.woz;*.zip;*.2mg;*.2img;*.iie;*.apl" },
@@ -1539,6 +1539,7 @@ bool Disk2InterfaceCard::UserSelectNewDiskImage(const int drive, LPCWSTR pszFile
 							if (Error == eIMAGE_ERROR_NONE)
 							{
 								bRes = true;
+								wFilename->assign(dir.path().wstring());
 							}
 							else
 							{
@@ -1705,9 +1706,6 @@ bool Disk2InterfaceCard::DriveSwap(void)
 	// Invalidate the trackimage so that a read latch will re-read the track for the new floppy (GH#543)
 	m_floppyDrive[DRIVE_1].m_disk.m_trackimagedata = false;
 	m_floppyDrive[DRIVE_2].m_disk.m_trackimagedata = false;
-
-	SaveLastDiskImage(DRIVE_1);
-	SaveLastDiskImage(DRIVE_2);
 
 	return true;
 }

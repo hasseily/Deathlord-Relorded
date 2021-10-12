@@ -16,7 +16,6 @@
 #include "Emulator/Disk.h"
 #include "Emulator/SoundCore.h"
 #include "Emulator/Keyboard.h"
-#include "Emulator/Harddisk.h"
 #include "Emulator/RGBMonitor.h"
 #include "DeathlordHacks.h"
 #include "TilesetCreator.h"
@@ -107,16 +106,17 @@ void UpdateMenuBarStatus(HWND hwnd)
 	HMENU topMenu = GetMenu(hwnd);
 	HMENU emuMenu = GetSubMenu(topMenu, 1);	// Emulator menu
 	HMENU cmpMenu = GetSubMenu(topMenu, 2);	// Companion menu
-	HMENU speedMenu = GetSubMenu(emuMenu, 7);
-	HMENU videoMenu = GetSubMenu(emuMenu, 8);
-	HMENU volumeMenu = GetSubMenu(emuMenu, 9);
-	HMENU musicMenu = GetSubMenu(emuMenu, 10);
+	HMENU speedMenu = GetSubMenu(emuMenu, 10);
+	HMENU videoMenu = GetSubMenu(emuMenu, 11);
+	HMENU volumeMenu = GetSubMenu(emuMenu, 12);
 	HMENU logMenu = GetSubMenu(cmpMenu, 2);
 
-	CheckMenuRadioItem(speedMenu, 0, 10, g_nonVolatile.speed, MF_BYPOSITION);
-	CheckMenuRadioItem(videoMenu, 0, 10, g_nonVolatile.video, MF_BYPOSITION);
-	CheckMenuRadioItem(volumeMenu, 0, 10, g_nonVolatile.volumeSpeaker, MF_BYPOSITION);
-	CheckMenuRadioItem(musicMenu, 0, 10, g_nonVolatile.volumeMockingBoard, MF_BYPOSITION);
+	bool res;
+	res = CheckMenuRadioItem(speedMenu, 0, 6, g_nonVolatile.speed, MF_BYPOSITION);
+	if (!res)
+		HA::AlertIfError(hwnd);
+	CheckMenuRadioItem(videoMenu, 0, 3, g_nonVolatile.video, MF_BYPOSITION);
+	CheckMenuRadioItem(volumeMenu, 0, 4, g_nonVolatile.volumeSpeaker, MF_BYPOSITION);
 
 	CheckMenuItem(emuMenu, ID_EMULATOR_GAMELINK,
 		MF_BYCOMMAND | (g_nonVolatile.useGameLink ? MF_CHECKED : MF_UNCHECKED));
@@ -598,10 +598,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			break;
 		}
-		case ID_EMULATOR_SELECTDEATHLORDFOLDER:
+		case ID_EMULATOR_SELECTDISKBOOT:
 		{
 			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			diskCard.UserSelectNewDiskImage(DRIVE_1, g_nonVolatile.diskBootPath.c_str());
+			if (diskCard.UserSelectNewDiskImage(DRIVE_1, &g_nonVolatile.diskBootPath, L"Select Deathlord Boot Disk Image"))
+				diskCard.SaveLastDiskImage(FLOPPY_BOOT);
+			break;
+		}
+		case ID_EMULATOR_SELECTSCENARIOA:
+		{
+			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
+			if (diskCard.UserSelectNewDiskImage(DRIVE_1, &g_nonVolatile.diskScenAPath, L"Select Deathlord Scenario A Disk Image"))
+				diskCard.SaveLastDiskImage(FLOPPY_SCENA);
+			break;
+		}
+		case ID_EMULATOR_SELECTSCENARIOB:
+		{
+			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
+			if (diskCard.UserSelectNewDiskImage(DRIVE_2, &g_nonVolatile.diskScenBPath, L"Select Deathlord Scenario B Disk Image"))
+				diskCard.SaveLastDiskImage(FLOPPY_SCENB);
 			break;
 		}
 		case ID_EMULATOR_INSERTBOOTDISK:
@@ -611,7 +626,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			bool bRes = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskBootPath.c_str(), false, false);
 			if (bRes != eIMAGE_ERROR_NONE)
 			{
-				if (diskCard.UserSelectNewDiskImage(DRIVE_1, g_nonVolatile.diskBootPath.c_str()))
+				if (diskCard.UserSelectNewDiskImage(DRIVE_1, &g_nonVolatile.diskBootPath, L"Select Deathlord Boot Disk"))
 					diskCard.SaveLastDiskImage(FLOPPY_BOOT);
 			}
 			break;
@@ -619,20 +634,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_EMULATOR_INSERTSCENARIODISKS:
 		{
 			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			bool resA = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskScenAPath.c_str(), false, false);
-			bool resB = diskCard.InsertDisk(DRIVE_2, g_nonVolatile.diskScenBPath.c_str(), false, false);
+			ImageError_e res = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskScenAPath.c_str(), false, false);
+			if (res != eIMAGE_ERROR_NONE)
+				MessageBox(hWnd, L"Could not insert Scenario A. Please make sure you've selected a correct image.", L"Alert", MB_ICONASTERISK | MB_OK);
+			res = diskCard.InsertDisk(DRIVE_2, g_nonVolatile.diskScenBPath.c_str(), false, false);
+			if (res != eIMAGE_ERROR_NONE)
+				MessageBox(hWnd, L"Could not insert Scenario B. Please make sure you've selected a correct image.", L"Alert", MB_ICONASTERISK | MB_OK);
 			break;
 		}
 		case ID_EMULATOR_INSERTINTODISK1:
 		{
 			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			diskCard.UserSelectNewDiskImage(DRIVE_1, g_nonVolatile.diskBootPath.c_str());
+			diskCard.UserSelectNewDiskImage(DRIVE_1, &g_nonVolatile.diskBootPath, L"Select Image to Insert into Disk 1");
 			break;
 		}
 		case ID_EMULATOR_INSERTINTODISK2:
 		{
 			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			diskCard.UserSelectNewDiskImage(DRIVE_2, g_nonVolatile.diskBootPath.c_str());
+			diskCard.UserSelectNewDiskImage(DRIVE_2, &g_nonVolatile.diskBootPath, L"Select Image to Insert into Disk 1");
 			break;
 		}
 
@@ -778,31 +797,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 		case ID_VOLUME_100:
 			g_nonVolatile.volumeSpeaker = 4;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			break;
-		case ID_VOLUMEMUSIC_OFF:
-			g_nonVolatile.volumeMockingBoard = 0;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			break;
-		case ID_VOLUMEMUSIC_25:
-			g_nonVolatile.volumeMockingBoard = 1;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			break;
-		case ID_VOLUMEMUSIC_50:
-			g_nonVolatile.volumeMockingBoard = 2;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			break;
-		case ID_VOLUMEMUSIC_75:
-			g_nonVolatile.volumeMockingBoard = 3;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			break;
-		case ID_VOLUMEMUSIC_100:
-			g_nonVolatile.volumeMockingBoard = 4;
 			g_nonVolatile.SaveToDisk();
 			UpdateMenuBarStatus(hWnd);
 			break;

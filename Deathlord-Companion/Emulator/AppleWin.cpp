@@ -459,9 +459,7 @@ void ApplyNonVolatileConfig()
 	// Volume is not linear and inverted. VOLUME_MAX is actually the low volume. The max volume is 0.
 	// Max volume is crazy high. Need to reduce it somehow.
 	SpkrSetVolume(CalculateSpkrVolumeLevel(g_nonVolatile.volumeSpeaker), VOLUME_MAX);
-	MB_SetVolume(CalculateMBVolumeLevel(g_nonVolatile.volumeMockingBoard), VOLUME_MAX);
 	//SpkrSetVolume(DWORD(VOLUME_MAX * (1 - (g_nonVolatile.volumeSpeaker / 4.f))), VOLUME_MAX);
-	//MB_SetVolume(DWORD(VOLUME_MAX * (1 - (g_nonVolatile.volumeMockingBoard / 4.f))), VOLUME_MAX);
 	Spkr_Demute();
 	MB_Demute();
 }

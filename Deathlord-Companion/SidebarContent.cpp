@@ -5,6 +5,7 @@
 #include <DirectXPackedVector.h>
 #include <DirectXMath.h>
 #include <Sidebar.h>
+#include "HAUtils.h"
 #include "Game.h"   // for g_isInGameMap
 
 using namespace DirectX;
@@ -212,6 +213,8 @@ std::string SidebarContent::OpenProfile(std::wstring entry)
     try
    {
         fs::directory_entry thePath = fs::directory_entry(entry);
+        HA::ConvertStrToWStr(&thePath.path().string(), &g_nonVolatile.profilePath);
+        g_nonVolatile.SaveToDisk();
 	    return SidebarContent::OpenProfile(thePath);
    }
    catch (...)

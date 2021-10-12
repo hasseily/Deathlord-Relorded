@@ -185,7 +185,6 @@
     <ClCompile Include="Emulator\DiskFormatTrack.cpp" />
     <ClCompile Include="emulator\DiskImage.cpp" />
     <ClCompile Include="emulator\DiskImageHelper.cpp" />
-    <ClCompile Include="emulator\Harddisk.cpp" />
     <ClCompile Include="emulator\Joystick.cpp" />
     <ClCompile Include="emulator\Keyboard.cpp" />
     <ClCompile Include="emulator\LanguageCard.cpp" />
@@ -232,7 +231,6 @@
     <ClInclude Include="emulator\DiskImage.h" />
     <ClInclude Include="emulator\DiskImageHelper.h" />
     <ClInclude Include="Emulator\DiskLog.h" />
-    <ClInclude Include="emulator\Harddisk.h" />
     <ClInclude Include="emulator\Joystick.h" />
     <ClInclude Include="emulator\Keyboard.h" />
     <ClInclude Include="emulator\LanguageCard.h" />

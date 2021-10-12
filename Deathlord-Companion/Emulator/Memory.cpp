@@ -35,7 +35,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "CardManager.h"
 #include "CPU.h"
 #include "Disk.h"
-#include "Harddisk.h"
 #include "Keyboard.h"
 #include "Joystick.h"
 #include "LanguageCard.h"
@@ -1543,9 +1542,6 @@ void MemInitializeIO(void)
 		dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT5)).Initialize(pCxRomPeripheral, SLOT5);	// $C500 : Disk][ card
 	if (GetCardMgr().QuerySlot(SLOT6) == CT_Disk2)
 		dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).Initialize(pCxRomPeripheral, SLOT6);	// $C600 : Disk][ card
-
-	if (GetCardMgr().QuerySlot(SLOT7) == CT_GenericHDD)
-		HD_Load_Rom(pCxRomPeripheral, SLOT7);			// $C700 : HDD f/w
 }
 
 // Called by:

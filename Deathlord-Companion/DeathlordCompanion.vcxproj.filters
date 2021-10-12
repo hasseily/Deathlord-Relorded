@@ -66,9 +66,6 @@
     <ClCompile Include="emulator\DiskImageHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="emulator\Harddisk.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="emulator\Joystick.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -204,9 +201,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="emulator\DiskImageHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="emulator\Harddisk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="emulator\Joystick.h">

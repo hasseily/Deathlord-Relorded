@@ -28,7 +28,6 @@
 #define IDC_EDIT_MEMVAL                 1002
 #define IDC_BUTTON_MEMSET               1003
 #define IDC_MEMCURRENTVAL               1004
-#define IDC_BUTTON1                     1005
 #define IDC_BUTTON_EXPORT_MAP           1005
 #define ID_FILE_ACTIVATEPROFILE         32771
 #define ID_EMULATOR_PAUSE               32772
@@ -82,6 +81,10 @@
 #define ID_EMULATOR_INSERTINTODISK1     32824
 #define ID_EMULATOR_INSERTINTODISK2     32825
 #define ID_COMPANION_HACKS              32830
+#define ID_EMULATOR_SELECTDISKBOOT      32831
+#define ID_Menu32832                    32832
+#define ID_EMULATOR_SELECTSCENARIOA     32833
+#define ID_EMULATOR_SELECTSCENARIOB     32834
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -90,7 +93,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        144
-#define _APS_NEXT_COMMAND_VALUE         32831
+#define _APS_NEXT_COMMAND_VALUE         32835
 #define _APS_NEXT_CONTROL_VALUE         1006
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
