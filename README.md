@@ -14,7 +14,7 @@ Fork on github or contact me for other builds, but the DirectX 12 requirement is
 ## Installation
 
 - Copy the Deathlord folder anywhere you want, ideally in your Program Files directory.
-- Run the companion .exe. The first time you run it, it will ask you to select the Deathlord boot disk image you want to use. It will remember it for future sessions.
+- Run the companion .exe. If you want to choose different disks, use the menu to select each of boot, scenario A and scenario B. It'll remember them for future sessions.
 
 ## Running the program
 
@@ -41,6 +41,10 @@ WARNING: Save or copy the log window content somewhere else before you quit the 
 
 There's a hack window where you can modify a byte of memory, and save the current map to disk in the Maps/ folder.
 Also the current map will save if you hit PAGEDOWN.
+
+Another unique feature of the Deathlord Companion is that it doesn't skip a turn if you wait too long. The time and food usage pass normally though, so if you want to be away from your keyboard for a long time make sure you at least put yourself in a character stats screen (press 1-6 on the keyboard).
+
+Yet another unique feature (and it has yet to be extensively tested) is that the Companion prohibits Deathlord from saving until you, the user, say so.
 
 Finally, there's a tileset generator that will grab visible tiles that haven't yet been seen by the program and will append them to a tileset that is saved on disk inside the Maps/ folder. Contact me for more info.
 The tileset generator is started with NUMPAD 1. It acquires tiles with NUMPAD 0. Save the file with NUMPAD 9. Reset the whole file with NUMPAD 5.
