@@ -83,7 +83,7 @@
       "0x31": "Sword of Fire",
       "0x32": "Rod of Death",
       "0x33": "Thunderblade",
-      "0x34": "Domaru +1",
+      "0x34": "Do-Maru +1",
       "0x35": "Yoroi +1",
       "0x36": "Scroll-Raise",
       "0x37": "Unholy Blade",
@@ -293,9 +293,6 @@
               "lookup": "/tables/equipment"
             }
           ]
-        },
-        {
-          "type": "Empty"
         },
         {
           "type": "Empty"
