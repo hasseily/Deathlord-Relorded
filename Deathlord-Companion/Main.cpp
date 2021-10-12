@@ -266,7 +266,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	if (MemIsInitialized())
 	{
-		UINT8* memPtr = MemGetBankPtr(0);
+		UINT8* memPtr = MemGetMainPtr(0);
 		g_isInGameMap = (memPtr[0xFCE0] == 0xE5);	// when not in game map, that area is all zeros
 	}
 	// Disallow saving by default when not in the game map
