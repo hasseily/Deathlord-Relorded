@@ -271,7 +271,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	// Disallow saving by default when not in the game map
 	// It is allowed temporarily when hitting 'q'
-	g_wantsToSave = !(g_isInGameMap);
+	// 	   TODO: DISABLED. It can corrupt save games
+	// g_wantsToSave = !(g_isInGameMap);
 
 	switch (message)
 	{

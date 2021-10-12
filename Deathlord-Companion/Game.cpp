@@ -46,7 +46,7 @@ UINT64	g_debug_video_data = 0;
 NonVolatile g_nonVolatile;
 
 bool g_isInGameMap = false;
-bool g_wantsToSave = false;
+bool g_wantsToSave = true;  // TODO: DISABLED. It can corrupt saved games
 
 Game::Game() noexcept(false)
 {
