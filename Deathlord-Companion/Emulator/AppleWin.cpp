@@ -496,5 +496,6 @@ void EmulatorReboot()
 	SpkrReset();
 	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).Reset(true);
 	SetActiveCpu(GetMainCpu());
+	EmulatorRepeatInitialization();
 	SoundCore_SetFade(FADE_NONE);
 }
