@@ -13,6 +13,8 @@ public:
 	DeathlordHacks(HINSTANCE app, HWND hMainWindow);
 
 	void SaveMapDataToDisk();
+	void BackupScenarioImages();
+	void RestoreScenarioImages();
 	void ShowHacksWindow();
 	void HideHacksWindow();
 	bool IsHacksWindowDisplayed();

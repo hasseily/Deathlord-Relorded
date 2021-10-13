@@ -10,7 +10,6 @@
 #define IDD_ABOUTBOX                    103
 #define IDM_ABOUT                       104
 #define IDM_EXIT                        105
-#define IDI_DEATHLORDCOMPANION          107
 #define IDI_SMALL                       108
 #define IDC_DEATHLORDCOMPANION          109
 #define IDR_ACCELERATOR1                110
@@ -22,6 +21,7 @@
 #define IDB_CHARSET8C                   140
 #define IDB_CHARSET8M                   141
 #define IDD_HACKS                       143
+#define IDI_DEATHLORDICON               146
 #define IDR_DISK2_16SECTOR_FW           150
 #define IDC_LOGSTATIC                   1000
 #define IDC_EDIT_MEMLOC                 1001
@@ -85,6 +85,10 @@
 #define ID_Menu32832                    32832
 #define ID_EMULATOR_SELECTSCENARIOA     32833
 #define ID_EMULATOR_SELECTSCENARIOB     32834
+#define ID_SCENARIOS_BACKUP             32835
+#define ID_SCENARIOS_RESTORE            32836
+#define ID_FILE_BACKUPSCENARIOS         32838
+#define ID_FILE_RESTORESCENARIOS        32839
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -92,8 +96,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        144
-#define _APS_NEXT_COMMAND_VALUE         32835
+#define _APS_NEXT_RESOURCE_VALUE        147
+#define _APS_NEXT_COMMAND_VALUE         32840
 #define _APS_NEXT_CONTROL_VALUE         1006
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

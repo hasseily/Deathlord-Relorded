@@ -583,8 +583,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// Parse the menu selections:
 		switch (wmId)
 		{
+		case ID_FILE_BACKUPSCENARIOS:
+		{
+			g_dlHacks->BackupScenarioImages();
+			break;
+		}
+		case ID_FILE_RESTORESCENARIOS:
+		{
+			g_dlHacks->RestoreScenarioImages();
+			break;
+		}
 		case ID_FILE_ACTIVATEPROFILE:
 		{
+			// this is now in the companion menu
 			if (game)
 			{
 				game->MenuActivateProfile();
@@ -593,6 +604,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case ID_FILE_DEACTIVATEPROFILE:
 		{
+			// this is now in the companion menu
 			if (game)
 			{
 				game->MenuDeactivateProfile();
@@ -624,7 +636,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
 			diskCard.EjectDisk(DRIVE_2);
-			bool bRes = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskBootPath.c_str(), false, false);
+			ImageError_e bRes = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskBootPath.c_str(), false, false);
 			if (bRes != eIMAGE_ERROR_NONE)
 			{
 				if (diskCard.UserSelectNewDiskImage(DRIVE_1, &g_nonVolatile.diskBootPath, L"Select Deathlord Boot Disk"))
@@ -652,7 +664,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_EMULATOR_INSERTINTODISK2:
 		{
 			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			diskCard.UserSelectNewDiskImage(DRIVE_2, &g_nonVolatile.diskBootPath, L"Select Image to Insert into Disk 1");
+			diskCard.UserSelectNewDiskImage(DRIVE_2, &g_nonVolatile.diskBootPath, L"Select Image to Insert into Disk 2");
 			break;
 		}
 

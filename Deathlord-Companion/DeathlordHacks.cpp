@@ -7,6 +7,8 @@
 #include <string>
 #include <fstream>
 #include <filesystem>
+#include "Emulator/AppleWin.h"
+#include "Game.h"
 
 
 const wchar_t CLASS_NAME[] = L"Deathlord Hacks Class";
@@ -71,11 +73,13 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 				_itow_s(memPtr[iMemLoc], cMemVal, 16);
 				SetWindowText(hdlMemVal, cMemVal);
 
+				/*
 				std::wstring wbuf = L"Mem: ";
 				wchar_t xx[5];
 				wsprintf(xx, L"%4X", iMemLoc);
 				wbuf.append(xx);
 				OutputDebugString(wbuf.c_str());
+				*/
 			}
 			break;
 		}
@@ -144,31 +148,6 @@ DeathlordHacks::DeathlordHacks(HINSTANCE app, HWND hMainWindow)
 		MAKEINTRESOURCE(IDD_HACKS),
 		hMainWindow,
 		(DLGPROC)HacksProc);
-	/*
-	WNDCLASS wc = { };
-
-	wc.lpfnWndProc = HacksProc;
-	wc.hInstance = app;
-	wc.lpszClassName = CLASS_NAME;
-
-	RegisterClass(&wc);
-
-
-	hwndHacks = CreateWindowExW(
-		0,                              // Optional window styles.
-		CLASS_NAME,                     // Window class
-		L"Hacks",						// Window text
-		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME,           // Window style
-
-		// Size and position
-		CW_USEDEFAULT, CW_USEDEFAULT, 400, 600,
-
-		hMainWindow,// Parent window    
-		nullptr,       // Menu
-		app,        // Instance handle
-		nullptr        // Additional application data
-	);
-	*/
 
 	if (hwndHacks != nullptr)
 	{
@@ -236,4 +215,179 @@ void DeathlordHacks::SaveMapDataToDisk()
 	fsFile.write(sMapData.c_str(), sMapData.size());
 	fsFile.close();
 
+}
+
+void DeathlordHacks::BackupScenarioImages()
+{
+	std::wstring imageName;
+	std::wstring imageExtension;
+	std::wstring imageDirPath;
+	std::wstring backupsDirPath;
+	std::wstring backupImageFullPath;
+	std::wstring images[2] = { g_nonVolatile.diskScenAPath, g_nonVolatile.diskScenBPath };
+	SYSTEMTIME st;
+	wchar_t formattedTime[50] = L"";
+	bool inExtension = true;
+	bool inName = false;
+	bool res;
+	DWORD err;
+
+	GetSystemTime(&st);
+	for each (std::wstring pathname in images)
+	{
+		imageName = L"";
+		imageExtension = L"";
+		imageDirPath = L"";
+		backupsDirPath = L"";
+		backupImageFullPath = L"";
+		inExtension = true;
+		inName = false;
+		for (std::wstring::reverse_iterator rit = pathname.rbegin(); rit != pathname.rend(); ++rit)
+		{
+			if (inExtension)
+			{
+				if (*rit == '.')
+				{
+					inExtension = false;
+					inName = true;
+				}
+				else
+				{
+					imageExtension.insert(0, std::wstring(1, *rit));
+				}
+			}
+			else if (inName)
+			{
+				if (*rit == '\\')
+				{
+					inName = false;
+				}
+				else
+				{
+					imageName.insert(0, std::wstring(1, *rit));
+				}
+			}
+			else
+			{
+				imageDirPath.insert(0, std::wstring(1, *rit));
+			}
+		}
+		backupsDirPath = imageDirPath + L"\\Backups";
+		res = CreateDirectory(backupsDirPath.c_str(), NULL);
+		if (res == 0)
+		{
+			err = GetLastError();
+			if (err == ERROR_PATH_NOT_FOUND)
+			{
+				HA::AlertIfError(g_hFrameWindow);
+				return;
+			}
+		}
+		backupImageFullPath = backupsDirPath + L"\\" + imageName;
+		wsprintf(formattedTime, L"_%04d%02d%02d-%02d%02d%02d.%s", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, imageExtension.c_str());
+		backupImageFullPath.append(formattedTime);
+		res = CopyFile(pathname.c_str(), backupImageFullPath.c_str(), false);
+		if (res == 0)
+		{
+			err = GetLastError();
+			HA::AlertIfError(g_hFrameWindow);
+			return;
+		}
+	}
+	MessageBox(g_hFrameWindow, std::wstring(L"Successfully backed up scenario disks with postfix ").append(formattedTime).c_str(), L"Backup Successful", MB_ICONINFORMATION | MB_OK);
+}
+
+void DeathlordHacks::RestoreScenarioImages()
+{
+	std::wstring imageName;
+	std::wstring imageDirPath;
+	std::wstring backupsDirPath;
+	std::wstring backupImageFullPath;
+	std::wstring images[2] = { g_nonVolatile.diskScenAPath, g_nonVolatile.diskScenBPath };
+	bool res;
+	DWORD err;
+
+	HRESULT hr = CoInitializeEx(nullptr, COINIT_DISABLE_OLE1DDE);
+	if (SUCCEEDED(hr))
+	{
+		IFileOpenDialog* pFileOpen;
+
+		// Create the FileOpenDialog object.
+		hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL,
+			IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
+
+		if (SUCCEEDED(hr))
+		{
+			pFileOpen->SetTitle(L"Choose Scenario A backup image");
+			COMDLG_FILTERSPEC rgSpec[] =
+			{
+				{ L"All Images", L"*.bin;*.do;*.dsk;*.nib;*.po;*.gz;*.woz;*.zip;*.2mg;*.2img;*.iie;*.apl" },
+				{ L"Disk Images (*.bin,*.do,*.dsk,*.nib,*.po,*.gz,*.woz,*.zip,*.2mg,*.2img,*.iie)", L"*.bin;*.do;*.dsk;*.nib;*.po;*.gz;*.woz;*.zip;*.2mg;*.2img;*.iie" },
+				{ L"All Files", L"*.*" },
+			};
+			pFileOpen->SetFileTypes(ARRAYSIZE(rgSpec), rgSpec);
+			// Show the Open dialog box.
+			hr = pFileOpen->Show(nullptr);
+			// Get the file name from the dialog box.
+			if (SUCCEEDED(hr))
+			{
+				IShellItem* pItem;
+				hr = pFileOpen->GetResult(&pItem);
+				if (SUCCEEDED(hr))
+				{
+					// TODO: Grab the file and its extension. Then also grab the scenario B or exit with error
+					// Once we know both are good, remove existing scenario disks from drives
+					// and copy the backups over the existing files, overwriting them (using their filenames)
+					PWSTR pszFilePathA;
+					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePathA);
+					if (SUCCEEDED(hr))
+					{
+						std::filesystem::directory_entry dir = std::filesystem::directory_entry(pszFilePathA);
+						if (!dir.is_regular_file())
+						{
+							MessageBox(g_hFrameWindow, L"This is not a regular file!", L"Alert", MB_ICONASTERISK | MB_OK);
+							return;
+						}
+						std::wstring pathname(pszFilePathA);
+						std::wstring sA(L" Scenario A_2");	// piece of "Deathlord Scenario A_2021...
+						size_t fx = pathname.find(sA);
+						if (fx == std::string::npos)
+						{
+							MessageBox(g_hFrameWindow, L"The program cannot parse the backup filename. Please leave the image filenames alone, thank you :)", L"Alert", MB_ICONASTERISK | MB_OK);
+							return;
+						}
+						pathname.replace(fx, sA.length(), L" Scenario B_2");
+						// Now copy both files
+						if (!CopyFile(pszFilePathA, g_nonVolatile.diskScenAPath.c_str(), FALSE))
+						{
+							err = GetLastError();
+							HA::AlertIfError(g_hFrameWindow);
+							return;
+						}
+						if (!CopyFile(pathname.c_str(), g_nonVolatile.diskScenBPath.c_str(), FALSE))
+						{
+							err = GetLastError();
+							HA::AlertIfError(g_hFrameWindow);
+							return;
+						}
+					}
+					pItem->Release();
+				}
+				else
+				{
+					err = GetLastError();
+					HA::AlertIfError(g_hFrameWindow);
+					return;
+				}
+			}
+			else
+			{
+				err = GetLastError();
+				HA::AlertIfError(g_hFrameWindow);
+				return;
+			}
+			pFileOpen->Release();
+		}
+		CoUninitialize();
+	}
 }

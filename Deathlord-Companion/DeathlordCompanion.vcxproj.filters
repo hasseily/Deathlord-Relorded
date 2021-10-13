@@ -348,6 +348,15 @@
     <Image Include="Emulator\Resources\CHARSET82.bmp">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="C:\Users\hasse\OneDrive\Desktop\Deathlord.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="emulator\resources\icon1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="C:\Users\hasse\OneDrive\Desktop\Deathlord.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\PixelShader.hlsl">

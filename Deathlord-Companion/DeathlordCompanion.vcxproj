@@ -303,6 +303,8 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </Image>
+    <Image Include="C:\Users\hasse\OneDrive\Desktop\Deathlord.ico" />
+    <Image Include="C:\Users\hasse\OneDrive\Desktop\Deathlord.png" />
     <Image Include="DeathlordCompanion.ico">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </Image>
@@ -310,6 +312,7 @@
     <Image Include="Emulator\Resources\CHARSET82.bmp" />
     <Image Include="Emulator\Resources\CHARSET8C.bmp" />
     <Image Include="Emulator\Resources\CHARSET8M.bmp" />
+    <Image Include="emulator\resources\icon1.ico" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\PixelShader.hlsl">
