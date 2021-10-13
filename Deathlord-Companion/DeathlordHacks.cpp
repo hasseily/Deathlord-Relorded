@@ -124,6 +124,17 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 			}
 			break;
 		}
+		case IDC_BUTTON_RESURRECT_ALL:
+		{
+			for (size_t i = 0xFD36; i < 0xFD3C; i++)
+			{
+				// set state to healthy
+				memPtr[i] = 0;
+				// set HP to maxHP
+				memPtr[i + (0xFD4E - 0xFD36)] = memPtr[i + (0xFD42 - 0xFD36)];
+			}
+			break;
+		}
 		case IDC_BUTTON_EXPORT_MAP:
 		{
 			hw->SaveMapDataToDisk();
