@@ -182,7 +182,10 @@ void SidebarContent::LoadProfileUsingDialog(SidebarManager* sbM)
                     {
                         fs::directory_entry dir = fs::directory_entry(pszFilePath);
                         std::string profileName = OpenProfile(dir);
-                        setActiveProfile(sbM, &profileName);
+                        if (setActiveProfile(sbM, &profileName))
+                        {
+                            g_nonVolatile.profilePath = std::wstring(pszFilePath);
+                        }
                         CoTaskMemFree(pszFilePath);
                     }
                     pItem->Release();
