@@ -107,6 +107,84 @@
       "0x49": "Emerald Rod",
       "0x4a": "Black Orb",
       "0xff": ""
+    },
+    "equipmentarmor": {
+      "0x00": 1,
+      "0x01": -1,
+      "0x02": 0,
+      "0x03": -2,
+      "0x04": 0,
+      "0x05": -1,
+      "0x06": -1,
+      "0x07": -3,
+      "0x08": -1,
+      "0x09": -2,
+      "0x0a": 1,
+      "0x0b": -2,
+      "0x0c": -4,
+      "0x0d": -1,
+      "0x0e": -1,
+      "0x0f": 0,
+      "0x10": 0,
+      "0x11": -3,
+      "0x12": -1,
+      "0x13": 0,
+      "0x14": -2,
+      "0x15": -1,
+      "0x16": 0,
+      "0x17": -5,
+      "0x18": -1,
+      "0x19": -1,
+      "0x1a": -1,
+      "0x1b": -6,
+      "0x1c": 0,
+      "0x1d": 0,
+      "0x1e": -1,
+      "0x1f": 0,
+      "0x20": -2,
+      "0x21": -2,
+      "0x22": -4,
+      "0x23": -3,
+      "0x24": -2,
+      "0x25": 0,
+      "0x26": 0,
+      "0x27": -1,
+      "0x28": -1,
+      "0x29": -4,
+      "0x2a": 0,
+      "0x2b": -5,
+      "0x2c": 0,
+      "0x2d": -2,
+      "0x2e": -3,
+      "0x2f": -2,
+      "0x30": -4,
+      "0x31": -1,
+      "0x32": -1,
+      "0x33": -1,
+      "0x34": -6,
+      "0x35": -7,
+      "0x36": 0,
+      "0x37": -2,
+      "0x38": -2,
+      "0x39": -3,
+      "0x3a": -7,
+      "0x3b": -4,
+      "0x3c": -2,
+      "0x3d": -3,
+      "0x3e": -4,
+      "0x3f": -1,
+      "0x40": -10,
+      "0x41": -5,
+      "0x42": -6,
+      "0x43": 0,
+      "0x44": 0,
+      "0x45": 0,
+      "0x46": -3,
+      "0x47": 0,
+      "0x48": -2,
+      "0x49": -4,
+      "0x4a": 0,
+      "0xff": 0
     }
   },
   "sidebars": [
@@ -140,13 +218,26 @@
         },
         {
           "type": "Content",
-          "template": "{} F{} T{} G{}",
+          "template": "{}",
           "vars": [
             {
               "mem": [ "0xFD60" ],
               "fixedlength": 12,
               "type": "lookup",
               "lookup": "/tables/class"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "A{} F{} T{} G{}",
+          "vars": [
+            {
+              "mem": [ "0xFE20", "0xFE21", "0xFE22", "0xFE23", "0xFE24", "0xFE25", "0xFE26", "0xFE27" ],
+              "fixedlength": 3,
+              "type": "lookup_aggregate",
+              "startvalue": 10,
+              "lookup": "/tables/equipmentarmor"
             },
             {
               "mem": [ "0xFDD2" ],
@@ -334,13 +425,26 @@
         },
         {
           "type": "Content",
-          "template": "{} F{} T{} G{}",
+          "template": "{}",
           "vars": [
             {
               "mem": [ "0xFD63" ],
               "fixedlength": 12,
               "type": "lookup",
               "lookup": "/tables/class"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "A{} F{} T{} G{}",
+          "vars": [
+            {
+              "mem": [ "0xFE80", "0xFE81", "0xFE82", "0xFE83", "0xFE84", "0xFE85", "0xFE86", "0xFE87" ],
+              "fixedlength": 3,
+              "type": "lookup_aggregate",
+              "startvalue": 10,
+              "lookup": "/tables/equipmentarmor"
             },
             {
               "mem": [ "0xFDD5" ],
@@ -490,9 +594,6 @@
         },
         {
           "type": "Empty"
-        },
-        {
-          "type": "Empty"
         }
       ]
     },
@@ -526,13 +627,26 @@
         },
         {
           "type": "Content",
-          "template": "{} F{} T{} G{}",
+          "template": "{}",
           "vars": [
             {
               "mem": [ "0xFD61" ],
               "fixedlength": 12,
               "type": "lookup",
               "lookup": "/tables/class"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "A{} F{} T{} G{}",
+          "vars": [
+            {
+              "mem": [ "0xFE40", "0xFE41", "0xFE42", "0xFE43", "0xFE44", "0xFE45", "0xFE46", "0xFE47" ],
+              "fixedlength": 3,
+              "type": "lookup_aggregate",
+              "startvalue": 10,
+              "lookup": "/tables/equipmentarmor"
             },
             {
               "mem": [ "0xFDD3" ],
@@ -684,9 +798,6 @@
           "type": "Empty"
         },
         {
-          "type": "Empty"
-        },
-        {
           "type": "Header",
           "template": "=========================",
           "color": [
@@ -723,13 +834,26 @@
         },
         {
           "type": "Content",
-          "template": "{} F{} T{} G{}",
+          "template": "{}",
           "vars": [
             {
               "mem": [ "0xFD64" ],
               "fixedlength": 12,
               "type": "lookup",
               "lookup": "/tables/class"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "A{} F{} T{} G{}",
+          "vars": [
+            {
+              "mem": [ "0xFEA0", "0xFEA1", "0xFEA2", "0xFEA3", "0xFEA4", "0xFEA5", "0xFEA6", "0xFEA7" ],
+              "fixedlength": 3,
+              "type": "lookup_aggregate",
+              "startvalue": 10,
+              "lookup": "/tables/equipmentarmor"
             },
             {
               "mem": [ "0xFDD6" ],
@@ -879,9 +1003,6 @@
         },
         {
           "type": "Empty"
-        },
-        {
-          "type": "Empty"
         }
       ]
     },
@@ -915,13 +1036,26 @@
         },
         {
           "type": "Content",
-          "template": "{} F{} T{} G{}",
+          "template": "{}",
           "vars": [
             {
               "mem": [ "0xFD62" ],
               "fixedlength": 12,
               "type": "lookup",
               "lookup": "/tables/class"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "A{} F{} T{} G{}",
+          "vars": [
+            {
+              "mem": [ "0xFE60", "0xFE61", "0xFE62", "0xFE63", "0xFE64", "0xFE65", "0xFE66", "0xFE67" ],
+              "fixedlength": 3,
+              "type": "lookup_aggregate",
+              "startvalue": 10,
+              "lookup": "/tables/equipmentarmor"
             },
             {
               "mem": [ "0xFDD4" ],
@@ -1073,9 +1207,6 @@
           "type": "Empty"
         },
         {
-          "type": "Empty"
-        },
-        {
           "type": "Header",
           "template": "=========================",
           "color": [
@@ -1112,13 +1243,26 @@
         },
         {
           "type": "Content",
-          "template": "{} F{} T{} G{}",
+          "template": "{}",
           "vars": [
             {
               "mem": [ "0xFD65" ],
               "fixedlength": 12,
               "type": "lookup",
               "lookup": "/tables/class"
+            }
+          ]
+        },
+        {
+          "type": "Content",
+          "template": "A{} F{} T{} G{}",
+          "vars": [
+            {
+              "mem": [ "0xFEC0", "0xFEC1", "0xFEC2", "0xFEC3", "0xFEC4", "0xFEC5", "0xFEC6", "0xFEC7" ],
+              "fixedlength": 3,
+              "type": "lookup_aggregate",
+              "startvalue": 10,
+              "lookup": "/tables/equipmentarmor"
             },
             {
               "mem": [ "0xFDD7" ],
@@ -1265,9 +1409,6 @@
               "lookup": "/tables/equipment"
             }
           ]
-        },
-        {
-          "type": "Empty"
         },
         {
           "type": "Empty"

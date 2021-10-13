@@ -258,7 +258,7 @@ void Game::Render()
         tickOfLastRender = m_timer.GetTotalTicks();
 
         // First update the sidebar, it doesn't need to be updated until right before the render
-        m_sbC.UpdateAllSidebarText(&m_sbM);
+        m_sbC.UpdateAllSidebarText(&m_sbM, false);
 
 		// Prepare the command list to render a new frame.
 		m_deviceResources->Prepare();
@@ -332,11 +332,9 @@ void Game::Render()
 		m_primitiveBatch->End();
 
 #ifdef _DEBUG
-    // TEMPORARY
-    // TODO: REMOVE
     char pcbuf[4000];
 //    snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %I64x : %I64x", g_debug_video_field, g_debug_video_data);
-	snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %.f usec/frame - Time: %.3f\n", 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds());
+	snprintf(pcbuf, sizeof(pcbuf), "%.f usec/frame - Time: %.3f\n", 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds());
 	m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), pcbuf,
 		{ 11.f, 11.f }, Colors::DimGray, 0.f, m_vector2ero, m_clientFrameScale);
     m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), pcbuf,

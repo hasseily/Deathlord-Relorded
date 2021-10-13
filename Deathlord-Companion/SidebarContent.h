@@ -21,7 +21,7 @@ public:
 	std::string OpenProfile(std::filesystem::directory_entry entry);
 	std::string OpenProfile(std::wstring entry);
 	void ClearActiveProfile(SidebarManager* sbM);
-	void UpdateAllSidebarText(SidebarManager* sbM);
+	void SidebarContent::UpdateAllSidebarText(SidebarManager* sbM, bool forceUpdate);
 	bool UpdateBlock(SidebarManager* sbM, UINT8 sidebarId, UINT8 blockId, nlohmann::json* pdata);
 private:
 	void LoadProfilesFromDisk();

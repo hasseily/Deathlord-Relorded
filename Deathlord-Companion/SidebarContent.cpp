@@ -144,6 +144,8 @@ bool SidebarContent::setActiveProfile(SidebarManager* sbM, std::string* name)
             sbM->sidebars[sbId].SetBlock(bS, k);
         }
     }
+    // Now force an update of the sidebar text once, so all the static data is updated
+	UpdateAllSidebarText(sbM, true);
     return true;
 }
 
@@ -311,14 +313,14 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
 	if (j["type"] == "string")
 	{
 		size_t i = 0;
-		char c;
+		UINT8 c;
         memOffset = std::stoul(j["mem"][0].get<std::string>(), nullptr, 0);
 		while (*(pmem + memOffset + i) < 0x80)
 		{
 			c = *(pmem + memOffset + i);
 			if (c < sizeof(deathlordCharMap))
 				s.append(1, deathlordCharMap[c]);
-			i++;
+			++i;
             if (i > 1000) // don't go ballistic!
                 break;
 		}
@@ -334,9 +336,8 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
 		memOffset = std::stoul(j["mem"][0].get<std::string>(), nullptr, 0);
 		try
 		{
-			char buf[500];
-			snprintf(buf, 500, "%s/0x%02x", j["lookup"].get<std::string>().c_str(), *(pmem + memOffset));
-			nlohmann::json::json_pointer jp(buf);
+			snprintf(tempBuf, sizeof(tempBuf), "%s/0x%02x", j["lookup"].get<std::string>().c_str(), *(pmem + memOffset));
+			nlohmann::json::json_pointer jp(tempBuf);
 			return m_activeProfile.value(jp, "-");  // Default value when unknown lookup is "-"
 		}
 		catch (exception e)
@@ -364,10 +365,9 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
 			{
                 memOffset = std::stoul(j["mem"][memIdx].get<std::string>(), nullptr, 0);
                 UINT8 theMem = *(pmem + memOffset);
-				snprintf(tempBuf, 500, "%s/0x%02x", j["lookup"].get<std::string>().c_str(), theMem);
+				snprintf(tempBuf, sizeof(tempBuf), "%s/0x%02x", j["lookup"].get<std::string>().c_str(), theMem);
                 nlohmann::json::json_pointer jp(tempBuf);
                 aggregate += m_activeProfile.value<int>(jp, 0); // Default value when unknown lookup is 0
-                OutputDebugStringA(tempBuf);
 			}
 			s = to_string(aggregate);
 			return s;
@@ -467,7 +467,7 @@ std::string SidebarContent::FormatBlockText(nlohmann::json* pdata)
     return txt;
 }
 
-void SidebarContent::UpdateAllSidebarText(SidebarManager* sbM)
+void SidebarContent::UpdateAllSidebarText(SidebarManager* sbM, bool forceUpdate)
 {
     UINT8 isb = 0;  // sidebar index
     for (auto sB : m_activeProfile["sidebars"])
@@ -476,14 +476,23 @@ void SidebarContent::UpdateAllSidebarText(SidebarManager* sbM)
         UINT8 ib = 0;   // block index
         for (auto& bl : sB["blocks"])
         {
-            // OutputDebugStringA((bl.dump() + string("\n")).c_str());
+            if (!forceUpdate)
+            {
+                // don't update any static block unless we force update
+				if ((bl.count("vars") == 0) || (bl["vars"].size() == 0))
+				{
+					++ib;
+					continue;
+				}
+            }
+
             if (!UpdateBlock(sbM, isb, ib, &bl))
             {
-                std::cout << "Error updating block: " << ib << endl;
+				// OutputDebugStringA((sB.dump() + string("\n")).c_str());
             }
-            ib++;
+            ++ib;
         }
-        isb++;
+        ++isb;
     }
 }
 
