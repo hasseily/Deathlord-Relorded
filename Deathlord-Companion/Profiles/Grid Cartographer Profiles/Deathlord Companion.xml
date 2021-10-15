@@ -41,6 +41,18 @@
     <region id="5" name="Ruin 4" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
+    <region id="6" name="Town 5" ground_floor="true" start_floor="G" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
+    <region id="7" name="Village 6" ground_floor="true" start_floor="G" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
+    <region id="8" name="Tower of Shumi" ground_floor="true" start_floor="G" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
+    <region id="9" name="Fort 9" ground_floor="true" start_floor="G" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
 	</regions>
 
 	<views>
@@ -168,6 +180,30 @@
     <!-- Ruin 4 -->
     <packetview extends="Standard" region="5">
       <check offset="0" length="1" value="33" />
+      <check offset="2" length="1" value="0" />
+      <const_floor>G</const_floor>
+    </packetview>
+    <!-- Town 5 -->
+    <packetview extends="Standard" region="6">
+      <check offset="0" length="1" value="08" />
+      <check offset="2" length="1" value="0" />
+      <const_floor>G</const_floor>
+    </packetview>
+    <!-- Village 6 -->
+    <packetview extends="Standard" region="7">
+      <check offset="0" length="1" value="28" />
+      <check offset="2" length="1" value="0" />
+      <const_floor>G</const_floor>
+    </packetview>
+    <!-- Tower of Shumi -->
+    <packetview extends="Standard" region="8">
+      <check offset="0" length="1" value="2c" />
+      <check offset="2" length="1" value="02" />
+      <const_floor>G</const_floor>
+    </packetview>
+    <!-- Fort 9 -->
+    <packetview extends="Standard" region="9">
+      <check offset="0" length="1" value="0e" />
       <check offset="2" length="1" value="0" />
       <const_floor>G</const_floor>
     </packetview>
