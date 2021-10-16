@@ -15,12 +15,12 @@
 
     <!-- Deathlord Companion version 1 -->
     <detect system="APPLE II" sys="40a3f909" prg="8ce1a6e3" ph3="8ce1a6e3" ph2="1" ph1="0" ph0="0">
-      <!-- 0:mapID 1:region 2:maptype 3:xpos 4:ypos 5:overland_submap_xx 6:overland_submap_yy -->
+      <!-- 0:mapID 1:overland? 2:maptype 3:xpos 4:ypos 5:overland_submap_xx 6:overland_submap_yy -->
       <!-- The overland map is a stitched up 16x16 of 64x64 submaps using 8 overlapping margin tiles, with 5 and 6 -->
       <!-- above being their x and y coords in the supermap. Here we merge 4 submaps at a time, with 16 levels of 200x200 maps -->
       <!-- Note that for this to work, the x and y coords have been pre-processed in Deathlord Companion using -->
       <!-- this function (here for x): peek->data[3] = peek->data[3] + (p_sysmem[0xFC4B] % 4)*56; -->
-			<peek bytes="FC4E 0000 FC04 FC06 FC07 FC4B FC4C" />
+			<peek bytes="FC4E FC10 FC04 FC06 FC07 FC4B FC4C" />
 		</detect>
 
 	</dsub>
@@ -56,33 +56,40 @@
     <region id="10" name="Palace Dungeons" ground_floor="false" start_floor="B1" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
+    <region id="11" name="Dungeon 1" ground_floor="false" start_floor="B1" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
 	</regions>
 
 	<views>
-    <class name="Towers" tag="TR">
+    <class name="Towers">
       <!-- Max 3 groups of 4 floors, starting at 2 and going to 0 -->
       <xpos offset="3" length="1" min="0" max="ff" />
       <ypos offset="4" length="1" min="0" max="ff" />
+      <check offset="1" length="1" value="0" />
       <floor offset="2" length="1" adjust="-2" dir="down" />
     </class>
-    <class name="Dungeons" tag="DUN">
+    <class name="Dungeons">
       <!-- Max 3 groups of 4 floors, starting at 2 and going to 0 -->
       <xpos offset="3" length="1" min="0" max="ff" />
       <ypos offset="4" length="1" min="0" max="ff" />
+      <check offset="1" length="1" value="0" />
       <floor offset="2" length="1" adjust="-2" dir="up" />
     </class>
-    <class name="Towns" tag="TN">
+    <class name="Towns">
       <!-- Floor as "0" opposed to the overworld with "1" -->
       <xpos offset="3" length="1" min="0" max="ff" />
       <ypos offset="4" length="1" min="0" max="ff" />
+      <check offset="1" length="1" value="0" />
       <check offset="2" length="1" value="0" />
       <const_floor>G</const_floor>
     </class>
-		<class name="Overworld" tag="OW">
+		<class name="Overworld">
       <!-- Floor is "1", which defines it from towns -->
       <!-- MapId is irrelevant, only X and Y submaps -->
       <xpos offset="3" length="1" min="0" max="ff" />
 			<ypos offset="4" length="1" min="0" max="ff" />
+      <check offset="1" length="1" value="80" />
       <check offset="2" length="1" value="1" />
     </class>
 
@@ -123,7 +130,13 @@
     <packetview extends="Dungeons" region="10" tag="T09">
       <check offset="0" length="1" value="19" />
     </packetview>
+    <!-- Dungeon 1 -->
+    <packetview extends="Dungeons" region="11" tag="T10">
+      <check offset="0" length="1" value="1f" />
+    </packetview>
 
+    
+    
     <!-- Overworld needs to be last, as a "catchall" -->
     <!-- when no town or dungeon has been found      -->
     <!-- Lorn (Overworld) -->
