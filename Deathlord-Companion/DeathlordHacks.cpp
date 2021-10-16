@@ -15,6 +15,7 @@ const wchar_t CLASS_NAME[] = L"Deathlord Hacks Class";
 
 constexpr int MAP_IS_OVERLAND = 0xFC04;		// is set to 1 if on the overland area
 constexpr int MAP_ID = 0xFC4E;				// ID of the map
+constexpr int MAP_LEVEL = 0xFC04;			// Level "2" is the default ground
 constexpr int MAP_OVERLAND_X = 0xFC4B;		// X position of the overland submap
 constexpr int MAP_OVERLAND_Y = 0xFC4C;		// Y position of the overland submap
 constexpr int MAP_START_MEM = 0xC00;		// Start of memory area of the in-game map
@@ -216,9 +217,9 @@ void DeathlordHacks::SaveMapDataToDisk()
 	std::string fileName = "\\Maps\\Deathlord Map ";
 	char nameSuffix[100];
 	if (memPtr[MAP_IS_OVERLAND] == 1)
-		sprintf_s(nameSuffix, 100, "%02X Overland %02X %02X.txt", memPtr[MAP_ID], memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
+		sprintf_s(nameSuffix, 100, "Overland %02X %02X.txt", memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
 	else
-		sprintf_s(nameSuffix, 100, "%02X.txt", memPtr[MAP_ID]);
+		sprintf_s(nameSuffix, 100, "%02X-%02X.txt", memPtr[MAP_ID], memPtr[MAP_LEVEL]);
 	fileName.append(nameSuffix);
 	std::filesystem::path tilesetPath = std::filesystem::current_path();
 	tilesetPath += fileName;
@@ -308,7 +309,7 @@ void DeathlordHacks::BackupScenarioImages()
 	MessageBox(g_hFrameWindow, std::wstring(L"Successfully backed up scenario disks with postfix ").append(formattedTime).c_str(), L"Backup Successful", MB_ICONINFORMATION | MB_OK);
 }
 
-void DeathlordHacks::RestoreScenarioImages()
+bool DeathlordHacks::RestoreScenarioImages()
 {
 	std::wstring imageName;
 	std::wstring imageDirPath;
@@ -357,7 +358,7 @@ void DeathlordHacks::RestoreScenarioImages()
 						if (!dir.is_regular_file())
 						{
 							MessageBox(g_hFrameWindow, L"This is not a regular file!", L"Alert", MB_ICONASTERISK | MB_OK);
-							return;
+							return false;
 						}
 						std::wstring pathname(pszFilePathA);
 						std::wstring sA(L" Scenario A_2");	// piece of "Deathlord Scenario A_2021...
@@ -365,7 +366,7 @@ void DeathlordHacks::RestoreScenarioImages()
 						if (fx == std::string::npos)
 						{
 							MessageBox(g_hFrameWindow, L"The program cannot parse the backup filename. Please leave the image filenames alone, thank you :)", L"Alert", MB_ICONASTERISK | MB_OK);
-							return;
+							return false;
 						}
 						pathname.replace(fx, sA.length(), L" Scenario B_2");
 						// Now copy both files
@@ -373,13 +374,13 @@ void DeathlordHacks::RestoreScenarioImages()
 						{
 							err = GetLastError();
 							HA::AlertIfError(g_hFrameWindow);
-							return;
+							return false;
 						}
 						if (!CopyFile(pathname.c_str(), g_nonVolatile.diskScenBPath.c_str(), FALSE))
 						{
 							err = GetLastError();
 							HA::AlertIfError(g_hFrameWindow);
-							return;
+							return false;
 						}
 					}
 					pItem->Release();
@@ -388,17 +389,22 @@ void DeathlordHacks::RestoreScenarioImages()
 				{
 					err = GetLastError();
 					HA::AlertIfError(g_hFrameWindow);
-					return;
+					return false;
 				}
 			}
 			else
 			{
 				err = GetLastError();
 				HA::AlertIfError(g_hFrameWindow);
-				return;
+				return false;
 			}
 			pFileOpen->Release();
 		}
 		CoUninitialize();
 	}
+	else
+	{
+		return false;
+	}
+	return true;
 }

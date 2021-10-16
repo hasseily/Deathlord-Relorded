@@ -14,7 +14,7 @@ public:
 
 	void SaveMapDataToDisk();
 	void BackupScenarioImages();
-	void RestoreScenarioImages();
+	bool RestoreScenarioImages();
 	void ShowHacksWindow();
 	void HideHacksWindow();
 	bool IsHacksWindowDisplayed();

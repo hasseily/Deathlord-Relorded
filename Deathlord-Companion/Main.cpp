@@ -590,7 +590,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case ID_FILE_RESTORESCENARIOS:
 		{
-			g_dlHacks->RestoreScenarioImages();
+			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
+
+			diskCard.EjectDisk(DRIVE_1);
+			diskCard.EjectDisk(DRIVE_2);
+			if (g_dlHacks->RestoreScenarioImages())
+			{
+				MessageBox(hWnd, L"Scenario disks restored from backup. The system will now reboot. Please stand by.", L"Restore completed", MB_ICONINFORMATION | MB_OK);
+				PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_RESET, 1);
+			}
+			else
+			{
+				MessageBox(hWnd, L"Scenario disks were not restored. Drives are empty.", L"Restore failed", MB_ICONWARNING | MB_OK);
+			}
 			break;
 		}
 		case ID_FILE_ACTIVATEPROFILE:
