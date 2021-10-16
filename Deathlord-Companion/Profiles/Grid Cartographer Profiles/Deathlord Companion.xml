@@ -6,7 +6,7 @@
 		short="DEATHLORD COMPANION"
 		titlelo="Deathlord Companion"
 		beta="true"
-		rev="1"
+		rev="2"
 	/>
 
 	<author><![CDATA[Rikkles]]></author>
@@ -44,169 +44,169 @@
     <region id="6" name="Town 5" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
-    <region id="7" name="Village 6" ground_floor="true" start_floor="G" auto_create="true" >
+    <region id="7" name="Tokushima" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
     <region id="8" name="Tower of Shumi" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
-    <region id="9" name="Fort 9" ground_floor="true" start_floor="G" auto_create="true" >
+    <region id="9" name="Fort Wintergreen" ground_floor="true" start_floor="G" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
+    <region id="10" name="Palace Dungeons" ground_floor="false" start_floor="B1" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
 	</regions>
 
 	<views>
-		<class name="Standard">
-			<xpos offset="3" length="1" min="0" max="ff" />
+    <class name="Towers" tag="TR">
+      <!-- Max 3 groups of 4 floors, starting at 2 and going to 0 -->
+      <xpos offset="3" length="1" min="0" max="ff" />
+      <ypos offset="4" length="1" min="0" max="ff" />
+      <floor offset="2" length="1" adjust="-2" dir="down" />
+    </class>
+    <class name="Dungeons" tag="DUN">
+      <!-- Max 3 groups of 4 floors, starting at 2 and going to 0 -->
+      <xpos offset="3" length="1" min="0" max="ff" />
+      <ypos offset="4" length="1" min="0" max="ff" />
+      <floor offset="2" length="1" adjust="-2" dir="up" />
+    </class>
+    <class name="Towns" tag="TN">
+      <!-- Floor as "0" opposed to the overworld with "1" -->
+      <xpos offset="3" length="1" min="0" max="ff" />
+      <ypos offset="4" length="1" min="0" max="ff" />
+      <check offset="2" length="1" value="0" />
+      <const_floor>G</const_floor>
+    </class>
+		<class name="Overworld" tag="OW">
+      <!-- Floor is "1", which defines it from towns -->
+      <!-- MapId is irrelevant, only X and Y submaps -->
+      <xpos offset="3" length="1" min="0" max="ff" />
 			<ypos offset="4" length="1" min="0" max="ff" />
-		</class>
-		
-		
-		<!-- Lorn (Overworld) -->
-		<packetview extends="Standard" region="1">
-			<check offset="2" length="1" value="1" />
+      <check offset="2" length="1" value="1" />
+    </class>
+
+
+    <!-- Town 1 -->
+    <packetview extends="Towns" region="2" tag="T01">
+      <check offset="0" length="1" value="1b" />
+    </packetview>
+    <!-- Castle 2 -->
+    <packetview extends="Towns" region="3" tag="T02">
+      <check offset="0" length="1" value="19" />
+    </packetview>
+    <!-- Town 3 -->
+    <packetview extends="Towns" region="4" tag="T03">
+      <check offset="0" length="1" value="09" />
+    </packetview>
+    <!-- Ruin 4 -->
+    <packetview extends="Towns" region="5" tag="T04">
+      <check offset="0" length="1" value="33" />
+    </packetview>
+    <!-- Town 5 -->
+    <packetview extends="Towns" region="6" tag="T05">
+      <check offset="0" length="1" value="08" />
+    </packetview>
+    <!-- Tokushima -->
+    <packetview extends="Towns" region="7" tag="T06">
+      <check offset="0" length="1" value="28" />
+    </packetview>
+    <!-- Tower of Shumi -->
+    <packetview extends="Towers" region="8" tag="T07">
+      <check offset="0" length="1" value="2c" />
+    </packetview>
+    <!-- Fort Wintergreen -->
+    <packetview extends="Towns" region="9" tag="T08">
+      <check offset="0" length="1" value="0e" />
+    </packetview>
+    <!-- Palace Dungeons -->
+    <packetview extends="Dungeons" region="10" tag="T09">
+      <check offset="0" length="1" value="19" />
+    </packetview>
+
+    <!-- Overworld needs to be last, as a "catchall" -->
+    <!-- when no town or dungeon has been found      -->
+    <!-- Lorn (Overworld) -->
+    <packetview extends="Overworld" region="1" tag="TOW01">
       <check offset="5" length="1" value="4" op="LT" />
       <check offset="6" length="1" value="4" op="LT" />
       <const_floor>F1</const_floor>
-		</packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    </packetview>
+    <packetview extends="Overworld" region="1" tag="TOW02">
       <check offset="5" length="1" value="8" op="LT" />
       <check offset="6" length="1" value="4" op="LT" />
       <const_floor>F2</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW03">
       <check offset="5" length="1" value="12" op="LT" />
       <check offset="6" length="1" value="4" op="LT" />
       <const_floor>F3</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW04">
       <check offset="5" length="1" value="16" op="LT" />
       <check offset="6" length="1" value="4" op="LT" />
       <const_floor>F4</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW05">
       <check offset="5" length="1" value="4" op="LT" />
       <check offset="6" length="1" value="8" op="LT" />
       <const_floor>F5</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW06">
       <check offset="5" length="1" value="8" op="LT" />
       <check offset="6" length="1" value="8" op="LT" />
       <const_floor>F6</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW07">
       <check offset="5" length="1" value="12" op="LT" />
       <check offset="6" length="1" value="8" op="LT" />
       <const_floor>F7</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW08">
       <check offset="5" length="1" value="16" op="LT" />
       <check offset="6" length="1" value="8" op="LT" />
       <const_floor>F8</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW09">
       <check offset="5" length="1" value="4" op="LT" />
       <check offset="6" length="1" value="12" op="LT" />
       <const_floor>F9</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW10">
       <check offset="5" length="1" value="8" op="LT" />
       <check offset="6" length="1" value="12" op="LT" />
       <const_floor>F10</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW11">
       <check offset="5" length="1" value="12" op="LT" />
       <check offset="6" length="1" value="12" op="LT" />
       <const_floor>F11</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW12">
       <check offset="5" length="1" value="16" op="LT" />
       <check offset="6" length="1" value="12" op="LT" />
       <const_floor>F12</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW13">
       <check offset="5" length="1" value="4" op="LT" />
       <check offset="6" length="1" value="16" op="LT" />
       <const_floor>F13</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW14">
       <check offset="5" length="1" value="8" op="LT" />
       <check offset="6" length="1" value="16" op="LT" />
       <const_floor>F14</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW15">
       <check offset="5" length="1" value="12" op="LT" />
       <check offset="6" length="1" value="16" op="LT" />
       <const_floor>F15</const_floor>
     </packetview>
-    <packetview extends="Standard" region="1">
-      <check offset="2" length="1" value="1" />
+    <packetview extends="Overworld" region="1" tag="TOW16">
       <check offset="5" length="1" value="16" op="LT" />
       <check offset="6" length="1" value="16" op="LT" />
       <const_floor>F16</const_floor>
     </packetview>
-    <!-- Town 1 -->
-    <packetview extends="Standard" region="2">
-      <check offset="0" length="1" value="1b" />
-      <check offset="2" length="1" value="0" />
-      <const_floor>G</const_floor>
-    </packetview>
-    <!-- Castle 2 -->
-    <packetview extends="Standard" region="3">
-      <check offset="0" length="1" value="19" />
-      <check offset="2" length="1" value="0" />
-      <const_floor>G</const_floor>
-    </packetview>
-    <!-- Town 3 -->
-    <packetview extends="Standard" region="4">
-      <check offset="0" length="1" value="09" />
-      <check offset="2" length="1" value="0" />
-      <const_floor>G</const_floor>
-    </packetview>
-    <!-- Ruin 4 -->
-    <packetview extends="Standard" region="5">
-      <check offset="0" length="1" value="33" />
-      <check offset="2" length="1" value="0" />
-      <const_floor>G</const_floor>
-    </packetview>
-    <!-- Town 5 -->
-    <packetview extends="Standard" region="6">
-      <check offset="0" length="1" value="08" />
-      <check offset="2" length="1" value="0" />
-      <const_floor>G</const_floor>
-    </packetview>
-    <!-- Village 6 -->
-    <packetview extends="Standard" region="7">
-      <check offset="0" length="1" value="28" />
-      <check offset="2" length="1" value="0" />
-      <const_floor>G</const_floor>
-    </packetview>
-    <!-- Tower of Shumi -->
-    <packetview extends="Standard" region="8">
-      <check offset="0" length="1" value="2c" />
-      <check offset="2" length="1" value="02" />
-      <const_floor>G</const_floor>
-    </packetview>
-    <!-- Fort 9 -->
-    <packetview extends="Standard" region="9">
-      <check offset="0" length="1" value="0e" />
-      <check offset="2" length="1" value="0" />
-      <const_floor>G</const_floor>
-    </packetview>
-	</views>
+  </views>
 
 </gamelink>
