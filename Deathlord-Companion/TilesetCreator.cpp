@@ -139,6 +139,12 @@ bool TilesetCreator::insertTileInTilesetBuffer(UINT32 iTileId, UINT8 iTileX, UIN
 {
     if (isActive == false)
         return false;
+    // There are no real tiles in the upper 7 bits
+    if (iTileId > 0x7F)
+        return false;
+    // If the tile is in the overland map, use the upper range of the byte (0x80->0xFF)
+    // because there are 2 tilesets (overland and towns/dungeons) and we want to merge them into one
+    bool isOverland = (*MemGetMainPtr(0xFC10) == 0x80);
     // Calculate the source 0,0 byte to get the tile from
     UINT32 iFBOriginByte = ((TOPMARGIN + iTileY * FBTH) * FRAMEBUFFERWIDTHB) + ((LEFTMARGIN + iTileX * FBTW) * sizeof(UINT32));
 
@@ -195,6 +201,8 @@ bool TilesetCreator::insertTileInTilesetBuffer(UINT32 iTileId, UINT8 iTileX, UIN
 
             // Swap the RGB bytes, and force alpha to be opaque because when rgb==ffffff (white), a==00.
             iPNGCurrentByte = iPNGOriginByte + ((j / 2) * PNGBUFFERWIDTHB) + ((i / 2) * sizeof(UINT32));
+            if (isOverland)
+                iPNGCurrentByte += 0x80;
             pTilesetBuffer[iPNGCurrentByte] = b2;
             pTilesetBuffer[iPNGCurrentByte + 1] = b1;
             pTilesetBuffer[iPNGCurrentByte + 2] = b0;

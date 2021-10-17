@@ -77,7 +77,7 @@
       <floor offset="2" length="1" adjust="-2" dir="up" />
     </class>
     <class name="Towns">
-      <!-- Floor as "0" opposed to the overworld with "1" -->
+      <!-- Floor as "0" -->
       <xpos offset="3" length="1" min="0" max="ff" />
       <ypos offset="4" length="1" min="0" max="ff" />
       <check offset="1" length="1" value="0" />
@@ -85,7 +85,7 @@
       <const_floor>G</const_floor>
     </class>
 		<class name="Overworld">
-      <!-- Floor is "1", which defines it from towns -->
+      <!-- FC10 == 0x80 defines the overworld -->
       <!-- MapId is irrelevant, only X and Y submaps -->
       <xpos offset="3" length="1" min="0" max="ff" />
 			<ypos offset="4" length="1" min="0" max="ff" />
@@ -136,9 +136,6 @@
     </packetview>
 
     
-    
-    <!-- Overworld needs to be last, as a "catchall" -->
-    <!-- when no town or dungeon has been found      -->
     <!-- Lorn (Overworld) -->
     <packetview extends="Overworld" region="1" tag="TOW01">
       <check offset="5" length="1" value="4" op="LT" />
