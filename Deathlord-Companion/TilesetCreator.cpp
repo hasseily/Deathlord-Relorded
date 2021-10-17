@@ -151,6 +151,8 @@ bool TilesetCreator::insertTileInTilesetBuffer(UINT32 iTileId, UINT8 iTileX, UIN
     // Calculate the destination 0,0 byte to draw the tile onto
     UINT8 iPNGRow = iTileId >> 4;
     UINT8 iPNGCol = iTileId & 0b1111;
+	if (isOverland) // overland goes in the last 8 rows
+		iPNGRow += 8;
     // Same as above, except that there are no margins
     UINT32 iPNGOriginByte = (iPNGRow * PNGTH * PNGBUFFERWIDTHB) + (iPNGCol * PNGTW * sizeof(UINT32));
 
@@ -201,8 +203,6 @@ bool TilesetCreator::insertTileInTilesetBuffer(UINT32 iTileId, UINT8 iTileX, UIN
 
             // Swap the RGB bytes, and force alpha to be opaque because when rgb==ffffff (white), a==00.
             iPNGCurrentByte = iPNGOriginByte + ((j / 2) * PNGBUFFERWIDTHB) + ((i / 2) * sizeof(UINT32));
-            if (isOverland)
-                iPNGCurrentByte += 0x80;
             pTilesetBuffer[iPNGCurrentByte] = b2;
             pTilesetBuffer[iPNGCurrentByte + 1] = b1;
             pTilesetBuffer[iPNGCurrentByte + 2] = b0;
