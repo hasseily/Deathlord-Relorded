@@ -6,7 +6,7 @@
 		short="DEATHLORD COMPANION"
 		titlelo="Deathlord Companion"
 		beta="true"
-		rev="2"
+		rev="3"
 	/>
 
 	<author><![CDATA[Rikkles]]></author>
@@ -29,22 +29,22 @@
 		<region id="1" name="Lorn" ground_floor="true" start_floor="F1" auto_create="true" >
 			<grid width="58" height="58" tilex="4" tiley="4" repeating="false" origin_tl="true" />
 		</region>
-    <region id="2" name="Town 1" ground_floor="true" start_floor="G" auto_create="true" >
+    <region id="2" name="Kawa" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
-    <region id="3" name="Castle 2" ground_floor="true" start_floor="G" auto_create="true" >
+    <region id="3" name="Emperor Palace" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
     <region id="4" name="Town 3" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
-    <region id="5" name="Ruin 4" ground_floor="true" start_floor="G" auto_create="true" >
+    <region id="5" name="Yokahama" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
-    <region id="6" name="Town 5" ground_floor="true" start_floor="G" auto_create="true" >
+    <region id="6" name="Tokugawa" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
-    <region id="7" name="Tokushima" ground_floor="true" start_floor="G" auto_create="true" >
+    <region id="7" name="Tokishima" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
     <region id="8" name="Tower of Shumi" ground_floor="true" start_floor="G" auto_create="true" >
@@ -94,11 +94,11 @@
     </class>
 
 
-    <!-- Town 1 -->
+    <!-- Kawa -->
     <packetview extends="Towns" region="2" tag="T01">
       <check offset="0" length="1" value="1b" />
     </packetview>
-    <!-- Castle 2 -->
+    <!-- Emperor Palace -->
     <packetview extends="Towns" region="3" tag="T02">
       <check offset="0" length="1" value="19" />
     </packetview>
@@ -106,11 +106,11 @@
     <packetview extends="Towns" region="4" tag="T03">
       <check offset="0" length="1" value="09" />
     </packetview>
-    <!-- Ruin 4 -->
+    <!-- Yokahama -->
     <packetview extends="Towns" region="5" tag="T04">
       <check offset="0" length="1" value="33" />
     </packetview>
-    <!-- Town 5 -->
+    <!-- Tokugawa -->
     <packetview extends="Towns" region="6" tag="T05">
       <check offset="0" length="1" value="08" />
     </packetview>
