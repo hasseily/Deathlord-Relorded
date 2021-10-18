@@ -6,7 +6,7 @@
 		short="DEATHLORD COMPANION"
 		titlelo="Deathlord Companion"
 		beta="true"
-		rev="3"
+		rev="4"
 	/>
 
 	<author><![CDATA[Rikkles]]></author>
@@ -35,7 +35,7 @@
     <region id="3" name="Emperor Palace" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
-    <region id="4" name="Town 3" ground_floor="true" start_floor="G" auto_create="true" >
+    <region id="4" name="Wakiza" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
     <region id="5" name="Yokahama" ground_floor="true" start_floor="G" auto_create="true" >
@@ -57,6 +57,15 @@
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
     <region id="11" name="Dungeon 1" ground_floor="false" start_floor="B1" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
+    <region id="12" name="Towne Royal" ground_floor="true" start_floor="G" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
+    <region id="13" name="Wakai" ground_floor="true" start_floor="G" auto_create="true" >
+      <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
+    </region>
+    <region id="14" name="Town 14" ground_floor="true" start_floor="G" auto_create="true" >
       <grid width="16" height="16" tilex="4" tiley="4" repeating="false" origin_tl="true" />
     </region>
 	</regions>
@@ -102,7 +111,7 @@
     <packetview extends="Towns" region="3" tag="T02">
       <check offset="0" length="1" value="19" />
     </packetview>
-    <!-- Town 3 -->
+    <!-- Wakiza (Ruin) -->
     <packetview extends="Towns" region="4" tag="T03">
       <check offset="0" length="1" value="09" />
     </packetview>
@@ -134,7 +143,18 @@
     <packetview extends="Dungeons" region="11" tag="T10">
       <check offset="0" length="1" value="1f" />
     </packetview>
-
+    <!-- Towne Royal -->
+    <packetview extends="Towns" region="12" tag="T11">
+      <check offset="0" length="1" value="10" />
+    </packetview>
+    <!-- Wakai (Ruin) -->
+    <packetview extends="Towns" region="13" tag="T12">
+      <check offset="0" length="1" value="31" />
+    </packetview>
+    <!-- Town 14 -->
+    <packetview extends="Towns" region="14" tag="T13">
+      <check offset="0" length="1" value="20" />
+    </packetview>
     
     <!-- Lorn (Overworld) -->
     <packetview extends="Overworld" region="1" tag="TOW01">
