@@ -492,51 +492,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					KeybQueueKeypress(wParam, NOT_ASCII);
 
 		break;
-	case WM_KEYUP:
-		// For special no-repeat commands
-		if (g_isInGameMap)
-		{
-			switch (wParam)
-			{
-			case VK_NEXT:
-			{
-				// TODO: Set up map extraction method
-				g_dlHacks->SaveMapDataToDisk();
-				break;
-			}
-			case VK_NUMPAD0:
-			{
-				// Parse tiles on the screen
-				g_tilesetCreator.parseTilesInFrameBuffer();
-				g_tilesetCreator.saveTileFile();
-				break;
-			}
-			case VK_NUMPAD1:
-			{
-				// Start the tile parser.
-				if (!g_tilesetCreator.isActive)
-					g_tilesetCreator.start();
-				break;
-			}
-			case VK_NUMPAD5:
-			{
-				// SReset the tile parser (clear the saved tiles)
-				if (g_tilesetCreator.isActive)
-					g_tilesetCreator.reset();
-				break;
-			}
-			case VK_NUMPAD9:
-			{
-				// Stop the tile parser.
-				if (g_tilesetCreator.isActive)
-					g_tilesetCreator.stop();
-				break;
-			}
-			default:
-				break;
-			}
-		}
-		break;
+
 	case WM_SYSKEYUP:
 		Keyboard::ProcessMessage(message, wParam, lParam);
 		break;

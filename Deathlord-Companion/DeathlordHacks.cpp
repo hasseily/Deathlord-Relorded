@@ -9,6 +9,7 @@
 #include <filesystem>
 #include "Emulator/AppleWin.h"
 #include "Game.h"
+#include "TilesetCreator.h"
 
 
 const wchar_t CLASS_NAME[] = L"Deathlord Hacks Class";
@@ -195,6 +196,18 @@ bool DeathlordHacks::IsHacksWindowDisplayed()
 
 void DeathlordHacks::SaveMapDataToDisk()
 {
+	char nameSuffix[100];
+	std::string fileName;
+	std::fstream fsFile;
+
+	TCHAR szAppPath[3000];
+	GetModuleFileNameW(NULL, szAppPath, 3000);
+	std::filesystem::path wsAppPath(szAppPath);
+	std::filesystem::path mapsDir = std::filesystem::path(wsAppPath);
+	mapsDir.replace_filename("Maps");
+	std::filesystem::create_directory(mapsDir);
+
+	// Do the map file
 	std::string sMapData = "";
 	UINT8 *memPtr = MemGetBankPtr(0);
 	char tileId[3] = "00";
@@ -210,23 +223,41 @@ void DeathlordHacks::SaveMapDataToDisk()
 		}
 		sMapData.append(tileId, 2);
 	}
-	
-	// std::wstring wbuf;
-	// HA::ConvertStrToWStr(&sMapData, &wbuf);
-	// OutputDebugString(wbuf.c_str());
-	std::string fileName = "\\Maps\\Deathlord Map ";
-	char nameSuffix[100];
+	// Save the map file
+	fileName = "Maps\\Map ";
 	if (memPtr[MAP_IS_OVERLAND] == 1)
 		sprintf_s(nameSuffix, 100, "Overland %02X %02X.txt", memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
 	else
 		sprintf_s(nameSuffix, 100, "%02X-%02X.txt", memPtr[MAP_ID], memPtr[MAP_LEVEL]);
 	fileName.append(nameSuffix);
-	std::filesystem::path tilesetPath = std::filesystem::current_path();
-	tilesetPath += fileName;
-	std::fstream fsFile(tilesetPath, std::ios::out | std::ios::binary);
+	std::filesystem::path mapPath = std::filesystem::path(wsAppPath);
+	mapPath.replace_filename(fileName);
+	fsFile = std::fstream(mapPath, std::ios::out | std::ios::binary);
 	fsFile.write(sMapData.c_str(), sMapData.size());
 	fsFile.close();
 
+	// Do the tileset
+	TilesetCreator ts = TilesetCreator();
+	char* tilesetRGBAData = ts.parseTilesInHGR2();
+	// Save the tile file
+	fileName = "Maps\\Tileset ";
+	if (memPtr[MAP_IS_OVERLAND] == 1)
+		sprintf_s(nameSuffix, 100, "Overland %02X %02X.data", memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
+	else
+		sprintf_s(nameSuffix, 100, "%02X-%02X.data", memPtr[MAP_ID], memPtr[MAP_LEVEL]);
+	fileName.append(nameSuffix);
+	std::filesystem::path tilesetPath = std::filesystem::path(wsAppPath);
+	tilesetPath.replace_filename(fileName);
+	fsFile = std::fstream(tilesetPath, std::ios::out | std::ios::binary);
+	fsFile.write(tilesetRGBAData, PNGBUFFERSIZE);
+	fsFile.close();
+
+	std::wstring msg(L"Saved level map: ");
+	msg.append(mapPath.c_str());
+	msg.append(L"\nSaved tileset  : ");
+	msg.append(tilesetPath.c_str());
+	msg.append(L"\n\nTileset format data is RGBA 448x512 pixels");
+	MessageBox(g_hFrameWindow, msg.c_str(), TEXT("Deathlord Map Data"), MB_OK);
 }
 
 void DeathlordHacks::BackupScenarioImages()
