@@ -89,8 +89,6 @@
 #define ID_EMULATOR_SELECTSCENARIOB     32834
 #define ID_SCENARIOS_BACKUP             32835
 #define ID_SCENARIOS_RESTORE            32836
-#define ID_FILE_BACKUPSCENARIOS         32838
-#define ID_FILE_RESTORESCENARIOS        32839
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

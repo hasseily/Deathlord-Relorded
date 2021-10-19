@@ -539,12 +539,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// Parse the menu selections:
 		switch (wmId)
 		{
-		case ID_FILE_BACKUPSCENARIOS:
+		case ID_SCENARIOS_BACKUP:
 		{
 			g_dlHacks->BackupScenarioImages();
 			break;
 		}
-		case ID_FILE_RESTORESCENARIOS:
+		case ID_SCENARIOS_RESTORE:
 		{
 			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
 
