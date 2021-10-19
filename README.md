@@ -40,7 +40,7 @@ WARNING: Save or copy the log window content somewhere else before you quit the 
 ## Other unique things
 
 There's a hack window where you can modify a byte of memory, and save the current map to disk in the Maps/ folder.
-Also the current map will save if you hit PAGEDOWN.
+Also the current map will save if you hit PAGEDOWN. When saving the map, it also saves the related tileset for import in your favorite mapping program. The tileset data is 448x512 pixels, in RGBA format. Use Gimp or other programs to transform it into PNG or anything else.
 
 Another unique feature of the Deathlord Companion is that it doesn't skip a turn if you wait too long. The time and food usage pass normally though, so if you want to be away from your keyboard for a long time make sure you at least put yourself in a character stats screen (press 1-6 on the keyboard).
 
