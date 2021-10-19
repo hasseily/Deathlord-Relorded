@@ -168,12 +168,12 @@
       <const_floor>F2</const_floor>
     </packetview>
     <packetview extends="Overworld" region="1" tag="TOW03">
-      <check offset="5" length="1" value="12" op="LT" />
+      <check offset="5" length="1" value="0c" op="LT" />
       <check offset="6" length="1" value="4" op="LT" />
       <const_floor>F3</const_floor>
     </packetview>
     <packetview extends="Overworld" region="1" tag="TOW04">
-      <check offset="5" length="1" value="16" op="LT" />
+      <check offset="5" length="1" value="10" op="LT" />
       <check offset="6" length="1" value="4" op="LT" />
       <const_floor>F4</const_floor>
     </packetview>
@@ -188,53 +188,53 @@
       <const_floor>F6</const_floor>
     </packetview>
     <packetview extends="Overworld" region="1" tag="TOW07">
-      <check offset="5" length="1" value="12" op="LT" />
+      <check offset="5" length="1" value="0c" op="LT" />
       <check offset="6" length="1" value="8" op="LT" />
       <const_floor>F7</const_floor>
     </packetview>
     <packetview extends="Overworld" region="1" tag="TOW08">
-      <check offset="5" length="1" value="16" op="LT" />
+      <check offset="5" length="1" value="10" op="LT" />
       <check offset="6" length="1" value="8" op="LT" />
       <const_floor>F8</const_floor>
     </packetview>
     <packetview extends="Overworld" region="1" tag="TOW09">
       <check offset="5" length="1" value="4" op="LT" />
-      <check offset="6" length="1" value="12" op="LT" />
+      <check offset="6" length="1" value="0c" op="LT" />
       <const_floor>F9</const_floor>
     </packetview>
     <packetview extends="Overworld" region="1" tag="TOW10">
       <check offset="5" length="1" value="8" op="LT" />
-      <check offset="6" length="1" value="12" op="LT" />
+      <check offset="6" length="1" value="0c" op="LT" />
       <const_floor>F10</const_floor>
     </packetview>
     <packetview extends="Overworld" region="1" tag="TOW11">
-      <check offset="5" length="1" value="12" op="LT" />
-      <check offset="6" length="1" value="12" op="LT" />
+      <check offset="5" length="1" value="0c" op="LT" />
+      <check offset="6" length="1" value="0c" op="LT" />
       <const_floor>F11</const_floor>
     </packetview>
     <packetview extends="Overworld" region="1" tag="TOW12">
-      <check offset="5" length="1" value="16" op="LT" />
-      <check offset="6" length="1" value="12" op="LT" />
+      <check offset="5" length="1" value="10" op="LT" />
+      <check offset="6" length="1" value="0c" op="LT" />
       <const_floor>F12</const_floor>
     </packetview>
     <packetview extends="Overworld" region="1" tag="TOW13">
       <check offset="5" length="1" value="4" op="LT" />
-      <check offset="6" length="1" value="16" op="LT" />
+      <check offset="6" length="1" value="10" op="LT" />
       <const_floor>F13</const_floor>
     </packetview>
     <packetview extends="Overworld" region="1" tag="TOW14">
       <check offset="5" length="1" value="8" op="LT" />
-      <check offset="6" length="1" value="16" op="LT" />
+      <check offset="6" length="1" value="10" op="LT" />
       <const_floor>F14</const_floor>
     </packetview>
     <packetview extends="Overworld" region="1" tag="TOW15">
-      <check offset="5" length="1" value="12" op="LT" />
-      <check offset="6" length="1" value="16" op="LT" />
+      <check offset="5" length="1" value="0c" op="LT" />
+      <check offset="6" length="1" value="10" op="LT" />
       <const_floor>F15</const_floor>
     </packetview>
     <packetview extends="Overworld" region="1" tag="TOW16">
-      <check offset="5" length="1" value="16" op="LT" />
-      <check offset="6" length="1" value="16" op="LT" />
+      <check offset="5" length="1" value="10" op="LT" />
+      <check offset="6" length="1" value="10" op="LT" />
       <const_floor>F16</const_floor>
     </packetview>
   </views>
