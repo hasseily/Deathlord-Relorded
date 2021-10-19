@@ -7,8 +7,6 @@ constexpr auto PIXELDEPTH	= 4;	// RGBA
 // For the framebuffer
 constexpr UINT8 FBTW = 28;	// FB tile width in pixels
 constexpr UINT8 FBTH = 32;	// FB tile height in pixels
-constexpr UINT8 FBTILESPERROW = 9;
-constexpr UINT8 FBTILESPERCOL = 9;
 constexpr auto FRAMEBUFFERWIDTHB = 600 * PIXELDEPTH;
 constexpr auto FRAMEBUFFERHEIGHT = 420;
 constexpr auto FRAMEBUFFERSIZE = FRAMEBUFFERWIDTHB * FRAMEBUFFERHEIGHT;

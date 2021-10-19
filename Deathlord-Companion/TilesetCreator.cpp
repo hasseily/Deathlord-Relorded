@@ -39,7 +39,7 @@ char* TilesetCreator::parseTilesInHGR2()
 
 	UINT8 tileByteSize = 2 * 16;   // 2 bytes in each of 16 lines
 
-    for (UINT32 iT = 0; iT < (tileByteSize * 0x80); iT += tileByteSize)  // Tile by tile, stop at 128 tiles (the rest is garbage)
+    for (UINT32 iT = 0; iT < (tileByteSize * 0x100); iT += tileByteSize)  // Tile by tile, stop at 128 tiles (the rest is garbage)
     {
         for (size_t jT = 0; jT < tileByteSize; jT += 2)     // jump line by line, 2 bytes at a time
         {
