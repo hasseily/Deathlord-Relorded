@@ -14,12 +14,6 @@
 
 const wchar_t CLASS_NAME[] = L"Deathlord Hacks Class";
 
-constexpr int MAP_IS_OVERLAND = 0xFC04;		// is set to 1 if on the overland area
-constexpr int MAP_ID = 0xFC4E;				// ID of the map
-constexpr int MAP_LEVEL = 0xFC04;			// Level "2" is the default ground
-constexpr int MAP_OVERLAND_X = 0xFC4B;		// X position of the overland submap
-constexpr int MAP_OVERLAND_Y = 0xFC4C;		// Y position of the overland submap
-constexpr int MAP_START_MEM = 0xC00;		// Start of memory area of the in-game map
 constexpr UINT8 MAP_WIDTH = 64;
 constexpr int MAP_LENGTH = MAP_WIDTH * MAP_WIDTH;			// Size of map (in bytes)
 
@@ -207,13 +201,14 @@ void DeathlordHacks::SaveMapDataToDisk()
 	mapsDir.replace_filename("Maps");
 	std::filesystem::create_directory(mapsDir);
 
-	// Do the map file
+	// Do the map file directly from memory
 	std::string sMapData = "";
-	UINT8 *memPtr = MemGetBankPtr(0);
+	
+	UINT8 *memPtr = m_tileset->GetCurrentGameMap();
 	char tileId[3] = "00";
 	for (size_t i = 0; i < MAP_LENGTH; i++)
 	{
-		sprintf_s(tileId, 3, "%02X", memPtr[MAP_START_MEM+i]);
+		sprintf_s(tileId, 3, "%02X", memPtr[i]);
 		if (i != 0)
 		{
 			if ((i % MAP_WIDTH) == 0)
@@ -237,8 +232,7 @@ void DeathlordHacks::SaveMapDataToDisk()
 	fsFile.close();
 
 	// Do the tileset
-	TilesetCreator ts = TilesetCreator();
-	char* tilesetRGBAData = ts.parseTilesInHGR2();
+	LPBYTE tilesetRGBAData = m_tileset->GetCurrentTilesetBuffer();
 	// Save the tile file
 	fileName = "Maps\\Tileset ";
 	if (memPtr[MAP_IS_OVERLAND] == 1)
@@ -249,7 +243,7 @@ void DeathlordHacks::SaveMapDataToDisk()
 	std::filesystem::path tilesetPath = std::filesystem::path(wsAppPath);
 	tilesetPath.replace_filename(fileName);
 	fsFile = std::fstream(tilesetPath, std::ios::out | std::ios::binary);
-	fsFile.write(tilesetRGBAData, PNGBUFFERSIZE);
+	fsFile.write((char *)tilesetRGBAData, PNGBUFFERSIZE);
 	fsFile.close();
 
 	std::wstring msg(L"Saved level map: ");

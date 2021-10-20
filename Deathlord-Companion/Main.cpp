@@ -354,9 +354,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			pWR->right = pWR->left + bw + m_extraWindowWidth;
 			pWR->bottom = pWR->top + bh + m_extraWindowHeight;
 		}
-		// char buf[500];
-		// sprintf_s(buf, "In Main WM_SIZING Left %d, Top %d\n", pWR->left, pWR->top);
-		// OutputDebugStringA(buf);
+		char buf[500];
+		sprintf_s(buf, "In Main WM_SIZING Left %d, Top %d, Right %d, Bottom %d, extraW %d, extraH %d, \n", pWR->left, pWR->top, pWR->right, pWR->bottom, m_extraWindowWidth, m_extraWindowHeight);
+		OutputDebugStringA(buf);
 		break;
 	}
 
@@ -456,6 +456,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			}
 			default:
+				game->PollKeyMemoryLocations();
 				break;
 			}
 		}

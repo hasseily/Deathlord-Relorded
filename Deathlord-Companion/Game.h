@@ -8,9 +8,11 @@
 #include "StepTimer.h"
 #include "LogWindow.h"
 #include "DeathlordHacks.h"
+#include "TilesetCreator.h"
 #include "HAUtils.h"
 #include "NonVolatile.h"
 #include <Keyboard.h>
+#include <map>
 
 constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 30;  // Only render so many frames. Give the emulator all the rest of the time
 
@@ -28,6 +30,7 @@ extern bool g_wantsToSave;          // only TRUE when the player is asking to sa
 extern NonVolatile g_nonVolatile;
 static std::shared_ptr<LogWindow>m_logWindow;
 static std::shared_ptr<DeathlordHacks>m_dlHacks;
+static std::shared_ptr<TilesetCreator>m_tileset;
 
 // A basic game implementation that creates a D3D12 device and
 // provides a game loop.
@@ -78,8 +81,20 @@ public:
 
     void GetBaseSize(__out int& width, __out int& height) noexcept;
 
+    // Memory polling
+	void PollKeyMemoryLocations();
+    void PollChanged_MapID(int memLoc);
+	void PollChanged_MapType(int memLoc);
+	void PollChanged_Floor(int memLoc);
+	void PollChanged_XPos(int memLoc);
+	void PollChanged_YPos(int memLoc);
+	void PollChanged_OverlandMapX(int memLoc);
+	void PollChanged_OverlandMapY(int memLoc);
+
+
     // Properties
-    bool shouldRender;
+	bool shouldRender;
+
 private:
 
     void Update(DX::StepTimer const& timer);
@@ -89,6 +104,8 @@ private:
 
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
+
+    void PollMapSetCurrentValues();
 
     void SetVertexData(HA::Vertex* v, float wRatio, float hRatio, EmulatorLayout layout);
 
@@ -103,6 +120,10 @@ private:
 
     // Rendering loop timer.
     DX::StepTimer                           m_timer;
+
+    // Memory polling map
+    using FuncPtr = void (Game::*)(int);
+	std::map<int, FuncPtr> memPollMap;
 
     // Background image when in LOGO mode
     std::vector<uint8_t> m_bgImage;
@@ -120,9 +141,17 @@ private:
 
     std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
     std::unique_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
+	std::unique_ptr<DirectX::DescriptorHeap> m_resourceDescriptorsFonts;
 
     std::unique_ptr<DirectX::SpriteBatch> m_spriteBatch;
     DirectX::SimpleMath::Vector2 m_fontPos;
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_miniMapTexture;
+	enum TextureDescriptors
+	{
+		MiniMapBackground,
+		Count
+	};
 
     // Direct3D 12 objects for AppleWin video texture
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>    m_srvHeap;

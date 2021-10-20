@@ -1,6 +1,9 @@
 #pragma once
 #include <windows.h>
+#include "Emulator/Memory.h"
 #include <array>
+
+constexpr int GAMEMAP_START_MEM = 0xC00;		// Start of memory area of the in-game map
 
 constexpr auto PIXELDEPTH	= 4;	// RGBA
 
@@ -38,16 +41,18 @@ public:
 	UINT32 iInserted = 0;
 	TilesetCreator()
 	{
-		pTilesetBuffer = new char[PNGBUFFERSIZE];
+		pTilesetBuffer = new BYTE[PNGBUFFERSIZE];
 		memset(pTilesetBuffer, 0, PNGBUFFERSIZE);
 	}
 	~TilesetCreator()
 	{
 		delete[] pTilesetBuffer;
 	}
-	char* parseTilesInHGR2();
+	LPBYTE parseTilesInHGR2();
+	LPBYTE GetCurrentTilesetBuffer() { return pTilesetBuffer; };
+	LPBYTE GetCurrentGameMap() { return MemGetMainPtr(GAMEMAP_START_MEM); };
 private:
-	char* pTilesetBuffer;
+	LPBYTE pTilesetBuffer;
 };
 
 

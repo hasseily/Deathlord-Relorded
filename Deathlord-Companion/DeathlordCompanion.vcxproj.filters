@@ -351,6 +351,9 @@
     <Image Include="emulator\resources\icon1.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="Assets\Background_NoMap.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\PixelShader.hlsl">

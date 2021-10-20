@@ -14,7 +14,8 @@ Sidebar::Sidebar(UINT8 _id, SidebarTypes _type, int _width, int _height, UINT8 _
 	position.y		= _position.y + SIDEBAR_OUTSIDE_MARGIN;
 
 	// Determine each block's origin point. They all flow downwards from the sidebar's origin
-	int blockHeight = ((height - (2 * SIDEBAR_OUTSIDE_MARGIN)) / maxBlocks) - (2 * SIDEBAR_BLOCK_PADDING);
+	// Make each block height static. Much easier to manage.
+	int blockHeight = 14;
 	float hoffset = position.y + SIDEBAR_OUTSIDE_MARGIN;	// starting height offset
 	for (UINT8 i = 0; i < maxBlocks; i++)
 	{

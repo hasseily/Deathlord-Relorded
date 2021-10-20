@@ -310,7 +310,7 @@ UINT GetFrameBufferBorderlessHeight()
 // NB. These border areas are not visible (... and these border areas are unrelated to the 3D border below)
 UINT GetFrameBufferBorderWidth()
 {
-	static const UINT uBorderW = 20;
+	static const UINT uBorderW = 50;
 	return uBorderW;
 }
 

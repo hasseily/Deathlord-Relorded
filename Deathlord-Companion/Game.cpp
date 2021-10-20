@@ -8,9 +8,7 @@
 #include "SidebarContent.h"
 #include "Sidebar.h"
 #include "RemoteControl/Gamelink.h"
-#include "LogWindow.h"
 #include "Keyboard.h"
-#include "HAUtils.h"
 #include "Emulator/AppleWin.h"
 #include "Emulator/Video.h"
 #include <vector>
@@ -38,7 +36,7 @@ static std::wstring last_logged_line;
 static UINT64 tickOfLastRender = 0;
 
 static float m_clientFrameScale = 1.f;
-static Vector2 m_vector2ero = { 0.f, 0.f };
+static Vector2 m_vector2Zero = { 0.f, 0.f };
 static RECT m_cachedClientRect;
 
 UINT64	g_debug_video_field = 0;
@@ -48,8 +46,18 @@ NonVolatile g_nonVolatile;
 bool g_isInGameMap = false;
 bool g_wantsToSave = true;  // TODO: DISABLED. It can corrupt saved games
 
+static std::map<int, int>memPollPreviousValues;
+
 Game::Game() noexcept(false)
 {
+	memPollMap[MAP_ID]          = &Game::PollChanged_MapID;
+	memPollMap[MAP_IS_OVERLAND] = &Game::PollChanged_MapType;
+	memPollMap[MAP_LEVEL]       = &Game::PollChanged_Floor;
+	memPollMap[MAP_XPOS]        = &Game::PollChanged_XPos;
+	memPollMap[MAP_YPOS]        = &Game::PollChanged_YPos;
+	memPollMap[MAP_OVERLAND_X]  = &Game::PollChanged_OverlandMapX;
+	memPollMap[MAP_OVERLAND_X]  = &Game::PollChanged_OverlandMapY;
+
     g_nonVolatile = NonVolatile();
     g_textureData = {};
     m_sbM = SidebarManager();
@@ -76,7 +84,7 @@ Game::~Game()
     GameLink::Term();
 }
 
-// Initialize the Direct3D resources required to run.
+// Initialize the resources required to run.
 void Game::Initialize(HWND window, int width, int height)
 {
     m_window = window;
@@ -98,6 +106,8 @@ void Game::Initialize(HWND window, int width, int height)
 
     shouldRender = true;
 
+    m_tileset = std::make_unique<TilesetCreator>();
+	PollMapSetCurrentValues();
 
     GetClientRect(window, &m_cachedClientRect);
     m_clientFrameScale = 1.f;
@@ -166,7 +176,7 @@ void Game::SetWindowSizeOnChangedProfile()
     // Update the window position to display the sidebars
     int w, h;
     m_clientFrameScale = 1.f;
-    m_sbM.GetBaseSize(w, h);
+    GetBaseSize(w, h);
     RECT wR = { 0,0,w,h };
     SendMessage(m_window, WM_SIZING, WMSZ_BOTTOMRIGHT, (LPARAM)&wR);
     wp.rcNormalPosition.right = wp.rcNormalPosition.left + wR.right;
@@ -175,9 +185,95 @@ void Game::SetWindowSizeOnChangedProfile()
     SendMessage(m_window, WM_SIZE, SIZE_RESTORED, w & 0x0000FFFF | h << 16);
 }
 
+#pragma endregion
+
+#pragma region Polling
+//************************************
+// Method:    PollKeyMemoryLocations
+// FullName:  Game::PollKeyMemoryLocations
+// Access:    public 
+// Returns:   void
+// Qualifier:
+
+// Description: 
+// Called after every regular keypress or at specific intervals.
+// Polls for key memory location changes and fires relevant methods
+//************************************
+void Game::PollKeyMemoryLocations()
+{
+    LPBYTE pMem = MemGetMainPtr(0);
+    for (std::map<int, void (Game::*)(int)>::iterator it = memPollMap.begin(); it != memPollMap.end(); ++it)
+    {
+        if (pMem[it->first] != memPollPreviousValues[it->first])    // memory value changed since last poll
+        {
+            memPollPreviousValues[it->first] = pMem[it->first];
+            (this->*(it->second))(it->first);
+        }
+    }
+}
+
+void Game::PollMapSetCurrentValues()
+{
+	LPBYTE pMem = MemGetMainPtr(0);
+	for (std::map<int, void (Game::*)(int)>::iterator it = memPollMap.begin(); it != memPollMap.end(); ++it)
+    {
+        memPollPreviousValues[it->first] = pMem[it->first];
+	}
+}
+
+void Game::PollChanged_MapID(int memLoc)
+{
+    m_tileset->parseTilesInHGR2();
+    OutputDebugString(L"MapID changed!\n");
+
+}
+
+void Game::PollChanged_MapType(int memLoc)
+{
+	OutputDebugString(L"MapType changed!\n");
+}
+
+void Game::PollChanged_Floor(int memLoc)
+{
+	m_tileset->parseTilesInHGR2();
+	OutputDebugString(L"Floor changed!\n");
+}
+
+void Game::PollChanged_XPos(int memLoc)
+{
+	OutputDebugString(L"XPos changed!\n");
+}
+
+void Game::PollChanged_YPos(int memLoc)
+{
+	OutputDebugString(L"YPos changed!\n");
+}
+
+void Game::PollChanged_OverlandMapX(int memLoc)
+{
+	m_tileset->parseTilesInHGR2();
+	OutputDebugString(L"OverlandMapX changed!\n");
+}
+
+void Game::PollChanged_OverlandMapY(int memLoc)
+{
+	m_tileset->parseTilesInHGR2();
+	OutputDebugString(L"OverlandMapY changed!\n");
+}
+
+#pragma endregion
+
+#pragma region Others
+
+// Base size adds the minimap after getting the size with the sidebars
 void Game::GetBaseSize(__out int& width, __out int& height) noexcept
 {
-    return m_sbM.GetBaseSize(width, height);
+    auto mmTexSize = GetTextureSize(m_miniMapTexture.Get());
+    m_sbM.GetBaseSize(width, height);
+    width = width + mmTexSize.x;
+    if (height < mmTexSize.y)
+        height = mmTexSize.y;
+    return;
 }
 
 #pragma endregion
@@ -292,8 +388,8 @@ void Game::Render()
 		// End drawing video texture
 
 		// Drawing text
-		ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap() };
-		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
+		ID3D12DescriptorHeap* heapsFonts[] = { m_resourceDescriptorsFonts->Heap() };
+		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heapsFonts)), heapsFonts);
 
 		m_spriteBatch->Begin(commandList);
 
@@ -305,7 +401,7 @@ void Game::Render()
 			for each (auto b in sb.blocks)
 			{
 				m_spriteFonts.at((int)b->fontId)->DrawString(m_spriteBatch.get(), b->text.c_str(),
-					b->position * m_clientFrameScale, b->color, 0.f, m_vector2ero, m_clientFrameScale);
+					b->position * m_clientFrameScale, b->color, 0.f, m_vector2Zero, m_clientFrameScale);
 			}
 
 			// Now draw a delimiter line for the block
@@ -336,15 +432,28 @@ void Game::Render()
 //    snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %I64x : %I64x", g_debug_video_field, g_debug_video_data);
 	snprintf(pcbuf, sizeof(pcbuf), "%.f usec/frame - Time: %.3f\n", 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds());
 	m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), pcbuf,
-		{ 11.f, 11.f }, Colors::DimGray, 0.f, m_vector2ero, m_clientFrameScale);
+		{ 11.f, 11.f }, Colors::DimGray, 0.f, m_vector2Zero, m_clientFrameScale);
     m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), pcbuf,
-        { 10.f, 10.f }, Colors::OrangeRed, 0.f, m_vector2ero, m_clientFrameScale);
+        { 10.f, 10.f }, Colors::OrangeRed, 0.f, m_vector2Zero, m_clientFrameScale);
 
 #endif // _DEBUG
 
 		m_spriteBatch->End();
 		// End drawing text
 
+		// Drawing minimap
+		int origW, origH;
+		GetBaseSize(origW, origH);
+		ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap() };
+		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
+
+		m_spriteBatch->Begin(commandList);
+
+        auto mmTexSize = GetTextureSize(m_miniMapTexture.Get());
+        m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::MiniMapBackground), mmTexSize,
+            m_clientFrameScale*Vector2(origW-mmTexSize.x, 0.f), nullptr, Colors::DimGray, 0.f, XMFLOAT2(), m_clientFrameScale);
+
+		m_spriteBatch->End();
 
 		PIXEndEvent(commandList);
 
@@ -432,7 +541,7 @@ void Game::OnWindowSizeChanged(LONG width, LONG height)
 	m_cachedClientRect.bottom = m_cachedClientRect.top + height;
     RECT outSize;
     int origW, origH;
-    m_sbM.GetBaseSize(origW, origH);
+    GetBaseSize(origW, origH);
     float scaleW = (float)(width) / (float)origW;
     float scaleH = (float)(height) / (float)origH;
     m_clientFrameScale = (scaleW + scaleH)/2.f;    // (should all be the same)
@@ -505,12 +614,12 @@ void Game::CreateDeviceDependentResources()
     m_graphicsMemory = std::make_unique<GraphicsMemory>(device);
 
     /// <summary>
-    /// Start of Font resource uploading to GPU
+    /// Start of resource uploading to GPU
     /// </summary>
-    m_resourceDescriptors = std::make_unique<DescriptorHeap>(device, (int)FontDescriptors::Count);
+    m_resourceDescriptorsFonts = std::make_unique<DescriptorHeap>(device, (int)FontDescriptors::Count);
+	m_resourceDescriptors = std::make_unique<DescriptorHeap>(device, TextureDescriptors::Count);
 
     ResourceUploadBatch resourceUpload(device);
-
     resourceUpload.Begin();
 
     // Create the sprite fonts based on FontsAvailable
@@ -521,18 +630,26 @@ void Game::CreateDeviceDependentResources()
         DX::FindMediaFile(buff, MAX_PATH, m_sbM.fontsAvailable.at(i).c_str());
         m_spriteFonts.push_back(
             std::make_unique<SpriteFont>(device, resourceUpload, buff,
-                m_resourceDescriptors->GetCpuHandle(i),
-                m_resourceDescriptors->GetGpuHandle(i))
+                m_resourceDescriptorsFonts->GetCpuHandle(i),
+                m_resourceDescriptorsFonts->GetGpuHandle(i))
         );
         m_spriteFonts.back()->SetDefaultCharacter('.');
     }
 
-    RenderTargetState rtState(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_D32_FLOAT);
-    SpriteBatchPipelineStateDescription spd(rtState);
-    m_spriteBatch = std::make_unique<SpriteBatch>(device, resourceUpload, spd);
+    // Now create the minimap resources
+	DX::ThrowIfFailed(
+		CreateWICTextureFromFile(device, resourceUpload, L"Assets/Background_NoMap.png",
+            m_miniMapTexture.ReleaseAndGetAddressOf()));
+
+	CreateShaderResourceView(device, m_miniMapTexture.Get(),
+		m_resourceDescriptors->GetCpuHandle(TextureDescriptors::MiniMapBackground));
+
+
+    RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
+	SpriteBatchPipelineStateDescription spd(rtState);
+	m_spriteBatch = std::make_unique<SpriteBatch>(device, resourceUpload, spd);
 
     auto uploadResourcesFinished = resourceUpload.End(command_queue);
-
     uploadResourcesFinished.wait();
 
     //////////////////////////////////////////////////
@@ -875,13 +992,15 @@ void Game::OnDeviceLost()
     {
         spriteFont.reset();
     }
-    m_texture.Reset();
+	m_texture.Reset();
+	m_miniMapTexture.Reset();
     m_indexBuffer.Reset();
     m_vertexBuffer.Reset();
     m_pipelineState.Reset();
     m_rootSignature.Reset();
     m_srvHeap.Reset();
-    m_resourceDescriptors.reset();
+    m_resourceDescriptorsFonts.reset();
+	m_resourceDescriptors.reset();
     m_spriteBatch.reset();
     m_graphicsMemory.reset();
 }

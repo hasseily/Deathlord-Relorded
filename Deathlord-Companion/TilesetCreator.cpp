@@ -12,7 +12,7 @@
 /// Goes through all the tiles in HGR2 and parses them, adding them to the PNG patchwork
 /// </summary>
 /// <return>A pointer to the buffer with RGBA data</return>
-char* TilesetCreator::parseTilesInHGR2()
+LPBYTE TilesetCreator::parseTilesInHGR2()
 {
     /*
         The plan is to:
@@ -31,7 +31,7 @@ char* TilesetCreator::parseTilesInHGR2()
     UINT sizeOfHGR = 0x1fff;
     UINT tilesParsed = 0;
 
-    //g_nAppMode = AppMode_e::MODE_PAUSED;
+    g_nAppMode = AppMode_e::MODE_PAUSED;
 
     LPBYTE snapshotHGR1 = new BYTE[sizeOfHGR];
     memcpy_s(snapshotHGR1, sizeOfHGR, MemGetMainPtr(memPtrHGR1Base), sizeOfHGR);
@@ -41,9 +41,8 @@ char* TilesetCreator::parseTilesInHGR2()
 	UINT8 tileByteSize = 2 * 16;   // 2 bytes in each of 16 lines
 	UINT8 tilesSentToHGR1 = 0;
 
-	LPBYTE _hgr1 = MemGetMainPtr(memPtrHGR1Base);
-	LPBYTE _hgr2 = MemGetMainPtr(memPtrHGR2Base);
-
+	// LPBYTE _hgr1 = MemGetMainPtr(memPtrHGR1Base);
+	// LPBYTE _hgr2 = MemGetMainPtr(memPtrHGR2Base);
 
     for (UINT32 iT = 0; iT < (tileByteSize * 0x100); iT += tileByteSize)  // Tile by tile, stop at 128 tiles (the rest is garbage)
     {
@@ -110,6 +109,6 @@ char* TilesetCreator::parseTilesInHGR2()
     delete[] snapshotHGR1;
     snapshotHGR1 = nullptr;
 
-   // g_nAppMode = AppMode_e::MODE_RUNNING;
+	g_nAppMode = AppMode_e::MODE_RUNNING;
 	return pTilesetBuffer;
 }

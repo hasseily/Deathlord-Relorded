@@ -393,7 +393,9 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
             memOffset = std::stoul(j["mem"][memIdx].get<std::string>(), nullptr, 0);
             x += (*(pmem + memOffset)) * (int)pow(0x100, memIdx);
         }
-		s = to_string(x);
+		char cbuf[3];
+		snprintf(cbuf, 3, "%.02d", x);
+		s.insert(0, string(cbuf));
         return s;
     }
 
@@ -407,7 +409,7 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
             memOffset = std::stoul(j["mem"][memIdx].get<std::string>(), nullptr, 0);
 
             char cbuf[3];
-            snprintf(cbuf, 3, "%.2x", *(pmem + memOffset));
+            snprintf(cbuf, 3, "%.02x", *(pmem + memOffset));
             s.insert(0, string(cbuf));
         }
         return s;

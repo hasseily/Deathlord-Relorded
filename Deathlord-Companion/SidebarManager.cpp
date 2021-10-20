@@ -64,7 +64,7 @@ SidebarError SidebarManager::CreateSidebar(SidebarTypes type, UINT8 numBlocks, U
             w = SIDEBAR_LR_WIDTH;
         else
             w = size;
-        h = GetFrameBufferHeight();
+        h = SIDEBAR_LR_MAX_HEIGHT;
         position.x = (float)bw;
         position.y = 0.f;
         bw = bw + w;
@@ -72,7 +72,7 @@ SidebarError SidebarManager::CreateSidebar(SidebarTypes type, UINT8 numBlocks, U
     }
     case SidebarTypes::Bottom:
     {
-        w = GetFrameBufferWidth();
+        w = SIDEBAR_TB_MAX_WIDTH;
         if (size == 0)
             h = SIDEBAR_TB_HEIGHT;
         else

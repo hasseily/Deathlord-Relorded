@@ -7,9 +7,12 @@
 /// Sidebar Manager determines where each sidebar is located, and handles their origin point
 /// </summary>
 
-constexpr int SIDEBAR_LR_WIDTH = 200;		// Sidebar Left/Right width
-constexpr int SIDEBAR_TB_HEIGHT = 100;		// Sidebar TOB/BOTTOM height
-constexpr UINT8 SIDEBARS_MAX_COUNT = 10;	// Max number of sidebars possible
+constexpr int SIDEBAR_LR_WIDTH = 200;		// Default Sidebar Left/Right width
+constexpr int SIDEBAR_TB_HEIGHT = 100;		// Default Sidebar TOB/BOTTOM height
+constexpr UINT8 SIDEBARS_MAX_COUNT = 20;	// Max number of sidebars possible
+
+constexpr int SIDEBAR_LR_MAX_HEIGHT = 4000;		// Max sidebar LR height
+constexpr int SIDEBAR_TB_MAX_WIDTH  = 8000;		// Max sidebar TB width
 
 class SidebarManager
 {
