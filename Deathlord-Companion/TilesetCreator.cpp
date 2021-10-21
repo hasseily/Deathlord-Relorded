@@ -113,6 +113,7 @@ LPBYTE TilesetCreator::parseTilesInHGR2()
     memcpy_s(MemGetMainPtr(memPtrHGR1Base), sizeOfHGR, snapshotHGR1, sizeOfHGR);
     delete[] snapshotHGR1;
     snapshotHGR1 = nullptr;
+	VideoRedrawScreen();
 
 	g_nAppMode = AppMode_e::MODE_RUNNING;
 	return pTilesetBuffer;
