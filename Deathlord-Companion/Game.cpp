@@ -48,16 +48,18 @@ bool g_isInGameMap = false;
 bool g_wantsToSave = true;  // TODO: DISABLED. It can corrupt saved games
 
 static std::map<UINT, UINT>memPollPreviousValues;
+static bool tileMapWasGeneratedThisUpdate = false;
 
 Game::Game() noexcept(false)
 {
-	memPollMap[MAP_ID]          = &Game::PollChanged_MapID;
 	memPollMap[MAP_IS_OVERLAND] = &Game::PollChanged_MapType;
+	memPollMap[MAP_ID]          = &Game::PollChanged_MapID;
 	memPollMap[MAP_LEVEL]       = &Game::PollChanged_Floor;
-	memPollMap[MAP_XPOS]        = &Game::PollChanged_XPos;
-	memPollMap[MAP_YPOS]        = &Game::PollChanged_YPos;
 	memPollMap[MAP_OVERLAND_X]  = &Game::PollChanged_OverlandMapX;
 	memPollMap[MAP_OVERLAND_Y]  = &Game::PollChanged_OverlandMapY;
+	memPollMap[MAP_XPOS]        = &Game::PollChanged_XPos;
+	memPollMap[MAP_YPOS]        = &Game::PollChanged_YPos;
+
 
     g_nonVolatile = NonVolatile();
     g_textureData = {};
@@ -242,46 +244,61 @@ void Game::PollMapSetCurrentValues()
 
 void Game::PollChanged_MapID(UINT memLoc)
 {
-    m_tileset = GetTilesetCreator();
-    m_tileset->parseTilesInHGR2();
-    OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapID changed!\n").c_str());
-
+    if (!tileMapWasGeneratedThisUpdate)
+    {
+		m_tileset = GetTilesetCreator();
+		m_tileset->parseTilesInHGR2();
+        tileMapWasGeneratedThisUpdate = true;
+    }
+    //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapID changed!\n").c_str());
 }
 
 void Game::PollChanged_MapType(UINT memLoc)
 {
-	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapType changed!\n").c_str());
+	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapType changed!\n").c_str());
 }
 
 void Game::PollChanged_Floor(UINT memLoc)
 {
-	m_tileset = GetTilesetCreator();
-    m_tileset->parseTilesInHGR2();
-	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" Floor changed!\n").c_str());
+	if (!tileMapWasGeneratedThisUpdate)
+	{
+		m_tileset = GetTilesetCreator();
+		m_tileset->parseTilesInHGR2();
+		tileMapWasGeneratedThisUpdate = true;
+	}
+    //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" Floor changed!\n").c_str());
 }
 
 void Game::PollChanged_XPos(UINT memLoc)
 {
-	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" XPos changed!\n").c_str());
+	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" XPos changed!\n").c_str());
 }
 
 void Game::PollChanged_YPos(UINT memLoc)
 {
-	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" YPos changed!\n").c_str());
+	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" YPos changed!\n").c_str());
 }
 
 void Game::PollChanged_OverlandMapX(UINT memLoc)
 {
-	m_tileset = GetTilesetCreator();
-    m_tileset->parseTilesInHGR2();
-	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapX changed!\n").c_str());
+	if (!tileMapWasGeneratedThisUpdate)
+	{
+		m_tileset = GetTilesetCreator();
+		m_tileset->parseTilesInHGR2();
+		tileMapWasGeneratedThisUpdate = true;
+	}
+    //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapX changed!\n").c_str());
 }
 
 void Game::PollChanged_OverlandMapY(UINT memLoc)
 {
-	m_tileset = GetTilesetCreator();
-    m_tileset->parseTilesInHGR2();
-	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapY changed!\n").c_str());
+	if (!tileMapWasGeneratedThisUpdate)
+	{
+		m_tileset = GetTilesetCreator();
+		m_tileset->parseTilesInHGR2();
+		tileMapWasGeneratedThisUpdate = true;
+	}
+    //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapY changed!\n").c_str());
 }
 
 #pragma endregion
@@ -317,6 +334,7 @@ void Game::Tick()
 void Game::Update(DX::StepTimer const& timer)
 {
     PIXBeginEvent(PIX_COLOR_DEFAULT, L"Update");
+    tileMapWasGeneratedThisUpdate = false;
 
 	EmulatorMessageLoopProcessing();
     // auto elapsedTime = float(timer.GetElapsedSeconds());
