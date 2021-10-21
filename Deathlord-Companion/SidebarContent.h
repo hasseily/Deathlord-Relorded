@@ -3,6 +3,7 @@
 #include "SidebarManager.h"
 #include "nlohmann/json.hpp"
 #include <map>
+#include "StepTimer.h"
 
 constexpr UINT8 SIDEBAR_MAX_VARS_IN_BLOCK = 255;
 
@@ -21,8 +22,10 @@ public:
 	std::string OpenProfile(std::filesystem::directory_entry entry);
 	std::string OpenProfile(std::wstring entry);
 	void ClearActiveProfile(SidebarManager* sbM);
-	void SidebarContent::UpdateAllSidebarText(SidebarManager* sbM, bool forceUpdate);
+	UINT64 UpdateAllSidebarText(SidebarManager* sbM, bool forceUpdate, UINT64 maxMicroSecondsAllowed = 1000);
 	bool UpdateBlock(SidebarManager* sbM, UINT8 sidebarId, UINT8 blockId, nlohmann::json* pdata);
+	int nextSidebarToRender;
+	int nextBlockToRender;
 private:
 	void LoadProfilesFromDisk();
 	nlohmann::json ParseProfile(std::filesystem::path filepath);

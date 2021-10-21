@@ -5,13 +5,13 @@
 /// </summary>
 /// 
 
-constexpr int MAP_IS_OVERLAND = 0xFC04;		// is set to 1 if on the overland area
-constexpr int MAP_ID = 0xFC4E;				// ID of the map
-constexpr int MAP_LEVEL = 0xFC04;			// Level "2" is the default ground for towers and dungeons. "1" for overland, "0" for towns
-constexpr int MAP_XPOS = 0xFC06;			// X position of the player on a map
-constexpr int MAP_YPOS = 0xFC07;			// Y position of the player on a map
-constexpr int MAP_OVERLAND_X = 0xFC4B;		// X position of the overland submap
-constexpr int MAP_OVERLAND_Y = 0xFC4C;		// Y position of the overland submap
+constexpr UINT MAP_IS_OVERLAND = 0xFC10;	// WARNING: is set to 0x80 if on the overland area
+constexpr UINT MAP_ID = 0xFC4E;				// ID of the map
+constexpr UINT MAP_LEVEL = 0xFC04;			// Level "2" is the default ground for towers and dungeons. "1" for overland, "0" for towns
+constexpr UINT MAP_XPOS = 0xFC06;			// X position of the player on a map
+constexpr UINT MAP_YPOS = 0xFC07;			// Y position of the player on a map
+constexpr UINT MAP_OVERLAND_X = 0xFC4B;		// X position of the overland submap
+constexpr UINT MAP_OVERLAND_Y = 0xFC4C;		// Y position of the overland submap
 
 static INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam);
 

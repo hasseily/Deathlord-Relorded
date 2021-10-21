@@ -3,27 +3,22 @@
 #include "Emulator/Memory.h"
 #include <array>
 
-constexpr int GAMEMAP_START_MEM = 0xC00;		// Start of memory area of the in-game map
+constexpr UINT32 GAMEMAP_START_MEM = 0xC00;		// Start of memory area of the in-game map
 
-constexpr auto PIXELDEPTH	= 4;	// RGBA
+constexpr UINT8 PIXELDEPTH	= 4;	// RGBA
 
 // For the framebuffer
 constexpr UINT8 FBTW = 28;	// FB tile width in pixels
 constexpr UINT8 FBTH = 32;	// FB tile height in pixels
-constexpr auto FRAMEBUFFERWIDTHB = 600 * PIXELDEPTH;
-constexpr auto FRAMEBUFFERHEIGHT = 420;
-constexpr auto FRAMEBUFFERSIZE = FRAMEBUFFERWIDTHB * FRAMEBUFFERHEIGHT;
-constexpr UINT8 LEFTMARGIN = 20;
-constexpr UINT8 TOPMARGIN = 17;
 
 // For the patchwork PNG
 constexpr UINT8 PNGTW = 28;
 constexpr UINT8 PNGTH = 32;
 constexpr UINT8 PNGTILESPERROW = 16;
 constexpr UINT8 PNGTILESPERCOL	= 16;
-constexpr auto PNGBUFFERWIDTHB = PNGTW * PNGTILESPERROW * sizeof(UINT32);
-constexpr auto PNGBUFFERHEIGHT = PNGTH * PNGTILESPERCOL;
-constexpr auto PNGBUFFERSIZE = PNGBUFFERWIDTHB * PNGBUFFERHEIGHT;
+constexpr UINT32 PNGBUFFERWIDTHB = PNGTW * PNGTILESPERROW * sizeof(UINT32);
+constexpr UINT32 PNGBUFFERHEIGHT = PNGTH * PNGTILESPERCOL;
+constexpr UINT32 PNGBUFFERSIZE = PNGBUFFERWIDTHB * PNGBUFFERHEIGHT;
 
 // For parsing the tileset in HGR2
 constexpr std::array<const uint16_t, 192 / 8> EIGHTLINEADDRESSES = {
@@ -55,4 +50,5 @@ private:
 	LPBYTE pTilesetBuffer;
 };
 
-
+// defined in Main.cpp
+extern std::shared_ptr<TilesetCreator> GetTilesetCreator();

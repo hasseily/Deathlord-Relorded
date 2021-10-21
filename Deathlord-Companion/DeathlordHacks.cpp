@@ -11,7 +11,6 @@
 #include "Game.h"
 #include "TilesetCreator.h"
 
-
 const wchar_t CLASS_NAME[] = L"Deathlord Hacks Class";
 
 constexpr UINT8 MAP_WIDTH = 64;
@@ -204,7 +203,8 @@ void DeathlordHacks::SaveMapDataToDisk()
 	// Do the map file directly from memory
 	std::string sMapData = "";
 	
-	UINT8 *memPtr = m_tileset->GetCurrentGameMap();
+	std::shared_ptr<TilesetCreator> ts = GetTilesetCreator();
+	UINT8 *memPtr = ts->GetCurrentGameMap();
 	char tileId[3] = "00";
 	for (size_t i = 0; i < MAP_LENGTH; i++)
 	{
@@ -219,8 +219,9 @@ void DeathlordHacks::SaveMapDataToDisk()
 		sMapData.append(tileId, 2);
 	}
 	// Save the map file
+	memPtr = MemGetMainPtr(0);
 	fileName = "Maps\\Map ";
-	if (memPtr[MAP_IS_OVERLAND] == 1)
+	if (memPtr[MAP_IS_OVERLAND] == 0x80)
 		sprintf_s(nameSuffix, 100, "Overland %02X %02X.txt", memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
 	else
 		sprintf_s(nameSuffix, 100, "%02X-%02X.txt", memPtr[MAP_ID], memPtr[MAP_LEVEL]);
@@ -232,10 +233,10 @@ void DeathlordHacks::SaveMapDataToDisk()
 	fsFile.close();
 
 	// Do the tileset
-	LPBYTE tilesetRGBAData = m_tileset->GetCurrentTilesetBuffer();
+	LPBYTE tilesetRGBAData = ts->GetCurrentTilesetBuffer();
 	// Save the tile file
 	fileName = "Maps\\Tileset ";
-	if (memPtr[MAP_IS_OVERLAND] == 1)
+	if (memPtr[MAP_IS_OVERLAND] == 0x80)
 		sprintf_s(nameSuffix, 100, "Overland %02X %02X.data", memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
 	else
 		sprintf_s(nameSuffix, 100, "%02X-%02X.data", memPtr[MAP_ID], memPtr[MAP_LEVEL]);

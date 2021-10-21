@@ -6,12 +6,13 @@
 #include <DirectXMath.h>
 #include <Sidebar.h>
 #include "HAUtils.h"
-#include "Game.h"   // for g_isInGameMap
+#include "Game.h"   // for g_isInGameMap and ticks
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 using namespace DirectX::PackedVector;
 using namespace std;
+using namespace nlohmann;
 namespace fs = std::filesystem;
 
 static string SIDEBAR_FORMAT_PLACEHOLDER("{}");
@@ -31,6 +32,8 @@ void SidebarContent::Initialize()
 {
     // Get memory start address
     memsize = 0x20000;  // 128k of RAM
+    nextSidebarToRender = 0;
+	nextBlockToRender = 0;
 }
 
 bool SidebarContent::setActiveProfile(SidebarManager* sbM, std::string* name)
@@ -469,34 +472,87 @@ std::string SidebarContent::FormatBlockText(nlohmann::json* pdata)
     return txt;
 }
 
-void SidebarContent::UpdateAllSidebarText(SidebarManager* sbM, bool forceUpdate)
+UINT64 SidebarContent::UpdateAllSidebarText(SidebarManager* sbM, bool forceUpdate, UINT64 maxMicroSecondsAllowed)
 {
-    UINT8 isb = 0;  // sidebar index
-    for (auto sB : m_activeProfile["sidebars"])
-    {
-        // OutputDebugStringA((sB.dump() + string("\n")).c_str());
-        UINT8 ib = 0;   // block index
-        for (auto& bl : sB["blocks"])
-        {
-            if (!forceUpdate)
-            {
-                // don't update any static block unless we force update
-				if ((bl.count("vars") == 0) || (bl["vars"].size() == 0))
-				{
-					++ib;
-					continue;
-				}
-            }
+    // Initialize timer info
+    LARGE_INTEGER startTicks, currTicks, elapsedMicroSeconds;
+    LARGE_INTEGER frequency;
+    QueryPerformanceCounter(&startTicks);
+    QueryPerformanceFrequency(&frequency);
+    elapsedMicroSeconds.QuadPart = 0;
 
-            if (!UpdateBlock(sbM, isb, ib, &bl))
-            {
-				// OutputDebugStringA((sB.dump() + string("\n")).c_str());
-            }
-            ++ib;
-        }
-        ++isb;
+    // Initialize block and sidebar info
+	auto sbArray = m_activeProfile["sidebars"];
+	json::iterator sbIt = sbArray.begin();
+	int sbCt = sbArray.size();
+
+    // If we're asked to update everything, start from the beginning and go all the way through all sidebars
+    if (forceUpdate)
+    {
+		nextBlockToRender = 0;
+		nextSidebarToRender = 0;
     }
+
+BEGIN:
+	// Ensure that the next sidebar and block to render are valid
+    // If the block to render is over the limit, go either to the next sidebar
+    // or if there is none left, go back to the start
+    // 
+    // If finished all sidebars, reset to beginning and exit
+    // Let the next call to this method start over
+    if (nextSidebarToRender >= sbCt)
+    {
+        nextBlockToRender = 0;
+        nextSidebarToRender = 0;
+        return elapsedMicroSeconds.QuadPart;
+    }
+    // if finished a sidebar, go to the next one
+    if (nextBlockToRender >= m_activeProfile["sidebars"].at(nextSidebarToRender)["blocks"].size())
+    {
+        nextBlockToRender = 0;
+        ++nextSidebarToRender;
+        goto BEGIN;
+    }
+
+    // Process blocks, starting at nextBlockToRender,
+    // keeping track of where we stopped
+	sbIt = sbArray.begin();
+    sbIt += nextSidebarToRender;
+    auto bArray = (*sbIt)["blocks"];
+    json::iterator bIt = bArray.begin();
+    bIt += nextBlockToRender;
+
+    auto bl = *bIt;
+    if (!forceUpdate)
+    {
+        // don't update any static block unless we force update
+        if ((bl.count("vars") == 0) || (bl["vars"].size() == 0))
+        {
+            ++nextBlockToRender;
+            goto BEGIN;
+        }
+    }
+    if (!UpdateBlock(sbM, nextSidebarToRender, nextBlockToRender, &bl))
+    {
+#ifdef _DEBUG
+        OutputDebugStringA((bl.dump() + string("\n")).c_str());
+#endif // _DEBUG
+    }
+    ++nextBlockToRender;
+
+    // check if we've gone above our allotted time (if unforced update). If so, exit while remembering where we were
+    QueryPerformanceCounter(&currTicks);
+    elapsedMicroSeconds.QuadPart = currTicks.QuadPart - startTicks.QuadPart;
+    elapsedMicroSeconds.QuadPart *= 1000000;
+    elapsedMicroSeconds.QuadPart /= frequency.QuadPart;
+    if (forceUpdate)
+        goto BEGIN;
+    if ((elapsedMicroSeconds.QuadPart) < maxMicroSecondsAllowed)
+        goto BEGIN;
+
+    return elapsedMicroSeconds.QuadPart;
 }
+
 
 // Update and send for display a block of text
 // using the following json format:

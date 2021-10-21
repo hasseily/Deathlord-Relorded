@@ -83,18 +83,19 @@ public:
 
     // Memory polling
 	void PollKeyMemoryLocations();
-    void PollChanged_MapID(int memLoc);
-	void PollChanged_MapType(int memLoc);
-	void PollChanged_Floor(int memLoc);
-	void PollChanged_XPos(int memLoc);
-	void PollChanged_YPos(int memLoc);
-	void PollChanged_OverlandMapX(int memLoc);
-	void PollChanged_OverlandMapY(int memLoc);
+    void PollChanged_MapID(UINT memLoc);
+	void PollChanged_MapType(UINT memLoc);
+	void PollChanged_Floor(UINT memLoc);
+	void PollChanged_XPos(UINT memLoc);
+	void PollChanged_YPos(UINT memLoc);
+	void PollChanged_OverlandMapX(UINT memLoc);
+	void PollChanged_OverlandMapY(UINT memLoc);
 
 
     // Properties
 	bool shouldRender;
-
+	// Rendering loop timer.
+	DX::StepTimer m_timer;
 private:
 
     void Update(DX::StepTimer const& timer);
@@ -118,12 +119,9 @@ private:
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
-    // Rendering loop timer.
-    DX::StepTimer                           m_timer;
-
     // Memory polling map
-    using FuncPtr = void (Game::*)(int);
-	std::map<int, FuncPtr> memPollMap;
+    using FuncPtr = void (Game::*)(UINT);
+	std::map<UINT, FuncPtr> memPollMap;
 
     // Background image when in LOGO mode
     std::vector<uint8_t> m_bgImage;

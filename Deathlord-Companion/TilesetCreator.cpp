@@ -6,7 +6,7 @@
 #include <filesystem>
 #include "RemoteControl/RemoteControlManager.h"
 #include <map>
-
+#include "Game.h"
 
 /// <summary>
 /// Goes through all the tiles in HGR2 and parses them, adding them to the PNG patchwork
@@ -41,8 +41,13 @@ LPBYTE TilesetCreator::parseTilesInHGR2()
 	UINT8 tileByteSize = 2 * 16;   // 2 bytes in each of 16 lines
 	UINT8 tilesSentToHGR1 = 0;
 
-	// LPBYTE _hgr1 = MemGetMainPtr(memPtrHGR1Base);
-	// LPBYTE _hgr2 = MemGetMainPtr(memPtrHGR2Base);
+	LPBYTE _hgr1 = MemGetMainPtr(memPtrHGR1Base);
+	LPBYTE _hgr2 = MemGetMainPtr(memPtrHGR2Base);
+
+	UINT32 fbWidth = GetFrameBufferWidth();
+	UINT32 fbHeight = GetFrameBufferHeight();
+	UINT32 fbBorderLeft = GetFrameBufferBorderWidth();
+	UINT32 fbBorderTop = GetFrameBufferBorderHeight();
 
     for (UINT32 iT = 0; iT < (tileByteSize * 0x100); iT += tileByteSize)  // Tile by tile, stop at 128 tiles (the rest is garbage)
     {
@@ -62,18 +67,18 @@ LPBYTE TilesetCreator::parseTilesInHGR2()
 		// And extract the 10 tiles from the framebuffer into the tileset framebuffer
 		for (size_t nTile = 0; nTile < tilesSentToHGR1; nTile++)
 		{
-			UINT32 iFBOriginByte = (TOPMARGIN * FRAMEBUFFERWIDTHB) + (LEFTMARGIN * PIXELDEPTH) + nTile * 2 * FBTW * PIXELDEPTH;
+			UINT32 iFBOriginByte = (fbBorderTop * fbWidth * PIXELDEPTH) + (fbBorderLeft * PIXELDEPTH) + nTile * 2 * FBTW * PIXELDEPTH;
 // Calculate the destination 0,0 byte to draw the tile onto
 			UINT8 tileNumber = (iT - (tilesSentToHGR1 - nTile - 1) * tileByteSize) / tileByteSize;
 			UINT8 iPNGRow = tileNumber / 0x10;
 			UINT8 iPNGCol = tileNumber % 0x10;
-			UINT iPNGOriginByte = (iPNGRow * PNGTH * PNGBUFFERWIDTHB) + (iPNGCol * PNGTW * PIXELDEPTH);
+			UINT32 iPNGOriginByte = (iPNGRow * PNGTH * PNGBUFFERWIDTHB) + (iPNGCol * PNGTW * PIXELDEPTH);
 
 			// Map every pixel of the source tile onto the destination tile
 			// But only parse every other line, and skip every other pixel
 			UINT8 b0, b1, b2, b3;   // The individual pixel bytes, low to high
-			UINT iFBCurrentByte;
-			UINT iPNGCurrentByte;
+			UINT32 iFBCurrentByte;
+			UINT32 iPNGCurrentByte;
 
 			for (UINT32 j = 0; j < FBTH; j++)
 			{
@@ -83,7 +88,7 @@ LPBYTE TilesetCreator::parseTilesInHGR2()
 				{
 					//	if (i % 2)
 					//		continue;
-					iFBCurrentByte = iFBOriginByte + (j * FRAMEBUFFERWIDTHB) + (i * PIXELDEPTH);
+					iFBCurrentByte = iFBOriginByte + (j * fbWidth * PIXELDEPTH) + (i * PIXELDEPTH);
 					b0 = g_pFramebufferbits[iFBCurrentByte];
 					b1 = g_pFramebufferbits[iFBCurrentByte + 1];
 					b2 = g_pFramebufferbits[iFBCurrentByte + 2];

@@ -12,6 +12,7 @@
 #include "Emulator/AppleWin.h"
 #include "Emulator/Video.h"
 #include <vector>
+#include <string>
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -46,7 +47,7 @@ NonVolatile g_nonVolatile;
 bool g_isInGameMap = false;
 bool g_wantsToSave = true;  // TODO: DISABLED. It can corrupt saved games
 
-static std::map<int, int>memPollPreviousValues;
+static std::map<UINT, UINT>memPollPreviousValues;
 
 Game::Game() noexcept(false)
 {
@@ -56,12 +57,10 @@ Game::Game() noexcept(false)
 	memPollMap[MAP_XPOS]        = &Game::PollChanged_XPos;
 	memPollMap[MAP_YPOS]        = &Game::PollChanged_YPos;
 	memPollMap[MAP_OVERLAND_X]  = &Game::PollChanged_OverlandMapX;
-	memPollMap[MAP_OVERLAND_X]  = &Game::PollChanged_OverlandMapY;
+	memPollMap[MAP_OVERLAND_Y]  = &Game::PollChanged_OverlandMapY;
 
     g_nonVolatile = NonVolatile();
     g_textureData = {};
-    m_sbM = SidebarManager();
-    m_sbC = SidebarContent();
     GameLink::Init(false);
 
     // TODO: give option to un-vsync?
@@ -106,7 +105,6 @@ void Game::Initialize(HWND window, int width, int height)
 
     shouldRender = true;
 
-    m_tileset = std::make_unique<TilesetCreator>();
 	PollMapSetCurrentValues();
 
     GetClientRect(window, &m_cachedClientRect);
@@ -138,7 +136,7 @@ D3D12_RESOURCE_DESC Game::ChooseTexture()
 
 	switch (g_nAppMode)
 	{
-	case AppMode_e::MODE_LOGO:
+	case AppMode_e::MODE_LOGO:  // obsolete
 	{
 		txtDesc.Width = m_bgImageWidth;
 		txtDesc.Height = m_bgImageHeight;
@@ -147,6 +145,28 @@ D3D12_RESOURCE_DESC Game::ChooseTexture()
 		SetVideoLayout(EmulatorLayout::NORMAL);
 		break;
 	}
+/*
+#ifdef _DEBUG
+    // In debug mode when pause we display the current tilemap
+    // Enable to debug the tilemap
+    // TODO: Write a PAUSE overlay text in render() when paused
+    case AppMode_e::MODE_PAUSED:
+    {
+        m_tileset = GetTilesetCreator();
+        UINT64 pngW = PNGBUFFERWIDTHB / sizeof(UINT32);
+        UINT64 pngH = PNGBUFFERHEIGHT;
+        LPBYTE tsB = m_tileset->GetCurrentTilesetBuffer();
+        auto fbI = g_pFramebufferinfo->bmiHeader;
+        UINT64 lineByteWidth = MIN(pngW, fbI.biWidth) * sizeof(UINT32);
+        for (size_t h = 0; h < MIN(PNGBUFFERHEIGHT, fbI.biHeight) ; h++)
+        {
+            memcpy_s(g_pFramebufferbits + (h * fbI.biWidth * sizeof(UINT32)), lineByteWidth,
+                tsB + (h * PNGBUFFERWIDTHB), lineByteWidth);
+        }
+		SetVideoLayout(EmulatorLayout::NORMAL);
+    }
+#endif
+*/
 	default:
 	{
         auto fbI = g_pFramebufferinfo->bmiHeader;
@@ -184,7 +204,6 @@ void Game::SetWindowSizeOnChangedProfile()
     SetWindowPlacement(m_window, &wp);
     SendMessage(m_window, WM_SIZE, SIZE_RESTORED, w & 0x0000FFFF | h << 16);
 }
-
 #pragma endregion
 
 #pragma region Polling
@@ -202,7 +221,7 @@ void Game::SetWindowSizeOnChangedProfile()
 void Game::PollKeyMemoryLocations()
 {
     LPBYTE pMem = MemGetMainPtr(0);
-    for (std::map<int, void (Game::*)(int)>::iterator it = memPollMap.begin(); it != memPollMap.end(); ++it)
+    for (std::map<UINT, void (Game::*)(UINT)>::iterator it = memPollMap.begin(); it != memPollMap.end(); ++it)
     {
         if (pMem[it->first] != memPollPreviousValues[it->first])    // memory value changed since last poll
         {
@@ -215,50 +234,54 @@ void Game::PollKeyMemoryLocations()
 void Game::PollMapSetCurrentValues()
 {
 	LPBYTE pMem = MemGetMainPtr(0);
-	for (std::map<int, void (Game::*)(int)>::iterator it = memPollMap.begin(); it != memPollMap.end(); ++it)
+	for (std::map<UINT, void (Game::*)(UINT)>::iterator it = memPollMap.begin(); it != memPollMap.end(); ++it)
     {
         memPollPreviousValues[it->first] = pMem[it->first];
 	}
 }
 
-void Game::PollChanged_MapID(int memLoc)
+void Game::PollChanged_MapID(UINT memLoc)
 {
+    m_tileset = GetTilesetCreator();
     m_tileset->parseTilesInHGR2();
-    OutputDebugString(L"MapID changed!\n");
+    OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapID changed!\n").c_str());
 
 }
 
-void Game::PollChanged_MapType(int memLoc)
+void Game::PollChanged_MapType(UINT memLoc)
 {
-	OutputDebugString(L"MapType changed!\n");
+	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapType changed!\n").c_str());
 }
 
-void Game::PollChanged_Floor(int memLoc)
+void Game::PollChanged_Floor(UINT memLoc)
 {
-	m_tileset->parseTilesInHGR2();
-	OutputDebugString(L"Floor changed!\n");
+	m_tileset = GetTilesetCreator();
+    m_tileset->parseTilesInHGR2();
+	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" Floor changed!\n").c_str());
 }
 
-void Game::PollChanged_XPos(int memLoc)
+void Game::PollChanged_XPos(UINT memLoc)
 {
-	OutputDebugString(L"XPos changed!\n");
+	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" XPos changed!\n").c_str());
 }
 
-void Game::PollChanged_YPos(int memLoc)
+void Game::PollChanged_YPos(UINT memLoc)
 {
-	OutputDebugString(L"YPos changed!\n");
+	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" YPos changed!\n").c_str());
 }
 
-void Game::PollChanged_OverlandMapX(int memLoc)
+void Game::PollChanged_OverlandMapX(UINT memLoc)
 {
-	m_tileset->parseTilesInHGR2();
-	OutputDebugString(L"OverlandMapX changed!\n");
+	m_tileset = GetTilesetCreator();
+    m_tileset->parseTilesInHGR2();
+	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapX changed!\n").c_str());
 }
 
-void Game::PollChanged_OverlandMapY(int memLoc)
+void Game::PollChanged_OverlandMapY(UINT memLoc)
 {
-	m_tileset->parseTilesInHGR2();
-	OutputDebugString(L"OverlandMapY changed!\n");
+	m_tileset = GetTilesetCreator();
+    m_tileset->parseTilesInHGR2();
+	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapY changed!\n").c_str());
 }
 
 #pragma endregion
@@ -268,7 +291,7 @@ void Game::PollChanged_OverlandMapY(int memLoc)
 // Base size adds the minimap after getting the size with the sidebars
 void Game::GetBaseSize(__out int& width, __out int& height) noexcept
 {
-    auto mmTexSize = GetTextureSize(m_miniMapTexture.Get());
+	auto mmTexSize = GetTextureSize(m_miniMapTexture.Get());
     m_sbM.GetBaseSize(width, height);
     width = width + mmTexSize.x;
     if (height < mmTexSize.y)
@@ -354,7 +377,8 @@ void Game::Render()
         tickOfLastRender = m_timer.GetTotalTicks();
 
         // First update the sidebar, it doesn't need to be updated until right before the render
-        m_sbC.UpdateAllSidebarText(&m_sbM, false);
+        // Only allow x microseconds for updates of sidebar every render
+        UINT64 sbTimeSpent = m_sbC.UpdateAllSidebarText(&m_sbM, false, 500);
 
 		// Prepare the command list to render a new frame.
 		m_deviceResources->Prepare();
@@ -430,7 +454,7 @@ void Game::Render()
 #ifdef _DEBUG
     char pcbuf[4000];
 //    snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %I64x : %I64x", g_debug_video_field, g_debug_video_data);
-	snprintf(pcbuf, sizeof(pcbuf), "%.f usec/frame - Time: %.3f\n", 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds());
+	snprintf(pcbuf, sizeof(pcbuf), "%6.0f usec/frame - Time: %6.2f - Sidebar Time: %6lld\n", 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds(), sbTimeSpent);
 	m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), pcbuf,
 		{ 11.f, 11.f }, Colors::DimGray, 0.f, m_vector2Zero, m_clientFrameScale);
     m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), pcbuf,

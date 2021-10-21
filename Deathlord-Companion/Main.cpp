@@ -45,13 +45,12 @@ int m_extraWindowHeight = 0;
 int m_initialWindowWidth = 0;
 int m_initialWindowHeight = 0;
 
-TilesetCreator g_tilesetCreator;
-
 namespace
 {
 	std::unique_ptr<Game> g_game;
 	std::shared_ptr<LogWindow> g_logW;
 	std::shared_ptr<DeathlordHacks> g_dlHacks;
+	std::shared_ptr<TilesetCreator> g_tilesetCreator;
 }
 
 void ExitGame() noexcept;
@@ -76,6 +75,11 @@ std::shared_ptr<LogWindow> GetLogWindow()
 std::shared_ptr<DeathlordHacks> GetDeathlordHacks()
 {
 	return g_dlHacks;
+}
+
+std::shared_ptr<TilesetCreator> GetTilesetCreator()
+{
+	return g_tilesetCreator;
 }
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -205,9 +209,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 			g_game->Initialize(hwnd, wi.rcClient.right - wi.rcClient.left, wi.rcClient.bottom - wi.rcClient.top);
 
-			// create the log and hack windows at the start
+			// create the instances of important blocks at the start
 			g_logW = std::make_unique<LogWindow>(g_hInstance, hwnd);
 			g_dlHacks = std::make_unique<DeathlordHacks>(g_hInstance, hwnd);
+			g_tilesetCreator = std::make_unique<TilesetCreator>();
 
 			// Game has now loaded the saved/default settings
 			// Update the menu bar with the settings
@@ -645,11 +650,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				g_nAppMode = AppMode_e::MODE_PAUSED;
 				SoundCore_SetFade(FADE_OUT);
 				CheckMenuItem(GetSubMenu(GetMenu(hWnd), 1), ID_EMULATOR_PAUSE, MF_BYCOMMAND | MF_CHECKED);
+				g_game->ChooseTexture();
 				break;
 			case AppMode_e::MODE_PAUSED:
 				g_nAppMode = AppMode_e::MODE_RUNNING;
 				SoundCore_SetFade(FADE_IN);
 				CheckMenuItem(GetSubMenu(GetMenu(hWnd), 1), ID_EMULATOR_PAUSE, MF_BYCOMMAND | MF_UNCHECKED);
+				g_game->ChooseTexture();
 				break;
 			}
 			break;
