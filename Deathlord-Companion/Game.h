@@ -25,6 +25,12 @@ enum class EmulatorLayout
 	NONE = UINT8_MAX
 };
 
+enum class DelayedTriggersFunction
+{
+    PARSE_TILES,
+    COUNT
+};
+
 extern bool g_isInGameMap;          // is the player in-game or on the loading/utilities screens?
 extern bool g_wantsToSave;          // only TRUE when the player is asking to save
 extern NonVolatile g_nonVolatile;
@@ -81,21 +87,36 @@ public:
 
     void GetBaseSize(__out int& width, __out int& height) noexcept;
 
-    // Memory polling
+    // Properties
+	bool shouldRender;
+	// Rendering loop timer.
+	DX::StepTimer m_timer;
+
+
+	// Memory polling map
+	using FuncPtr = void (Game::*)(UINT);
+	std::map<UINT, FuncPtr> memPollMap;                 // memlocation -> function
+    std::map<DelayedTriggersFunction, FuncPtr> delayedTriggerFuncIDs;
+	std::map<DelayedTriggersFunction, float> delayedTriggerMap;    // functionID -> ElapsedSeconds_when_trigger
+
+	// Memory polling
 	void PollKeyMemoryLocations();
-    void PollChanged_MapID(UINT memLoc);
+	void PollChanged_InGameMap(UINT memLoc);
+	void PollChanged_MapID(UINT memLoc);
 	void PollChanged_MapType(UINT memLoc);
 	void PollChanged_Floor(UINT memLoc);
 	void PollChanged_XPos(UINT memLoc);
 	void PollChanged_YPos(UINT memLoc);
 	void PollChanged_OverlandMapX(UINT memLoc);
 	void PollChanged_OverlandMapY(UINT memLoc);
+	void DelayedTriggerInsert(DelayedTriggersFunction funcId, UINT64 delayInMilliSeconds);
+	// Poll Delayed Trigger Functions
+	void DelayedTrigger_ParseTiles(UINT memloc);
+	void DelayedTriggersProcess();
 
+	float intervalPollMemory = 0;
+    float intervalDelayedTriggers = 0;
 
-    // Properties
-	bool shouldRender;
-	// Rendering loop timer.
-	DX::StepTimer m_timer;
 private:
 
     void Update(DX::StepTimer const& timer);
@@ -118,10 +139,6 @@ private:
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
-
-    // Memory polling map
-    using FuncPtr = void (Game::*)(UINT);
-	std::map<UINT, FuncPtr> memPollMap;
 
     // Background image when in LOGO mode
     std::vector<uint8_t> m_bgImage;

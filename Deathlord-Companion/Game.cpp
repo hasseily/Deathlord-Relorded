@@ -45,21 +45,22 @@ UINT64	g_debug_video_data = 0;
 NonVolatile g_nonVolatile;
 
 bool g_isInGameMap = false;
-bool g_wantsToSave = true;  // TODO: DISABLED. It can corrupt saved games
+bool g_wantsToSave = true;  // DISABLED. It can corrupt saved games
 
 static std::map<UINT, UINT>memPollPreviousValues;
-static bool tileMapWasGeneratedThisUpdate = false;
 
 Game::Game() noexcept(false)
 {
-	memPollMap[MAP_IS_OVERLAND] = &Game::PollChanged_MapType;
-	memPollMap[MAP_ID]          = &Game::PollChanged_MapID;
-	memPollMap[MAP_LEVEL]       = &Game::PollChanged_Floor;
-	memPollMap[MAP_OVERLAND_X]  = &Game::PollChanged_OverlandMapX;
-	memPollMap[MAP_OVERLAND_Y]  = &Game::PollChanged_OverlandMapY;
-	memPollMap[MAP_XPOS]        = &Game::PollChanged_XPos;
-	memPollMap[MAP_YPOS]        = &Game::PollChanged_YPos;
+	memPollMap[MAP_IS_IN_GAME_MAP]  = &Game::PollChanged_InGameMap;
+	memPollMap[MAP_IS_OVERLAND]     = &Game::PollChanged_MapType;
+	memPollMap[MAP_ID]              = &Game::PollChanged_MapID;
+	memPollMap[MAP_LEVEL]           = &Game::PollChanged_Floor;
+	memPollMap[MAP_OVERLAND_X]      = &Game::PollChanged_OverlandMapX;
+	memPollMap[MAP_OVERLAND_Y]      = &Game::PollChanged_OverlandMapY;
+	memPollMap[MAP_XPOS]            = &Game::PollChanged_XPos;
+	memPollMap[MAP_YPOS]            = &Game::PollChanged_YPos;
 
+    delayedTriggerFuncIDs[DelayedTriggersFunction::PARSE_TILES] = &Game::DelayedTrigger_ParseTiles;
 
     g_nonVolatile = NonVolatile();
     g_textureData = {};
@@ -236,20 +237,22 @@ void Game::PollKeyMemoryLocations()
 void Game::PollMapSetCurrentValues()
 {
 	LPBYTE pMem = MemGetMainPtr(0);
-	for (std::map<UINT, void (Game::*)(UINT)>::iterator it = memPollMap.begin(); it != memPollMap.end(); ++it)
+	for (std::map<UINT, FuncPtr>::iterator it = memPollMap.begin(); it != memPollMap.end(); ++it)
     {
         memPollPreviousValues[it->first] = pMem[it->first];
 	}
 }
 
+void Game::PollChanged_InGameMap(UINT memLoc)
+{
+    if (MemGetMainPtr(memLoc)[0] == 0xFCE0)     // User just got in game map
+	    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 5000);
+	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" In game map!\n").c_str());
+}
+
 void Game::PollChanged_MapID(UINT memLoc)
 {
-    if (!tileMapWasGeneratedThisUpdate)
-    {
-		m_tileset = GetTilesetCreator();
-		m_tileset->parseTilesInHGR2();
-        tileMapWasGeneratedThisUpdate = true;
-    }
+    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
     //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapID changed!\n").c_str());
 }
 
@@ -260,12 +263,7 @@ void Game::PollChanged_MapType(UINT memLoc)
 
 void Game::PollChanged_Floor(UINT memLoc)
 {
-	if (!tileMapWasGeneratedThisUpdate)
-	{
-		m_tileset = GetTilesetCreator();
-		m_tileset->parseTilesInHGR2();
-		tileMapWasGeneratedThisUpdate = true;
-	}
+    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
     //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" Floor changed!\n").c_str());
 }
 
@@ -281,26 +279,55 @@ void Game::PollChanged_YPos(UINT memLoc)
 
 void Game::PollChanged_OverlandMapX(UINT memLoc)
 {
-	if (!tileMapWasGeneratedThisUpdate)
-	{
-		m_tileset = GetTilesetCreator();
-		m_tileset->parseTilesInHGR2();
-		tileMapWasGeneratedThisUpdate = true;
-	}
+    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
     //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapX changed!\n").c_str());
 }
 
 void Game::PollChanged_OverlandMapY(UINT memLoc)
 {
-	if (!tileMapWasGeneratedThisUpdate)
-	{
-		m_tileset = GetTilesetCreator();
-		m_tileset->parseTilesInHGR2();
-		tileMapWasGeneratedThisUpdate = true;
-	}
+    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
     //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapY changed!\n").c_str());
 }
 
+void Game::DelayedTriggerInsert(DelayedTriggersFunction funcId, UINT64 delayInMilliSeconds)
+{
+    // Insert the function to trigger with the necessary delay, if it doesn't yet exist
+    // We don't trigger twice a function
+    float nextTriggerS = m_timer.GetTotalSeconds() + delayInMilliSeconds/1000;
+    delayedTriggerMap.try_emplace(funcId, nextTriggerS);
+}
+
+void Game::DelayedTriggersProcess()
+{
+    if (delayedTriggerMap.empty())
+        return;
+	for (auto it = delayedTriggerMap.begin(); it != delayedTriggerMap.end();)
+	{
+        float currentS = m_timer.GetTotalSeconds();
+        if (it->second < currentS)  // time has lapsed, let's trigger!
+        {
+            // get the actual function pointer and call the function
+            (this->*(delayedTriggerFuncIDs.at(it->first)))(UINT_MAX);
+            // erase the entry from the map, we've called it
+            delayedTriggerMap.erase(it);
+            if (delayedTriggerMap.empty())
+                break;
+        }
+        else
+        {
+            it++;
+        }
+	}
+}
+
+// Below are the functions that are stored in the delayed trigger map
+// Every update there's method that scans the map for functions whose timestamp
+// expired and it triggers them
+void Game::DelayedTrigger_ParseTiles(UINT memloc)
+{
+	m_tileset = GetTilesetCreator();
+	m_tileset->parseTilesInHGR2();
+}
 #pragma endregion
 
 #pragma region Others
@@ -334,10 +361,8 @@ void Game::Tick()
 void Game::Update(DX::StepTimer const& timer)
 {
     PIXBeginEvent(PIX_COLOR_DEFAULT, L"Update");
-    tileMapWasGeneratedThisUpdate = false;
 
 	EmulatorMessageLoopProcessing();
-    // auto elapsedTime = float(timer.GetElapsedSeconds());
 
     auto pad = m_gamePad->GetState(0);
     if (pad.IsConnected())
@@ -354,6 +379,20 @@ void Game::Update(DX::StepTimer const& timer)
         // Do something when escape or other keys pressed
     }
 
+    // poll memory and fire triggers at specific intervals
+	auto elapsedTime = float(timer.GetElapsedSeconds());
+    intervalPollMemory += elapsedTime;
+	intervalDelayedTriggers += elapsedTime;
+    if (intervalPollMemory > 0.5f)
+    {
+        PollKeyMemoryLocations();
+        intervalPollMemory = 0.f;
+    }
+	if (intervalDelayedTriggers > 0.1f)
+	{
+        DelayedTriggersProcess();
+        intervalDelayedTriggers = 0.f;
+	}
     PIXEndEvent();
 }
 #pragma endregion
