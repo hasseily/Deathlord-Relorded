@@ -17,10 +17,10 @@
 constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 30;  // Only render so many frames. Give the emulator all the rest of the time
 
 using namespace DirectX::SimpleMath;
-constexpr Vector3 COLOR_APPLE2_BLUE(0x07, 0xA8, 0xE0);
-constexpr Vector3 COLOR_APPLE2_ORANGE(0xF9, 0x56, 0x1D);
-constexpr Vector3 COLOR_APPLE2_GREEN(0x43, 0xC8, 0x00);
-constexpr Vector3 COLOR_APPLE2_VIOLET(0xBB, 0x36, 0xFF);
+constexpr Color COLOR_APPLE2_BLUE   ( (0x07/255.f), (0xA8/255.f), (0xE0/255.f) );
+constexpr Color COLOR_APPLE2_ORANGE ( (0xF9/255.f), (0x56/255.f), (0x1D/255.f) );
+constexpr Color COLOR_APPLE2_GREEN  ( (0x43/255.f), (0xC8/255.f), (0x00/255.f) );
+constexpr Color COLOR_APPLE2_VIOLET ( (0xBB/255.f), (0x36/255.f), (0xFF/255.f) );
 
 enum class EmulatorLayout
 {
