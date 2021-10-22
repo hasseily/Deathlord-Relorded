@@ -202,6 +202,7 @@
     <ClCompile Include="HAUtils.cpp" />
     <ClCompile Include="LogWindow.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MemoryTriggers.cpp" />
     <ClCompile Include="NonVolatile.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="remotecontrol\Gamelink.cpp" />
@@ -250,6 +251,7 @@
     <ClInclude Include="HAUtils.h" />
     <ClInclude Include="libyaml\win32\config.h" />
     <ClInclude Include="LogWindow.h" />
+    <ClInclude Include="MemoryTriggers.h" />
     <ClInclude Include="NonVolatile.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="ReadData.h" />

@@ -11,6 +11,7 @@
 #include "Keyboard.h"
 #include "Emulator/AppleWin.h"
 #include "Emulator/Video.h"
+#include "MemoryTriggers.h"
 #include <vector>
 #include <string>
 
@@ -40,6 +41,7 @@ static float m_clientFrameScale = 1.f;
 static Vector2 m_vector2Zero = { 0.f, 0.f };
 static RECT m_cachedClientRect;
 
+static MemoryTriggers* m_trigger;
 UINT64	g_debug_video_field = 0;
 UINT64	g_debug_video_data = 0;
 NonVolatile g_nonVolatile;
@@ -47,21 +49,8 @@ NonVolatile g_nonVolatile;
 bool g_isInGameMap = false;
 bool g_wantsToSave = true;  // DISABLED. It can corrupt saved games
 
-static std::map<UINT, UINT>memPollPreviousValues;
-
 Game::Game() noexcept(false)
 {
-	memPollMap[MAP_IS_IN_GAME_MAP]  = &Game::PollChanged_InGameMap;
-	memPollMap[MAP_IS_OVERLAND]     = &Game::PollChanged_MapType;
-	memPollMap[MAP_ID]              = &Game::PollChanged_MapID;
-	memPollMap[MAP_LEVEL]           = &Game::PollChanged_Floor;
-	memPollMap[MAP_OVERLAND_X]      = &Game::PollChanged_OverlandMapX;
-	memPollMap[MAP_OVERLAND_Y]      = &Game::PollChanged_OverlandMapY;
-	memPollMap[MAP_XPOS]            = &Game::PollChanged_XPos;
-	memPollMap[MAP_YPOS]            = &Game::PollChanged_YPos;
-
-    delayedTriggerFuncIDs[DelayedTriggersFunction::PARSE_TILES] = &Game::DelayedTrigger_ParseTiles;
-
     g_nonVolatile = NonVolatile();
     g_textureData = {};
     GameLink::Init(false);
@@ -108,8 +97,6 @@ void Game::Initialize(HWND window, int width, int height)
 
     shouldRender = true;
 
-	PollMapSetCurrentValues();
-
     GetClientRect(window, &m_cachedClientRect);
     m_clientFrameScale = 1.f;
     m_deviceResources->SetWindow(window, width, height, (float)GetFrameBufferWidth(), (float)GetFrameBufferHeight());
@@ -124,6 +111,9 @@ void Game::Initialize(HWND window, int width, int height)
     // Then we control how often we render later in the Render() method
 	// m_timer.SetTargetElapsedSeconds(1.0 / MAX_RENDERED_FRAMES_PER_SECOND);
 	m_timer.SetFixedTimeStep(false);
+    
+	m_trigger = MemoryTriggers::GetInstance(&m_timer);
+	m_trigger->PollMapSetCurrentValues();
 }
 
 #pragma region Window texture and size
@@ -209,138 +199,17 @@ void Game::SetWindowSizeOnChangedProfile()
 }
 #pragma endregion
 
-#pragma region Polling
-//************************************
-// Method:    PollKeyMemoryLocations
-// FullName:  Game::PollKeyMemoryLocations
-// Access:    public 
-// Returns:   void
-// Qualifier:
-
-// Description: 
-// Called after every regular keypress or at specific intervals.
-// Polls for key memory location changes and fires relevant methods
-//************************************
-void Game::PollKeyMemoryLocations()
-{
-    LPBYTE pMem = MemGetMainPtr(0);
-    for (std::map<UINT, void (Game::*)(UINT)>::iterator it = memPollMap.begin(); it != memPollMap.end(); ++it)
-    {
-        if (pMem[it->first] != memPollPreviousValues[it->first])    // memory value changed since last poll
-        {
-            memPollPreviousValues[it->first] = pMem[it->first];
-            (this->*(it->second))(it->first);
-        }
-    }
-}
-
-void Game::PollMapSetCurrentValues()
-{
-	LPBYTE pMem = MemGetMainPtr(0);
-	for (std::map<UINT, FuncPtr>::iterator it = memPollMap.begin(); it != memPollMap.end(); ++it)
-    {
-        memPollPreviousValues[it->first] = pMem[it->first];
-	}
-}
-
-void Game::PollChanged_InGameMap(UINT memLoc)
-{
-    if (MemGetMainPtr(memLoc)[0] == 0xFCE0)     // User just got in game map
-	    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 5000);
-	OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" In game map!\n").c_str());
-}
-
-void Game::PollChanged_MapID(UINT memLoc)
-{
-    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
-    //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapID changed!\n").c_str());
-}
-
-void Game::PollChanged_MapType(UINT memLoc)
-{
-	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapType changed!\n").c_str());
-}
-
-void Game::PollChanged_Floor(UINT memLoc)
-{
-    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
-    //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" Floor changed!\n").c_str());
-}
-
-void Game::PollChanged_XPos(UINT memLoc)
-{
-	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" XPos changed!\n").c_str());
-}
-
-void Game::PollChanged_YPos(UINT memLoc)
-{
-	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" YPos changed!\n").c_str());
-}
-
-void Game::PollChanged_OverlandMapX(UINT memLoc)
-{
-    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
-    //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapX changed!\n").c_str());
-}
-
-void Game::PollChanged_OverlandMapY(UINT memLoc)
-{
-    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
-    //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapY changed!\n").c_str());
-}
-
-void Game::DelayedTriggerInsert(DelayedTriggersFunction funcId, UINT64 delayInMilliSeconds)
-{
-    // Insert the function to trigger with the necessary delay, if it doesn't yet exist
-    // We don't trigger twice a function
-    float nextTriggerS = m_timer.GetTotalSeconds() + delayInMilliSeconds/1000;
-    delayedTriggerMap.try_emplace(funcId, nextTriggerS);
-}
-
-void Game::DelayedTriggersProcess()
-{
-    if (delayedTriggerMap.empty())
-        return;
-	for (auto it = delayedTriggerMap.begin(); it != delayedTriggerMap.end();)
-	{
-        float currentS = m_timer.GetTotalSeconds();
-        if (it->second < currentS)  // time has lapsed, let's trigger!
-        {
-            // get the actual function pointer and call the function
-            (this->*(delayedTriggerFuncIDs.at(it->first)))(UINT_MAX);
-            // erase the entry from the map, we've called it
-            delayedTriggerMap.erase(it);
-            if (delayedTriggerMap.empty())
-                break;
-        }
-        else
-        {
-            it++;
-        }
-	}
-}
-
-// Below are the functions that are stored in the delayed trigger map
-// Every update there's method that scans the map for functions whose timestamp
-// expired and it triggers them
-void Game::DelayedTrigger_ParseTiles(UINT memloc)
-{
-	m_tileset = GetTilesetCreator();
-	m_tileset->parseTilesInHGR2();
-}
-#pragma endregion
-
 #pragma region Others
 
 // Base size adds the minimap after getting the size with the sidebars
 void Game::GetBaseSize(__out int& width, __out int& height) noexcept
 {
 	auto mmTexSize = GetTextureSize(m_miniMapTexture.Get());
-    m_sbM.GetBaseSize(width, height);
-    width = width + mmTexSize.x;
-    if (height < mmTexSize.y)
-        height = mmTexSize.y;
-    return;
+	m_sbM.GetBaseSize(width, height);
+	width = width + mmTexSize.x;
+	if (height < mmTexSize.y)
+		height = mmTexSize.y;
+	return;
 }
 
 #pragma endregion
@@ -380,19 +249,8 @@ void Game::Update(DX::StepTimer const& timer)
     }
 
     // poll memory and fire triggers at specific intervals
-	auto elapsedTime = float(timer.GetElapsedSeconds());
-    intervalPollMemory += elapsedTime;
-	intervalDelayedTriggers += elapsedTime;
-    if (intervalPollMemory > 0.5f)
-    {
-        PollKeyMemoryLocations();
-        intervalPollMemory = 0.f;
-    }
-	if (intervalDelayedTriggers > 0.1f)
-	{
-        DelayedTriggersProcess();
-        intervalDelayedTriggers = 0.f;
-	}
+    m_trigger->Process();
+
     PIXEndEvent();
 }
 #pragma endregion
