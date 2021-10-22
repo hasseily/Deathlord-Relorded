@@ -174,6 +174,7 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AutoMap.cpp" />
     <ClCompile Include="DeathlordHacks.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="emulator\AppleWin.cpp" />
@@ -214,6 +215,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATGColors.h" />
+    <ClInclude Include="AutoMap.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DeathlordHacks.h" />
     <ClInclude Include="DeviceResources.h" />

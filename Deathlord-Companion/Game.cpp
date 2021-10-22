@@ -37,7 +37,6 @@ AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
 static std::wstring last_logged_line;
 static UINT64 tickOfLastRender = 0;
 
-static float m_clientFrameScale = 1.f;
 static Vector2 m_vector2Zero = { 0.f, 0.f };
 static RECT m_cachedClientRect;
 
@@ -48,6 +47,7 @@ NonVolatile g_nonVolatile;
 
 bool g_isInGameMap = false;
 bool g_wantsToSave = true;  // DISABLED. It can corrupt saved games
+float Game::m_clientFrameScale = 1.f;
 
 Game::Game() noexcept(false)
 {

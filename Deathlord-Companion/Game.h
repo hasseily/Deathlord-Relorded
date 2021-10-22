@@ -85,7 +85,11 @@ public:
     void SetVideoLayout(EmulatorLayout layout);
     void SetWindowSizeOnChangedProfile();
 
+    // Accessors
     void GetBaseSize(__out int& width, __out int& height) noexcept;
+    float GetFrameScale() { return m_clientFrameScale; };
+    std::shared_ptr<DirectX::SpriteBatch> GetSpriteBatch() { return m_spriteBatch; };
+    std::shared_ptr<DirectX::DescriptorHeap> GetResourceDescriptors() { return m_resourceDescriptors; };
 
     // Properties
 	bool shouldRender;
@@ -110,6 +114,8 @@ private:
     // (i.e. how much of the total width|height the vertex should fill, 1.f being full width|height)
     void UpdateGamelinkVertexData(int width, int height, float wRatio, float hRatio);
 
+	static float m_clientFrameScale;
+
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
@@ -128,10 +134,10 @@ private:
     std::unique_ptr<DirectX::Keyboard>      m_keyboard;
 
     std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
-    std::unique_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
+    std::shared_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
 	std::unique_ptr<DirectX::DescriptorHeap> m_resourceDescriptorsFonts;
 
-    std::unique_ptr<DirectX::SpriteBatch> m_spriteBatch;
+    std::shared_ptr<DirectX::SpriteBatch> m_spriteBatch;
     DirectX::SimpleMath::Vector2 m_fontPos;
 
     Microsoft::WRL::ComPtr<ID3D12Resource> m_miniMapTexture;
