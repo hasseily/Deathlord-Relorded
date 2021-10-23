@@ -9,6 +9,26 @@
 #include "Game.h"
 
 /// <summary>
+/// Creates a map of the rects on the spritesheet of all tiles based on the tile ID
+/// </summary>
+
+void TilesetCreator::FillTileSpritePositions()
+{
+	for (long j = 0; j < PNGTILESPERCOL; j++)
+	{
+		for (long i = 0; i < PNGTILESPERROW; i++)
+		{
+			tileSpritePositions[j * PNGTILESPERROW + i] = {
+				i* PNGTW,
+				j* PNGTH,
+				i* PNGTW + PNGTW - 1,
+				j* PNGTH + PNGTH - 1
+			};
+		}
+	}
+}
+
+/// <summary>
 /// Goes through all the tiles in HGR2 and parses them, adding them to the PNG patchwork
 /// </summary>
 /// <return>A pointer to the buffer with RGBA data</return>

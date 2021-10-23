@@ -2,8 +2,11 @@
 #include <windows.h>
 #include "Emulator/Memory.h"
 #include <array>
+#include <map>
 
 constexpr UINT32 GAMEMAP_START_MEM = 0xC00;		// Start of memory area of the in-game map
+constexpr UINT8 MAP_WIDTH = 64;
+constexpr int MAP_LENGTH = MAP_WIDTH * MAP_WIDTH;			// Size of map (in bytes)
 
 constexpr UINT8 PIXELDEPTH	= 4;	// RGBA
 
@@ -34,10 +37,12 @@ class TilesetCreator
 {
 public:
 	UINT32 iInserted = 0;
+	std::map<UINT8, RECT>tileSpritePositions; // Positions of each tile sprite in spritesheet
 	TilesetCreator()
 	{
 		pTilesetBuffer = new BYTE[PNGBUFFERSIZE];
 		memset(pTilesetBuffer, 0, PNGBUFFERSIZE);
+		FillTileSpritePositions();
 	}
 	~TilesetCreator()
 	{
@@ -48,6 +53,7 @@ public:
 	LPBYTE GetCurrentGameMap() { return MemGetMainPtr(GAMEMAP_START_MEM); };
 private:
 	LPBYTE pTilesetBuffer;
+	void FillTileSpritePositions();
 };
 
 // defined in Main.cpp

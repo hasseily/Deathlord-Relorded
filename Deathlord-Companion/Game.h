@@ -22,6 +22,8 @@ constexpr Color COLOR_APPLE2_ORANGE ( (0xF9/255.f), (0x56/255.f), (0x1D/255.f) )
 constexpr Color COLOR_APPLE2_GREEN  ( (0x43/255.f), (0xC8/255.f), (0x00/255.f) );
 constexpr Color COLOR_APPLE2_VIOLET ( (0xBB/255.f), (0x36/255.f), (0xFF/255.f) );
 
+constexpr UINT32 MAP_WIDTH_IN_VIEWPORT = 800;   // Fixed map width in the viewport
+
 enum class EmulatorLayout
 {
 	NORMAL = 0,
@@ -140,10 +142,12 @@ private:
     std::shared_ptr<DirectX::SpriteBatch> m_spriteBatch;
     DirectX::SimpleMath::Vector2 m_fontPos;
 
-    Microsoft::WRL::ComPtr<ID3D12Resource> m_miniMapTexture;
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBG;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTexture;
 	enum TextureDescriptors
 	{
-		MiniMapBackground,
+		AutoMapBackground,
+        AutoMapTileSheet,
 		Count
 	};
 

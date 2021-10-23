@@ -12,6 +12,7 @@
 #include "Emulator/AppleWin.h"
 #include "Emulator/Video.h"
 #include "MemoryTriggers.h"
+#include "TilesetCreator.h"
 #include <vector>
 #include <string>
 
@@ -94,6 +95,7 @@ void Game::Initialize(HWND window, int width, int height)
     m_bgImage = HA::LoadBGRAImage(buff, m_bgImageWidth, m_bgImageHeight);
 
 	m_sbC.Initialize();
+	m_tileset = GetTilesetCreator();
 
     shouldRender = true;
 
@@ -201,14 +203,14 @@ void Game::SetWindowSizeOnChangedProfile()
 
 #pragma region Others
 
-// Base size adds the minimap after getting the size with the sidebars
+// Base size adds the automap after getting the size with the sidebars
 void Game::GetBaseSize(__out int& width, __out int& height) noexcept
 {
-	auto mmTexSize = GetTextureSize(m_miniMapTexture.Get());
 	m_sbM.GetBaseSize(width, height);
-	width = width + mmTexSize.x;
-	if (height < mmTexSize.y)
-		height = mmTexSize.y;
+	width = width + MAP_WIDTH_IN_VIEWPORT;
+    UINT32 mapHeight = MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW;
+	if (height < mapHeight)
+		height = mapHeight;
 	return;
 }
 
@@ -326,22 +328,36 @@ void Game::Render()
         commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
         // End drawing video texture
 
-		// Drawing minimap
+		// Drawing automap
+        // TODO: Do most of this outside of render, much of it is fixed between renders
 		int origW, origH;
 		GetBaseSize(origW, origH);
-		auto mmTexSize = GetTextureSize(m_miniMapTexture.Get());
-		auto mmOrigin = m_clientFrameScale * Vector2(origW - mmTexSize.x, 0.f);
+		auto mmTexSize = GetTextureSize(m_autoMapTextureBG.Get());
+		auto mmOrigin = m_clientFrameScale * Vector2(origW - MAP_WIDTH_IN_VIEWPORT, 0.f);
 		ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap() };
 		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
 
-		m_spriteBatch->Begin(commandList);
+        RECT mapRectInViewport = {
+            mmOrigin.x,
+            mmOrigin.y,
+            m_clientFrameScale * (mmOrigin.x + MAP_WIDTH_IN_VIEWPORT),
+            m_clientFrameScale * (mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW)
+        };
+		m_spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
 
+        // nullptr here is the source rectangle. We're drawing the full background
+		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::AutoMapBackground), mmTexSize,
+			mapRectInViewport, nullptr, Colors::White, 0.f, XMFLOAT2());
 
-		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::MiniMapBackground), mmTexSize,
-			mmOrigin, nullptr, Colors::White, 0.f, XMFLOAT2(), m_clientFrameScale, SpriteEffects_None, 0.0f);
+        /*
+        // TODO: delete, this is a test
+        RECT sourceRect = { 150, 12, 200, 50 };
+		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::AutoMapBackground), mmTexSize,
+			mmOrigin, &sourceRect);
+            */
 
 		m_spriteBatch->End();
-        // End drawing minimap
+        // End drawing automap
 
         // Drawing text
         ID3D12DescriptorHeap* heapsFonts[] = { m_resourceDescriptorsFonts->Heap() };
@@ -383,7 +399,7 @@ void Game::Render()
         }
         m_primitiveBatch->End();
 
-        // write text on top of minimap area
+        // write text on top of automap area
         Vector2 awaitTextPos(
             mmOrigin.x + m_clientFrameScale * (mmTexSize.x / 2.f - 120.f),
             mmOrigin.y + m_clientFrameScale * (mmTexSize.y / 2.f - 20.f));
@@ -586,14 +602,22 @@ void Game::CreateDeviceDependentResources()
         m_spriteFonts.back()->SetDefaultCharacter('.');
     }
 
-    // Now create the minimap resources
+    // Now create the automap resources
+    // First the background
 	DX::ThrowIfFailed(
 		CreateWICTextureFromFile(device, resourceUpload, L"Assets/Background_NoMap.png",
-            m_miniMapTexture.ReleaseAndGetAddressOf()));
-
-	CreateShaderResourceView(device, m_miniMapTexture.Get(),
-		m_resourceDescriptors->GetCpuHandle(TextureDescriptors::MiniMapBackground));
-
+            m_autoMapTextureBG.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_autoMapTextureBG.Get(),
+		m_resourceDescriptors->GetCpuHandle(TextureDescriptors::AutoMapBackground));
+    // Now the sprite sheet
+    // TODO: modify the spritesheet every new level XXX XXX XXX XXX
+    /*
+    DX::ThrowIfFailed(
+        CreateWICTextureFromMemory(device, resourceUpload, m_tileset->GetCurrentGameMap(),
+            MAP_LENGTH, m_autoMapTexture.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_autoMapTexture.Get(),
+		m_resourceDescriptors->GetCpuHandle(TextureDescriptors::AutoMapTileSheet));
+        */
 
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
 	SpriteBatchPipelineStateDescription spd(rtState);
@@ -943,7 +967,8 @@ void Game::OnDeviceLost()
         spriteFont.reset();
     }
 	m_texture.Reset();
-	m_miniMapTexture.Reset();
+	m_autoMapTexture.Reset();
+	m_autoMapTextureBG.Reset();
     m_indexBuffer.Reset();
     m_vertexBuffer.Reset();
     m_pipelineState.Reset();

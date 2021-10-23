@@ -13,9 +13,6 @@
 
 const wchar_t CLASS_NAME[] = L"Deathlord Hacks Class";
 
-constexpr UINT8 MAP_WIDTH = 64;
-constexpr int MAP_LENGTH = MAP_WIDTH * MAP_WIDTH;			// Size of map (in bytes)
-
 static HINSTANCE appInstance = nullptr;
 static HWND hwndMain = nullptr;				// handle to main window
 
