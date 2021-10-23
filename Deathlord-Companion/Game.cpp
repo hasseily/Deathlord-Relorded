@@ -292,6 +292,7 @@ void Game::Render()
     if (ticksSinceLastRender > m_timer.TicksPerSecond / MAX_RENDERED_FRAMES_PER_SECOND)
     {
         tickOfLastRender = m_timer.GetTotalTicks();
+        GetClientRect(m_window, &m_cachedClientRect);
 
         // First update the sidebar, it doesn't need to be updated until right before the render
         // Only allow x microseconds for updates of sidebar every render
@@ -333,15 +334,14 @@ void Game::Render()
 		int origW, origH;
 		GetBaseSize(origW, origH);
 		auto mmTexSize = GetTextureSize(m_autoMapTextureBG.Get());
-		auto mmOrigin = m_clientFrameScale * Vector2(origW - MAP_WIDTH_IN_VIEWPORT, 0.f);
+		auto mmOrigin = Vector2(m_cachedClientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
 		ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap() };
 		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
-
         RECT mapRectInViewport = {
             mmOrigin.x,
             mmOrigin.y,
-            m_clientFrameScale * (mmOrigin.x + MAP_WIDTH_IN_VIEWPORT),
-            m_clientFrameScale * (mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW)
+            mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
+            mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
         };
 		m_spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
 
@@ -369,44 +369,62 @@ void Game::Render()
         m_primitiveBatch->Begin(commandList);
         for each (auto sb in m_sbM.sidebars)
         {
+            // shifted sidebar position if the window is different size than original size
+			XMFLOAT2 shiftedPosition = sb.position;
+			switch (sb.type)
+			{
+            case SidebarTypes::Right:
+				shiftedPosition.x += m_cachedClientRect.right - m_cachedClientRect.left - origW;
+                break;
+            case SidebarTypes::Bottom:
+				shiftedPosition.y += m_cachedClientRect.bottom - m_cachedClientRect.top - origH;
+                break;
+			default:
+				break;
+			}
+
             // Draw each block's text
+            // shift it by the amount the sidebar was shifted
+            XMFLOAT2 sblockPosition;    // shifted block position
             for each (auto b in sb.blocks)
             {
+                sblockPosition = b->position;
+                sblockPosition.x += shiftedPosition.x - sb.position.x;
+                sblockPosition.y += shiftedPosition.y - sb.position.y;
                 m_spriteFonts.at((int)b->fontId)->DrawString(m_spriteBatch.get(), b->text.c_str(),
-                    b->position * m_clientFrameScale, b->color, 0.f, m_vector2Zero, m_clientFrameScale);
+                    sblockPosition, b->color, 0.f, m_vector2Zero);
             }
 
             // Now draw a delimiter line for the block
-            // if the block is not the first block of its type
-            // (having the gamelink video boxed in by lines is not pretty)
-            XMFLOAT3 lstart = XMFLOAT3(sb.position.x, sb.position.y, 0);
-            XMFLOAT3 lend = XMFLOAT3(sb.position.x, sb.position.y, 0);
+            // TODO: not sure if we want those delimiters
+            XMFLOAT3 lstart = XMFLOAT3(shiftedPosition.x, shiftedPosition.y, 0);
+            XMFLOAT3 lend = lstart;
             switch (sb.type)
             {
             case SidebarTypes::Right:
-                lend.y += GetFrameBufferHeight();
+                lend.y = lstart.y + m_cachedClientRect.bottom - m_cachedClientRect.top;
                 break;
             case SidebarTypes::Bottom:
-                lend.x += GetFrameBufferWidth();
+				lend.x = lstart.x + GetFrameBufferWidth();
                 break;
             default:
                 break;
             }
             m_primitiveBatch->DrawLine(
-                VertexPositionColor(lstart * m_clientFrameScale, static_cast<XMFLOAT4>(Colors::DimGray)),
-                VertexPositionColor(lend * m_clientFrameScale, static_cast<XMFLOAT4>(Colors::Black))
+                VertexPositionColor(lstart, static_cast<XMFLOAT4>(Colors::DimGray)),
+                VertexPositionColor(lend, static_cast<XMFLOAT4>(Colors::Black))
             );
         }
         m_primitiveBatch->End();
 
         // write text on top of automap area
         Vector2 awaitTextPos(
-            mmOrigin.x + m_clientFrameScale * (mmTexSize.x / 2.f - 120.f),
-            mmOrigin.y + m_clientFrameScale * (mmTexSize.y / 2.f - 20.f));
+            mapRectInViewport.left + (mapRectInViewport.right - mapRectInViewport.left)/2 - 200.f,
+            mapRectInViewport.top + (mapRectInViewport.bottom - mapRectInViewport.top) / 2 - 20.f);
 		m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
-            awaitTextPos-Vector2(2.f,2.f), Colors::Black, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 2.f);
+            awaitTextPos-Vector2(2.f,2.f), Colors::Black, 0.f, Vector2(0.f, 0.f), 3.f);
 		m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
-			awaitTextPos, COLOR_APPLE2_BLUE, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 2.f);
+			awaitTextPos, COLOR_APPLE2_BLUE, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 3.f);
 
 #ifdef _DEBUG
 		char pcbuf[4000];
@@ -448,8 +466,8 @@ void Game::Clear()
     // Set the viewports and scissor rects.
     // Set the Gamelink viewport as the first default viewport for the geometry shaders to use
     // So we don't have to specifiy the viewport in the shader
-    //D3D12_VIEWPORT viewports[2] = { m_deviceResources->GetGamelinkViewport(), m_deviceResources->GetScreenViewport() };
-    //D3D12_RECT scissorRects[2] = { m_deviceResources->GetScissorRect(), m_deviceResources->GetScissorRect() };
+    // D3D12_VIEWPORT viewports[2] = { m_deviceResources->GetGamelinkViewport(), m_deviceResources->GetScreenViewport() };
+    // D3D12_RECT scissorRects[2] = { m_deviceResources->GetScissorRect(), m_deviceResources->GetScissorRect() };
     D3D12_VIEWPORT viewports[1] = { m_deviceResources->GetScreenViewport() };
     D3D12_RECT scissorRects[1] = { m_deviceResources->GetScissorRect() };
     commandList->RSSetViewports(1, viewports);
@@ -486,6 +504,7 @@ void Game::OnWindowChanged()
 {
 	// Something's changed, let's update pos and size
     RECT cR;
+    Clear();
     GetClientRect(m_window, &cR);
     OnWindowMoved(cR.left, cR.top);
 	OnWindowSizeChanged(cR.right-cR.left, cR.bottom-cR.top);
@@ -510,22 +529,26 @@ void Game::OnWindowSizeChanged(LONG width, LONG height)
     GetBaseSize(origW, origH);
     float scaleW = (float)(width) / (float)origW;
     float scaleH = (float)(height) / (float)origH;
-    m_clientFrameScale = (scaleW + scaleH)/2.f;    // (should all be the same)
     
-    // Debug code to check the aspect ratio is fixed
 //     char buf[300];
 //     snprintf(buf, 300, "Scales are; %.2f , %.2f\n", scaleW, scaleH);
 //     OutputDebugStringA(buf);
     
-    float gamelinkWidth = scaleW * (float)GetFrameBufferWidth();
-    float gamelinkHeight = scaleH * (float)GetFrameBufferHeight();
+    float gamelinkWidth, gamelinkHeight;
+    if (scaleW > scaleH)
+        scaleW = scaleH;
+    else
+        scaleH = scaleW;
+	gamelinkWidth = scaleW * (float)GetFrameBufferWidth();
+	gamelinkHeight = scaleH * (float)GetFrameBufferHeight();
 
     // don't check return status of the below because we still want to recreate the vertex data
     if (m_deviceResources->WindowSizeChanged(&outSize, &m_cachedClientRect, gamelinkWidth, gamelinkHeight))
     {
         CreateWindowSizeDependentResources();
     }
-    UpdateGamelinkVertexData(width, height, (float)GetFrameBufferWidth()/(float)origW, (float)GetFrameBufferHeight()/(float)origH);
+    UpdateGamelinkVertexData(gamelinkWidth, gamelinkHeight, 
+	(float)GetFrameBufferWidth() / (float)origW, (float)GetFrameBufferHeight() / (float)origH);
 }
 
 #pragma endregion

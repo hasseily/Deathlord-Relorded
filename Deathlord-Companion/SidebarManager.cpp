@@ -12,7 +12,6 @@ using namespace DirectX::PackedVector;
 // Default frame
 int m_baseFrameWidth = 0;
 int m_baseFrameHeight = 0;
-float m_aspectRatio = 1.f;
 
 RECT m_clientRect;
 RECT m_gameLinkRect;
@@ -125,7 +124,6 @@ void SidebarManager::DeleteAllSidebars()
     SetBaseSize(GetFrameBufferWidth(), GetFrameBufferHeight());
 }
 
-
 // Properties
 void SidebarManager::GetBaseSize(__out int& width, __out int& height) noexcept
 {
@@ -133,14 +131,8 @@ void SidebarManager::GetBaseSize(__out int& width, __out int& height) noexcept
     height = m_baseFrameHeight;
 }
 
-float SidebarManager::GetAspectRatio() noexcept
-{
-    return m_aspectRatio;
-}
-
 void SidebarManager::SetBaseSize(const int width, const int height) noexcept
 {
     m_baseFrameWidth = width;
     m_baseFrameHeight = height;
-    m_aspectRatio = (float)m_baseFrameWidth / (float)m_baseFrameHeight;
 }

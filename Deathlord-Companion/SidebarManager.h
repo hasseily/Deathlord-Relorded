@@ -25,7 +25,6 @@ public:
 	void DeleteAllSidebars();
 
 	static void GetBaseSize(__out int& width, __out int& height) noexcept;
-	static float GetAspectRatio() noexcept;
 	// Sets the required size of the client frame to include all the sidebars, given the default APPLEWIN WIDTH and HEIGHT
 	// Everything later scales based on the user's window resizing in Game.cpp
 	void SetBaseSize(const int width, const int height) noexcept;

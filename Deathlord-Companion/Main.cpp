@@ -336,34 +336,48 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_SIZING:
 		// Force the size to have a fixed aspect ratio
 	{
+		game->shouldRender = false;
 		WINDOWINFO wi;
 		wi.cbSize = sizeof(WINDOWINFO);
 		GetWindowInfo(hWnd, &wi);
 		m_extraWindowWidth = (wi.rcWindow.right - wi.rcClient.right) + (wi.rcClient.left - wi.rcWindow.left);
 		m_extraWindowHeight = (wi.rcWindow.bottom - wi.rcClient.bottom) + (wi.rcClient.top - wi.rcWindow.top);
+		/*
 		auto* pWR = (RECT*)lParam;  // Wanted Rect
-
-		if (wi.rcClient.right == pWR->right)
+		float clientScale = (float)(wi.rcClient.right - wi.rcClient.left) / (float)(wi.rcClient.bottom - wi.rcClient.top);
+		if ((pWR->right > wi.rcWindow.right) || (pWR->bottom > wi.rcWindow.bottom)) // scaling up
 		{
-			pWR->right = static_cast<ULONG>(SidebarManager::GetAspectRatio() * (wi.rcClient.bottom - wi.rcClient.top)) + pWR->left + m_extraWindowWidth;
+			if (((float)pWR->right / (float)pWR->bottom) > clientScale)	// extending the right side more
+			{
+				pWR->bottom = static_cast<ULONG>((wi.rcClient.right - wi.rcClient.left) / clientScale)
+					+ pWR->top + m_extraWindowHeight;
+			}
+			else
+			{
+				pWR->right = static_cast<ULONG>((wi.rcClient.bottom - wi.rcClient.top) * clientScale)
+					+ pWR->left + m_extraWindowWidth;
+			}
 		}
-		else
+		else // scaling down
 		{
-			pWR->bottom = static_cast<ULONG>((wi.rcClient.right - wi.rcClient.left) / SidebarManager::GetAspectRatio()) + pWR->top + m_extraWindowHeight;
+			if (((float)pWR->right / (float)pWR->bottom) < clientScale)	// shrinking the right side more
+			{
+				pWR->bottom = static_cast<ULONG>((wi.rcClient.right - wi.rcClient.left) / clientScale)
+					+ pWR->top + m_extraWindowHeight;
+			}
+			else
+			{
+				pWR->right = static_cast<ULONG>((wi.rcClient.bottom - wi.rcClient.top) * clientScale)
+					+ pWR->left + m_extraWindowWidth;
+			}
 		}
-		int bw, bh;
-		game->GetBaseSize(bw, bh);
-		if (((pWR->right - pWR->left) < bw + m_extraWindowWidth) ||
-			((pWR->bottom - pWR->top) < bh + m_extraWindowHeight))
-		{
-			pWR->right = pWR->left + bw + m_extraWindowWidth;
-			pWR->bottom = pWR->top + bh + m_extraWindowHeight;
-		}
+		*/
 		/*
 		char buf[500];
 		sprintf_s(buf, "In Main WM_SIZING Left %d, Top %d, Right %d, Bottom %d, extraW %d, extraH %d, \n", pWR->left, pWR->top, pWR->right, pWR->bottom, m_extraWindowWidth, m_extraWindowHeight);
 		OutputDebugStringA(buf);
 		*/
+		game->shouldRender = true;
 		break;
 	}
 
@@ -393,6 +407,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (lParam)
 		{
 			auto info = reinterpret_cast<MINMAXINFO*>(lParam);
+			g_game->GetBaseSize(m_initialWindowWidth, m_initialWindowHeight);
+			m_initialWindowWidth += m_extraWindowWidth;
+			m_initialWindowHeight += m_extraWindowHeight;
 			info->ptMinTrackSize.x = m_initialWindowWidth;
 			info->ptMinTrackSize.y = m_initialWindowHeight;
 		}
