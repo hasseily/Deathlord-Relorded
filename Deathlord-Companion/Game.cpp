@@ -15,6 +15,7 @@
 #include "TilesetCreator.h"
 #include <vector>
 #include <string>
+#include <map>
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -24,6 +25,9 @@ using namespace HA;
 // AppleWin video texture
 D3D12_SUBRESOURCE_DATA g_textureData;
 ComPtr<ID3D12Resource> g_textureUploadHeap;
+
+D3D12_SUBRESOURCE_DATA g_textureDataMap;
+ComPtr<ID3D12Resource> g_textureUploadHeapMap;
 
 // Instance variables
 HWND m_window;
@@ -49,6 +53,9 @@ NonVolatile g_nonVolatile;
 bool g_isInGameMap = false;
 bool g_wantsToSave = true;  // DISABLED. It can corrupt saved games
 float Game::m_clientFrameScale = 1.f;
+
+static std::map<UINT32, UINT8> currentMapTiles;   // All mapPos -> tileid for the whole map
+                                                   // to ensure we don't redraw what's already there
 
 Game::Game() noexcept(false)
 {
@@ -333,7 +340,7 @@ void Game::Render()
         // TODO: Do most of this outside of render, much of it is fixed between renders
 		int origW, origH;
 		GetBaseSize(origW, origH);
-		auto mmTexSize = GetTextureSize(m_autoMapTextureBG.Get());
+		auto mmBGTexSize = GetTextureSize(m_autoMapTextureBG.Get());
 		auto mmOrigin = Vector2(m_cachedClientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
 		ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap() };
 		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
@@ -346,8 +353,39 @@ void Game::Render()
 		m_spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
 
         // nullptr here is the source rectangle. We're drawing the full background
-		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::AutoMapBackground), mmTexSize,
+		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::AutoMapBackground), mmBGTexSize,
 			mapRectInViewport, nullptr, Colors::White, 0.f, XMFLOAT2());
+
+		// Now draw the automap tiles
+        // TODO: currently drawn over the background.
+        if (g_isInGameMap && m_autoMapTexture != NULL)
+        {
+            // Use the tilemap texture
+			auto mmTexSize = GetTextureSize(m_autoMapTexture.Get());
+            // Loop through the in-memory map that has all the tile IDs for the current map
+			LPBYTE mapMemPtr = m_tileset->GetCurrentGameMap();
+            for (size_t mapPos = 0; mapPos < MAP_LENGTH; mapPos++)
+            {
+				//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile on screen\n")).c_str());
+                if (currentMapTiles[mapPos] == (UINT8)mapMemPtr[mapPos])    // it's been drawn
+                    continue;
+                RECT sourceRect = m_tileset->tileSpritePositions.at(mapMemPtr[mapPos]);
+                int posX = mapPos % PNGTILESPERROW;
+                int posY = mapPos / PNGTILESPERROW;
+				RECT destinationRect = {
+					mapRectInViewport.left + posX * PNGTW,
+					mapRectInViewport.top + posY * PNGTH,
+                    mapRectInViewport.left + posX * PNGTW + PNGTW,
+					mapRectInViewport.top + posY * PNGTH + PNGTH
+				};
+				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::AutoMapTileSheet), mmTexSize,
+					destinationRect, &sourceRect);
+                currentMapTiles[mapPos] = (UINT8)mapMemPtr[mapPos];
+				//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile DRAWN on screen\n")).c_str());
+                
+			}
+		}
+
 
         /*
         // TODO: delete, this is a test
@@ -365,6 +403,8 @@ void Game::Render()
 
         m_spriteBatch->Begin(commandList);
 
+		m_lineEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, m_cachedClientRect.right - m_cachedClientRect.left, 
+            m_cachedClientRect.bottom - m_cachedClientRect.top, 0, 0, 1));
         m_lineEffect->Apply(commandList);
         m_primitiveBatch->Begin(commandList);
         for each (auto sb in m_sbM.sidebars)
@@ -395,7 +435,7 @@ void Game::Render()
                     sblockPosition, b->color, 0.f, m_vector2Zero);
             }
 
-            // Now draw a delimiter line for the block
+            // Now draw a delimiter line for the sidebar
             // TODO: not sure if we want those delimiters
             XMFLOAT3 lstart = XMFLOAT3(shiftedPosition.x, shiftedPosition.y, 0);
             XMFLOAT3 lend = lstart;
@@ -415,7 +455,8 @@ void Game::Render()
                 VertexPositionColor(lend, static_cast<XMFLOAT4>(Colors::Black))
             );
         }
-        m_primitiveBatch->End();
+		m_primitiveBatch->End();
+
 
         // write text on top of automap area
         Vector2 awaitTextPos(
@@ -425,6 +466,7 @@ void Game::Render()
             awaitTextPos-Vector2(2.f,2.f), Colors::Black, 0.f, Vector2(0.f, 0.f), 3.f);
 		m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
 			awaitTextPos, COLOR_APPLE2_BLUE, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 3.f);
+
 
 #ifdef _DEBUG
 		char pcbuf[4000];
@@ -466,6 +508,7 @@ void Game::Clear()
     // Set the viewports and scissor rects.
     // Set the Gamelink viewport as the first default viewport for the geometry shaders to use
     // So we don't have to specifiy the viewport in the shader
+    // TODO: figure out how that's done
     // D3D12_VIEWPORT viewports[2] = { m_deviceResources->GetGamelinkViewport(), m_deviceResources->GetScreenViewport() };
     // D3D12_RECT scissorRects[2] = { m_deviceResources->GetScissorRect(), m_deviceResources->GetScissorRect() };
     D3D12_VIEWPORT viewports[1] = { m_deviceResources->GetScreenViewport() };
@@ -504,7 +547,6 @@ void Game::OnWindowChanged()
 {
 	// Something's changed, let's update pos and size
     RECT cR;
-    Clear();
     GetClientRect(m_window, &cR);
     OnWindowMoved(cR.left, cR.top);
 	OnWindowSizeChanged(cR.right-cR.left, cR.bottom-cR.top);
@@ -595,6 +637,21 @@ void Game::MenuToggleHacksWindow()
 #pragma endregion
 
 #pragma region Direct3D Resources
+
+// The tile spritemap needs to update at every level change
+void Game::CreateNewTileSpriteMap()
+{
+// Sprite sheet only exists when the player is in-game! Make sure this is called when player goes in game
+// And make sure the map only renders when in game.
+
+	m_tileset = GetTilesetCreator();
+
+	auto device = m_deviceResources->GetD3DDevice();
+    LoadTextureFromMemory((const unsigned char*)m_tileset->GetCurrentTilesetBuffer(),
+        device, &m_autoMapTexture, DXGI_FORMAT_R8G8B8A8_UNORM, PNGBUFFERWIDTH, PNGBUFFERHEIGHT);
+    OutputDebugStringA("Loaded map into GPU\n");
+}
+
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
 {
@@ -632,15 +689,6 @@ void Game::CreateDeviceDependentResources()
             m_autoMapTextureBG.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_autoMapTextureBG.Get(),
 		m_resourceDescriptors->GetCpuHandle(TextureDescriptors::AutoMapBackground));
-    // Now the sprite sheet
-    // TODO: modify the spritesheet every new level XXX XXX XXX XXX
-    /*
-    DX::ThrowIfFailed(
-        CreateWICTextureFromMemory(device, resourceUpload, m_tileset->GetCurrentGameMap(),
-            MAP_LENGTH, m_autoMapTexture.ReleaseAndGetAddressOf()));
-	CreateShaderResourceView(device, m_autoMapTexture.Get(),
-		m_resourceDescriptors->GetCpuHandle(TextureDescriptors::AutoMapTileSheet));
-        */
 
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
 	SpriteBatchPipelineStateDescription spd(rtState);
@@ -1024,3 +1072,93 @@ void Game::ActivateLastUsedProfile()
 
 #pragma endregion
 
+#pragma region DX Helpers
+
+// Simple helper function to load an image as a R8B8G8 memory buffer into a DX12 texture with common settings
+// Returns true on success, with the SRV CPU handle having an SRV for the newly-created texture placed in it
+// (srv_cpu_handle must be a handle in a valid descriptor heap)
+bool Game::LoadTextureFromMemory (const unsigned char* image_data,
+    ID3D12Device* d3d_device, Microsoft::WRL::ComPtr <ID3D12Resource>* out_tex_resource,
+    DXGI_FORMAT tex_format, int width, int height)
+{
+	int image_width = width;
+	int image_height = height;
+	if (image_data == NULL)
+		return false;
+
+	// Create texture resource
+	D3D12_HEAP_PROPERTIES props;
+	memset(&props, 0, sizeof(D3D12_HEAP_PROPERTIES));
+	props.Type = D3D12_HEAP_TYPE_DEFAULT;
+	props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+    D3D12_RESOURCE_DESC desc = {};
+	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	desc.Alignment = 0;
+	desc.Width = image_width;
+	desc.Height = image_height;
+	desc.DepthOrArraySize = 1;
+	desc.MipLevels = 1;
+	desc.Format = tex_format;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+	desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	ID3D12Resource* pTexture = NULL;
+	d3d_device->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
+		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&pTexture));
+
+	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(pTexture, 0, 1);
+
+	props.Type = D3D12_HEAP_TYPE_UPLOAD;
+	props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+	// Create the GPU upload buffer.
+	auto resDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
+
+	DX::ThrowIfFailed(
+        d3d_device->CreateCommittedResource(
+			&props,
+			D3D12_HEAP_FLAG_NONE,
+			&resDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(g_textureUploadHeapMap.GetAddressOf())));
+
+    g_textureDataMap.pData = image_data;
+    g_textureDataMap.SlicePitch = width * height * sizeof(bgra_t);
+    g_textureDataMap.RowPitch = static_cast<LONG_PTR>(desc.Width * sizeof(uint32_t));
+
+	auto commandList = m_deviceResources->GetCommandList();
+	commandList->Reset(m_deviceResources->GetCommandAllocator(), nullptr);
+	
+
+    UpdateSubresources(commandList, pTexture, g_textureUploadHeapMap.Get(), 0, 0, 1, &g_textureDataMap);
+
+	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pTexture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	commandList->ResourceBarrier(1, &barrier);
+
+	// Describe and create a SRV for the texture.
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = desc.Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+	d3d_device->CreateShaderResourceView(pTexture, &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+
+    // finish up
+	DX::ThrowIfFailed(commandList->Close());
+	m_deviceResources->GetCommandQueue()->ExecuteCommandLists(1, CommandListCast(&commandList));
+	// Wait until assets have been uploaded to the GPU.
+	m_deviceResources->WaitForGpu();
+
+	// Return results
+	out_tex_resource->Attach(pTexture);
+
+	return true;
+}
+
+#pragma endregion

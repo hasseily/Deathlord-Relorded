@@ -86,6 +86,7 @@ public:
     D3D12_RESOURCE_DESC ChooseTexture();
     void SetVideoLayout(EmulatorLayout layout);
     void SetWindowSizeOnChangedProfile();
+	void CreateNewTileSpriteMap();
 
     // Accessors
     void GetBaseSize(__out int& width, __out int& height) noexcept;
@@ -109,6 +110,10 @@ private:
     void CreateWindowSizeDependentResources();
 
     void SetVertexData(HA::Vertex* v, float wRatio, float hRatio, EmulatorLayout layout);
+
+    bool LoadTextureFromMemory(const unsigned char* image_data,
+        ID3D12Device* d3d_device, Microsoft::WRL::ComPtr <ID3D12Resource>* out_tex_resource,
+        DXGI_FORMAT tex_format, int width, int height);
 
     // This method must be called when sidebars are added or deleted
     // so the relative vertex boundaries can be updated to stay within

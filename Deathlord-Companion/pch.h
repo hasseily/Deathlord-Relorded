@@ -6,6 +6,7 @@
 #pragma once
 
 #pragma warning(disable : 4100)		// unreferenced formal parameter
+#pragma warning(disable : 4244)     // conversion loss
 
 #include <winsdkver.h>
 #define _WIN32_WINNT _WIN32_WINNT_WIN10 

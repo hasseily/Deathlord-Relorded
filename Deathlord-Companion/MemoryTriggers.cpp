@@ -2,9 +2,13 @@
 #include "MemoryTriggers.h"
 #include "TilesetCreator.h"
 #include "DeathlordHacks.h"
+#include "Game.h"
 
 // below because "The declaration of a static data member in its class definition is not a definition"
 MemoryTriggers* MemoryTriggers::s_instance;
+
+// In main
+extern std::unique_ptr<Game>* GetGamePtr();
 
 void MemoryTriggers::Process()
 {
@@ -62,8 +66,10 @@ void MemoryTriggers::PollMapSetCurrentValues()
 void MemoryTriggers::PollChanged_InGameMap(UINT memLoc)
 {
     if (MemGetMainPtr(memLoc)[0] == 0xFCE0)     // User just got in game map
-        DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 5000);
-    OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" In game map!\n").c_str());
+    {
+		DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 5000);
+    }
+    // OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" In game map!\n").c_str());
 }
 
 void MemoryTriggers::PollChanged_MapID(UINT memLoc)
@@ -139,11 +145,18 @@ void MemoryTriggers::DelayedTriggersProcess()
 }
 
 // Below are the functions that are stored in the delayed trigger map
-// Every update there's method that scans the map for functions whose timestamp
+// Every update there's a method that scans the map for functions whose timestamp
 // expired and it triggers them
 void MemoryTriggers::DelayedTrigger_ParseTiles(UINT memloc)
 {
     std::shared_ptr<TilesetCreator>m_tileset = GetTilesetCreator();
     m_tileset->parseTilesInHGR2();
+	// TODO: get Game.cpp to update the texture
+    if (g_isInGameMap)
+    {
+        auto gamePtr = GetGamePtr();
+        (*gamePtr)->CreateNewTileSpriteMap();
+    }
+        
 }
 #pragma endregion

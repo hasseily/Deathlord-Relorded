@@ -67,6 +67,11 @@ static void ExceptionHandler(LPCSTR pError)
 		MB_ICONEXCLAMATION | MB_SETFOREGROUND);
 }
 
+std::unique_ptr<Game>* GetGamePtr()
+{
+	return &g_game;
+}
+
 std::shared_ptr<LogWindow> GetLogWindow()
 {
 	return g_logW;

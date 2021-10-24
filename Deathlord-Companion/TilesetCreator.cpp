@@ -21,8 +21,8 @@ void TilesetCreator::FillTileSpritePositions()
 			tileSpritePositions[j * PNGTILESPERROW + i] = {
 				i* PNGTW,
 				j* PNGTH,
-				i* PNGTW + PNGTW - 1,
-				j* PNGTH + PNGTH - 1
+				i* PNGTW + PNGTW,
+				j* PNGTH + PNGTH
 			};
 		}
 	}
