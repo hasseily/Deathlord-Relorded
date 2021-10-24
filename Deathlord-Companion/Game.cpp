@@ -1129,7 +1129,7 @@ bool Game::LoadTextureFromMemory (const unsigned char* image_data,
 			IID_PPV_ARGS(g_textureUploadHeapMap.GetAddressOf())));
 
     g_textureDataMap.pData = image_data;
-    g_textureDataMap.SlicePitch = width * height * sizeof(bgra_t);
+    g_textureDataMap.SlicePitch = static_cast<UINT64>(width) * height * sizeof(bgra_t);
     g_textureDataMap.RowPitch = static_cast<LONG_PTR>(desc.Width * sizeof(uint32_t));
 
 	auto commandList = m_deviceResources->GetCommandList();
