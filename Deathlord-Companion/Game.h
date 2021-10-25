@@ -27,6 +27,7 @@ constexpr UINT32 MAP_WIDTH_IN_VIEWPORT = 800;   // Fixed map width in the viewpo
 
 enum class TextureDescriptors
 {
+    Apple2Video,
 	AutoMapBackground,
 	AutoMapTileSheet,
 	FontA2Regular,
@@ -152,19 +153,19 @@ private:
     std::unique_ptr<DirectX::GamePad>       m_gamePad;
     std::unique_ptr<DirectX::Keyboard>      m_keyboard;
 
+
+	std::shared_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
+
     std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
-    std::shared_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
 
     std::shared_ptr<DirectX::SpriteBatch> m_spriteBatch;
     DirectX::SimpleMath::Vector2 m_fontPos;
 
     Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBG;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTexture;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_srvAutoMapHeap;
 
 
     // Direct3D 12 objects for AppleWin video texture
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>    m_srvHeap;
     Microsoft::WRL::ComPtr<ID3D12RootSignature>     m_rootSignature;
     Microsoft::WRL::ComPtr<ID3D12PipelineState>     m_pipelineState;
     Microsoft::WRL::ComPtr<ID3D12Resource>          m_vertexBuffer;

@@ -324,10 +324,11 @@ void Game::Render()
         commandList->SetGraphicsRootSignature(m_rootSignature.Get());
         commandList->SetPipelineState(m_pipelineState.Get());
 
-        auto heap = m_srvHeap.Get();
-        commandList->SetDescriptorHeaps(1, &heap);
+        // One unified heap for all resources
+		ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap() };
+		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
 
-        commandList->SetGraphicsRootDescriptorTable(0, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+        commandList->SetGraphicsRootDescriptorTable(0, m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video));
 
         // Set necessary state.
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -344,8 +345,6 @@ void Game::Render()
 		GetBaseSize(origW, origH);
 		auto mmBGTexSize = GetTextureSize(m_autoMapTextureBG.Get());
 		auto mmOrigin = Vector2(m_cachedClientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
-		ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap() };
-		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
         RECT mapRectInViewport = {
             mmOrigin.x,
             mmOrigin.y,
@@ -907,7 +906,8 @@ void Game::CreateDeviceDependentResources()
         srvDesc.Format = txtDesc.Format;
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         srvDesc.Texture2D.MipLevels = 1;
-        device->CreateShaderResourceView(m_texture.Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+        device->CreateShaderResourceView(m_texture.Get(), &srvDesc, 
+            m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::Apple2Video));
     }
 
     /// <summary>
@@ -1048,8 +1048,6 @@ void Game::OnDeviceLost()
     m_vertexBuffer.Reset();
     m_pipelineState.Reset();
     m_rootSignature.Reset();
-    m_srvHeap.Reset();
-    m_srvAutoMapHeap.Reset();
 	m_resourceDescriptors.reset();
     m_spriteBatch.reset();
     m_graphicsMemory.reset();
@@ -1146,23 +1144,7 @@ bool Game::LoadTextureFromMemory (const unsigned char* image_data,
 	commandList->ResourceBarrier(1, &barrier);
 
 	// Describe and create a SRV for the texture.
-
-    /* replacing the below with a direct CreateShaderResourceView
-	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 1;
-	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	DX::ThrowIfFailed(
-        d3d_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(m_srvAutoMapHeap.ReleaseAndGetAddressOf())));
-
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = desc.Format;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels = 1;
-	d3d_device->CreateShaderResourceView(pTexture, &srvDesc, m_srvAutoMapHeap->GetCPUDescriptorHandleForHeapStart());
-     */
+    // Using CreateShaderResourceView removes a ton of boilerplate
 	CreateShaderResourceView(d3d_device, pTexture,
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapTileSheet));
 
