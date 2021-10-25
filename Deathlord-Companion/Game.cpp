@@ -1052,6 +1052,7 @@ void Game::OnDeviceLost()
     m_pipelineState.Reset();
     m_rootSignature.Reset();
     m_srvHeap.Reset();
+    m_srvAutoMapHeap.Reset();
     m_resourceDescriptorsFonts.reset();
 	m_resourceDescriptors.reset();
     m_spriteBatch.reset();
