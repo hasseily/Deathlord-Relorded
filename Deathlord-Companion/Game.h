@@ -14,7 +14,11 @@
 #include <Keyboard.h>
 #include <map>
 
+#ifdef _DEBUG
+constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 10;  // In debug, the emulator is slow needs a lot more time than the render
+#else
 constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 30;  // Only render so many frames. Give the emulator all the rest of the time
+#endif
 
 using namespace DirectX::SimpleMath;
 constexpr Color COLOR_APPLE2_BLUE   ( (0x07/255.f), (0xA8/255.f), (0xE0/255.f) );
