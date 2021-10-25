@@ -141,6 +141,7 @@ D3D12_RESOURCE_DESC Game::ChooseTexture()
 	switch (g_nAppMode)
 	{
 	case AppMode_e::MODE_LOGO:  // obsolete
+	case AppMode_e::MODE_PAUSED:
 	{
 		txtDesc.Width = m_bgImageWidth;
 		txtDesc.Height = m_bgImageHeight;
@@ -149,31 +150,31 @@ D3D12_RESOURCE_DESC Game::ChooseTexture()
 		SetVideoLayout(EmulatorLayout::NORMAL);
 		break;
 	}
-/*
-#ifdef _DEBUG
-    // In debug mode when pause we display the current tilemap
-    // Enable to debug the tilemap
-    // TODO: Write a PAUSE overlay text in render() when paused
-    case AppMode_e::MODE_PAUSED:
-    {
-        m_tileset = GetTilesetCreator();
-        UINT64 pngW = PNGBUFFERWIDTHB / sizeof(UINT32);
-        UINT64 pngH = PNGBUFFERHEIGHT;
-        LPBYTE tsB = m_tileset->GetCurrentTilesetBuffer();
-        auto fbI = g_pFramebufferinfo->bmiHeader;
-        UINT64 lineByteWidth = MIN(pngW, fbI.biWidth) * sizeof(UINT32);
-        for (size_t h = 0; h < MIN(PNGBUFFERHEIGHT, fbI.biHeight) ; h++)
-        {
-            memcpy_s(g_pFramebufferbits + (h * fbI.biWidth * sizeof(UINT32)), lineByteWidth,
-                tsB + (h * PNGBUFFERWIDTHB), lineByteWidth);
-        }
-		SetVideoLayout(EmulatorLayout::NORMAL);
-    }
-#endif
-*/
+	/*
+	#ifdef _DEBUG
+		// In debug mode when pause we display the current tilemap
+		// Enable to debug the tilemap
+		// TODO: Write a PAUSE overlay text in render() when paused
+		case AppMode_e::MODE_PAUSED:
+		{
+			m_tileset = GetTilesetCreator();
+			UINT64 pngW = PNGBUFFERWIDTHB / sizeof(UINT32);
+			UINT64 pngH = PNGBUFFERHEIGHT;
+			LPBYTE tsB = m_tileset->GetCurrentTilesetBuffer();
+			auto fbI = g_pFramebufferinfo->bmiHeader;
+			UINT64 lineByteWidth = MIN(pngW, fbI.biWidth) * sizeof(UINT32);
+			for (size_t h = 0; h < MIN(PNGBUFFERHEIGHT, fbI.biHeight) ; h++)
+			{
+				memcpy_s(g_pFramebufferbits + (h * fbI.biWidth * sizeof(UINT32)), lineByteWidth,
+					tsB + (h * PNGBUFFERWIDTHB), lineByteWidth);
+			}
+			SetVideoLayout(EmulatorLayout::NORMAL);
+		}
+	#endif
+	*/
 	default:
 	{
-        auto fbI = g_pFramebufferinfo->bmiHeader;
+		auto fbI = g_pFramebufferinfo->bmiHeader;
 		txtDesc.Width = fbI.biWidth;
 		txtDesc.Height = fbI.biHeight;
 		g_textureData.pData = g_pFramebufferbits;
@@ -649,7 +650,7 @@ void Game::CreateNewTileSpriteMap()
 	auto device = m_deviceResources->GetD3DDevice();
     LoadTextureFromMemory((const unsigned char*)m_tileset->GetCurrentTilesetBuffer(),
         device, &m_autoMapTexture, DXGI_FORMAT_R8G8B8A8_UNORM, PNGBUFFERWIDTH, PNGBUFFERHEIGHT);
-    OutputDebugStringA("Loaded map into GPU\n");
+    //OutputDebugStringA("Loaded map into GPU\n");
 }
 
 // These are the resources that depend on the device.
