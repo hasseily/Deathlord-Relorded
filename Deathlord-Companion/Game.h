@@ -149,6 +149,8 @@ private:
 
     Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBG;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTexture;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_srvAutoMapHeap;
+
 	enum TextureDescriptors
 	{
 		AutoMapBackground,

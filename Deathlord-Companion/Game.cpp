@@ -360,6 +360,9 @@ void Game::Render()
         // TODO: currently drawn over the background.
         if (g_isInGameMap && m_autoMapTexture != NULL)
         {
+			ID3D12DescriptorHeap* heapsAuto[] = { m_srvAutoMapHeap.Get() };
+			commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heapsAuto)), heapsAuto);
+			commandList->SetGraphicsRootDescriptorTable(0, m_srvAutoMapHeap->GetGPUDescriptorHandleForHeapStart());
             // Use the tilemap texture
 			auto mmTexSize = GetTextureSize(m_autoMapTexture.Get());
             // Loop through the in-memory map that has all the tile IDs for the current map
@@ -384,14 +387,18 @@ void Game::Render()
 				//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile DRAWN on screen\n")).c_str());
                 
 			}
+
+			RECT sTestRect = { 0, 0, 5000, 5000 };
+			RECT dTestRect = { 600, 200, 1000, 600 };
+			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::AutoMapTileSheet),
+                GetTextureSize(m_autoMapTexture.Get()), dTestRect, &sTestRect);
 		}
-
-
         /*
-        // TODO: delete, this is a test
-        RECT sourceRect = { 150, 12, 200, 50 };
-		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::AutoMapBackground), mmTexSize,
-			mmOrigin, &sourceRect);
+		// TODO: delete, this is a test
+		RECT sTestRect = { 0, 0, 1800, 2200 };
+		RECT dTestRect = { 600, 200, 1000, 600 };
+		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::AutoMapBackground),
+            mmBGTexSize, dTestRect, &sTestRect);
             */
 
 		m_spriteBatch->End();
@@ -1142,12 +1149,20 @@ bool Game::LoadTextureFromMemory (const unsigned char* image_data,
 	commandList->ResourceBarrier(1, &barrier);
 
 	// Describe and create a SRV for the texture.
+
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+	srvHeapDesc.NumDescriptors = 1;
+	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	DX::ThrowIfFailed(
+        d3d_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(m_srvAutoMapHeap.ReleaseAndGetAddressOf())));
+
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.Format = desc.Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
-	d3d_device->CreateShaderResourceView(pTexture, &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+	d3d_device->CreateShaderResourceView(pTexture, &srvDesc, m_srvAutoMapHeap->GetCPUDescriptorHandleForHeapStart());
 
     // finish up
 	DX::ThrowIfFailed(commandList->Close());
