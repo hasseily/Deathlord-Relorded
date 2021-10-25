@@ -22,6 +22,7 @@ using namespace DirectX::SimpleMath;
 using Microsoft::WRL::ComPtr;
 using namespace HA;
 
+
 // AppleWin video texture
 D3D12_SUBRESOURCE_DATA g_textureData;
 ComPtr<ID3D12Resource> g_textureUploadHeap;
@@ -34,7 +35,7 @@ HWND m_window;
 static SidebarManager m_sbM;
 static SidebarContent m_sbC;
 // fonts and primitives from dxtoolkit12 to draw lines
-static std::vector<std::unique_ptr<SpriteFont>> m_spriteFonts;
+static std::map<FontDescriptors, std::unique_ptr<SpriteFont>> m_spriteFonts;
 static std::unique_ptr<PrimitiveBatch<VertexPositionColor>> m_primitiveBatch;
 std::unique_ptr<BasicEffect> m_lineEffect;
 AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
@@ -353,7 +354,7 @@ void Game::Render()
 		m_spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
 
         // nullptr here is the source rectangle. We're drawing the full background
-		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::AutoMapBackground), mmBGTexSize,
+		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackground), mmBGTexSize,
 			mapRectInViewport, nullptr, Colors::White, 0.f, XMFLOAT2());
 
 		// Now draw the automap tiles
@@ -381,7 +382,7 @@ void Game::Render()
                     mapRectInViewport.left + posX * PNGTW + PNGTW,
 					mapRectInViewport.top + posY * PNGTH + PNGTH
 				};
-				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::AutoMapTileSheet), mmTexSize,
+				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
 					destinationRect, &sourceRect);
                 currentMapTiles[mapPos] = (UINT8)mapMemPtr[mapPos];
 				//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile DRAWN on screen\n")).c_str());
@@ -390,7 +391,7 @@ void Game::Render()
 
 			RECT sTestRect = { 0, 0, 5000, 5000 };
 			RECT dTestRect = { 600, 200, 1000, 600 };
-			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::AutoMapTileSheet),
+			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet),
                 GetTextureSize(m_autoMapTexture.Get()), dTestRect, &sTestRect);
 		}
         /*
@@ -405,9 +406,6 @@ void Game::Render()
         // End drawing automap
 
         // Drawing text
-        ID3D12DescriptorHeap* heapsFonts[] = { m_resourceDescriptorsFonts->Heap() };
-        commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heapsFonts)), heapsFonts);
-
         m_spriteBatch->Begin(commandList);
 
 		m_lineEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, m_cachedClientRect.right - m_cachedClientRect.left, 
@@ -438,7 +436,7 @@ void Game::Render()
                 sblockPosition = b->position;
                 sblockPosition.x += shiftedPosition.x - sb.position.x;
                 sblockPosition.y += shiftedPosition.y - sb.position.y;
-                m_spriteFonts.at((int)b->fontId)->DrawString(m_spriteBatch.get(), b->text.c_str(),
+                m_spriteFonts.at(b->fontId)->DrawString(m_spriteBatch.get(), b->text.c_str(),
                     sblockPosition, b->color, 0.f, m_vector2Zero);
             }
 
@@ -469,20 +467,20 @@ void Game::Render()
         Vector2 awaitTextPos(
             mapRectInViewport.left + (mapRectInViewport.right - mapRectInViewport.left)/2 - 200.f,
             mapRectInViewport.top + (mapRectInViewport.bottom - mapRectInViewport.top) / 2 - 20.f);
-		m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
-            awaitTextPos-Vector2(2.f,2.f), Colors::Black, 0.f, Vector2(0.f, 0.f), 3.f);
-		m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
-			awaitTextPos, COLOR_APPLE2_BLUE, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 3.f);
+		m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
+            awaitTextPos - Vector2(2.f, 2.f), Colors::White, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 3.f);
+		m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
+			awaitTextPos, COLOR_APPLE2_VIOLET, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 3.f);
 
 
 #ifdef _DEBUG
 		char pcbuf[4000];
 		//    snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %I64x : %I64x", g_debug_video_field, g_debug_video_data);
 		snprintf(pcbuf, sizeof(pcbuf), "%6.0f usec/frame - Time: %6.2f - Sidebar Time: %6lld\n", 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds(), sbTimeSpent);
-		m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), pcbuf,
-			{ 11.f, 11.f }, Colors::Black, 0.f, m_vector2Zero, m_clientFrameScale);
-		m_spriteFonts.at(0)->DrawString(m_spriteBatch.get(), pcbuf,
-			{ 10.f, 10.f }, Colors::OrangeRed, 0.f, m_vector2Zero, m_clientFrameScale);
+		m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
+			{ 11.f, 11.f }, Colors::Black, 0.f, m_vector2Zero, 1.f);
+		m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
+			{ 10.f, 10.f }, Colors::OrangeRed, 0.f, m_vector2Zero, 1.f);
 
 #endif // _DEBUG
         m_spriteBatch->End();
@@ -669,8 +667,7 @@ void Game::CreateDeviceDependentResources()
     /// <summary>
     /// Start of resource uploading to GPU
     /// </summary>
-    m_resourceDescriptorsFonts = std::make_unique<DescriptorHeap>(device, (int)FontDescriptors::Count);
-	m_resourceDescriptors = std::make_unique<DescriptorHeap>(device, TextureDescriptors::Count);
+	m_resourceDescriptors = std::make_unique<DescriptorHeap>(device, (int)TextureDescriptors::Count);
 
     ResourceUploadBatch resourceUpload(device);
     resourceUpload.Begin();
@@ -678,15 +675,13 @@ void Game::CreateDeviceDependentResources()
     // Create the sprite fonts based on FontsAvailable
     m_spriteFonts.clear();
     wchar_t buff[MAX_PATH];
-    for (size_t i = 0; i < m_sbM.fontsAvailable.size(); i++)
+    for each (auto aFont in m_sbM.fontsAvailable)
     {
-        DX::FindMediaFile(buff, MAX_PATH, m_sbM.fontsAvailable.at(i).c_str());
-        m_spriteFonts.push_back(
-            std::make_unique<SpriteFont>(device, resourceUpload, buff,
-                m_resourceDescriptorsFonts->GetCpuHandle(i),
-                m_resourceDescriptorsFonts->GetGpuHandle(i))
-        );
-        m_spriteFonts.back()->SetDefaultCharacter('.');
+        DX::FindMediaFile(buff, MAX_PATH, aFont.second.c_str());
+		m_spriteFonts[aFont.first] = std::make_unique<SpriteFont>(device, resourceUpload, buff,
+				m_resourceDescriptors->GetCpuHandle((int)aFont.first),
+				m_resourceDescriptors->GetGpuHandle((int)aFont.first));
+		m_spriteFonts.at(aFont.first)->SetDefaultCharacter('.');
     }
 
     // Now create the automap resources
@@ -695,7 +690,7 @@ void Game::CreateDeviceDependentResources()
 		CreateWICTextureFromFile(device, resourceUpload, L"Assets/Background_NoMap.png",
             m_autoMapTextureBG.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_autoMapTextureBG.Get(),
-		m_resourceDescriptors->GetCpuHandle(TextureDescriptors::AutoMapBackground));
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapBackground));
 
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
 	SpriteBatchPipelineStateDescription spd(rtState);
@@ -1040,9 +1035,9 @@ void Game::UpdateGamelinkVertexData(int width, int height, float wRatio, float h
 void Game::OnDeviceLost()
 {
     // Reset fonts
-    for (auto & spriteFont : m_spriteFonts)
+    for (auto it = m_spriteFonts.begin(); it != m_spriteFonts.end(); it++)
     {
-        spriteFont.reset();
+        it->second.reset();
     }
 	m_texture.Reset();
 	m_autoMapTexture.Reset();
@@ -1053,7 +1048,6 @@ void Game::OnDeviceLost()
     m_rootSignature.Reset();
     m_srvHeap.Reset();
     m_srvAutoMapHeap.Reset();
-    m_resourceDescriptorsFonts.reset();
 	m_resourceDescriptors.reset();
     m_spriteBatch.reset();
     m_graphicsMemory.reset();

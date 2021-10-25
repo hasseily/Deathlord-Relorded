@@ -112,31 +112,31 @@ bool SidebarContent::setActiveProfile(SidebarManager* sbM, std::string* name)
             {
                 bS.color = Colors::CadetBlue;
                 bS.type = BlockType::Header;
-                bS.fontId = FontDescriptors::A2FontBold;
+                bS.fontId = FontDescriptors::FontA2Bold;
             }
             else if (bj["type"] == "Empty")
             {
                 bS.color = Colors::Black;
                 bS.type = BlockType::Empty;
-                bS.fontId = FontDescriptors::A2FontRegular;
+                bS.fontId = FontDescriptors::FontA2Regular;
             }
             else if (bj["type"] == "Italic")
 			{
 				bS.color = Colors::GhostWhite;
 				bS.type = BlockType::Content;
-				bS.fontId = FontDescriptors::A2FontItalic;
+				bS.fontId = FontDescriptors::FontA2Italic;
 			}
 			else if (bj["type"] == "BoldItalic")
 			{
 				bS.color = Colors::GhostWhite;
 				bS.type = BlockType::Content;
-				bS.fontId = FontDescriptors::A2FontBoldItalic;
+				bS.fontId = FontDescriptors::FontA2BoldItalic;
 			}
 		    else // default to "Content"
             {
                 bS.color = Colors::GhostWhite;
                 bS.type = BlockType::Content;
-                bS.fontId = FontDescriptors::A2FontRegular;
+                bS.fontId = FontDescriptors::FontA2Regular;
             }
             // overrides
             if (bj.contains("color"))

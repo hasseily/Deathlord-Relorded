@@ -3,6 +3,7 @@
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 #include <vector>
+#include "Game.h" // for font descriptors
 
 #pragma warning( disable:4324 )
 // C4324: structure was padded due to alignment specifier
@@ -39,6 +40,13 @@ enum class BlockType
 	Count
 };
 
+enum class FontDescriptors
+{
+	FontA2Regular		= (int)TextureDescriptors::FontA2Regular,
+	FontA2Bold			= (int)TextureDescriptors::FontA2Bold,
+	FontA2Italic		= (int)TextureDescriptors::FontA2Italic,
+	FontA2BoldItalic	= (int)TextureDescriptors::FontA2BoldItalic,
+};
 
 /// <summary>
 /// A sidebar handles a series of blocks.
@@ -46,15 +54,6 @@ enum class BlockType
 /// data of each block. A block height is the sidebar height / number of blocks.
 /// The sidebar is assigned width, height and number of blocks by the Sidebar Manager.
 /// </summary>
-
-enum class FontDescriptors
-{
-	A2FontRegular,
-	A2FontBold,
-	A2FontItalic,
-	A2FontBoldItalic,
-	Count
-};
 
 // TODO: See if we need a flag to determine if it should redraw
 // TODO: Transform everywhere every point, color or vector2 into XMVECTOR?
@@ -64,7 +63,7 @@ struct BlockStruct
 	DirectX::XMFLOAT2 position = {0.f, 0.f};
 	BlockType type = BlockType::Empty;
 	DirectX::XMVECTOR color = DirectX::Colors::GhostWhite;
-	FontDescriptors fontId = FontDescriptors::A2FontRegular;
+	FontDescriptors fontId = FontDescriptors::FontA2Regular;
 	std::string text = "";
 };
 

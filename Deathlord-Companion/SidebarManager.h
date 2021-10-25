@@ -30,7 +30,7 @@ public:
 	void SetBaseSize(const int width, const int height) noexcept;
 
 	// Properties
-	std::vector<std::wstring> fontsAvailable;	// TODO: Redundant with enum FontDescriptors???
+	std::map<FontDescriptors, std::wstring> fontsAvailable;
 	std::vector<Sidebar> sidebars;
 };
 

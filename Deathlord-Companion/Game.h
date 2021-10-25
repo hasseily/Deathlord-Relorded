@@ -24,6 +24,18 @@ constexpr Color COLOR_APPLE2_VIOLET ( (0xBB/255.f), (0x36/255.f), (0xFF/255.f) )
 
 constexpr UINT32 MAP_WIDTH_IN_VIEWPORT = 800;   // Fixed map width in the viewport
 
+
+enum class TextureDescriptors
+{
+	AutoMapBackground,
+	AutoMapTileSheet,
+	FontA2Regular,
+	FontA2Bold,
+	FontA2Italic,
+	FontA2BoldItalic,
+	Count
+};
+
 enum class EmulatorLayout
 {
 	NORMAL = 0,
@@ -142,7 +154,6 @@ private:
 
     std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
     std::shared_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
-	std::unique_ptr<DirectX::DescriptorHeap> m_resourceDescriptorsFonts;
 
     std::shared_ptr<DirectX::SpriteBatch> m_spriteBatch;
     DirectX::SimpleMath::Vector2 m_fontPos;
@@ -151,12 +162,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTexture;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_srvAutoMapHeap;
 
-	enum TextureDescriptors
-	{
-		AutoMapBackground,
-        AutoMapTileSheet,
-		Count
-	};
 
     // Direct3D 12 objects for AppleWin video texture
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>    m_srvHeap;
