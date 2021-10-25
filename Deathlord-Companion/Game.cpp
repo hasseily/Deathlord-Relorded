@@ -122,6 +122,7 @@ void Game::Initialize(HWND window, int width, int height)
 	// m_timer.SetTargetElapsedSeconds(1.0 / MAX_RENDERED_FRAMES_PER_SECOND);
 	m_timer.SetFixedTimeStep(false);
     
+    CreateNewTileSpriteMap();
 	m_trigger = MemoryTriggers::GetInstance(&m_timer);
 	m_trigger->PollMapSetCurrentValues();
 }
@@ -353,54 +354,65 @@ void Game::Render()
         };
 		m_spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
 
-        // nullptr here is the source rectangle. We're drawing the full background
-		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackground), mmBGTexSize,
-			mapRectInViewport, nullptr, Colors::White, 0.f, XMFLOAT2());
-
 		// Now draw the automap tiles
-        // TODO: currently drawn over the background.
         if (g_isInGameMap && m_autoMapTexture != NULL)
         {
-			ID3D12DescriptorHeap* heapsAuto[] = { m_srvAutoMapHeap.Get() };
-			commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heapsAuto)), heapsAuto);
-			commandList->SetGraphicsRootDescriptorTable(0, m_srvAutoMapHeap->GetGPUDescriptorHandleForHeapStart());
-            // Use the tilemap texture
+            float mapScale = (float)MAP_WIDTH_IN_VIEWPORT / (float)(MAP_WIDTH * PNGTW);
+			// Use the tilemap texture
+			commandList->SetGraphicsRootDescriptorTable(0, m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet));
 			auto mmTexSize = GetTextureSize(m_autoMapTexture.Get());
+            XMUINT2 tileTexSize(PNGTW, PNGTH);
             // Loop through the in-memory map that has all the tile IDs for the current map
 			LPBYTE mapMemPtr = m_tileset->GetCurrentGameMap();
             for (size_t mapPos = 0; mapPos < MAP_LENGTH; mapPos++)
             {
 				//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile on screen\n")).c_str());
-                if (currentMapTiles[mapPos] == (UINT8)mapMemPtr[mapPos])    // it's been drawn
-                    continue;
-                RECT sourceRect = m_tileset->tileSpritePositions.at(mapMemPtr[mapPos]);
-                int posX = mapPos % PNGTILESPERROW;
-                int posY = mapPos / PNGTILESPERROW;
-				RECT destinationRect = {
-					mapRectInViewport.left + posX * PNGTW,
-					mapRectInViewport.top + posY * PNGTH,
-                    mapRectInViewport.left + posX * PNGTW + PNGTW,
-					mapRectInViewport.top + posY * PNGTH + PNGTH
-				};
+                // TODO: we now redraw every frame. Not efficient!
+				//if (currentMapTiles[mapPos] == (UINT8)mapMemPtr[mapPos])    // it's been drawn
+					//continue;
+				RECT spriteRect = m_tileset->tileSpritePositions.at(mapMemPtr[mapPos]);
+				XMFLOAT2 spriteOrigin(0, 0);
+				int posX = mapPos % MAP_WIDTH;
+				int posY = mapPos / MAP_WIDTH;
+				XMFLOAT2 tilePosInMap(
+                    mapRectInViewport.left + (posX * PNGTW * mapScale), 
+                    mapRectInViewport.top + (posY * PNGTH * mapScale)
+                );
 				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
-					destinationRect, &sourceRect);
-                currentMapTiles[mapPos] = (UINT8)mapMemPtr[mapPos];
+                    tilePosInMap, &spriteRect, Colors::White, 0.f, spriteOrigin, mapScale);
+				currentMapTiles[mapPos] = (UINT8)mapMemPtr[mapPos];
 				//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile DRAWN on screen\n")).c_str());
-                
+              
 			}
-
-			RECT sTestRect = { 0, 0, 5000, 5000 };
-			RECT dTestRect = { 600, 200, 1000, 600 };
+            /*
+			RECT sTestRect1 = { 0, 0, 448, 512 };
+			RECT dTestRect1 = { 1000, 200, 1448, 712 };
 			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet),
-                GetTextureSize(m_autoMapTexture.Get()), dTestRect, &sTestRect);
+                mmTexSize, dTestRect1, &sTestRect1);
+                */
 		}
+        else // draw the background if not in game
+        {
+			// nullptr here is the source rectangle. We're drawing the full background
+			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackground), mmBGTexSize,
+				mapRectInViewport, nullptr, Colors::White, 0.f, XMFLOAT2());
+			// write text on top of automap area
+			Vector2 awaitTextPos(
+				mapRectInViewport.left + (mapRectInViewport.right - mapRectInViewport.left) / 2 - 200.f,
+				mapRectInViewport.top + (mapRectInViewport.bottom - mapRectInViewport.top) / 2 - 20.f);
+			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
+				awaitTextPos - Vector2(2.f, 2.f), Colors::White, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 3.f);
+			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
+				awaitTextPos, COLOR_APPLE2_VIOLET, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 3.f);
+        }
+        
         /*
 		// TODO: delete, this is a test
-		RECT sTestRect = { 0, 0, 1800, 2200 };
-		RECT dTestRect = { 600, 200, 1000, 600 };
-		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle(TextureDescriptors::AutoMapBackground),
-            mmBGTexSize, dTestRect, &sTestRect);
-            */
+		RECT sTestRect = { 0, 0, 448, 512 };
+		RECT dTestRect = { 500, 200, 948, 712 };
+		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet),
+            GetTextureSize(m_autoMapTexture.Get()), dTestRect, &sTestRect);
+        */
 
 		m_spriteBatch->End();
         // End drawing automap
@@ -461,16 +473,6 @@ void Game::Render()
             );
         }
 		m_primitiveBatch->End();
-
-
-        // write text on top of automap area
-        Vector2 awaitTextPos(
-            mapRectInViewport.left + (mapRectInViewport.right - mapRectInViewport.left)/2 - 200.f,
-            mapRectInViewport.top + (mapRectInViewport.bottom - mapRectInViewport.top) / 2 - 20.f);
-		m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
-            awaitTextPos - Vector2(2.f, 2.f), Colors::White, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 3.f);
-		m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
-			awaitTextPos, COLOR_APPLE2_VIOLET, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 3.f);
 
 
 #ifdef _DEBUG
@@ -1145,6 +1147,7 @@ bool Game::LoadTextureFromMemory (const unsigned char* image_data,
 
 	// Describe and create a SRV for the texture.
 
+    /* replacing the below with a direct CreateShaderResourceView
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
 	srvHeapDesc.NumDescriptors = 1;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -1152,12 +1155,16 @@ bool Game::LoadTextureFromMemory (const unsigned char* image_data,
 	DX::ThrowIfFailed(
         d3d_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(m_srvAutoMapHeap.ReleaseAndGetAddressOf())));
 
+
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.Format = desc.Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
 	d3d_device->CreateShaderResourceView(pTexture, &srvDesc, m_srvAutoMapHeap->GetCPUDescriptorHandleForHeapStart());
+     */
+	CreateShaderResourceView(d3d_device, pTexture,
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapTileSheet));
 
     // finish up
 	DX::ThrowIfFailed(commandList->Close());

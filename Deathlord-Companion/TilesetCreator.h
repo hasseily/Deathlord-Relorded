@@ -38,7 +38,7 @@ class TilesetCreator
 {
 public:
 	UINT32 iInserted = 0;
-	std::map<UINT8, RECT>tileSpritePositions; // Positions of each tile sprite in spritesheet
+	std::map<UINT32, RECT>tileSpritePositions; // Positions of each tile sprite in spritesheet
 	TilesetCreator()
 	{
 		pTilesetBuffer = new BYTE[PNGBUFFERSIZE];

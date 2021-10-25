@@ -212,12 +212,12 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			m_extraWindowHeight = (wi.rcWindow.bottom - wi.rcClient.bottom) + (wi.rcClient.top - wi.rcWindow.top);
 
 
+			g_tilesetCreator = std::make_unique<TilesetCreator>();
 			g_game->Initialize(hwnd, wi.rcClient.right - wi.rcClient.left, wi.rcClient.bottom - wi.rcClient.top);
 
 			// create the instances of important blocks at the start
 			g_logW = std::make_unique<LogWindow>(g_hInstance, hwnd);
 			g_dlHacks = std::make_unique<DeathlordHacks>(g_hInstance, hwnd);
-			g_tilesetCreator = std::make_unique<TilesetCreator>();
 
 			// Game has now loaded the saved/default settings
 			// Update the menu bar with the settings
