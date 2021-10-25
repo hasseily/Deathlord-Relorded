@@ -343,7 +343,6 @@ void Game::Render()
         // TODO: Do most of this outside of render, much of it is fixed between renders
 		int origW, origH;
 		GetBaseSize(origW, origH);
-		auto mmBGTexSize = GetTextureSize(m_autoMapTextureBG.Get());
 		auto mmOrigin = Vector2(m_cachedClientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
         RECT mapRectInViewport = {
             mmOrigin.x,
@@ -383,15 +382,10 @@ void Game::Render()
 				//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile DRAWN on screen\n")).c_str());
               
 			}
-            /*
-			RECT sTestRect1 = { 0, 0, 448, 512 };
-			RECT dTestRect1 = { 1000, 200, 1448, 712 };
-			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet),
-                mmTexSize, dTestRect1, &sTestRect1);
-                */
 		}
         else // draw the background if not in game
         {
+			auto mmBGTexSize = GetTextureSize(m_autoMapTextureBG.Get());
 			// nullptr here is the source rectangle. We're drawing the full background
 			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackground), mmBGTexSize,
 				mapRectInViewport, nullptr, Colors::White, 0.f, XMFLOAT2());
@@ -705,17 +699,6 @@ void Game::CreateDeviceDependentResources()
     /// <summary>
     /// Start of AppleWin texture info uploading to GPU
     /// </summary>
-
-        // Create descriptor heaps.
-    {
-        // Describe and create a shader resource view (SRV) heap for the texture.
-        D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-        srvHeapDesc.NumDescriptors = 1;
-        srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-        DX::ThrowIfFailed(
-            device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(m_srvHeap.ReleaseAndGetAddressOf())));
-    }
 
     // Create a root signature with one sampler and one texture
     {
