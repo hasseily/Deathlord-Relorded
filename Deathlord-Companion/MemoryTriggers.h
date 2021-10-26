@@ -23,7 +23,7 @@ public:
 	void PollKeyMemoryLocations();		// Manually call memory polling
 	void DelayedTriggersProcess();		// Manually call firing ready triggers
 
-
+	void ClearAllTriggers() { delayedTriggerMap.clear(); };
 
 
 	// public singleton code

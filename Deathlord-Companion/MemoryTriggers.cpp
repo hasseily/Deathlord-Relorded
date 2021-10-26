@@ -69,6 +69,8 @@ void MemoryTriggers::PollChanged_InGameMap(UINT memLoc)
 	// OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" In game map!\n").c_str());
     if (MemGetMainPtr(memLoc)[0] == 0xE5)     // User just got in game map
     {
+        AutoMap* aM = AutoMap::GetInstance();
+        aM->setShowTransition(true);
 		DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 5000);
     }
 }
@@ -76,18 +78,25 @@ void MemoryTriggers::PollChanged_InGameMap(UINT memLoc)
 void MemoryTriggers::PollChanged_MapID(UINT memLoc)
 {
 	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapID changed!\n").c_str());
-    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 4000);
+	AutoMap* aM = AutoMap::GetInstance();
+	aM->setShowTransition(true);
+    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
 }
 
 void MemoryTriggers::PollChanged_MapType(UINT memLoc)
 {
     //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapType changed!\n").c_str());
+	AutoMap* aM = AutoMap::GetInstance();
+	aM->setShowTransition(true);
+	DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
 }
 
 void MemoryTriggers::PollChanged_Floor(UINT memLoc)
 {
 	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" Floor changed!\n").c_str());
-    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 4000);
+	AutoMap* aM = AutoMap::GetInstance();
+	aM->setShowTransition(true);
+    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
 }
 
 void MemoryTriggers::PollChanged_XPos(UINT memLoc)
@@ -100,18 +109,24 @@ void MemoryTriggers::PollChanged_XPos(UINT memLoc)
 void MemoryTriggers::PollChanged_YPos(UINT memLoc)
 {
     //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" YPos changed!\n").c_str());
+	AutoMap* aM = AutoMap::GetInstance();
+	aM->UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
 }
 
 void MemoryTriggers::PollChanged_OverlandMapX(UINT memLoc)
 {
 	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapX changed!\n").c_str());
-    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 4000);
+	AutoMap* aM = AutoMap::GetInstance();
+	aM->setShowTransition(true);
+    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
 }
 
 void MemoryTriggers::PollChanged_OverlandMapY(UINT memLoc)
 {
 	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapY changed!\n").c_str());
-    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 4000);
+	AutoMap* aM = AutoMap::GetInstance();
+	aM->setShowTransition(true);
+    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
 }
 #pragma endregion
 
@@ -154,14 +169,14 @@ void MemoryTriggers::DelayedTrigger_ParseTiles(UINT memloc)
 {
 	auto tileset = TilesetCreator::GetInstance();
     tileset->parseTilesInHGR2();
-	// TODO: get Game.cpp to update the texture
     if (g_isInGameMap)
     {
 		auto aM = AutoMap::GetInstance();
+		aM->ClearMapArea();
         if (aM != NULL)
             aM->CreateNewTileSpriteMap();
+        aM->setShowTransition(false);
     }
-        
 }
 
 #pragma endregion

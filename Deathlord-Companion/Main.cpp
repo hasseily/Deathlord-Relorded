@@ -308,11 +308,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
-	if (MemIsInitialized())
-	{
-		UINT8* memPtr = MemGetMainPtr(0);
-		g_isInGameMap = (memPtr[0xFCE0] == 0xE5);	// when not in game map, that area is all zeros
-	}
 	// Disallow saving by default when not in the game map
 	// It is allowed temporarily when hitting 'q'
 	// 	   TODO: DISABLED. It can corrupt save games

@@ -9,7 +9,8 @@ using namespace DirectX::SimpleMath;
 
 constexpr UINT32 GAMEMAP_START_MEM = 0xC00;		// Start of memory area of the in-game map
 constexpr UINT8 MAP_WIDTH = 64;
-constexpr int MAP_LENGTH = MAP_WIDTH * MAP_WIDTH;			// Size of map (in bytes)
+constexpr UINT8 MAP_HEIGHT = 64;
+constexpr int MAP_LENGTH = MAP_WIDTH * MAP_HEIGHT;			// Size of map (in bytes)
 
 /// Summary:
 /// This class handles the management of the automapper.
@@ -36,14 +37,19 @@ class AutoMap	// Singleton
 public:
 	// Vector2 drawOrigin = Vector2();
 	void DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RECT* mapRect);
-	void UpdateAvatarPositionOnAutoMap(UINT8 x, UINT8 y);
+	void UpdateAvatarPositionOnAutoMap(UINT x, UINT y);
+	void ClearMapArea();
 	void CreateNewTileSpriteMap();
 	LPBYTE GetCurrentGameMap() { return MemGetMainPtr(GAMEMAP_START_MEM); };
 
+	void displayTransition(bool showTransition);
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();
 	bool LoadTextureFromMemory(const unsigned char* image_data, Microsoft::WRL::ComPtr <ID3D12Resource>* out_tex_resource,
 		DXGI_FORMAT tex_format, int width, int height);
+
+
+	void setShowTransition(bool showTransition);
 
 	// public singleton code
 	static AutoMap* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,
@@ -66,16 +72,18 @@ public:
 	}
 private:
 	static AutoMap* s_instance;
+	bool bShowTransition;
+	XMUINT2 m_avatarPosition;
 
 	AutoMap(std::unique_ptr<DX::DeviceResources>& deviceResources, 
 		std::unique_ptr<DirectX::DescriptorHeap>&  resourceDescriptors)
 	{
-		m_currentMapRect = { 0,0,0,0 };
 		m_deviceResources = deviceResources.get();
 		m_resourceDescriptors = resourceDescriptors.get();
-		CreateNewTileSpriteMap();
+		Initialize();
 	}
 
+	void Initialize();
 	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBG;
@@ -83,9 +91,13 @@ private:
 	D3D12_SUBRESOURCE_DATA m_textureDataMap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_textureUploadHeapMap;
 
-	std::map<UINT32, UINT8> m_currentMapTiles;	// All mapPos -> tileid for the whole map
-												// to ensure we don't redraw what's already there
+	std::vector <std::vector<UINT8>> m_bbufCurrentMapTiles;	// All mapPos -> tileid for the whole map
+															// to ensure we don't redraw what's already there
+															// The number of arrays will be equal to the backbuffer count
 
 	RECT m_currentMapRect;	// Rect of the currently drawn map, as requested by the game engine
+	std::vector<std::vector<UINT8>> m_bbufFogOfWarTiles;	// Info about the user having seen map tiles, walked on them...
+															// The number of arrays will be equal to the backbuffer count
+
 };
 

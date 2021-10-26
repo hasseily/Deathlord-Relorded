@@ -81,6 +81,11 @@ void Game::Initialize(HWND window, int width, int height)
 {
     m_window = window;
 
+	// Use a variable timestep to give as much time to the emulator as possible
+// Then we control how often we render later in the Render() method
+// m_timer.SetTargetElapsedSeconds(1.0 / MAX_RENDERED_FRAMES_PER_SECOND);
+	m_timer.SetFixedTimeStep(false);
+
     m_gamePad = std::make_unique<GamePad>();
     m_keyboard = std::make_unique<Keyboard>();
 
@@ -109,11 +114,6 @@ void Game::Initialize(HWND window, int width, int height)
     m_deviceResources->CreateWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
 
-    // Use a variable timestep to give as much time to the emulator as possible
-    // Then we control how often we render later in the Render() method
-	// m_timer.SetTargetElapsedSeconds(1.0 / MAX_RENDERED_FRAMES_PER_SECOND);
-	m_timer.SetFixedTimeStep(false);
-    
 	m_trigger = MemoryTriggers::GetInstance(&m_timer);
 	m_trigger->PollMapSetCurrentValues();
 }
@@ -232,6 +232,9 @@ void Game::Tick()
         Update(m_timer);
     });
 
+	// poll memory and fire triggers at specific intervals
+	if (g_isInGameMap)
+		m_trigger->Process();
     Render();
 }
 
@@ -257,9 +260,6 @@ void Game::Update(DX::StepTimer const& timer)
         // Do something when escape or other keys pressed
     }
 
-    // poll memory and fire triggers at specific intervals
-    m_trigger->Process();
-
     PIXEndEvent();
 }
 #pragma endregion
@@ -268,6 +268,9 @@ void Game::Update(DX::StepTimer const& timer)
 // Draws the scene.
 void Game::Render()
 {
+	UINT8* memPtr = MemGetMainPtr(0);
+	g_isInGameMap = (memPtr[0xFCE0] == 0xE5);	// when not in game map, that area is all zeros
+
     // use shouldRender to pause/activate rendering
     if (!shouldRender)
         return;
@@ -443,8 +446,9 @@ void Game::Clear()
     auto dsvDescriptor = m_deviceResources->GetDepthStencilView();
 
     commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &dsvDescriptor);
-    commandList->ClearRenderTargetView(rtvDescriptor, Colors::Black, 0, nullptr);
-    commandList->ClearDepthStencilView(dsvDescriptor, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    // Do not clear the rendertargetview, we will manually overdraw what has been modified
+ //   commandList->ClearRenderTargetView(rtvDescriptor, Colors::Black, 0, nullptr);
+ //   commandList->ClearDepthStencilView(dsvDescriptor, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
     // Set the viewports and scissor rects.
     // Set the Gamelink viewport as the first default viewport for the geometry shaders to use
