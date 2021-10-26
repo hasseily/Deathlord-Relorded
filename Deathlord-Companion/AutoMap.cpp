@@ -45,7 +45,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 		auto mmTexSize = GetTextureSize(m_autoMapTexture.Get());
 		XMUINT2 tileTexSize(PNGTW, PNGTH);
 		// Loop through the in-memory map that has all the tile IDs for the current map
-		LPBYTE mapMemPtr = tileset->GetCurrentGameMap();
+		LPBYTE mapMemPtr = GetCurrentGameMap();
 		for (size_t mapPos = 0; mapPos < MAP_LENGTH; mapPos++)
 		{
 			//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile on screen\n")).c_str());

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DeviceResources.h"
+#include "Emulator/AppleWin.h"
 #include <map>
 
 using namespace DirectX;
@@ -86,6 +87,5 @@ private:
 												// to ensure we don't redraw what's already there
 
 	RECT m_currentMapRect;	// Rect of the currently drawn map, as requested by the game engine
-	std::array<std::array<UINT8, >>m_fogOfWarArrays;
 };
 
