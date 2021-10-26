@@ -47,7 +47,7 @@ extern NonVolatile g_nonVolatile;
 static std::shared_ptr<LogWindow>m_logWindow;
 static std::shared_ptr<DeathlordHacks>m_dlHacks;
 
-// A basic game implementation that creates a D3D12 device and
+// A game implementation that creates a D3D12 device and
 // provides a game loop.
 class Game final : public DX::IDeviceNotify
 {
@@ -100,7 +100,6 @@ public:
     SpriteFont* GetSpriteFontAtIndex(FontDescriptors fontIndex);
     // TODO: Either don't allow these accessors, or change them to return the underlying pointer
     std::shared_ptr<DirectX::SpriteBatch> GetSpriteBatch() { return m_spriteBatch; };
-    std::shared_ptr<DirectX::DescriptorHeap> GetResourceDescriptors() { return m_resourceDescriptors; };
 
     // Properties
 	bool shouldRender;
@@ -146,7 +145,7 @@ private:
     std::unique_ptr<DirectX::Keyboard>      m_keyboard;
 
 
-	std::shared_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
+	std::unique_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
 
     std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
 

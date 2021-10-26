@@ -30,7 +30,7 @@ class AutoMap	// Singleton
 {
 public:
 	// Vector2 drawOrigin = Vector2();
-	void DrawAutoMap(SpriteBatch* spriteBatch, RECT* mapRect);
+	void DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RECT* mapRect);
 	void UpdateAvatarPositionOnAutoMap(UINT8 x, UINT8 y);
 	void CreateNewTileSpriteMap();
 
@@ -40,24 +40,33 @@ public:
 		DXGI_FORMAT tex_format, int width, int height);
 
 	// public singleton code
-	static AutoMap* GetInstance(DX::DeviceResources* deviceResources, DescriptorHeap* resourceDescriptors)
+	static AutoMap* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,
+								std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)
 	{
 		if (NULL == s_instance)
 			s_instance = new AutoMap(deviceResources, resourceDescriptors);
 		return s_instance;
 	}
-
+	static AutoMap* GetInstance()
+	{
+		if (NULL == s_instance)
+			_ASSERT(0);
+		return s_instance;
+	}
 	~AutoMap()
 	{
+		m_resourceDescriptors = NULL;
+		m_deviceResources = NULL;
 	}
 private:
 	static AutoMap* s_instance;
 
-	AutoMap(DX::DeviceResources* deviceResources, DescriptorHeap* resourceDescriptors)
+	AutoMap(std::unique_ptr<DX::DeviceResources>& deviceResources, 
+		std::unique_ptr<DirectX::DescriptorHeap>&  resourceDescriptors)
 	{
 		m_currentMapRect = { 0,0,0,0 };
-		m_deviceResources = deviceResources;
-		m_resourceDescriptors = resourceDescriptors;
+		m_deviceResources = deviceResources.get();
+		m_resourceDescriptors = resourceDescriptors.get();
 		CreateNewTileSpriteMap();
 	}
 

@@ -93,7 +93,7 @@ void MemoryTriggers::PollChanged_Floor(UINT memLoc)
 void MemoryTriggers::PollChanged_XPos(UINT memLoc)
 {
     //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" XPos changed!\n").c_str());
-    AutoMap* aM = AutoMap::GetInstance(NULL, NULL);
+    AutoMap* aM = AutoMap::GetInstance();
     aM->UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
 }
 
@@ -157,8 +157,9 @@ void MemoryTriggers::DelayedTrigger_ParseTiles(UINT memloc)
 	// TODO: get Game.cpp to update the texture
     if (g_isInGameMap)
     {
-		auto aM = AutoMap::GetInstance(NULL, NULL);
-        aM->CreateNewTileSpriteMap();
+		auto aM = AutoMap::GetInstance();
+        if (aM != NULL)
+            aM->CreateNewTileSpriteMap();
     }
         
 }

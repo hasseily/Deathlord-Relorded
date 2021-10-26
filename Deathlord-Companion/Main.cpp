@@ -171,14 +171,14 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	/*
+#if defined(_DEBUG)
 	// Check to see if a copy of WinPixGpuCapturer.dll has already been injected into the application.
 	// This may happen if the application is launched through the PIX UI. 
 	if (GetModuleHandle(L"WinPixGpuCapturer.dll") == 0)
 	{
 		LoadLibrary(GetLatestWinPixGpuCapturerPath().c_str());
 	}
-	*/
+#endif
 
 	try {
 		// Initialize global strings

@@ -132,7 +132,6 @@ D3D12_RESOURCE_DESC Game::ChooseTexture()
 	switch (g_nAppMode)
 	{
 	case AppMode_e::MODE_LOGO:  // obsolete
-	case AppMode_e::MODE_PAUSED:
 	{
 		txtDesc.Width = m_bgImageWidth;
 		txtDesc.Height = m_bgImageHeight;
@@ -141,17 +140,18 @@ D3D12_RESOURCE_DESC Game::ChooseTexture()
 		SetVideoLayout(EmulatorLayout::NORMAL);
 		break;
 	}
-	/*
+	
+    /*
 	#ifdef _DEBUG
 		// In debug mode when pause we display the current tilemap
 		// Enable to debug the tilemap
-		// TODO: Write a PAUSE overlay text in render() when paused
+		// TODO: Write a PAUSE overlay text in render() when paused. This is a hack that overwrites g+pFramebufferbits
 		case AppMode_e::MODE_PAUSED:
 		{
 		    auto tileset = TilesetCreator::GetInstance();
 			UINT64 pngW = PNGBUFFERWIDTHB / sizeof(UINT32);
 			UINT64 pngH = PNGBUFFERHEIGHT;
-			LPBYTE tsB = m_tileset->GetCurrentTilesetBuffer();
+			LPBYTE tsB = tileset->GetCurrentTilesetBuffer();
 			auto fbI = g_pFramebufferinfo->bmiHeader;
 			UINT64 lineByteWidth = MIN(pngW, fbI.biWidth) * sizeof(UINT32);
 			for (size_t h = 0; h < MIN(PNGBUFFERHEIGHT, fbI.biHeight) ; h++)
@@ -162,7 +162,8 @@ D3D12_RESOURCE_DESC Game::ChooseTexture()
 			SetVideoLayout(EmulatorLayout::NORMAL);
 		}
 	#endif
-	*/
+    */
+	
 	default:
 	{
 		auto fbI = g_pFramebufferinfo->bmiHeader;
@@ -347,7 +348,7 @@ void Game::Render()
 			mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
 			mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
 		};
-        m_automap->DrawAutoMap(m_spriteBatch.get(), &mapRectInViewport);
+        m_automap->DrawAutoMap(m_spriteBatch, &mapRectInViewport);
         // End drawing automap
 
         // Drawing text
@@ -606,7 +607,7 @@ void Game::CreateDeviceDependentResources()
     }
 
     // Now initialize the automap and create the automap resources
-    m_automap = AutoMap::GetInstance(m_deviceResources.get(), m_resourceDescriptors.get());
+    m_automap = AutoMap::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_automap->CreateDeviceDependentResources(&resourceUpload);
 
     // finish up

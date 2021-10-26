@@ -28,7 +28,7 @@ void AutoMap::CreateNewTileSpriteMap()
 	//OutputDebugStringA("Loaded map into GPU\n");
 }
 
-void AutoMap::DrawAutoMap(SpriteBatch* spriteBatch, RECT* mapRect)
+void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RECT* mapRect)
 {
 	// Drawing automap
 	CopyRect(&m_currentMapRect, mapRect);
@@ -79,9 +79,9 @@ void AutoMap::DrawAutoMap(SpriteBatch* spriteBatch, RECT* mapRect)
 			m_currentMapRect.left + (mapRect->right - mapRect->left) / 2 - 200.f,
 			m_currentMapRect.top + (mapRect->bottom - mapRect->top) / 2 - 20.f);
 		auto gamePtr = GetGamePtr();
-		(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch, "Awaiting Masochists...",
+		(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "Awaiting Masochists...",
 			awaitTextPos - Vector2(2.f, 2.f), Colors::White, 0.f, Vector2(0.f, 0.f), 3.f);
-		(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch, "Awaiting Masochists...",
+		(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "Awaiting Masochists...",
 			awaitTextPos, COLOR_APPLE2_VIOLET, 0.f, Vector2(0.f, 0.f), 3.f);
 	}
 
@@ -89,7 +89,7 @@ void AutoMap::DrawAutoMap(SpriteBatch* spriteBatch, RECT* mapRect)
 	// TODO: delete, this is a test
 	RECT sTestRect = { 0, 0, 448, 512 };
 	RECT dTestRect = { 500, 200, 948, 712 };
-	m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet),
+	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet),
 		GetTextureSize(m_autoMapTexture.Get()), dTestRect, &sTestRect);
 	*/
 
