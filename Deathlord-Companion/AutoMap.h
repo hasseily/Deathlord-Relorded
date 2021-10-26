@@ -6,6 +6,10 @@
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
+constexpr UINT32 GAMEMAP_START_MEM = 0xC00;		// Start of memory area of the in-game map
+constexpr UINT8 MAP_WIDTH = 64;
+constexpr int MAP_LENGTH = MAP_WIDTH * MAP_WIDTH;			// Size of map (in bytes)
+
 /// Summary:
 /// This class handles the management of the automapper.
 /// It doesn't deal with the tileset(s), just the maps themselves.
@@ -33,6 +37,7 @@ public:
 	void DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RECT* mapRect);
 	void UpdateAvatarPositionOnAutoMap(UINT8 x, UINT8 y);
 	void CreateNewTileSpriteMap();
+	LPBYTE GetCurrentGameMap() { return MemGetMainPtr(GAMEMAP_START_MEM); };
 
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();
@@ -80,6 +85,7 @@ private:
 	std::map<UINT32, UINT8> m_currentMapTiles;	// All mapPos -> tileid for the whole map
 												// to ensure we don't redraw what's already there
 
-	RECT m_currentMapRect;
+	RECT m_currentMapRect;	// Rect of the currently drawn map, as requested by the game engine
+	std::array<std::array<UINT8, >>m_fogOfWarArrays;
 };
 

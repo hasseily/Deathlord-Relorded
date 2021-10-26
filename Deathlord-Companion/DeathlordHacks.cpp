@@ -10,6 +10,7 @@
 #include "Emulator/AppleWin.h"
 #include "Game.h"
 #include "TilesetCreator.h"
+#include "AutoMap.h"
 
 const wchar_t CLASS_NAME[] = L"Deathlord Hacks Class";
 
@@ -201,7 +202,8 @@ void DeathlordHacks::SaveMapDataToDisk()
 	std::string sMapData = "";
 	
 	auto tileset = TilesetCreator::GetInstance();
-	UINT8 *memPtr = tileset->GetCurrentGameMap();
+	auto automap = AutoMap::GetInstance();
+	UINT8 *memPtr = automap->GetCurrentGameMap();
 	char tileId[3] = "00";
 	for (size_t i = 0; i < MAP_LENGTH; i++)
 	{

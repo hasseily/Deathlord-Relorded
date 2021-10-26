@@ -4,10 +4,6 @@
 #include <array>
 #include <map>
 
-constexpr UINT32 GAMEMAP_START_MEM = 0xC00;		// Start of memory area of the in-game map
-constexpr UINT8 MAP_WIDTH = 64;
-constexpr int MAP_LENGTH = MAP_WIDTH * MAP_WIDTH;			// Size of map (in bytes)
-
 constexpr UINT8 PIXELDEPTH	= 4;	// RGBA
 
 // For the framebuffer
@@ -54,7 +50,6 @@ public:
 	}
 	LPBYTE parseTilesInHGR2();
 	LPBYTE GetCurrentTilesetBuffer() { return pTilesetBuffer; };
-	LPBYTE GetCurrentGameMap() { return MemGetMainPtr(GAMEMAP_START_MEM); };
 private:
 	static TilesetCreator* s_instance;
 
