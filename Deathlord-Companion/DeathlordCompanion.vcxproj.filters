@@ -290,6 +290,9 @@
     <ClInclude Include="AutoMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Descriptors.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="emulator\cpu\cpu_general.inl">

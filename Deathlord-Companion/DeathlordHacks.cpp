@@ -200,8 +200,8 @@ void DeathlordHacks::SaveMapDataToDisk()
 	// Do the map file directly from memory
 	std::string sMapData = "";
 	
-	std::shared_ptr<TilesetCreator> ts = GetTilesetCreator();
-	UINT8 *memPtr = ts->GetCurrentGameMap();
+	auto tileset = TilesetCreator::GetInstance();
+	UINT8 *memPtr = tileset->GetCurrentGameMap();
 	char tileId[3] = "00";
 	for (size_t i = 0; i < MAP_LENGTH; i++)
 	{
@@ -230,7 +230,7 @@ void DeathlordHacks::SaveMapDataToDisk()
 	fsFile.close();
 
 	// Do the tileset
-	LPBYTE tilesetRGBAData = ts->GetCurrentTilesetBuffer();
+	LPBYTE tilesetRGBAData = tileset->GetCurrentTilesetBuffer();
 	// Save the tile file
 	fileName = "Maps\\Tileset ";
 	if (memPtr[MAP_IS_OVERLAND] == 0x80)

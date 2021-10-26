@@ -53,7 +53,6 @@ namespace
 	std::unique_ptr<Game> g_game;
 	std::shared_ptr<LogWindow> g_logW;
 	std::shared_ptr<DeathlordHacks> g_dlHacks;
-	std::shared_ptr<TilesetCreator> g_tilesetCreator;
 }
 
 void ExitGame() noexcept;
@@ -112,11 +111,6 @@ std::shared_ptr<LogWindow> GetLogWindow()
 std::shared_ptr<DeathlordHacks> GetDeathlordHacks()
 {
 	return g_dlHacks;
-}
-
-std::shared_ptr<TilesetCreator> GetTilesetCreator()
-{
-	return g_tilesetCreator;
 }
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -253,7 +247,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			m_extraWindowHeight = (wi.rcWindow.bottom - wi.rcClient.bottom) + (wi.rcClient.top - wi.rcWindow.top);
 
 
-			g_tilesetCreator = std::make_unique<TilesetCreator>();
 			g_game->Initialize(hwnd, wi.rcClient.right - wi.rcClient.left, wi.rcClient.bottom - wi.rcClient.top);
 
 			// create the instances of important blocks at the start

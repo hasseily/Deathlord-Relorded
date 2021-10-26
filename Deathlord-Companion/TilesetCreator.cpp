@@ -8,6 +8,9 @@
 #include <map>
 #include "Game.h"
 
+// below because "The declaration of a static data member in its class definition is not a definition"
+TilesetCreator* TilesetCreator::s_instance;
+
 /// <summary>
 /// Creates a map of the rects on the spritesheet of all tiles based on the tile ID
 /// </summary>

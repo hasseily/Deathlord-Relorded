@@ -34,17 +34,20 @@ constexpr std::array<const uint16_t, 8> SINGLELINEOFFSETS = {
 	0x0, 0x400, 0x800, 0xc00, 0x1000, 0x1400, 0x1800, 0x1c00
 };
 
-class TilesetCreator
+class TilesetCreator	// Singleton
 {
 public:
 	UINT32 iInserted = 0;
 	std::map<UINT32, RECT>tileSpritePositions; // Positions of each tile sprite in spritesheet
-	TilesetCreator()
+
+	// public singleton code
+	static TilesetCreator* GetInstance()
 	{
-		pTilesetBuffer = new BYTE[PNGBUFFERSIZE];
-		memset(pTilesetBuffer, 0, PNGBUFFERSIZE);
-		FillTileSpritePositions();
+		if (NULL == s_instance)
+			s_instance = new TilesetCreator();
+		return s_instance;
 	}
+
 	~TilesetCreator()
 	{
 		delete[] pTilesetBuffer;
@@ -53,9 +56,15 @@ public:
 	LPBYTE GetCurrentTilesetBuffer() { return pTilesetBuffer; };
 	LPBYTE GetCurrentGameMap() { return MemGetMainPtr(GAMEMAP_START_MEM); };
 private:
+	static TilesetCreator* s_instance;
+
+	TilesetCreator()
+	{
+		pTilesetBuffer = new BYTE[PNGBUFFERSIZE];
+		memset(pTilesetBuffer, 0, PNGBUFFERSIZE);
+		FillTileSpritePositions();
+	}
+
 	LPBYTE pTilesetBuffer;
 	void FillTileSpritePositions();
 };
-
-// defined in Main.cpp
-extern std::shared_ptr<TilesetCreator> GetTilesetCreator();

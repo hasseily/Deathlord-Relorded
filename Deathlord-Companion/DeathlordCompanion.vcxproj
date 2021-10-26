@@ -218,6 +218,7 @@
     <ClInclude Include="AutoMap.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DeathlordHacks.h" />
+    <ClInclude Include="Descriptors.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="emulator\AppleWin.h" />
     <ClInclude Include="emulator\AY8910.h" />

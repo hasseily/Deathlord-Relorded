@@ -27,17 +27,12 @@ using namespace HA;
 D3D12_SUBRESOURCE_DATA g_textureData;
 ComPtr<ID3D12Resource> g_textureUploadHeap;
 
-D3D12_SUBRESOURCE_DATA g_textureDataMap;
-ComPtr<ID3D12Resource> g_textureUploadHeapMap;
 
 // Instance variables
 HWND m_window;
 static SidebarManager m_sbM;
 static SidebarContent m_sbC;
-// fonts and primitives from dxtoolkit12 to draw lines
-static std::map<FontDescriptors, std::unique_ptr<SpriteFont>> m_spriteFonts;
-static std::unique_ptr<PrimitiveBatch<VertexPositionColor>> m_primitiveBatch;
-std::unique_ptr<BasicEffect> m_lineEffect;
+
 AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
 
 static std::wstring last_logged_line;
@@ -54,9 +49,6 @@ NonVolatile g_nonVolatile;
 bool g_isInGameMap = false;
 bool g_wantsToSave = true;  // DISABLED. It can corrupt saved games
 float Game::m_clientFrameScale = 1.f;
-
-static std::map<UINT32, UINT8> currentMapTiles;   // All mapPos -> tileid for the whole map
-                                                   // to ensure we don't redraw what's already there
 
 Game::Game() noexcept(false)
 {
@@ -103,7 +95,6 @@ void Game::Initialize(HWND window, int width, int height)
     m_bgImage = HA::LoadBGRAImage(buff, m_bgImageWidth, m_bgImageHeight);
 
 	m_sbC.Initialize();
-	m_tileset = GetTilesetCreator();
 
     shouldRender = true;
 
@@ -113,6 +104,7 @@ void Game::Initialize(HWND window, int width, int height)
 
     m_deviceResources->CreateDeviceResources();
     CreateDeviceDependentResources();
+    // m_automap is initialized when creating device dependent resources
 
     m_deviceResources->CreateWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
@@ -122,7 +114,6 @@ void Game::Initialize(HWND window, int width, int height)
 	// m_timer.SetTargetElapsedSeconds(1.0 / MAX_RENDERED_FRAMES_PER_SECOND);
 	m_timer.SetFixedTimeStep(false);
     
-    CreateNewTileSpriteMap();
 	m_trigger = MemoryTriggers::GetInstance(&m_timer);
 	m_trigger->PollMapSetCurrentValues();
 }
@@ -157,7 +148,7 @@ D3D12_RESOURCE_DESC Game::ChooseTexture()
 		// TODO: Write a PAUSE overlay text in render() when paused
 		case AppMode_e::MODE_PAUSED:
 		{
-			m_tileset = GetTilesetCreator();
+		    auto tileset = TilesetCreator::GetInstance();
 			UINT64 pngW = PNGBUFFERWIDTHB / sizeof(UINT32);
 			UINT64 pngH = PNGBUFFERHEIGHT;
 			LPBYTE tsB = m_tileset->GetCurrentTilesetBuffer();
@@ -222,6 +213,11 @@ void Game::GetBaseSize(__out int& width, __out int& height) noexcept
 	if (height < mapHeight)
 		height = mapHeight;
 	return;
+}
+
+DirectX::SpriteFont* Game::GetSpriteFontAtIndex(FontDescriptors fontIndex)
+{
+    return m_spriteFonts.at(fontIndex).get();
 }
 
 #pragma endregion
@@ -340,75 +336,18 @@ void Game::Render()
         commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
         // End drawing video texture
 
-		// Drawing automap
-        // TODO: Do most of this outside of render, much of it is fixed between renders
+        // Now draw automap
+		// TODO: Do most of this outside of render, much of it is fixed between renders
 		int origW, origH;
 		GetBaseSize(origW, origH);
 		auto mmOrigin = Vector2(m_cachedClientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
-        RECT mapRectInViewport = {
-            mmOrigin.x,
-            mmOrigin.y,
-            mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
-            mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
-        };
-		m_spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
-
-		// Now draw the automap tiles
-        if (g_isInGameMap && m_autoMapTexture != NULL)
-        {
-            float mapScale = (float)MAP_WIDTH_IN_VIEWPORT / (float)(MAP_WIDTH * PNGTW);
-			// Use the tilemap texture
-			commandList->SetGraphicsRootDescriptorTable(0, m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet));
-			auto mmTexSize = GetTextureSize(m_autoMapTexture.Get());
-            XMUINT2 tileTexSize(PNGTW, PNGTH);
-            // Loop through the in-memory map that has all the tile IDs for the current map
-			LPBYTE mapMemPtr = m_tileset->GetCurrentGameMap();
-            for (size_t mapPos = 0; mapPos < MAP_LENGTH; mapPos++)
-            {
-				//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile on screen\n")).c_str());
-                // TODO: we now redraw every frame. Not efficient!
-				//if (currentMapTiles[mapPos] == (UINT8)mapMemPtr[mapPos])    // it's been drawn
-					//continue;
-				RECT spriteRect = m_tileset->tileSpritePositions.at(mapMemPtr[mapPos]);
-				XMFLOAT2 spriteOrigin(0, 0);
-				int posX = mapPos % MAP_WIDTH;
-				int posY = mapPos / MAP_WIDTH;
-				XMFLOAT2 tilePosInMap(
-                    mapRectInViewport.left + (posX * PNGTW * mapScale), 
-                    mapRectInViewport.top + (posY * PNGTH * mapScale)
-                );
-				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
-                    tilePosInMap, &spriteRect, Colors::White, 0.f, spriteOrigin, mapScale);
-				currentMapTiles[mapPos] = (UINT8)mapMemPtr[mapPos];
-				//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile DRAWN on screen\n")).c_str());
-              
-			}
-		}
-        else // draw the background if not in game
-        {
-			auto mmBGTexSize = GetTextureSize(m_autoMapTextureBG.Get());
-			// nullptr here is the source rectangle. We're drawing the full background
-			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackground), mmBGTexSize,
-				mapRectInViewport, nullptr, Colors::White, 0.f, XMFLOAT2());
-			// write text on top of automap area
-			Vector2 awaitTextPos(
-				mapRectInViewport.left + (mapRectInViewport.right - mapRectInViewport.left) / 2 - 200.f,
-				mapRectInViewport.top + (mapRectInViewport.bottom - mapRectInViewport.top) / 2 - 20.f);
-			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
-				awaitTextPos - Vector2(2.f, 2.f), Colors::White, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 3.f);
-			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), "Awaiting Masochists...",
-				awaitTextPos, COLOR_APPLE2_VIOLET, 0.f, Vector2(0.f, 0.f), m_clientFrameScale * 3.f);
-        }
-        
-        /*
-		// TODO: delete, this is a test
-		RECT sTestRect = { 0, 0, 448, 512 };
-		RECT dTestRect = { 500, 200, 948, 712 };
-		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet),
-            GetTextureSize(m_autoMapTexture.Get()), dTestRect, &sTestRect);
-        */
-
-		m_spriteBatch->End();
+		RECT mapRectInViewport = {
+			mmOrigin.x,
+			mmOrigin.y,
+			mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
+			mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
+		};
+        m_automap->DrawAutoMap(m_spriteBatch.get(), &mapRectInViewport);
         // End drawing automap
 
         // Drawing text
@@ -590,8 +529,8 @@ void Game::OnWindowSizeChanged(LONG width, LONG height)
     {
         CreateWindowSizeDependentResources();
     }
-    UpdateGamelinkVertexData(gamelinkWidth, gamelinkHeight, 
-	(float)GetFrameBufferWidth() / (float)origW, (float)GetFrameBufferHeight() / (float)origH);
+    UpdateGamelinkVertexData(gamelinkWidth, gamelinkHeight,
+	    (float)GetFrameBufferWidth() / (float)origW, (float)GetFrameBufferHeight() / (float)origH);
 }
 
 #pragma endregion
@@ -639,20 +578,6 @@ void Game::MenuToggleHacksWindow()
 
 #pragma region Direct3D Resources
 
-// The tile spritemap needs to update at every level change
-void Game::CreateNewTileSpriteMap()
-{
-// Sprite sheet only exists when the player is in-game! Make sure this is called when player goes in game
-// And make sure the map only renders when in game.
-
-	m_tileset = GetTilesetCreator();
-
-	auto device = m_deviceResources->GetD3DDevice();
-    LoadTextureFromMemory((const unsigned char*)m_tileset->GetCurrentTilesetBuffer(),
-        device, &m_autoMapTexture, DXGI_FORMAT_R8G8B8A8_UNORM, PNGBUFFERWIDTH, PNGBUFFERHEIGHT);
-    //OutputDebugStringA("Loaded map into GPU\n");
-}
-
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
 {
@@ -680,14 +605,11 @@ void Game::CreateDeviceDependentResources()
 		m_spriteFonts.at(aFont.first)->SetDefaultCharacter('.');
     }
 
-    // Now create the automap resources
-    // First the background
-	DX::ThrowIfFailed(
-		CreateWICTextureFromFile(device, resourceUpload, L"Assets/Background_NoMap.png",
-            m_autoMapTextureBG.ReleaseAndGetAddressOf()));
-	CreateShaderResourceView(device, m_autoMapTextureBG.Get(),
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapBackground));
+    // Now initialize the automap and create the automap resources
+    m_automap = AutoMap::GetInstance(m_deviceResources.get(), m_resourceDescriptors.get());
+    m_automap->CreateDeviceDependentResources(&resourceUpload);
 
+    // finish up
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
 	SpriteBatchPipelineStateDescription spd(rtState);
 	m_spriteBatch = std::make_unique<SpriteBatch>(device, resourceUpload, spd);
@@ -1026,13 +948,11 @@ void Game::OnDeviceLost()
         it->second.reset();
     }
 	m_texture.Reset();
-	m_autoMapTexture.Reset();
-	m_autoMapTextureBG.Reset();
     m_indexBuffer.Reset();
     m_vertexBuffer.Reset();
     m_pipelineState.Reset();
     m_rootSignature.Reset();
-	m_resourceDescriptors.reset();
+    m_automap->OnDeviceLost();
     m_spriteBatch.reset();
     m_graphicsMemory.reset();
 }
@@ -1058,90 +978,3 @@ void Game::ActivateLastUsedProfile()
 
 #pragma endregion
 
-#pragma region DX Helpers
-
-// Simple helper function to load an image as a R8B8G8 memory buffer into a DX12 texture with common settings
-// Returns true on success, with the SRV CPU handle having an SRV for the newly-created texture placed in it
-// (srv_cpu_handle must be a handle in a valid descriptor heap)
-bool Game::LoadTextureFromMemory (const unsigned char* image_data,
-    ID3D12Device* d3d_device, Microsoft::WRL::ComPtr <ID3D12Resource>* out_tex_resource,
-    DXGI_FORMAT tex_format, int width, int height)
-{
-	int image_width = width;
-	int image_height = height;
-	if (image_data == NULL)
-		return false;
-
-	// Create texture resource
-	D3D12_HEAP_PROPERTIES props;
-	memset(&props, 0, sizeof(D3D12_HEAP_PROPERTIES));
-	props.Type = D3D12_HEAP_TYPE_DEFAULT;
-	props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-
-    D3D12_RESOURCE_DESC desc = {};
-	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	desc.Alignment = 0;
-	desc.Width = image_width;
-	desc.Height = image_height;
-	desc.DepthOrArraySize = 1;
-	desc.MipLevels = 1;
-	desc.Format = tex_format;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-	ID3D12Resource* pTexture = NULL;
-	d3d_device->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
-		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&pTexture));
-
-	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(pTexture, 0, 1);
-
-	props.Type = D3D12_HEAP_TYPE_UPLOAD;
-	props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-
-	// Create the GPU upload buffer.
-	auto resDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
-
-	DX::ThrowIfFailed(
-        d3d_device->CreateCommittedResource(
-			&props,
-			D3D12_HEAP_FLAG_NONE,
-			&resDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(g_textureUploadHeapMap.GetAddressOf())));
-
-    g_textureDataMap.pData = image_data;
-    g_textureDataMap.SlicePitch = static_cast<UINT64>(width) * height * sizeof(bgra_t);
-    g_textureDataMap.RowPitch = static_cast<LONG_PTR>(desc.Width * sizeof(uint32_t));
-
-	auto commandList = m_deviceResources->GetCommandList();
-	commandList->Reset(m_deviceResources->GetCommandAllocator(), nullptr);
-	
-
-    UpdateSubresources(commandList, pTexture, g_textureUploadHeapMap.Get(), 0, 0, 1, &g_textureDataMap);
-
-	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pTexture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	commandList->ResourceBarrier(1, &barrier);
-
-	// Describe and create a SRV for the texture.
-    // Using CreateShaderResourceView removes a ton of boilerplate
-	CreateShaderResourceView(d3d_device, pTexture,
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapTileSheet));
-
-    // finish up
-	DX::ThrowIfFailed(commandList->Close());
-	m_deviceResources->GetCommandQueue()->ExecuteCommandLists(1, CommandListCast(&commandList));
-	// Wait until assets have been uploaded to the GPU.
-	m_deviceResources->WaitForGpu();
-
-	// Return results
-	out_tex_resource->Attach(pTexture);
-
-	return true;
-}
-
-#pragma endregion

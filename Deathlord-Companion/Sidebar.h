@@ -3,7 +3,7 @@
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 #include <vector>
-#include "Game.h" // for font descriptors
+#include "Descriptors.h"
 
 #pragma warning( disable:4324 )
 // C4324: structure was padded due to alignment specifier
@@ -38,14 +38,6 @@ enum class BlockType
 	Content,
 	Empty,
 	Count
-};
-
-enum class FontDescriptors
-{
-	FontA2Regular		= (int)TextureDescriptors::FontA2Regular,
-	FontA2Bold			= (int)TextureDescriptors::FontA2Bold,
-	FontA2Italic		= (int)TextureDescriptors::FontA2Italic,
-	FontA2BoldItalic	= (int)TextureDescriptors::FontA2BoldItalic,
 };
 
 /// <summary>
