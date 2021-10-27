@@ -12,6 +12,8 @@ extern std::unique_ptr<Game>* GetGamePtr();
 
 constexpr UINT8 TILEID_REDRAW = 0xFF;			// when we see this nonexistent tile id we automatically redraw the tile
 
+UINT8 tilesVisibleAroundAvatar[81] = { 0 };
+
 void AutoMap::Initialize()
 {
 	bShowTransition = false;
@@ -32,14 +34,31 @@ void AutoMap::ClearMapArea()
 	}
 }
 
-void AutoMap::setShowTransition(bool showTransition)
+void AutoMap::RedrawMapArea()
+{
+	for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
+	{
+		for (size_t mapPos = 0; mapPos < MAP_LENGTH; mapPos++)
+		{
+			if ((m_bbufFogOfWarTiles[i][mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
+			{
+				m_bbufCurrentMapTiles[i][mapPos] = TILEID_REDRAW;
+			}
+		}
+	}
+}
+
+void AutoMap::SetShowTransition(bool showTransition)
 { 
 	if (showTransition == bShowTransition)
 		return;
 	bShowTransition = showTransition;
 	ClearMapArea();
+	RedrawMapArea();
 }
 
+#pragma warning(push)
+#pragma warning(disable : 26451)
 void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 {
 	// TODO
@@ -60,20 +79,51 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 		m_bbufCurrentMapTiles[i][m_avatarPosition.x + m_avatarPosition.y * MAP_WIDTH] = TILEID_REDRAW;
 	}
 
+	// Now check the visible tiles around the avatar (tiles that aren't black)
+	// Those will have their fog-of-war bit unset
+	auto tileset = TilesetCreator::GetInstance();
+	tileset->analyzeVisibleTiles(&tilesVisibleAroundAvatar[0]);
+	UINT8 oldBufVal;
+	for (UINT8 j = 0; j < 9; j++)	// rows
+	{
+		for (UINT8 i = 0; i < 9; i++)	// columns
+		{
+			// First calculate the position of the tile in the map
+			UINT32 tilePosX = m_avatarPosition.x - 4 + i;
+			UINT32 tilePosY = m_avatarPosition.y - 4 + j;
+			if ((tilePosX >= MAP_WIDTH) || (tilePosY >= MAP_HEIGHT)) // outside the map (no need to check < 0, it'll roll over as a UINT32)
+				continue;
+			for (size_t ibb = 0; ibb < m_deviceResources->GetBackBufferCount(); ibb++)
+			{
+				// Move the visibility bit to the FogOfWar position, and OR it with the value in the vector.
+				// If the user ever sees the tile, it stays "seen"
+				oldBufVal = m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH];
+				m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] |= 
+					(tilesVisibleAroundAvatar[i+9*j] << (UINT8)FogOfWarMarkers::UnFogOfWar);
+				if (oldBufVal != m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH])
+				{
+					// We changed the bit, so we need to flag the tile to be redrawn on the map
+					m_bbufCurrentMapTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] = TILEID_REDRAW;
+				}
+			}
+		}
+	}
+
 	/*
 	char _buf[500];
 	sprintf_s(_buf, 500, "Old Avatar Pos tileid has values %2d, %2d in vector\n",
 		m_bbufCurrentMapTiles[0][xx_x + xx_y * MAP_WIDTH], m_bbufCurrentMapTiles[1][xx_x + xx_y * MAP_WIDTH]);
 	OutputDebugStringA(_buf);
 	*/
+	OutputDebugStringA("Done\n");
 }
+#pragma warning(pop)
 
 void AutoMap::CreateNewTileSpriteMap()
 {
 	// The tile spritemap needs to update at every level change
 	// Sprite sheet only exists when the player is in-game! Make sure this is called when player goes in game
 	// And make sure the map only renders when in game.
-	auto device = m_deviceResources->GetD3DDevice();
 	auto tileset = TilesetCreator::GetInstance();
 	LoadTextureFromMemory((const unsigned char*)tileset->GetCurrentTilesetBuffer(),
 		&m_autoMapTexture, DXGI_FORMAT_R8G8B8A8_UNORM, PNGBUFFERWIDTH, PNGBUFFERHEIGHT);
@@ -109,16 +159,30 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 		// Loop through the in-memory map that has all the tile IDs for the current map
 		LPBYTE mapMemPtr = GetCurrentGameMap();
 		//OutputDebugStringA((std::to_string(currentBackBufferIdx)).append(std::string(" backbuffer being parsed\n")).c_str());
-		for (size_t mapPos = 0; mapPos < MAP_LENGTH; mapPos++)
+		for (UINT32 mapPos = 0; mapPos < MAP_LENGTH; mapPos++)
 		{
 			//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile on screen\n")).c_str());
+			
 			// Only redraw the current backbuffer when a tile changes, as well as forbid ClearRenderTargetView
 			if (m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] == (UINT8)mapMemPtr[mapPos])    // it's been drawn
 				continue;
-			RECT spriteRect = tileset->tileSpritePositions.at(mapMemPtr[mapPos]);
+
+			// Now check if the tile has been seen before. Otherwise set it to the black tile which is always
+			// the first tile in the tileset
+
+			RECT spriteRect;
+			if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
+			{
+				spriteRect = tileset->tileSpritePositions.at(mapMemPtr[mapPos]);
+			}
+			else
+			{
+				spriteRect = tileset->tileSpritePositions.at(0);
+			}
+
 			XMFLOAT2 spriteOrigin(0, 0);
-			int posX = mapPos % MAP_WIDTH;
-			int posY = mapPos / MAP_WIDTH;
+			UINT32 posX = mapPos % MAP_WIDTH;
+			UINT32 posY = mapPos / MAP_WIDTH;
 			XMFLOAT2 tilePosInMap(
 				m_currentMapRect.left + (posX * PNGTW * mapScale),
 				m_currentMapRect.top + (posY * PNGTH * mapScale)
@@ -233,9 +297,11 @@ bool AutoMap::LoadTextureFromMemory(const unsigned char* image_data,
 	desc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
 	ID3D12Resource* pTexture = NULL;
-	device->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
-		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&pTexture));
+	DX::ThrowIfFailed(device->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
+		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&pTexture)));
 
+	if (pTexture == NULL)
+		return false;
 	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(pTexture, 0, 1);
 
 	props.Type = D3D12_HEAP_TYPE_UPLOAD;

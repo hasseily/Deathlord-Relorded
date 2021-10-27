@@ -91,7 +91,7 @@ LPBYTE TilesetCreator::parseTilesInHGR2()
 		for (size_t nTile = 0; nTile < tilesSentToHGR1; nTile++)
 		{
 			UINT32 iFBOriginByte = (fbBorderTop * fbWidth * PIXELDEPTH) + (fbBorderLeft * PIXELDEPTH) + nTile * 2 * FBTW * PIXELDEPTH;
-// Calculate the destination 0,0 byte to draw the tile onto
+			// Calculate the destination 0,0 byte to draw the tile onto
 			UINT8 tileNumber = (iT - (tilesSentToHGR1 - nTile - 1) * tileByteSize) / tileByteSize;
 			UINT8 iPNGRow = tileNumber / 0x10;
 			UINT8 iPNGCol = tileNumber % 0x10;
@@ -140,4 +140,67 @@ LPBYTE TilesetCreator::parseTilesInHGR2()
 
 	g_nAppMode = AppMode_e::MODE_RUNNING;
 	return pTilesetBuffer;
+}
+
+
+
+/// <summary>
+/// This is not part of tileset creation, but its location here is as good as any.
+/// This method looks at the visible screen of deathlord (the 9x9 tiles in the upper left)
+/// And checks which tiles not fully black (i.e. visible).
+/// It fills a passed in array of 9x9=81 UINT8s with 0-1 based on their visibility
+/// It's up to the caller to both determine the map tiles that have been analyzed, and act upon them
+/// </summary>
+/// <param name="pVisibleTiles">A pointer to a 81-item array of UINT8s</param>
+/// <returns>Nothing</returns>
+void TilesetCreator::analyzeVisibleTiles(UINT8* pVisibleTiles)
+{
+	if (!g_isInGameMap)
+		return;
+	UINT32 fbWidth = GetFrameBufferWidth();
+	UINT32 fbHeight = GetFrameBufferHeight();
+	UINT32 fbBorderLeft = GetFrameBufferBorderWidth() - 1;	// these are additional shifts to make the tiles align
+	UINT32 fbBorderTop = GetFrameBufferBorderHeight() + 16;	// these are additional shifts to make the tiles align
+	UINT32 iFBOriginByte;
+	UINT32 iFBCurrentByte;
+	bool isBlack;
+	const UINT8 visTileSide = 9;	// 9 tiles per side visible
+
+	for (UINT8 ir = 0; ir < visTileSide; ir++)		// rows
+	{
+		for (UINT8 jc = 0; jc < visTileSide; jc++)	// columns
+		{
+			isBlack = true;
+			// find the top left byte of the tile
+			iFBOriginByte = ((fbBorderTop + ir * FBTH) * fbWidth * PIXELDEPTH)
+				+ (fbBorderLeft + jc * FBTW) * PIXELDEPTH;
+			// Now read every byte triplet BGR and see if the whole thing is black (discard the Alpha byte)
+			// except that we don't want to read the 4-pixel thick border which might have some bleeding.
+			pVisibleTiles[ir * visTileSide + jc] = 0;	// default to not visible
+			for (UINT32 j = 4; j < (FBTH-4); j++)
+			{
+				for (UINT32 i = 4; i < (FBTW-4); i++)
+				{
+					iFBCurrentByte = iFBOriginByte + (j * fbWidth * PIXELDEPTH) + (i * PIXELDEPTH);
+					if ((g_pFramebufferbits[iFBCurrentByte] != 0)
+						|| (g_pFramebufferbits[iFBCurrentByte + 1] != 0)
+						|| (g_pFramebufferbits[iFBCurrentByte + 2] != 0))
+					{
+						pVisibleTiles[ir * visTileSide + jc] = 1; // b or g or r is not black
+						isBlack = false;
+						goto FINISHEDTILE;
+					}
+				}
+			}
+		FINISHEDTILE:
+			{
+				/*
+				char _buf[500];
+				sprintf_s(_buf, 500, "Tile at %d,%d is %d\n", ir, jc, isBlack);
+				OutputDebugStringA(_buf);
+				*/
+			}
+
+		}
+	}
 }

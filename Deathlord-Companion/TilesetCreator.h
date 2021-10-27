@@ -50,6 +50,7 @@ public:
 	}
 	LPBYTE parseTilesInHGR2();
 	LPBYTE GetCurrentTilesetBuffer() { return pTilesetBuffer; };
+	void analyzeVisibleTiles(UINT8* pVisibleTiles);
 private:
 	static TilesetCreator* s_instance;
 

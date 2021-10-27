@@ -12,6 +12,21 @@ constexpr UINT8 MAP_WIDTH = 64;
 constexpr UINT8 MAP_HEIGHT = 64;
 constexpr int MAP_LENGTH = MAP_WIDTH * MAP_HEIGHT;			// Size of map (in bytes)
 
+// This is the description of what every bit in the FogOfWar vector does
+// Each tile on the map has a FogOfWar descriptive byte with this info
+enum class FogOfWarMarkers
+{
+	UnFogOfWar = 0,	// Set the tile has been seen by the player
+	Footstep,		// Set if the player has walked on the tile
+	Bit3,
+	Bit4,
+	Bit5,
+	Bit6,
+	Bit7,
+	Bit8
+};
+
+
 /// Summary:
 /// This class handles the management of the automapper.
 /// It doesn't deal with the tileset(s), just the maps themselves.
@@ -39,17 +54,17 @@ public:
 	void DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RECT* mapRect);
 	void UpdateAvatarPositionOnAutoMap(UINT x, UINT y);
 	void ClearMapArea();
+	void RedrawMapArea();
 	void CreateNewTileSpriteMap();
 	LPBYTE GetCurrentGameMap() { return MemGetMainPtr(GAMEMAP_START_MEM); };
 
-	void displayTransition(bool showTransition);
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();
 	bool LoadTextureFromMemory(const unsigned char* image_data, Microsoft::WRL::ComPtr <ID3D12Resource>* out_tex_resource,
 		DXGI_FORMAT tex_format, int width, int height);
 
 
-	void setShowTransition(bool showTransition);
+	void SetShowTransition(bool showTransition);
 
 	// public singleton code
 	static AutoMap* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,
@@ -91,13 +106,14 @@ private:
 	D3D12_SUBRESOURCE_DATA m_textureDataMap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_textureUploadHeapMap;
 
-	std::vector <std::vector<UINT8>> m_bbufCurrentMapTiles;	// All mapPos -> tileid for the whole map
-															// to ensure we don't redraw what's already there
-															// The number of arrays will be equal to the backbuffer count
-
 	RECT m_currentMapRect;	// Rect of the currently drawn map, as requested by the game engine
+
+	std::vector <std::vector<UINT8>> m_bbufCurrentMapTiles;	// All tileid for the whole map ordered by mapPos
+															// to ensure we don't redraw what's already there
+															// The number of vectors will be equal to the backbuffer count
+
 	std::vector<std::vector<UINT8>> m_bbufFogOfWarTiles;	// Info about the user having seen map tiles, walked on them...
-															// The number of arrays will be equal to the backbuffer count
+															// The number of vectors will be equal to the backbuffer count
 
 };
 

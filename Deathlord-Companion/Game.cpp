@@ -534,6 +534,7 @@ void Game::OnWindowSizeChanged(LONG width, LONG height)
     {
         CreateWindowSizeDependentResources();
     }
+    AutoMap::GetInstance()->RedrawMapArea();
     UpdateGamelinkVertexData(gamelinkWidth, gamelinkHeight,
 	    (float)GetFrameBufferWidth() / (float)origW, (float)GetFrameBufferHeight() / (float)origH);
 }
