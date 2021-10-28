@@ -316,18 +316,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message)
 	{
 	case WM_PAINT:
-		if (game)
-		{
-			// redraw while the window is being resized or get artifacts
-			game->Tick();
-		}
-		else
-		{
-			PAINTSTRUCT ps;
-			(void)BeginPaint(hWnd, &ps);
-			// Don't bother filling the window background as it'll be all replaced by Direct3D
-			EndPaint(hWnd, &ps);
-		}
+		//PAINTSTRUCT ps;
+		//(void)BeginPaint(hWnd, &ps);
+		// Don't bother filling the window background as it'll be all replaced by Direct3D
+		//EndPaint(hWnd, &ps);
 		break;
 
 	case WM_MOVE:
@@ -398,6 +390,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_GETMINMAXINFO:
 		if (lParam)
 		{
+			// Set the minimum size to be the initial window width
 			auto info = reinterpret_cast<MINMAXINFO*>(lParam);
 			g_game->GetBaseSize(m_initialWindowWidth, m_initialWindowHeight);
 			m_initialWindowWidth += m_extraWindowWidth;
