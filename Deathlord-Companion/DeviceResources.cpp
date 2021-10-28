@@ -4,6 +4,7 @@
 
 #include "pch.h"
 #include "DeviceResources.h"
+#include "Emulator/AppleWin.h"
 
 using namespace DirectX;
 using namespace DX;
@@ -43,8 +44,6 @@ DeviceResources::DeviceResources(
         m_rtvDescriptorSize(0),
         m_screenViewport{},
         m_gamelinkViewport{},
-        m_gamelinkWidth(0.f),
-        m_gamelinkHeight(0.f),
         m_scissorRect{},
         m_backBufferFormat(backBufferFormat),
         m_depthBufferFormat(depthBufferFormat),
@@ -423,8 +422,8 @@ void DeviceResources::CreateWindowSizeDependentResources()
     m_screenViewport.MaxDepth = D3D12_MAX_DEPTH;
 
     m_gamelinkViewport.TopLeftX = m_gamelinkViewport.TopLeftY = 0.f;
-    m_gamelinkViewport.Width = m_gamelinkWidth;
-    m_gamelinkViewport.Height = m_gamelinkHeight;
+    m_gamelinkViewport.Width = GetFrameBufferWidth();
+    m_gamelinkViewport.Height = GetFrameBufferHeight();
     m_gamelinkViewport.MinDepth = D3D12_MIN_DEPTH;
     m_gamelinkViewport.MaxDepth = D3D12_MAX_DEPTH;
 
@@ -434,12 +433,9 @@ void DeviceResources::CreateWindowSizeDependentResources()
 }
 
 // This method is called when the Win32 window is created (or re-created).
-//void DeviceResources::SetWindow(HWND window, int width, int height, float gamelinkWidth, float gamelinkHeight) noexcept
 void DeviceResources::SetWindow(HWND window, int width, int height) noexcept
 {
     m_window = window;
-    //m_gamelinkWidth = gamelinkWidth;
-    //m_gamelinkHeight = gamelinkHeight;
 
     m_outputSize.left = m_outputSize.top = 0;
     m_outputSize.right = width;
@@ -448,7 +444,6 @@ void DeviceResources::SetWindow(HWND window, int width, int height) noexcept
 
 // This method is called when the Win32 window changes size.
 // returns the output size rect
-//bool DeviceResources::WindowSizeChanged(_Out_ RECT* outputSize, const RECT* newSize, float gamelinkWidth, float gamelinkHeight)
 bool DeviceResources::WindowSizeChanged(int width, int height)
 {
 	RECT newRc;
@@ -469,26 +464,6 @@ bool DeviceResources::WindowSizeChanged(int width, int height)
 	m_outputSize = newRc;
 	CreateWindowSizeDependentResources();
 	return true;
-    /*
-    m_gamelinkWidth = gamelinkWidth;
-    m_gamelinkHeight = gamelinkHeight;
-    if (newSize->left == m_outputSize.left
-        && newSize->top == m_outputSize.top
-        && newSize->right == m_outputSize.right
-        && newSize->bottom == m_outputSize.bottom)
-    {
-        // Handle color space settings for HDR
-        UpdateColorSpace();
-
-        CopyRect(outputSize, newSize);
-        return false;
-    }
-
-    CopyRect(&m_outputSize, newSize);
-    CreateWindowSizeDependentResources();
-    CopyRect(outputSize, newSize);
-    return true;
-    */
 }
 
 // Recreate all device resources and set them back to the current state.

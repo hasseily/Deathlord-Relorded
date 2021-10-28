@@ -115,8 +115,6 @@ namespace DX
         D3D12_VIEWPORT                                      m_screenViewport;
         D3D12_VIEWPORT                                      m_gamelinkViewport;
         D3D12_RECT                                          m_scissorRect;
-        float                                               m_gamelinkWidth;
-        float                                               m_gamelinkHeight;
 
         // Direct3D properties.
         DXGI_FORMAT                                         m_backBufferFormat;
