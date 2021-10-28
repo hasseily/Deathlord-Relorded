@@ -38,6 +38,7 @@ void AutoMap::ClearMapArea()
 
 void AutoMap::ForceRedrawMapArea()
 {
+	// TODO: unnecessary when we redraw the whole screen every time anyway
 	for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
 	{
 		for (size_t mapPos = 0; mapPos < m_bbufCurrentMapTiles[i].size(); mapPos++)
@@ -96,7 +97,7 @@ void AutoMap::SetShowTransition(bool showTransition)
 	// We'll set the new map name later when we draw it
 	// We don't know yet if the memory is ready for that
 	ClearMapArea();
-	ForceRedrawMapArea();
+	// ForceRedrawMapArea();
 	m_currentMapUniqueName = "";
 }
 
@@ -104,8 +105,6 @@ void AutoMap::SetShowTransition(bool showTransition)
 #pragma warning(disable : 26451)
 void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 {
-	// TODO
-	// Draw an avatar "@" marker on the tile?
 	UINT cleanX = (x < MAP_WIDTH  ? x : MAP_WIDTH - 1);
 	UINT cleanY = (y < MAP_HEIGHT ? y : MAP_HEIGHT - 1);
 	if (m_avatarPosition.x == cleanX && m_avatarPosition.x == cleanY)
@@ -208,21 +207,25 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 		{
 			//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile on screen\n")).c_str());
 			
+			// TODO: This is disabled as we redraw everything every frame
 			// Only redraw the current backbuffer when a tile changes, as well as forbid ClearRenderTargetView
-			if (m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] == (UINT8)mapMemPtr[mapPos])    // it's been drawn
-				continue;
+			// if (m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] == (UINT8)mapMemPtr[mapPos])    // it's been drawn
+			//	continue;
 
 			// Now check if the tile has been seen before. Otherwise set it to the black tile which is always
 			// the first tile in the tileset
 
 			RECT spriteRect;
+			bool shouldDraw = true;
 			if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
 			{
 				spriteRect = tileset->tileSpritePositions.at(mapMemPtr[mapPos]);
 			}
 			else
 			{
+				// TODO: Since we're clearing the whole viewport every frame, no need to draw the black tile
 				spriteRect = tileset->tileSpritePositions.at(0);
+				shouldDraw = false;
 			}
 
 			XMFLOAT2 spriteOrigin(0, 0);
@@ -232,16 +235,12 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 				m_currentMapRect.left + (posX * PNGTW * mapScale),
 				m_currentMapRect.top + (posY * PNGTH * mapScale)
 			);
-			spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
-				tilePosInMap, &spriteRect, Colors::White, 0.f, spriteOrigin, mapScale);
+			if (shouldDraw)
+			{
+				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
+					tilePosInMap, &spriteRect, Colors::White, 0.f, spriteOrigin, mapScale);
+			}
 			m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] = (UINT8)mapMemPtr[mapPos];
-			/*
-			char _buf[500];
-			sprintf_s(_buf, 500, "Map Pos %4d has values %2d in vector, and %2d in memory\n",
-				m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos], (UINT8)mapMemPtr[mapPos]);
-			OutputDebugStringA(_buf);
-			*/
-			//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile DRAWN on screen\n")).c_str());
 
 			// now draw the avatar
 			if (posX == m_avatarPosition.x && posY == m_avatarPosition.y)

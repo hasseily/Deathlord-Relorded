@@ -212,6 +212,7 @@ void MemoryTriggers::DelayedTrigger_UpdateAvatarPositionOnAutomap(UINT8 memloc)
 {
 	AutoMap* aM = AutoMap::GetInstance();
 	aM->UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
+    aM->ForceRedrawMapArea();
 }
 
 #pragma endregion

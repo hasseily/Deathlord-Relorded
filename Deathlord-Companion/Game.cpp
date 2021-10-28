@@ -345,45 +345,6 @@ void Game::Render()
         int origW, origH;
         GetBaseSize(origW, origH);
 
-        // Here clear the sidebars
-		m_lineEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
-			clientRect.bottom - clientRect.top, 0, 0, 1));
-		m_lineEffectTriangles->Apply(commandList);
-        m_primitiveBatchTriangles->Begin(commandList);
-        for each (auto sb in m_sbM.sidebars)
-        {
-            // shifted sidebar position if the window is different size than original size
-            XMFLOAT2 shiftedPosition = sb.position;
-            switch (sb.type)
-            {
-            case SidebarTypes::Right:
-                shiftedPosition.x += clientRect.right - clientRect.left - origW;
-                break;
-            case SidebarTypes::Bottom:
-                shiftedPosition.y += clientRect.bottom - clientRect.top - origH;
-                break;
-            default:
-                break;
-            }
-
-            // first clear the sidebar. We need to know its rectangle
-            XMFLOAT3 sb_topleft = XMFLOAT3(shiftedPosition.x, shiftedPosition.y, 0);
-            XMFLOAT3 sb_topright = sb_topleft;
-            XMFLOAT3 sb_bottomleft = sb_topleft;
-            sb_bottomleft.y += sb.height;
-            XMFLOAT3 sb_bottomright = sb_bottomleft;
-            sb_bottomright.x += sb.width;
-            m_primitiveBatchTriangles->DrawTriangle(
-                VertexPositionColor(sb_topleft, (XMFLOAT4)Colors::Black),
-                VertexPositionColor(sb_topright, (XMFLOAT4)Colors::Black),
-                VertexPositionColor(sb_bottomleft, (XMFLOAT4)Colors::Black));
-            m_primitiveBatchTriangles->DrawTriangle(
-                VertexPositionColor(sb_topleft, (XMFLOAT4)Colors::Black),
-                VertexPositionColor(sb_topright, (XMFLOAT4)Colors::Black),
-                VertexPositionColor(sb_bottomright, (XMFLOAT4)Colors::Black));
-        }
-        m_primitiveBatchTriangles->End();
-
         // Now time to draw the text and lines
 		m_lineEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
 			clientRect.bottom - clientRect.top, 0, 0, 1));
@@ -491,9 +452,9 @@ void Game::Clear()
     auto dsvDescriptor = m_deviceResources->GetDepthStencilView();
 
     commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &dsvDescriptor);
-    // Do not clear the rendertargetview, we will manually overdraw what has been modified
- //   commandList->ClearRenderTargetView(rtvDescriptor, Colors::Black, 0, nullptr);
- //   commandList->ClearDepthStencilView(dsvDescriptor, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    // TODO: we do not manually overdraw what has been modified, we redraw every frame completely every time
+    commandList->ClearRenderTargetView(rtvDescriptor, Colors::Black, 0, nullptr);
+    commandList->ClearDepthStencilView(dsvDescriptor, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
     // Set the viewports and scissor rects.
     // Set the Gamelink viewport as the first default viewport for the geometry shaders to use
@@ -860,17 +821,6 @@ void Game::CreateDeviceDependentResources()
     m_lineEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
 	m_primitiveBatchLines = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
 
-	EffectPipelineStateDescription epd2(
-		&VertexPositionColor::InputLayout,
-		CommonStates::Opaque,
-		CommonStates::DepthDefault,
-		CommonStates::CullNone,
-		rtState,
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
-	m_lineEffectTriangles = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epd2);
-	m_lineEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
-	m_primitiveBatchTriangles = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
-
     /// <summary>
     /// Finish
     /// </summary>
@@ -973,7 +923,6 @@ void Game::UpdateGamelinkVertexData(int width, int height, float wRatio, float h
 
     // And update the projection for line drawing
     m_lineEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
-	m_lineEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
 
 }
 
