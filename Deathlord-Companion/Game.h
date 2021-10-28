@@ -78,8 +78,7 @@ public:
     void OnDeactivated();
     void OnSuspending();
     void OnResuming();
-	void OnWindowChanged();                             // we know the client rect changed but we don't know what changed
-    void OnWindowMoved(LONG cR_x, LONG cR_y);           // pass in origin of client rect
+    void OnWindowMoved();
 	void OnWindowSizeChanged(LONG width, LONG height);  // pass in new width and height of client rect
 
     // Menu commands
@@ -124,7 +123,7 @@ private:
     // (i.e. how much of the total width|height the vertex should fill, 1.f being full width|height)
     void UpdateGamelinkVertexData(int width, int height, float wRatio, float hRatio);
 
-	static float m_clientFrameScale;
+	static float m_clientFrameScale;    // TODO: unused
     AutoMap* m_automap;
 
     // Device resources.

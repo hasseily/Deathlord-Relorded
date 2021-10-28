@@ -38,8 +38,8 @@ namespace DX
 
         void CreateDeviceResources();
         void CreateWindowSizeDependentResources();
-        void SetWindow(HWND window, int width, int height, float gamelinkWidth, float gamelinkHeight) noexcept;
-        bool WindowSizeChanged(_Out_ RECT* outputSize, const RECT* newSize, float gamelinkWidth, float gamelinkHeight);
+        void SetWindow(HWND window, int width, int height) noexcept;
+        bool WindowSizeChanged(int width, int height);
         void HandleDeviceLost();
         void RegisterDeviceNotify(IDeviceNotify* deviceNotify) noexcept { m_deviceNotify = deviceNotify; }
         void Prepare(D3D12_RESOURCE_STATES beforeState = D3D12_RESOURCE_STATE_PRESENT,

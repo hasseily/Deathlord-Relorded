@@ -334,7 +334,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// Gives UPPER LEFT CORNER of client Rect
 		if (game)
 		{
-			game->OnWindowMoved(LOWORD(lParam), HIWORD(lParam));
+			game->OnWindowMoved();
 		}
 		break;
 
@@ -370,12 +370,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_SIZING:
 		// Force the size to have a fixed aspect ratio
 	{
-		game->shouldRender = false;
+		/*
 		WINDOWINFO wi;
 		wi.cbSize = sizeof(WINDOWINFO);
 		GetWindowInfo(hWnd, &wi);
 		m_extraWindowWidth = (wi.rcWindow.right - wi.rcClient.right) + (wi.rcClient.left - wi.rcWindow.left);
 		m_extraWindowHeight = (wi.rcWindow.bottom - wi.rcClient.bottom) + (wi.rcClient.top - wi.rcWindow.top);
+		*/
 		/*
 		auto* pWR = (RECT*)lParam;  // Wanted Rect
 		float clientScale = (float)(wi.rcClient.right - wi.rcClient.left) / (float)(wi.rcClient.bottom - wi.rcClient.top);
@@ -411,7 +412,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		sprintf_s(buf, "In Main WM_SIZING Left %d, Top %d, Right %d, Bottom %d, extraW %d, extraH %d, \n", pWR->left, pWR->top, pWR->right, pWR->bottom, m_extraWindowWidth, m_extraWindowHeight);
 		OutputDebugStringA(buf);
 		*/
-		game->shouldRender = true;
 		break;
 	}
 

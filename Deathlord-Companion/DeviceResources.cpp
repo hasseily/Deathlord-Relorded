@@ -434,11 +434,12 @@ void DeviceResources::CreateWindowSizeDependentResources()
 }
 
 // This method is called when the Win32 window is created (or re-created).
-void DeviceResources::SetWindow(HWND window, int width, int height, float gamelinkWidth, float gamelinkHeight) noexcept
+//void DeviceResources::SetWindow(HWND window, int width, int height, float gamelinkWidth, float gamelinkHeight) noexcept
+void DeviceResources::SetWindow(HWND window, int width, int height) noexcept
 {
     m_window = window;
-    m_gamelinkWidth = gamelinkWidth;
-    m_gamelinkHeight = gamelinkHeight;
+    //m_gamelinkWidth = gamelinkWidth;
+    //m_gamelinkHeight = gamelinkHeight;
 
     m_outputSize.left = m_outputSize.top = 0;
     m_outputSize.right = width;
@@ -447,8 +448,28 @@ void DeviceResources::SetWindow(HWND window, int width, int height, float gameli
 
 // This method is called when the Win32 window changes size.
 // returns the output size rect
-bool DeviceResources::WindowSizeChanged(_Out_ RECT* outputSize, const RECT* newSize, float gamelinkWidth, float gamelinkHeight)
+//bool DeviceResources::WindowSizeChanged(_Out_ RECT* outputSize, const RECT* newSize, float gamelinkWidth, float gamelinkHeight)
+bool DeviceResources::WindowSizeChanged(int width, int height)
 {
+	RECT newRc;
+	newRc.left = newRc.top = 0;
+	newRc.right = width;
+	newRc.bottom = height;
+	if (newRc.left == m_outputSize.left
+		&& newRc.top == m_outputSize.top
+		&& newRc.right == m_outputSize.right
+		&& newRc.bottom == m_outputSize.bottom)
+	{
+		// Handle color space settings for HDR
+		UpdateColorSpace();
+
+		return false;
+	}
+
+	m_outputSize = newRc;
+	CreateWindowSizeDependentResources();
+	return true;
+    /*
     m_gamelinkWidth = gamelinkWidth;
     m_gamelinkHeight = gamelinkHeight;
     if (newSize->left == m_outputSize.left
@@ -467,6 +488,7 @@ bool DeviceResources::WindowSizeChanged(_Out_ RECT* outputSize, const RECT* newS
     CreateWindowSizeDependentResources();
     CopyRect(outputSize, newSize);
     return true;
+    */
 }
 
 // Recreate all device resources and set them back to the current state.

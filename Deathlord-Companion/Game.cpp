@@ -39,7 +39,6 @@ static std::wstring last_logged_line;
 static UINT64 tickOfLastRender = 0;
 
 static Vector2 m_vector2Zero = { 0.f, 0.f };
-static RECT m_cachedClientRect;
 
 static MemoryTriggers* m_trigger;
 UINT64	g_debug_video_field = 0;
@@ -105,9 +104,8 @@ void Game::Initialize(HWND window, int width, int height)
 
     shouldRender = true;
 
-    GetClientRect(window, &m_cachedClientRect);
     m_clientFrameScale = 1.f;
-    m_deviceResources->SetWindow(window, width, height, (float)GetFrameBufferWidth(), (float)GetFrameBufferHeight());
+    m_deviceResources->SetWindow(window, width, height);
 
     m_deviceResources->CreateDeviceResources();
     CreateDeviceDependentResources();
@@ -287,13 +285,13 @@ void Game::Render()
 	if (m_previousAppMode != g_nAppMode)
 	{
         m_previousAppMode = g_nAppMode;
-		OnWindowChanged();
+		OnWindowMoved();
 	}
 
     // change in video layout Normal/Flipped
     if (m_previousLayout != m_currentLayout)
     {
-        OnWindowChanged();
+        OnWindowMoved();
     }
 
     // Only render 30 times a second. No need to render more often.
@@ -304,7 +302,6 @@ void Game::Render()
     if (ticksSinceLastRender > m_timer.TicksPerSecond / MAX_RENDERED_FRAMES_PER_SECOND)
     {
         tickOfLastRender = m_timer.GetTotalTicks();
-        GetClientRect(m_window, &m_cachedClientRect);
 
         // First update the sidebar, it doesn't need to be updated until right before the render
         // Only allow x microseconds for updates of sidebar every render
@@ -346,7 +343,9 @@ void Game::Render()
 		// TODO: Do most of this outside of render, much of it is fixed between renders
 		int origW, origH;
 		GetBaseSize(origW, origH);
-		auto mmOrigin = Vector2(m_cachedClientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
+		RECT clientRect;
+		GetClientRect(m_window, &clientRect);
+		auto mmOrigin = Vector2(clientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
 		RECT mapRectInViewport = {
 			mmOrigin.x,
 			mmOrigin.y,
@@ -359,8 +358,8 @@ void Game::Render()
         // Drawing text
         m_spriteBatch->Begin(commandList);
 
-		m_lineEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, m_cachedClientRect.right - m_cachedClientRect.left, 
-            m_cachedClientRect.bottom - m_cachedClientRect.top, 0, 0, 1));
+		m_lineEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
+            clientRect.bottom - clientRect.top, 0, 0, 1));
         m_lineEffect->Apply(commandList);
         m_primitiveBatch->Begin(commandList);
         for each (auto sb in m_sbM.sidebars)
@@ -370,10 +369,10 @@ void Game::Render()
 			switch (sb.type)
 			{
             case SidebarTypes::Right:
-				shiftedPosition.x += m_cachedClientRect.right - m_cachedClientRect.left - origW;
+				shiftedPosition.x += clientRect.right - clientRect.left - origW;
                 break;
             case SidebarTypes::Bottom:
-				shiftedPosition.y += m_cachedClientRect.bottom - m_cachedClientRect.top - origH;
+				shiftedPosition.y += clientRect.bottom - clientRect.top - origH;
                 break;
 			default:
 				break;
@@ -398,7 +397,7 @@ void Game::Render()
             switch (sb.type)
             {
             case SidebarTypes::Right:
-                lend.y = lstart.y + m_cachedClientRect.bottom - m_cachedClientRect.top;
+                lend.y = lstart.y + clientRect.bottom - clientRect.top;
                 break;
             case SidebarTypes::Bottom:
 				lend.x = lstart.x + GetFrameBufferWidth();
@@ -490,55 +489,32 @@ void Game::OnResuming()
     shouldRender = true;
 }
 
-void Game::OnWindowChanged()
+void Game::OnWindowMoved()
 {
-	// Something's changed, let's update pos and size
-    RECT cR;
-    GetClientRect(m_window, &cR);
-    OnWindowMoved(cR.left, cR.top);
-	OnWindowSizeChanged(cR.right-cR.left, cR.bottom-cR.top);
-}
-
-void Game::OnWindowMoved(LONG x, LONG y)
-{
-    LONG width = m_cachedClientRect.right - m_cachedClientRect.left;
-    LONG height = m_cachedClientRect.bottom - m_cachedClientRect.top;
-    m_cachedClientRect.left = x;
-    m_cachedClientRect.right = x + width;
-	m_cachedClientRect.top = y;
-	m_cachedClientRect.bottom = y + height;
+	auto r = m_deviceResources->GetOutputSize();
+	m_deviceResources->WindowSizeChanged(r.right, r.bottom);
 }
 
 void Game::OnWindowSizeChanged(LONG width, LONG height)
 {
-    m_cachedClientRect.right = m_cachedClientRect.left + width;
-	m_cachedClientRect.bottom = m_cachedClientRect.top + height;
-    RECT outSize;
-    int origW, origH;
-    GetBaseSize(origW, origH);
-    float scaleW = (float)(width) / (float)origW;
-    float scaleH = (float)(height) / (float)origH;
-    
-//     char buf[300];
-//     snprintf(buf, 300, "Scales are; %.2f , %.2f\n", scaleW, scaleH);
-//     OutputDebugStringA(buf);
-    
-    float gamelinkWidth, gamelinkHeight;
-    if (scaleW > scaleH)
-        scaleW = scaleH;
-    else
-        scaleH = scaleW;
-	gamelinkWidth = scaleW * (float)GetFrameBufferWidth();
-	gamelinkHeight = scaleH * (float)GetFrameBufferHeight();
+	if (!m_deviceResources->WindowSizeChanged(width, height))
+		return;
 
-    // don't check return status of the below because we still want to recreate the vertex data
-    if (m_deviceResources->WindowSizeChanged(&outSize, &m_cachedClientRect, gamelinkWidth, gamelinkHeight))
+    int bw, bh;
+    GetBaseSize(bw, bh);
+    int newBWidth, newBHeight;
+    float _scale = (float)width / (float)bw;
+    if (((float)bw / (float)bh) < ((float)width / (float)height))
     {
-        CreateWindowSizeDependentResources();
+        _scale = (float)height / (float)bh;
     }
-    AutoMap::GetInstance()->ForceRedrawMapArea();
-    UpdateGamelinkVertexData(gamelinkWidth, gamelinkHeight,
-	    (float)GetFrameBufferWidth() / (float)origW, (float)GetFrameBufferHeight() / (float)origH);
+    newBWidth = GetFrameBufferWidth() * _scale;
+    newBHeight = GetFrameBufferHeight() * _scale;
+
+	UpdateGamelinkVertexData(width, height,
+        (float)newBWidth / (float)width, (float)newBHeight / (float)height);
+
+	CreateWindowSizeDependentResources();
 }
 
 #pragma endregion
