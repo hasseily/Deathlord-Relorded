@@ -6,13 +6,14 @@
 enum class DelayedTriggersFunction
 {
 	PARSE_TILES,
+	UPDATE_XY,
 	COUNT
 };
 
 class MemoryTriggers	// Singleton
 {
 public:
-	float intervalPollMemory = 0.3f;		// default interval (seconds) between polling memory	
+	float intervalPollMemory = 0.1f;		// default interval (seconds) between polling memory	
 	float intervalDelayedTriggers = 0.1f;	// default interval (seconds) between firing triggers
 
 
@@ -58,6 +59,7 @@ private:
 	void DelayedTriggerInsert(DelayedTriggersFunction funcId, UINT64 delayInMilliSeconds);
 	// Poll Delayed Trigger Functions
 	void DelayedTrigger_ParseTiles(UINT8 memloc);
+	void DelayedTrigger_UpdateAvatarPositionOnAutomap(UINT8 memloc);
 
 	float timeSinceMemoryPolled = 0;
 	float timeSinceTriggersFired = 0;
@@ -83,6 +85,7 @@ private:
 		memPollMap[MAP_YPOS] = &MemoryTriggers::PollChanged_YPos;
 
 		delayedTriggerFuncIDs[DelayedTriggersFunction::PARSE_TILES] = &MemoryTriggers::DelayedTrigger_ParseTiles;
+		delayedTriggerFuncIDs[DelayedTriggersFunction::UPDATE_XY] = &MemoryTriggers::DelayedTrigger_UpdateAvatarPositionOnAutomap;
 	}
 };
 

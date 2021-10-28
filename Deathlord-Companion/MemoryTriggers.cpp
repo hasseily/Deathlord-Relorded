@@ -76,7 +76,8 @@ void MemoryTriggers::PollChanged_StartedTransition(UINT8 oldVal)
     }
     if (isInTransition)
     {
-		AutoMap* aM = AutoMap::GetInstance();
+		OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_TRANSITION_BEGIN)[0]) + L" Started transition!\n").c_str());
+        AutoMap* aM = AutoMap::GetInstance();
 		aM->SetShowTransition(isInTransition);
     }
 }
@@ -109,15 +110,29 @@ void MemoryTriggers::PollChanged_Floor(UINT8 oldVal)
 
 void MemoryTriggers::PollChanged_XPos(UINT8 oldVal)
 {
-    //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" XPos changed!\n").c_str());
+    // OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_XPOS)[0]) + L" XPos changed!\n").c_str());
+    if ((MemGetMainPtr(MAP_XPOS)[0] - oldVal) > 2)
+    {
+        // Special case when the person enters a town or other place from the overland map
+        // The game first updates the XY and then the map. We need to give enoug time for the map to update
+		DelayedTriggerInsert(DelayedTriggersFunction::UPDATE_XY, 300);
+        return;
+    }
     AutoMap* aM = AutoMap::GetInstance();
     aM->UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
 }
 
 void MemoryTriggers::PollChanged_YPos(UINT8 oldVal)
 {
-    //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" YPos changed!\n").c_str());
-	AutoMap* aM = AutoMap::GetInstance();
+    // OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_YPOS)[0]) + L" YPos changed!\n").c_str());
+	if ((MemGetMainPtr(MAP_YPOS)[0] - oldVal) > 2)
+	{
+		// Special case when the person enters a town or other place from the overland map
+		// The game first updates the XY and then the map. We need to give enoug time for the map to update
+		DelayedTriggerInsert(DelayedTriggersFunction::UPDATE_XY, 300);
+		return;
+	}
+    AutoMap* aM = AutoMap::GetInstance();
 	aM->UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
 }
 
@@ -157,6 +172,7 @@ void MemoryTriggers::DelayedTriggersProcess()
 {
     if (delayedTriggerMap.empty())
         return;
+    std::vector<DelayedTriggersFunction> keysToDelete;
     for (auto it = delayedTriggerMap.begin(); it != delayedTriggerMap.end();)
     {
         float currentS = p_timer->GetTotalSeconds();
@@ -165,14 +181,13 @@ void MemoryTriggers::DelayedTriggersProcess()
             // get the actual function pointer and call the function
             (this->*(delayedTriggerFuncIDs.at(it->first)))(UINT_MAX);
             // erase the entry from the map, we've called it
-            delayedTriggerMap.erase(it);
-            if (delayedTriggerMap.empty())
-                break;
+            keysToDelete.push_back(it->first);
         }
-        else
-        {
-            it++;
-        }
+		it++;
+    }
+    for each (auto keyToDel in keysToDelete)
+    {
+        delayedTriggerMap.erase(keyToDel);
     }
 }
 
@@ -190,6 +205,12 @@ void MemoryTriggers::DelayedTrigger_ParseTiles(UINT8 memloc)
             aM->CreateNewTileSpriteMap();
         aM->SetShowTransition(false);
     }
+}
+
+void MemoryTriggers::DelayedTrigger_UpdateAvatarPositionOnAutomap(UINT8 memloc)
+{
+	AutoMap* aM = AutoMap::GetInstance();
+	aM->UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
 }
 
 #pragma endregion
