@@ -111,6 +111,7 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 		return;
 
 	// Set to redraw the previous tile, and then the next one
+	// Also add the footstep to the new tile
 	for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
 	{
 		m_bbufCurrentMapTiles[i][m_avatarPosition.x + m_avatarPosition.y * MAP_WIDTH] = TILEID_REDRAW;
@@ -119,6 +120,7 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 	for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
 	{
 		m_bbufCurrentMapTiles[i][m_avatarPosition.x + m_avatarPosition.y * MAP_WIDTH] = TILEID_REDRAW;
+		m_bbufFogOfWarTiles[i][m_avatarPosition.x + m_avatarPosition.y * MAP_WIDTH] |= (1 << (UINT8)FogOfWarMarkers::Footstep);
 	}
 
 	// Now check the visible tiles around the avatar (tiles that aren't black)
@@ -242,12 +244,22 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 			}
 			m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] = (UINT8)mapMemPtr[mapPos];
 
-			// now draw the avatar
+			// now draw the avatar and footsteps
 			if (posX == m_avatarPosition.x && posY == m_avatarPosition.y)
 			{
 				auto gamePtr = GetGamePtr();
 				(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "@",
 					tilePosInMap, Colors::Yellow, 0.f, Vector2(0.f, 0.f), 1.f);
+			}
+			else // don't draw footsteps on the current tile but on anything else that has footsteps
+			{
+				if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (1 << (UINT8)FogOfWarMarkers::Footstep)) > 0)
+				{
+					auto gamePtr = GetGamePtr();
+					// draw a # in yellow at 0.5 alpha
+					(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "~",
+						tilePosInMap, { 1.0f, 1.0f, 0.0f, 0.2f }, 0.f, Vector2(0.f, 0.f), 1.f);
+				}
 			}
 		}
 	}
