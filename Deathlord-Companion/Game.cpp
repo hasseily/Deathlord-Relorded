@@ -325,8 +325,8 @@ void Game::Render()
         commandList->SetPipelineState(m_pipelineState.Get());
 
         // One unified heap for all resources
-		ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap() };
-		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
+        ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap() };
+        commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
 
         commandList->SetGraphicsRootDescriptorTable(0, m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video));
 
@@ -340,17 +340,56 @@ void Game::Render()
         // End drawing video texture
 
         // Drawing text
-		RECT clientRect;
-		GetClientRect(m_window, &clientRect);
-		int origW, origH;
-		GetBaseSize(origW, origH);
+        RECT clientRect;
+        GetClientRect(m_window, &clientRect);
+        int origW, origH;
+        GetBaseSize(origW, origH);
 
+        // Here clear the sidebars
+		m_lineEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
+			clientRect.bottom - clientRect.top, 0, 0, 1));
+		m_lineEffectTriangles->Apply(commandList);
+        m_primitiveBatchTriangles->Begin(commandList);
+        for each (auto sb in m_sbM.sidebars)
+        {
+            // shifted sidebar position if the window is different size than original size
+            XMFLOAT2 shiftedPosition = sb.position;
+            switch (sb.type)
+            {
+            case SidebarTypes::Right:
+                shiftedPosition.x += clientRect.right - clientRect.left - origW;
+                break;
+            case SidebarTypes::Bottom:
+                shiftedPosition.y += clientRect.bottom - clientRect.top - origH;
+                break;
+            default:
+                break;
+            }
+
+            // first clear the sidebar. We need to know its rectangle
+            XMFLOAT3 sb_topleft = XMFLOAT3(shiftedPosition.x, shiftedPosition.y, 0);
+            XMFLOAT3 sb_topright = sb_topleft;
+            XMFLOAT3 sb_bottomleft = sb_topleft;
+            sb_bottomleft.y += sb.height;
+            XMFLOAT3 sb_bottomright = sb_bottomleft;
+            sb_bottomright.x += sb.width;
+            m_primitiveBatchTriangles->DrawTriangle(
+                VertexPositionColor(sb_topleft, (XMFLOAT4)Colors::Black),
+                VertexPositionColor(sb_topright, (XMFLOAT4)Colors::Black),
+                VertexPositionColor(sb_bottomleft, (XMFLOAT4)Colors::Black));
+            m_primitiveBatchTriangles->DrawTriangle(
+                VertexPositionColor(sb_topleft, (XMFLOAT4)Colors::Black),
+                VertexPositionColor(sb_topright, (XMFLOAT4)Colors::Black),
+                VertexPositionColor(sb_bottomright, (XMFLOAT4)Colors::Black));
+        }
+        m_primitiveBatchTriangles->End();
+
+        // Now time to draw the text and lines
+		m_lineEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
+			clientRect.bottom - clientRect.top, 0, 0, 1));
+		m_lineEffectLines->Apply(commandList);
+		m_primitiveBatchLines->Begin(commandList);
 		m_spriteBatch->Begin(commandList);
-
-		m_lineEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
-            clientRect.bottom - clientRect.top, 0, 0, 1));
-        m_lineEffect->Apply(commandList);
-        m_primitiveBatch->Begin(commandList);
         for each (auto sb in m_sbM.sidebars)
         {
 
@@ -368,23 +407,6 @@ void Game::Render()
 				break;
 			}
 
-            // first clear the sidebar. We need to know its rectangle
-			XMFLOAT3 sb_topleft = XMFLOAT3(shiftedPosition.x, shiftedPosition.y, 0);
-            XMFLOAT3 sb_topright = sb_topleft;
-            XMFLOAT3 sb_bottomleft = sb_topleft;
-            sb_bottomleft.y += sb.height;
-			XMFLOAT3 sb_bottomright = sb_bottomleft;
-            sb_bottomright.x += sb.width;
-			m_primitiveBatch->DrawTriangle(
-				VertexPositionColor(sb_topleft, (XMFLOAT4)Colors::Black),
-				VertexPositionColor(sb_topright, (XMFLOAT4)Colors::Black),
-				VertexPositionColor(sb_bottomleft, (XMFLOAT4)Colors::Black));
-            m_primitiveBatch->DrawTriangle(
-                VertexPositionColor(sb_topleft, (XMFLOAT4)Colors::Black),
-                VertexPositionColor(sb_topright, (XMFLOAT4)Colors::Black),
-                VertexPositionColor(sb_bottomright, (XMFLOAT4)Colors::Black));
-
-
             // Draw each block's text
             // shift it by the amount the sidebar was shifted
             XMFLOAT2 sblockPosition;    // shifted block position
@@ -397,27 +419,26 @@ void Game::Render()
                     sblockPosition, b->color, 0.f, m_vector2Zero);
             }
 
-            // Now draw a delimiter line for the sidebar
-            // TODO: not sure if we want those delimiters
-            XMFLOAT3 lstart = XMFLOAT3(shiftedPosition.x, shiftedPosition.y, 0);
-            XMFLOAT3 lend = lstart;
-            switch (sb.type)
-            {
-            case SidebarTypes::Right:
-                lend.y = lstart.y + clientRect.bottom - clientRect.top;
-                break;
-            case SidebarTypes::Bottom:
+			// Now draw a delimiter line for the sidebar
+			// TODO: not sure if we want those delimiters
+			XMFLOAT3 lstart = XMFLOAT3(shiftedPosition.x, shiftedPosition.y, 0);
+			XMFLOAT3 lend = lstart;
+			switch (sb.type)
+			{
+			case SidebarTypes::Right:
+				lend.y = lstart.y + clientRect.bottom - clientRect.top;
+				break;
+			case SidebarTypes::Bottom:
 				lend.x = lstart.x + GetFrameBufferWidth();
-                break;
-            default:
-                break;
-            }
-            m_primitiveBatch->DrawLine(
-                VertexPositionColor(lstart, static_cast<XMFLOAT4>(Colors::DimGray)),
-                VertexPositionColor(lend, static_cast<XMFLOAT4>(Colors::Black))
-            );
+				break;
+			default:
+				break;
+			}
+			m_primitiveBatchLines->DrawLine(
+				VertexPositionColor(lstart, static_cast<XMFLOAT4>(Colors::DimGray)),
+				VertexPositionColor(lend, static_cast<XMFLOAT4>(Colors::Black))
+			);
         }
-		m_primitiveBatch->End();
 
 
 #ifdef _DEBUG
@@ -431,6 +452,7 @@ void Game::Render()
 
 #endif // _DEBUG
 
+		m_primitiveBatchLines->End();
 		m_spriteBatch->End();
 		// End drawing text
 
@@ -823,12 +845,10 @@ void Game::CreateDeviceDependentResources()
     }
 
     /// <summary>
-    /// Set up PrimitiveBatch to draw the lines that will delimit the sidebars
+    /// Set up PrimitiveBatch to draw the lines that will delimit the sidebars and the triangles to clear the sidebars
     /// https://github.com/microsoft/DirectXTK12/wiki/PrimitiveBatch
     /// </summary>
-
-    m_primitiveBatch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
-
+    /// 
     EffectPipelineStateDescription epd(
         &VertexPositionColor::InputLayout,
         CommonStates::Opaque,
@@ -836,10 +856,20 @@ void Game::CreateDeviceDependentResources()
         CommonStates::CullNone,
         rtState,
         D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
+    m_lineEffectLines = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epd);
+    m_lineEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
+	m_primitiveBatchLines = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
 
-    m_lineEffect = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epd);
-
-    m_lineEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
+	EffectPipelineStateDescription epd2(
+		&VertexPositionColor::InputLayout,
+		CommonStates::Opaque,
+		CommonStates::DepthDefault,
+		CommonStates::CullNone,
+		rtState,
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+	m_lineEffectTriangles = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epd2);
+	m_lineEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
+	m_primitiveBatchTriangles = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
 
     /// <summary>
     /// Finish
@@ -942,7 +972,8 @@ void Game::UpdateGamelinkVertexData(int width, int height, float wRatio, float h
     }
 
     // And update the projection for line drawing
-    m_lineEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
+    m_lineEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
+	m_lineEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
 
 }
 

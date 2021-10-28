@@ -150,9 +150,11 @@ private:
 
 	// fonts and primitives from dxtoolkit12 to draw lines
 	std::map<FontDescriptors, std::unique_ptr<SpriteFont>> m_spriteFonts;
-	std::unique_ptr<PrimitiveBatch<VertexPositionColor>> m_primitiveBatch;
-	std::unique_ptr<BasicEffect> m_lineEffect;
-    std::shared_ptr<DirectX::SpriteBatch> m_spriteBatch;
+	std::unique_ptr<PrimitiveBatch<VertexPositionColor>> m_primitiveBatchLines;
+	std::unique_ptr<PrimitiveBatch<VertexPositionColor>> m_primitiveBatchTriangles;
+	std::unique_ptr<BasicEffect> m_lineEffectLines;
+	std::unique_ptr<BasicEffect> m_lineEffectTriangles;
+	std::shared_ptr<DirectX::SpriteBatch> m_spriteBatch;
     DirectX::SimpleMath::Vector2 m_fontPos;
 
     // Direct3D 12 objects for AppleWin video texture
