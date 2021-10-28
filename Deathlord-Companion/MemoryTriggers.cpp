@@ -49,8 +49,8 @@ void MemoryTriggers::PollKeyMemoryLocations()
     {
         if (pMem[it->first] != memPollPreviousValues[it->first])    // memory value changed since last poll
         {
+			(this->*(it->second))(memPollPreviousValues[it->first]);
             memPollPreviousValues[it->first] = pMem[it->first];
-            (this->*(it->second))(it->first);
         }
     }
 }
@@ -87,35 +87,36 @@ void MemoryTriggers::PollChanged_InGameMap(UINT8 oldVal)
 	// OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" In game map!\n").c_str());
     if (MemGetMainPtr(MAP_IS_IN_GAME_MAP)[0] == 0xE5)     // User just got in game map
     {
-		DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 5000);
+		DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
     }
 }
 
 void MemoryTriggers::PollChanged_MapID(UINT8 oldVal)
 {
 	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapID changed!\n").c_str());
-    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 500);
+    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
 }
 
 void MemoryTriggers::PollChanged_MapType(UINT8 oldVal)
 {
     //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapType changed!\n").c_str());
-	DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 500);
+	DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
 }
 
 void MemoryTriggers::PollChanged_Floor(UINT8 oldVal)
 {
 	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" Floor changed!\n").c_str());
+	DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
 }
 
 void MemoryTriggers::PollChanged_XPos(UINT8 oldVal)
 {
-    // OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_XPOS)[0]) + L" XPos changed!\n").c_str());
+    OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_XPOS)[0]) + L" XPos changed from " + std::to_wstring(oldVal) + L"!\n").c_str());
     if ((MemGetMainPtr(MAP_XPOS)[0] - oldVal) > 2)
     {
         // Special case when the person enters a town or other place from the overland map
-        // The game first updates the XY and then the map. We need to give enoug time for the map to update
-		DelayedTriggerInsert(DelayedTriggersFunction::UPDATE_XY, 300);
+        // The game first updates the XY and then the map. We need to give enough time for the map to update
+		DelayedTriggerInsert(DelayedTriggersFunction::UPDATE_XY, 3000);
         return;
     }
     AutoMap* aM = AutoMap::GetInstance();
@@ -128,8 +129,8 @@ void MemoryTriggers::PollChanged_YPos(UINT8 oldVal)
 	if ((MemGetMainPtr(MAP_YPOS)[0] - oldVal) > 2)
 	{
 		// Special case when the person enters a town or other place from the overland map
-		// The game first updates the XY and then the map. We need to give enoug time for the map to update
-		DelayedTriggerInsert(DelayedTriggersFunction::UPDATE_XY, 300);
+		// The game first updates the XY and then the map. We need to give enough time for the map to update
+		DelayedTriggerInsert(DelayedTriggersFunction::UPDATE_XY, 3000);
 		return;
 	}
     AutoMap* aM = AutoMap::GetInstance();
