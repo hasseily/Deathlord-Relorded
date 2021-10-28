@@ -13,6 +13,10 @@ public:
 	bool useGameLink = false;
 	bool logCombat = false;
 
+	// contains markers data (8 bits per tile) for all maps
+	// saved in an independent file
+	std::map<std::string, std::vector<UINT8>>fogOfWarMarkers;
+
 	// I/O
 	int SaveToDisk();
 	int LoadFromDisk();

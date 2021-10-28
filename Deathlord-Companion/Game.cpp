@@ -69,6 +69,8 @@ Game::Game() noexcept(false)
 
 Game::~Game()
 {
+    if (g_isInGameMap)
+        AutoMap::GetInstance()->SaveCurrentMapInfo();
     if (m_deviceResources)
     {
         m_deviceResources->WaitForGpu();
@@ -534,7 +536,7 @@ void Game::OnWindowSizeChanged(LONG width, LONG height)
     {
         CreateWindowSizeDependentResources();
     }
-    AutoMap::GetInstance()->RedrawMapArea();
+    AutoMap::GetInstance()->ForceRedrawMapArea();
     UpdateGamelinkVertexData(gamelinkWidth, gamelinkHeight,
 	    (float)GetFrameBufferWidth() / (float)origW, (float)GetFrameBufferHeight() / (float)origH);
 }

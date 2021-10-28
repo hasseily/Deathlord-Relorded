@@ -122,7 +122,7 @@ LPBYTE TilesetCreator::parseTilesInHGR2()
 					pTilesetBuffer[iPNGCurrentByte] = b2;
 					pTilesetBuffer[iPNGCurrentByte + 1] = b1;
 					pTilesetBuffer[iPNGCurrentByte + 2] = b0;
-					pTilesetBuffer[iPNGCurrentByte + 3] = (char)0xFF;
+					pTilesetBuffer[iPNGCurrentByte + 3] = 0xFF;
 				}
 			}
 			++tilesParsed;

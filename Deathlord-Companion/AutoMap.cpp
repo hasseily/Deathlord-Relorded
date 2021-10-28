@@ -19,6 +19,7 @@ void AutoMap::Initialize()
 	bShowTransition = false;
 	m_avatarPosition = XMUINT2(0, 0);
 	m_currentMapRect = { 0,0,0,0 };
+	m_currentMapUniqueName = "";
 	CreateNewTileSpriteMap();
 	// Set up the arrays for all backbuffers
 	UINT bbCount = m_deviceResources->GetBackBufferCount();
@@ -31,20 +32,57 @@ void AutoMap::ClearMapArea()
 	for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
 	{
 		std::fill(m_bbufCurrentMapTiles[i].begin(), m_bbufCurrentMapTiles[i].end(), 0x00);
+		std::fill(m_bbufFogOfWarTiles[i].begin(), m_bbufFogOfWarTiles[i].end(), 0x00);
 	}
 }
 
-void AutoMap::RedrawMapArea()
+void AutoMap::ForceRedrawMapArea()
 {
 	for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
 	{
-		for (size_t mapPos = 0; mapPos < MAP_LENGTH; mapPos++)
+		for (size_t mapPos = 0; mapPos < m_bbufCurrentMapTiles[i].size(); mapPos++)
 		{
-			if ((m_bbufFogOfWarTiles[i][mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
-			{
-				m_bbufCurrentMapTiles[i][mapPos] = TILEID_REDRAW;
-			}
+			m_bbufCurrentMapTiles[i][mapPos] = TILEID_REDRAW;
 		}
+	}
+}
+
+void AutoMap::SaveCurrentMapInfo()
+{
+	if (m_currentMapUniqueName == "")
+		return;
+	m_fogOfWarMarkers[m_currentMapUniqueName] = m_bbufFogOfWarTiles[0];
+	g_nonVolatile.fogOfWarMarkers = m_fogOfWarMarkers;
+	g_nonVolatile.SaveToDisk();
+}
+
+void AutoMap::InitializeCurrentMapInfo()
+{
+	if (m_currentMapUniqueName == "")
+	{
+		auto memPtr = MemGetMainPtr(0);
+		char _buf[60];
+		if (memPtr[MAP_IS_OVERLAND] == 0x80)
+		{
+			sprintf_s(_buf, sizeof(_buf), "Overland_%.2d_%.2d", 
+				MemGetMainPtr(MAP_OVERLAND_X)[0],
+				MemGetMainPtr(MAP_OVERLAND_Y)[0]);
+		}
+		else {
+			sprintf_s(_buf, sizeof(_buf), "Map_%.3d_%.2d",
+				MemGetMainPtr(MAP_ID)[0],
+				MemGetMainPtr(MAP_LEVEL)[0]);
+		}
+		m_currentMapUniqueName = std::string(_buf);
+		auto markers = m_fogOfWarMarkers[m_currentMapUniqueName];
+		if (markers.size() < MAP_LENGTH)
+		{
+			// Incorrect size, it was probably just initialized to a 0 size
+			// reset it
+			markers.resize(MAP_LENGTH, 0);
+		}
+		for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
+			m_bbufFogOfWarTiles[i] = markers;
 	}
 }
 
@@ -53,8 +91,13 @@ void AutoMap::SetShowTransition(bool showTransition)
 	if (showTransition == bShowTransition)
 		return;
 	bShowTransition = showTransition;
+	// Save the old map
+	SaveCurrentMapInfo();
+	// We'll set the new map name later when we draw it
+	// We don't know yet if the memory is ready for that
 	ClearMapArea();
-	RedrawMapArea();
+	ForceRedrawMapArea();
+	m_currentMapUniqueName = "";
 }
 
 #pragma warning(push)
@@ -121,7 +164,7 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 
 void AutoMap::CreateNewTileSpriteMap()
 {
-	// The tile spritemap needs to update at every level change
+	// The tile spritemap will automatically update from memory onto the GPU texture, just like the AppleWin video buffer
 	// Sprite sheet only exists when the player is in-game! Make sure this is called when player goes in game
 	// And make sure the map only renders when in game.
 	auto tileset = TilesetCreator::GetInstance();
@@ -147,6 +190,9 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 	UINT currentBackBufferIdx = m_deviceResources->GetSwapChain()->GetCurrentBackBufferIndex();
 	CopyRect(&m_currentMapRect, mapRect);
 	auto tileset = TilesetCreator::GetInstance();
+
+	// Set the new map info if necessary
+	InitializeCurrentMapInfo();
 
 	// Now draw the automap tiles
 	if (g_isInGameMap && m_autoMapTexture != NULL)

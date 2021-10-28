@@ -27,7 +27,14 @@ static nlohmann::json nv_json = R"(
   }
 )"_json;
 
+static nlohmann::json nvmarkers_json = R"(
+	{
+		"fogOfWarMarkers":	  {}
+	}
+)"_json;
+
 static std::string configfilename = "deathlordcompanion.conf";
+static std::string markersfilename = "dcmarkers.data";	// contains markers data (8 bits per tile) for all maps
 
 int NonVolatile::SaveToDisk()
 {
@@ -53,7 +60,14 @@ int NonVolatile::SaveToDisk()
 	std::ofstream out(configfilename);
 	out << std::setw(4) << nv_json << std::endl;
 	out.close();
-    return 0;
+
+	// save markers independently
+	nvmarkers_json["fogOfWarMarkers"] = fogOfWarMarkers;
+	out.open(markersfilename);
+	out << std::setw(0) << nvmarkers_json << std::endl;
+	out.close();
+
+	return 0;
 }
 
 int NonVolatile::LoadFromDisk()
@@ -65,6 +79,15 @@ int NonVolatile::LoadFromDisk()
 		in >> j;
 		in.close();
 		nv_json.merge_patch(j);
+	}
+	// load markers
+	j.clear();
+	in.open(markersfilename);
+	if (!in.fail())
+	{
+		in >> j;
+		in.close();
+		nvmarkers_json.merge_patch(j);
 	}
 
 	std::string _profilePath = nv_json["profilePath"].get<std::string>();
@@ -87,6 +110,9 @@ int NonVolatile::LoadFromDisk()
 	volumeSpeaker = nv_json["volumeSpeaker"].get<int>();
 	useGameLink = nv_json["useGameLink"].get<bool>();
 	logCombat = nv_json["logCombat"].get<bool>();
+
+	// markers
+	fogOfWarMarkers = nvmarkers_json["fogOfWarMarkers"].get<std::map<std::string, std::vector<UINT8>>>();
 
 	return 0;
 }

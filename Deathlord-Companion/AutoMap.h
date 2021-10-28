@@ -54,8 +54,10 @@ public:
 	void DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RECT* mapRect);
 	void UpdateAvatarPositionOnAutoMap(UINT x, UINT y);
 	void ClearMapArea();
-	void RedrawMapArea();
+	void ForceRedrawMapArea();
 	void CreateNewTileSpriteMap();
+	void SaveCurrentMapInfo();
+	void InitializeCurrentMapInfo();
 	LPBYTE GetCurrentGameMap() { return MemGetMainPtr(GAMEMAP_START_MEM); };
 
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
@@ -115,5 +117,7 @@ private:
 	std::vector<std::vector<UINT8>> m_bbufFogOfWarTiles;	// Info about the user having seen map tiles, walked on them...
 															// The number of vectors will be equal to the backbuffer count
 
+	std::string m_currentMapUniqueName;
+	std::map<std::string, std::vector<UINT8>>m_fogOfWarMarkers;
 };
 
