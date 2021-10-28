@@ -339,24 +339,13 @@ void Game::Render()
         commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
         // End drawing video texture
 
-        // Now draw automap
-		// TODO: Do most of this outside of render, much of it is fixed between renders
-		int origW, origH;
-		GetBaseSize(origW, origH);
+        // Drawing text
 		RECT clientRect;
 		GetClientRect(m_window, &clientRect);
-		auto mmOrigin = Vector2(clientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
-		RECT mapRectInViewport = {
-			mmOrigin.x,
-			mmOrigin.y,
-			mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
-			mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
-		};
-        m_automap->DrawAutoMap(m_spriteBatch, &mapRectInViewport);
-        // End drawing automap
+		int origW, origH;
+		GetBaseSize(origW, origH);
 
-        // Drawing text
-        m_spriteBatch->Begin(commandList);
+		m_spriteBatch->Begin(commandList);
 
 		m_lineEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
             clientRect.bottom - clientRect.top, 0, 0, 1));
@@ -364,19 +353,37 @@ void Game::Render()
         m_primitiveBatch->Begin(commandList);
         for each (auto sb in m_sbM.sidebars)
         {
-            // shifted sidebar position if the window is different size than original size
+
+			// shifted sidebar position if the window is different size than original size
 			XMFLOAT2 shiftedPosition = sb.position;
 			switch (sb.type)
 			{
-            case SidebarTypes::Right:
+			case SidebarTypes::Right:
 				shiftedPosition.x += clientRect.right - clientRect.left - origW;
-                break;
-            case SidebarTypes::Bottom:
+				break;
+			case SidebarTypes::Bottom:
 				shiftedPosition.y += clientRect.bottom - clientRect.top - origH;
-                break;
+				break;
 			default:
 				break;
 			}
+
+            // first clear the sidebar. We need to know its rectangle
+			XMFLOAT3 sb_topleft = XMFLOAT3(shiftedPosition.x, shiftedPosition.y, 0);
+            XMFLOAT3 sb_topright = sb_topleft;
+            XMFLOAT3 sb_bottomleft = sb_topleft;
+            sb_bottomleft.y += sb.height;
+			XMFLOAT3 sb_bottomright = sb_bottomleft;
+            sb_bottomright.x += sb.width;
+			m_primitiveBatch->DrawTriangle(
+				VertexPositionColor(sb_topleft, (XMFLOAT4)Colors::Black),
+				VertexPositionColor(sb_topright, (XMFLOAT4)Colors::Black),
+				VertexPositionColor(sb_bottomleft, (XMFLOAT4)Colors::Black));
+            m_primitiveBatch->DrawTriangle(
+                VertexPositionColor(sb_topleft, (XMFLOAT4)Colors::Black),
+                VertexPositionColor(sb_topright, (XMFLOAT4)Colors::Black),
+                VertexPositionColor(sb_bottomright, (XMFLOAT4)Colors::Black));
+
 
             // Draw each block's text
             // shift it by the amount the sidebar was shifted
@@ -423,8 +430,23 @@ void Game::Render()
 			{ 10.f, 10.f }, Colors::OrangeRed, 0.f, m_vector2Zero, 1.f);
 
 #endif // _DEBUG
-        m_spriteBatch->End();
-        // End drawing text
+
+		m_spriteBatch->End();
+		// End drawing text
+
+
+		// Now draw automap
+		// TODO: Do most of this outside of render, much of it is fixed between renders
+		auto mmOrigin = Vector2(clientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
+		RECT mapRectInViewport = {
+			mmOrigin.x,
+			mmOrigin.y,
+			mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
+			mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
+		};
+		m_automap->DrawAutoMap(m_spriteBatch, &mapRectInViewport);
+		// End drawing automap
+
 
 		PIXEndEvent(commandList);
 
