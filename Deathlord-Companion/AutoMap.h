@@ -118,6 +118,5 @@ private:
 															// The number of vectors will be equal to the backbuffer count
 
 	std::string m_currentMapUniqueName;
-	std::map<std::string, std::vector<UINT8>>m_fogOfWarMarkers;
 };
 

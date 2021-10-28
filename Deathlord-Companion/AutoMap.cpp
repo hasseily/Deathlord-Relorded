@@ -51,8 +51,7 @@ void AutoMap::SaveCurrentMapInfo()
 {
 	if (m_currentMapUniqueName == "")
 		return;
-	m_fogOfWarMarkers[m_currentMapUniqueName] = m_bbufFogOfWarTiles[0];
-	g_nonVolatile.fogOfWarMarkers = m_fogOfWarMarkers;
+	g_nonVolatile.fogOfWarMarkers[m_currentMapUniqueName] = m_bbufFogOfWarTiles[0];
 	g_nonVolatile.SaveToDisk();
 }
 
@@ -74,7 +73,7 @@ void AutoMap::InitializeCurrentMapInfo()
 				MemGetMainPtr(MAP_LEVEL)[0]);
 		}
 		m_currentMapUniqueName = std::string(_buf);
-		auto markers = m_fogOfWarMarkers[m_currentMapUniqueName];
+		auto markers = g_nonVolatile.fogOfWarMarkers[m_currentMapUniqueName];
 		if (markers.size() < MAP_LENGTH)
 		{
 			// Incorrect size, it was probably just initialized to a 0 size
@@ -83,6 +82,7 @@ void AutoMap::InitializeCurrentMapInfo()
 		}
 		for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
 			m_bbufFogOfWarTiles[i] = markers;
+		OutputDebugStringA("Map info initialized!\n");
 	}
 }
 
@@ -158,7 +158,6 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 		m_bbufCurrentMapTiles[0][xx_x + xx_y * MAP_WIDTH], m_bbufCurrentMapTiles[1][xx_x + xx_y * MAP_WIDTH]);
 	OutputDebugStringA(_buf);
 	*/
-	OutputDebugStringA("Done\n");
 }
 #pragma warning(pop)
 
@@ -245,11 +244,6 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 			//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile DRAWN on screen\n")).c_str());
 
 			// now draw the avatar
-
-			char _buf[500];
-			sprintf_s(_buf, 500, "Avatar Pos is (%2d, %2d), current map pos is (%2d, %2d)\n",
-				m_avatarPosition.x, m_avatarPosition.y, posX, posY);
-			OutputDebugStringA(_buf);
 			if (posX == m_avatarPosition.x && posY == m_avatarPosition.y)
 			{
 				auto gamePtr = GetGamePtr();

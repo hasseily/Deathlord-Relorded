@@ -12,7 +12,7 @@ enum class DelayedTriggersFunction
 class MemoryTriggers	// Singleton
 {
 public:
-	float intervalPollMemory = 0.5f;		// default interval (seconds) between polling memory	
+	float intervalPollMemory = 0.3f;		// default interval (seconds) between polling memory	
 	float intervalDelayedTriggers = 0.1f;	// default interval (seconds) between firing triggers
 
 
@@ -39,24 +39,25 @@ private:
 	static MemoryTriggers* s_instance;
 
 	// Memory polling map
-	using FuncPtr = void (MemoryTriggers::*)(UINT);
-	std::map<UINT, FuncPtr> memPollMap;                 // memlocation -> function
+	using FuncPtr = void (MemoryTriggers::*)(UINT8);
+	std::map<UINT32, FuncPtr> memPollMap;                 // memlocation -> function
 	std::map<DelayedTriggersFunction, FuncPtr> delayedTriggerFuncIDs;
 	std::map<DelayedTriggersFunction, float> delayedTriggerMap;    // functionID -> ElapsedSeconds_when_trigger
-	std::map<UINT, UINT>memPollPreviousValues;
+	std::map<UINT32, UINT8>memPollPreviousValues;
 
 	// Memory polling
-	void PollChanged_InGameMap(UINT memLoc);
-	void PollChanged_MapID(UINT memLoc);
-	void PollChanged_MapType(UINT memLoc);
-	void PollChanged_Floor(UINT memLoc);
-	void PollChanged_XPos(UINT memLoc);
-	void PollChanged_YPos(UINT memLoc);
-	void PollChanged_OverlandMapX(UINT memLoc);
-	void PollChanged_OverlandMapY(UINT memLoc);
+	void PollChanged_StartedTransition(UINT8 oldVal);
+	void PollChanged_InGameMap(UINT8 oldVal);
+	void PollChanged_MapID(UINT8 oldVal);
+	void PollChanged_MapType(UINT8 oldVal);
+	void PollChanged_Floor(UINT8 oldVal);
+	void PollChanged_XPos(UINT8 oldVal);
+	void PollChanged_YPos(UINT8 oldVal);
+	void PollChanged_OverlandMapX(UINT8 oldVal);
+	void PollChanged_OverlandMapY(UINT8 oldVal);
 	void DelayedTriggerInsert(DelayedTriggersFunction funcId, UINT64 delayInMilliSeconds);
 	// Poll Delayed Trigger Functions
-	void DelayedTrigger_ParseTiles(UINT memloc);
+	void DelayedTrigger_ParseTiles(UINT8 memloc);
 
 	float timeSinceMemoryPolled = 0;
 	float timeSinceTriggersFired = 0;
@@ -65,7 +66,14 @@ private:
 	{
 		p_timer = ptimer;
 
-		memPollMap[MAP_IS_IN_GAME_MAP] = &MemoryTriggers::PollChanged_InGameMap;
+		memPollMap[MAP_TRANSITION_BEGIN] = &MemoryTriggers::PollChanged_StartedTransition;
+		//memPollMap[(UINT32)MAP_TRANSITION_BEGIN+1] = &MemoryTriggers::PollChanged_StartedTransition;
+		//memPollMap[(UINT32)MAP_TRANSITION_BEGIN+2] = &MemoryTriggers::PollChanged_StartedTransition;
+		//memPollMap[(UINT32)MAP_TRANSITION_BEGIN+3] = &MemoryTriggers::PollChanged_StartedTransition;
+		//memPollMap[(UINT32)MAP_TRANSITION_BEGIN+4] = &MemoryTriggers::PollChanged_StartedTransition;
+		//memPollMap[(UINT32)MAP_TRANSITION_BEGIN+5] = &MemoryTriggers::PollChanged_StartedTransition;
+		//memPollMap[(UINT32)MAP_TRANSITION_BEGIN+6] = &MemoryTriggers::PollChanged_StartedTransition;
+		//memPollMap[(UINT32)MAP_TRANSITION_END] = &MemoryTriggers::PollChanged_StartedTransition;
 		memPollMap[MAP_IS_OVERLAND] = &MemoryTriggers::PollChanged_MapType;
 		memPollMap[MAP_ID] = &MemoryTriggers::PollChanged_MapID;
 		memPollMap[MAP_LEVEL] = &MemoryTriggers::PollChanged_Floor;
