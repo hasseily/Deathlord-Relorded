@@ -223,7 +223,9 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			m_initialWindowWidth = rc.right - rc.left;
 			m_initialWindowHeight = rc.bottom - rc.top;
 
-			hwnd = CreateWindowExW(0, L"DeathlordCompanionWindowClass", L"Deathlord Companion", WS_OVERLAPPEDWINDOW,
+			// TODO: enable resizing the window by using WS_OVERLAPPEDWINDOW
+			//       disable resizing the window by using WS_OVERLAPPED | WS_SYSMENU
+			hwnd = CreateWindowExW(0, L"DeathlordCompanionWindowClass", L"Deathlord Companion", WS_OVERLAPPED | WS_SYSMENU,
 				CW_USEDEFAULT, CW_USEDEFAULT, m_initialWindowWidth, m_initialWindowHeight, nullptr, nullptr, hInstance,
 				nullptr);
 			// TODO: Change to CreateWindowExW(WS_EX_TOPMOST, L"DeathlordCompanionWindowClass", L"DeathlordCompanion", WS_POPUP,
