@@ -83,7 +83,6 @@ void AutoMap::InitializeCurrentMapInfo()
 		}
 		for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
 			m_bbufFogOfWarTiles[i] = markers;
-		OutputDebugStringA("Map info initialized!\n");
 	}
 }
 
