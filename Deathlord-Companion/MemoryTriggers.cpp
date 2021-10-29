@@ -112,7 +112,12 @@ void MemoryTriggers::PollChanged_Floor(UINT8 oldVal)
 void MemoryTriggers::PollChanged_XPos(UINT8 oldVal)
 {
     //OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_XPOS)[0]) + L" XPos changed from " + std::to_wstring(oldVal) + L"!\n").c_str());
-    if ((MemGetMainPtr(MAP_XPOS)[0] - oldVal) > 2)
+    UINT8 deltaVal;
+    if (MemGetMainPtr(MAP_XPOS)[0] > oldVal)
+        deltaVal = MemGetMainPtr(MAP_XPOS)[0] - oldVal;
+    else
+        deltaVal = oldVal - MemGetMainPtr(MAP_XPOS)[0];
+    if (deltaVal > 2)
     {
         // Special case when the person enters a town or other place from the overland map
         // The game first updates the XY and then the map. We need to give enough time for the map to update
@@ -126,7 +131,12 @@ void MemoryTriggers::PollChanged_XPos(UINT8 oldVal)
 void MemoryTriggers::PollChanged_YPos(UINT8 oldVal)
 {
     // OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_YPOS)[0]) + L" YPos changed!\n").c_str());
-	if ((MemGetMainPtr(MAP_YPOS)[0] - oldVal) > 2)
+	UINT8 deltaVal;
+	if (MemGetMainPtr(MAP_YPOS)[0] > oldVal)
+		deltaVal = MemGetMainPtr(MAP_YPOS)[0] - oldVal;
+	else
+		deltaVal = oldVal - MemGetMainPtr(MAP_YPOS)[0];
+	if (deltaVal > 2)
 	{
 		// Special case when the person enters a town or other place from the overland map
 		// The game first updates the XY and then the map. We need to give enough time for the map to update
