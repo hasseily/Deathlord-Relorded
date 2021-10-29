@@ -76,7 +76,7 @@ void MemoryTriggers::PollChanged_StartedTransition(UINT8 oldVal)
     }
     if (isInTransition)
     {
-		OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_TRANSITION_BEGIN)[0]) + L" Started transition!\n").c_str());
+		//OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_TRANSITION_BEGIN)[0]) + L" Started transition!\n").c_str());
         AutoMap* aM = AutoMap::GetInstance();
 		aM->SetShowTransition(isInTransition);
     }
@@ -111,7 +111,7 @@ void MemoryTriggers::PollChanged_Floor(UINT8 oldVal)
 
 void MemoryTriggers::PollChanged_XPos(UINT8 oldVal)
 {
-    OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_XPOS)[0]) + L" XPos changed from " + std::to_wstring(oldVal) + L"!\n").c_str());
+    //OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_XPOS)[0]) + L" XPos changed from " + std::to_wstring(oldVal) + L"!\n").c_str());
     if ((MemGetMainPtr(MAP_XPOS)[0] - oldVal) > 2)
     {
         // Special case when the person enters a town or other place from the overland map
