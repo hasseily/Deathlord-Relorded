@@ -341,15 +341,8 @@ void LogWindow::AppendLog(const wchar_t wchar, bool shouldPrint)
 	{
 		printIt = true;
 	}
-	else if ((wchar == L'.') || (wchar == L'"') || (wchar == L'!'))
+	else if (wchar == L'\n')
 	{
-		// First check for punctuation and flush the buffer
-		printIt = true;
-	}
-	else if (wchar == L'>')
-	{
-		// Then if there's a "<Press a key>", flush with 2 LF
-		currentBuffer.append(L"\n\n");
 		printIt = true;
 	}
 
