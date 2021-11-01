@@ -159,7 +159,7 @@ void TilesetCreator::analyzeVisibleTiles(UINT8* pVisibleTiles)
 		return;
 	UINT32 fbWidth = GetFrameBufferWidth();
 	UINT32 fbHeight = GetFrameBufferHeight();
-	UINT32 fbBorderLeft = GetFrameBufferBorderWidth() - 1;	// these are additional shifts to make the tiles align
+	UINT32 fbBorderLeft = GetFrameBufferBorderWidth();		// these are additional shifts to make the tiles align
 	UINT32 fbBorderTop = GetFrameBufferBorderHeight() + 16;	// these are additional shifts to make the tiles align
 	UINT32 iFBOriginByte;
 	UINT32 iFBCurrentByte;
@@ -175,13 +175,13 @@ void TilesetCreator::analyzeVisibleTiles(UINT8* pVisibleTiles)
 			iFBOriginByte = ((fbBorderTop + ir * FBTH) * fbWidth * PIXELDEPTH)
 				+ (fbBorderLeft + jc * FBTW) * PIXELDEPTH;
 			// Now read every byte triplet BGR and see if the whole thing is black (discard the Alpha byte)
-			// except that we don't want to read the 4-pixel thick border which might have some bleeding.
+			// except that we don't want to read the 2-pixel thick border which might have some bleeding.
 			pVisibleTiles[ir * visTileSide + jc] = 0;	// default to not visible
-			for (UINT32 j = 4; j < (FBTH-4); j++)
+			for (UINT32 br = 2; br < (FBTH-2); br++)
 			{
-				for (UINT32 i = 4; i < (FBTW-4); i++)
+				for (UINT32 bc = 2; bc < (FBTW-2); bc++)
 				{
-					iFBCurrentByte = iFBOriginByte + (j * fbWidth * PIXELDEPTH) + (i * PIXELDEPTH);
+					iFBCurrentByte = iFBOriginByte + (br * fbWidth * PIXELDEPTH) + (bc * PIXELDEPTH);
 					if ((g_pFramebufferbits[iFBCurrentByte] != 0)
 						|| (g_pFramebufferbits[iFBCurrentByte + 1] != 0)
 						|| (g_pFramebufferbits[iFBCurrentByte + 2] != 0))
@@ -194,11 +194,11 @@ void TilesetCreator::analyzeVisibleTiles(UINT8* pVisibleTiles)
 			}
 		FINISHEDTILE:
 			{
-				/*
+				
 				char _buf[500];
 				sprintf_s(_buf, 500, "Tile at %d,%d is %d\n", ir, jc, isBlack);
 				OutputDebugStringA(_buf);
-				*/
+				
 			}
 
 		}

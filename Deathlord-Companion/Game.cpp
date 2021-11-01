@@ -419,7 +419,23 @@ void Game::Render()
 			{ 11.f, 11.f }, Colors::Black, 0.f, m_vector2Zero, 1.f);
 		m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
 			{ 10.f, 10.f }, Colors::OrangeRed, 0.f, m_vector2Zero, 1.f);
-
+		UINT32 fbBorderLeft = GetFrameBufferBorderWidth();	// these are additional shifts to make the tiles align
+		UINT32 fbBorderTop = GetFrameBufferBorderHeight() + 16;	// these are additional shifts to make the tiles align
+		const UINT8 visTileSide = 9;	// 9 tiles per side visible
+        for (UINT8 ir = 0; ir <= visTileSide; ir++)		// rows
+        {
+			m_primitiveBatchLines->DrawLine(
+				VertexPositionColor(XMFLOAT3(fbBorderLeft, fbBorderTop + ir * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red)),
+				VertexPositionColor(XMFLOAT3(fbBorderLeft + visTileSide * FBTW, fbBorderTop + ir * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red))
+			);
+        }
+		for (UINT8 jc = 0; jc <= visTileSide; jc++)	// columns
+		{
+			m_primitiveBatchLines->DrawLine(
+				VertexPositionColor(XMFLOAT3(fbBorderLeft + jc * FBTW, fbBorderTop, 0), static_cast<XMFLOAT4>(Colors::Red)),
+				VertexPositionColor(XMFLOAT3(fbBorderLeft + jc * FBTW, fbBorderTop + visTileSide * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red))
+			);
+		}
 #endif // _DEBUG
 
 		m_primitiveBatchLines->End();

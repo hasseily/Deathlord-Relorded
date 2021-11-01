@@ -194,6 +194,19 @@ bool MemoryTriggers::DelayedTrigger_ParseTiles()
     return true;
 }
 
+// This is actually set up by the Automap to get it to analyze visible tiles
+// when it is safe to do so
+bool MemoryTriggers::DelayedTrigger_AnalyzeVisibleTiles()
+{
+    if (g_isInGameMap)
+    {
+		auto aM = AutoMap::GetInstance();
+        if (aM != NULL)
+            aM->AnalyzeVisibleTiles();
+    }
+    return true;
+}
+
 bool MemoryTriggers::DelayedTrigger_FinishMapTransitionState()
 {
 	AutoMap* aM = AutoMap::GetInstance();

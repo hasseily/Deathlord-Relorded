@@ -55,6 +55,7 @@ public:
 	void UpdateAvatarPositionOnAutoMap(UINT x, UINT y);
 	void ClearMapArea();
 	void ForceRedrawMapArea();
+	void AnalyzeVisibleTiles();
 	void CreateNewTileSpriteMap();
 	void SaveCurrentMapInfo();
 	void InitializeCurrentMapInfo();

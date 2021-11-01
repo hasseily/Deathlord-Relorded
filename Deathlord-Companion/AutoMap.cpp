@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "AutoMap.h"
 #include "Game.h"
+#include "MemoryTriggers.h"
 
 using namespace DirectX;
 
@@ -134,18 +135,29 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 	OutputDebugStringA(_buf);
 	*/
 
-	// Set to redraw the previous tile, and then the next one
-	// Also add the footstep to the new tile
-	for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
-	{
-		m_bbufCurrentMapTiles[i][m_avatarPosition.x + m_avatarPosition.y * MAP_WIDTH] = TILEID_REDRAW;
-	}
+	// We redraw all the tiles in the viewport later, so here just set the footsteps
 	m_avatarPosition = { cleanX, cleanY };
 	for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
 	{
-		m_bbufCurrentMapTiles[i][m_avatarPosition.x + m_avatarPosition.y * MAP_WIDTH] = TILEID_REDRAW;
 		m_bbufFogOfWarTiles[i][m_avatarPosition.x + m_avatarPosition.y * MAP_WIDTH] |= (1 << (UINT8)FogOfWarMarkers::Footstep);
 	}
+
+	/*
+	char _buf[500];
+	sprintf_s(_buf, 500, "Old Avatar Pos tileid has values %2d, %2d in vector\n",
+		m_bbufCurrentMapTiles[0][xx_x + xx_y * MAP_WIDTH], m_bbufCurrentMapTiles[1][xx_x + xx_y * MAP_WIDTH]);
+	OutputDebugStringA(_buf);
+	*/
+
+	// Now get the visible tiles to be analyzed when the state is safe
+	// So ask MemoryTriggers to run AutoMap::AnalyzeVisibleTiles() on its next processing
+	// during the safe period when the game is waiting on the player
+	auto mT = MemoryTriggers::GetInstance();
+	mT->DelayedTriggerInsert(DelayedTriggersFunction::VISIBLE_TILES, 0);
+}
+
+void AutoMap::AnalyzeVisibleTiles()
+{
 
 	// Now check the visible tiles around the avatar (tiles that aren't black)
 	// Those will have their fog-of-war bit unset
@@ -166,24 +178,16 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 				// Move the visibility bit to the FogOfWar position, and OR it with the value in the vector.
 				// If the user ever sees the tile, it stays "seen"
 				oldBufVal = m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH];
-				m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] |= 
-					(tilesVisibleAroundAvatar[i+9*j] << (UINT8)FogOfWarMarkers::UnFogOfWar);
-				if (oldBufVal != m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH])
-				{
-					// We changed the bit, so we need to flag the tile to be redrawn on the map
-					m_bbufCurrentMapTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] = TILEID_REDRAW;
-				}
+				m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] |=
+					(tilesVisibleAroundAvatar[i + 9 * j] << (UINT8)FogOfWarMarkers::UnFogOfWar);
+
+				// redraw all the tiles in the Deathlord viewport
+				m_bbufCurrentMapTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] = TILEID_REDRAW;
 			}
 		}
 	}
-
-	/*
-	char _buf[500];
-	sprintf_s(_buf, 500, "Old Avatar Pos tileid has values %2d, %2d in vector\n",
-		m_bbufCurrentMapTiles[0][xx_x + xx_y * MAP_WIDTH], m_bbufCurrentMapTiles[1][xx_x + xx_y * MAP_WIDTH]);
-	OutputDebugStringA(_buf);
-	*/
 }
+
 #pragma warning(pop)
 
 void AutoMap::CreateNewTileSpriteMap()
@@ -308,14 +312,6 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 		(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "Awaiting Masochists...",
 			awaitTextPos, COLOR_APPLE2_VIOLET, 0.f, Vector2(0.f, 0.f), 3.f);
 	}
-
-	/*
-	// TODO: delete, this is a test
-	RECT sTestRect = { 0, 0, 448, 512 };
-	RECT dTestRect = { 500, 200, 948, 712 };
-	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet),
-		GetTextureSize(m_autoMapTexture.Get()), dTestRect, &sTestRect);
-	*/
 
 	spriteBatch->End();
 	// End drawing automap
