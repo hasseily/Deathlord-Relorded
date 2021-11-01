@@ -127,10 +127,12 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 	if ((m_avatarPosition.x == cleanX) && (m_avatarPosition.y == cleanY))
 		return;
 
+	/*
 	char _buf[400];
 	sprintf_s(_buf, 400, "X: %03d / %03d, Y: %03d / %03d, Map name: %s\n", 
 		cleanX, m_avatarPosition.x, cleanY, m_avatarPosition.y, m_currentMapUniqueName.c_str());
 	OutputDebugStringA(_buf);
+	*/
 
 	// Set to redraw the previous tile, and then the next one
 	// Also add the footstep to the new tile

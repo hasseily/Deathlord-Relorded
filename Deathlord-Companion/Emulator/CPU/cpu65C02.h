@@ -56,7 +56,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			// Starting transit between maps, either from the overland or into the overland
 			if ((_origPC == PC_TRANSIT_IN_OVERLAND) || (_origPC == PC_TRANSIT_OUT_OVERLAND))
 			{
-				OutputDebugStringA("STARTED TRANSITION\n");
+				// OutputDebugStringA("STARTED TRANSITION\n");
 				auto aM = AutoMap::GetInstance();
 				aM->SetShowTransition(true);
 				// The PARSE_TILES trigger will only run after the game is back in the player wait loop
