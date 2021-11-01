@@ -6,6 +6,8 @@
 // Memory locations to hijack when processing the game
 // to change the behavior on the fly without patching the original code
 #define PC_DECREMENT_TIMER		0x621F		// routine to decrement a timer before it makes the player "wait" and pass a turn
+#define PC_TRANSIT_OUT_OVERLAND	0xE8F4		// routine that gets the player into a dungeon or town
+#define PC_TRANSIT_IN_OVERLAND	0xEF0A		// routine that gets the player back in the overland
 
 /* Those were for Nox Archaist
 #define PC_PRINTSTR				0x7aa1		// program counter of PRINT.STR routine (can be overriden before screen output, especially in combat for variables)

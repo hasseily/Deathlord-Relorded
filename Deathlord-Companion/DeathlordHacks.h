@@ -7,8 +7,6 @@
 
 constexpr UINT16 MAP_IS_IN_GAME_MAP = 0xFCE0;		// If set to 0xE5, player is in-game and not on title screen or utilities
 constexpr UINT16 MAP_IS_OVERLAND = 0xFC10;		// Is set to 0x80 if on the overland area
-constexpr UINT16 MAP_TRANSITION_BEGIN = 0xBB00;	// Beginning of memory area that is 00 if not in transition
-constexpr UINT16 MAP_TRANSITION_END = 0xBB07;		// End of memory area that is not 00 if in transition
 constexpr UINT16 MAP_ID = 0xFC4E;					// ID of the map
 constexpr UINT16 MAP_LEVEL = 0xFC04;				// Level "2" is the default ground for towers and dungeons. "1" for overland, "0" for towns
 constexpr UINT16 MAP_XPOS = 0xFC06;				// X position of the player on a map

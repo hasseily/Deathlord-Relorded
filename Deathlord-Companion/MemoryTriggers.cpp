@@ -13,6 +13,18 @@ extern std::unique_ptr<Game>* GetGamePtr();
 
 void MemoryTriggers::Process()
 {
+    if (!g_isInGameMap)
+        return;
+    // Process the the delayed triggers during the player wait loop timer. The player is already
+    // in a map, since this Process() method only runs on the timer in game that wants to 
+    // pass a turn. So the player is already in a "safe" state and the tile parsing can happen
+	DelayedTriggersProcess();
+    return;
+
+    // DISABLED INTERVAL PROCESSING
+    // Now it's done during the game's turn pass timer routine (See Fetch() in CPU.cpp)
+    
+    /*
 	// poll memory and fire triggers at specific intervals
 	auto elapsedTime = float(p_timer->GetElapsedSeconds());
     timeSinceMemoryPolled += elapsedTime;
@@ -27,6 +39,7 @@ void MemoryTriggers::Process()
 		DelayedTriggersProcess();
         timeSinceTriggersFired = 0.f;
 	}
+    */
 }
 
 
@@ -39,7 +52,7 @@ void MemoryTriggers::Process()
 // Qualifier:
 
 // Description: 
-// Called after every regular keypress or at specific intervals.
+// Called on the game's main Update() loop
 // Polls for key memory location changes and fires relevant methods
 //************************************
 void MemoryTriggers::PollKeyMemoryLocations()
@@ -64,99 +77,55 @@ void MemoryTriggers::PollMapSetCurrentValues()
     }
 }
 
-void MemoryTriggers::PollChanged_StartedTransition(UINT8 oldVal)
-{
-    // This only determines if we started the transition
-    auto mM = MemGetMainPtr(0);
-    bool isInTransition = false;
-    for (size_t i = MAP_TRANSITION_BEGIN; i <= MAP_TRANSITION_END; i++)
-    {
-        if (mM[i] != 0)
-            isInTransition = true;
-    }
-    if (isInTransition)
-    {
-		//OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_TRANSITION_BEGIN)[0]) + L" Started transition!\n").c_str());
-        AutoMap* aM = AutoMap::GetInstance();
-		aM->SetShowTransition(isInTransition);
-    }
-}
-
 void MemoryTriggers::PollChanged_InGameMap(UINT8 oldVal)
 {
-	// OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" In game map!\n").c_str());
     if (MemGetMainPtr(MAP_IS_IN_GAME_MAP)[0] == 0xE5)     // User just got in game map
     {
-		DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
+		//OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_IS_IN_GAME_MAP)[0]) + L" In game map!\n").c_str());
+		DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 0);
     }
 }
 
-void MemoryTriggers::PollChanged_MapID(UINT8 oldVal)
+void MemoryTriggers::PollChanged_MapID(UINT8 oldVal)    // unused
 {
-	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapID changed!\n").c_str());
-    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
+	//OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_ID)[0]) + L" MapID changed!\n").c_str());
 }
 
-void MemoryTriggers::PollChanged_MapType(UINT8 oldVal)
+void MemoryTriggers::PollChanged_MapType(UINT8 oldVal)  // unused
 {
-    //OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" MapType changed!\n").c_str());
-	DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
+    //OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_IS_OVERLAND)[0]) + L" MapType changed!\n").c_str());
 }
 
 void MemoryTriggers::PollChanged_Floor(UINT8 oldVal)
 {
-	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" Floor changed!\n").c_str());
-	DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
+	//OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_LEVEL)[0]) + L" Floor changed!\n").c_str());
+    // TODO: In dungeons and towers, zoom to the current level (each map is 4 levels)
 }
 
-void MemoryTriggers::PollChanged_XPos(UINT8 oldVal)
+void MemoryTriggers::PollChanged_XPos(UINT8 oldVal) // Unused
 {
     //OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_XPOS)[0]) + L" XPos changed from " + std::to_wstring(oldVal) + L"!\n").c_str());
-    UINT8 deltaVal;
-    if (MemGetMainPtr(MAP_XPOS)[0] > oldVal)
-        deltaVal = MemGetMainPtr(MAP_XPOS)[0] - oldVal;
-    else
-        deltaVal = oldVal - MemGetMainPtr(MAP_XPOS)[0];
-    if (deltaVal > 2)
-    {
-        // Special case when the person enters a town or other place from the overland map
-        // The game first updates the XY and then the map. We need to give enough time for the map to update
-		DelayedTriggerInsert(DelayedTriggersFunction::UPDATE_XY, 3000);
-        return;
-    }
-    AutoMap* aM = AutoMap::GetInstance();
-    aM->UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
 }
 
-void MemoryTriggers::PollChanged_YPos(UINT8 oldVal)
+void MemoryTriggers::PollChanged_YPos(UINT8 oldVal) // Unused
 {
-    // OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_YPOS)[0]) + L" YPos changed!\n").c_str());
-	UINT8 deltaVal;
-	if (MemGetMainPtr(MAP_YPOS)[0] > oldVal)
-		deltaVal = MemGetMainPtr(MAP_YPOS)[0] - oldVal;
-	else
-		deltaVal = oldVal - MemGetMainPtr(MAP_YPOS)[0];
-	if (deltaVal > 2)
-	{
-		// Special case when the person enters a town or other place from the overland map
-		// The game first updates the XY and then the map. We need to give enough time for the map to update
-		DelayedTriggerInsert(DelayedTriggersFunction::UPDATE_XY, 3000);
-		return;
-	}
-    AutoMap* aM = AutoMap::GetInstance();
-	aM->UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
+    //OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_YPOS)[0]) + L" YPos changed from " + std::to_wstring(oldVal) + L"!\n").c_str());
 }
 
 void MemoryTriggers::PollChanged_OverlandMapX(UINT8 oldVal)
 {
-	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapX changed!\n").c_str());
-    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
+	//OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_OVERLAND_X)[0]) + L" OverlandMapX changed!\n").c_str());
+	AutoMap* aM = AutoMap::GetInstance();
+	aM->SetShowTransition(true);
+    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 0);
 }
 
 void MemoryTriggers::PollChanged_OverlandMapY(UINT8 oldVal)
 {
-	//OutputDebugString((std::to_wstring(MemGetMainPtr(memLoc)[0]) + L" OverlandMapY changed!\n").c_str());
-    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 3000);
+	//OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_OVERLAND_Y)[0]) + L" OverlandMapY changed!\n").c_str());
+	AutoMap* aM = AutoMap::GetInstance();
+	aM->SetShowTransition(true);
+    DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 0);
 }
 #pragma endregion
 
@@ -179,20 +148,22 @@ void MemoryTriggers::DelayedTriggerInsert(DelayedTriggersFunction funcId, UINT64
     }
 }
 
-void MemoryTriggers::DelayedTriggersProcess()
+void MemoryTriggers::DelayedTriggersProcess(bool force)
 {
     if (delayedTriggerMap.empty())
         return;
     std::vector<DelayedTriggersFunction> keysToDelete;
+    bool shouldDelete = false;
     for (auto it = delayedTriggerMap.begin(); it != delayedTriggerMap.end();)
     {
         float currentS = p_timer->GetTotalSeconds();
-        if (it->second < currentS)  // time has lapsed, let's trigger!
+        if ((it->second <= currentS) || (force == true))  // time has lapsed, let's trigger!
         {
             // get the actual function pointer and call the function
-            (this->*(delayedTriggerFuncIDs.at(it->first)))(UINT_MAX);
-            // erase the entry from the map, we've called it
-            keysToDelete.push_back(it->first);
+            shouldDelete = (this->*(delayedTriggerFuncIDs.at(it->first)))();
+            // erase the entry from the map, if it agrees to :)
+            if (shouldDelete)
+                keysToDelete.push_back(it->first);
         }
 		it++;
     }
@@ -205,7 +176,8 @@ void MemoryTriggers::DelayedTriggersProcess()
 // Below are the functions that are stored in the delayed trigger map
 // Every update there's a method that scans the map for functions whose timestamp
 // expired and it triggers them
-void MemoryTriggers::DelayedTrigger_ParseTiles(UINT8 memloc)
+// Such functions should generally return true to be removed from the processing list
+bool MemoryTriggers::DelayedTrigger_ParseTiles()
 {
 	auto tileset = TilesetCreator::GetInstance();
     tileset->parseTilesInHGR2();
@@ -214,15 +186,19 @@ void MemoryTriggers::DelayedTrigger_ParseTiles(UINT8 memloc)
 		auto aM = AutoMap::GetInstance();
         if (aM != NULL)
             aM->CreateNewTileSpriteMap();
-        aM->SetShowTransition(false);
+        aM->ForceRedrawMapArea();
+        // Delay the transition finish so that the XY is updated to the correct map
+        // In some cases it updates before the MapId has had a chance to update itself
+        DelayedTriggerInsert(DelayedTriggersFunction::FINISH_TRANSITION, 50);
     }
+    return true;
 }
 
-void MemoryTriggers::DelayedTrigger_UpdateAvatarPositionOnAutomap(UINT8 memloc)
+bool MemoryTriggers::DelayedTrigger_FinishMapTransitionState()
 {
 	AutoMap* aM = AutoMap::GetInstance();
-	aM->UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
-    aM->ForceRedrawMapArea();
+    aM->SetShowTransition(false);
+    return true;
 }
 
 #pragma endregion

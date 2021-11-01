@@ -97,7 +97,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "LogWindow.h"
 #include "NonVolatile.h"
 #include "Game.h"
+#include "MemoryTriggers.h"	// trigger the memory polling upon passing time because we know the state is safe
 
+static int numInstructions = 0;
 static bool b_in_combat =		false;		// bool for tracking when we're in combat to suppress logging
 static bool b_in_printright =	false;		// bool for tracking when we're actually printing a string on the right scroll area
 #define LOG_IRQ_TAKEN_AND_RTI 0
@@ -301,14 +303,6 @@ static __forceinline void Fetch(BYTE& iOpcode, ULONG uExecutedCycles)
 	//wchar_t szDebug[100];
 	const USHORT PC = regs.pc;
 
-	// Disable the timer that makes you pass a turn
-	// It is a DEC opcode and 2 bytes of memory, so to be replaced by 3 NOP opcodes
-	if ((g_isInGameMap) && (PC >= PC_DECREMENT_TIMER) && (PC < PC_DECREMENT_TIMER+3))
-	{
-		iOpcode = 0xEA;	// NOP
-		goto NEXTINSTRUCTION;
-	}
-
 	iOpcode = ((PC & 0xF000) == 0xC000)
 		? IORead[(PC >> 4) & 0xFF](PC, PC, 0, 0, uExecutedCycles)	// Fetch opcode from I/O memory, but params are still from mem[]
 		: *(mem + PC);
@@ -317,47 +311,7 @@ static __forceinline void Fetch(BYTE& iOpcode, ULONG uExecutedCycles)
 	DebugHddEntrypoint(PC, iOpcode, uExecutedCycles);
 #endif
 
-	/*
-	// This chunk of code extracts the conversation strings in Nox Archaist /////////////////////////////
-	// First, verify that we're in the combat routine by setting the flag
-	if (PC == cpuconstants.PC_INITIATE_COMBAT)
-		b_in_combat = true;
-	if (PC == cpuconstants.PC_END_COMBAT)
-		b_in_combat = false;
-	// Second, see if we just got in the PRINTSTR routine
-	// Always default to not printing
-	if (PC == cpuconstants.PC_PRINTSTR)
-	{
-		b_in_printright = false;		// reset to default not printing
-		// Third, make sure that we're printing to the right panel
-		if (regs.a == cpuconstants.A_PRINT_RIGHT)
-		{
-			// And fourth only print if we're not in combat or we allow combat printing
-			if ((!b_in_combat) | g_nonVolatile.logCombat)
-			{
-				b_in_printright = true;
-				//wsprintf(szDebug, L"Set printright to true: $%04X\n", PC);
-				//OutputDebugString(szDebug);
-			}
-		}
-	}
-	// So now we know we're in the print routine, we're printing to the right panel, and we're not in combat
-	// (or we are, and the player wants combat logging). Now if we're in the COUT routine, get the high-ascii
-	// character and send it out to the log
-	if ((PC == cpuconstants.PC_COUT) && b_in_printright)
-	{
-		//wsprintf(szDebug, L"Printing char: %X\n", regs.a);
-		//OutputDebugString(szDebug);
-		wchar_t wchar = regs.a - 0x80;	// convert from High ASCII to regular ASCII
-		m_logWindow->AppendLog(wchar, false);
-	}
-	if (((PC == cpuconstants.PC_CARRIAGE_RETURN1) || (PC == cpuconstants.PC_CARRIAGE_RETURN2)) && b_in_combat && b_in_printright)
-	{
-		m_logWindow->AppendLog('\n', true);
-	}
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	*/
-	NEXTINSTRUCTION: regs.pc++;
+	regs.pc++;
 }
 
 static __forceinline void NMI(ULONG& uExecutedCycles, BOOL& flagc, BOOL& flagn, BOOL& flagv, BOOL& flagz)

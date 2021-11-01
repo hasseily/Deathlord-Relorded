@@ -58,6 +58,7 @@ public:
 	void CreateNewTileSpriteMap();
 	void SaveCurrentMapInfo();
 	void InitializeCurrentMapInfo();
+	std::string GetCurrentMapUniqueName();
 	LPBYTE GetCurrentGameMap() { return MemGetMainPtr(GAMEMAP_START_MEM); };
 
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
@@ -67,6 +68,7 @@ public:
 
 
 	void SetShowTransition(bool showTransition);
+	bool isInTransition() { return bShowTransition; };
 
 	// public singleton code
 	static AutoMap* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,

@@ -56,24 +56,30 @@ void AutoMap::SaveCurrentMapInfo()
 	g_nonVolatile.SaveToDisk();
 }
 
+
+std::string AutoMap::GetCurrentMapUniqueName()
+{
+	auto memPtr = MemGetMainPtr(0);
+	char _buf[60];
+	if (memPtr[MAP_IS_OVERLAND] == 0x80)
+	{
+		sprintf_s(_buf, sizeof(_buf), "Overland_%.2d_%.2d",
+			memPtr[MAP_OVERLAND_X],
+			memPtr[MAP_OVERLAND_Y]);
+	}
+	else {
+		sprintf_s(_buf, sizeof(_buf), "Map_%.3d_%.2d",
+			memPtr[MAP_ID],
+			memPtr[MAP_LEVEL]);
+	}
+	return std::string(_buf);
+}
+
 void AutoMap::InitializeCurrentMapInfo()
 {
 	if (m_currentMapUniqueName == "")
 	{
-		auto memPtr = MemGetMainPtr(0);
-		char _buf[60];
-		if (memPtr[MAP_IS_OVERLAND] == 0x80)
-		{
-			sprintf_s(_buf, sizeof(_buf), "Overland_%.2d_%.2d", 
-				MemGetMainPtr(MAP_OVERLAND_X)[0],
-				MemGetMainPtr(MAP_OVERLAND_Y)[0]);
-		}
-		else {
-			sprintf_s(_buf, sizeof(_buf), "Map_%.3d_%.2d",
-				MemGetMainPtr(MAP_ID)[0],
-				MemGetMainPtr(MAP_LEVEL)[0]);
-		}
-		m_currentMapUniqueName = std::string(_buf);
+		m_currentMapUniqueName = GetCurrentMapUniqueName();
 		auto markers = g_nonVolatile.fogOfWarMarkers[m_currentMapUniqueName];
 		if (markers.size() < MAP_LENGTH)
 		{
@@ -87,27 +93,44 @@ void AutoMap::InitializeCurrentMapInfo()
 }
 
 void AutoMap::SetShowTransition(bool showTransition)
-{ 
+{
 	if (showTransition == bShowTransition)
 		return;
 	bShowTransition = showTransition;
-	// Save the old map
-	SaveCurrentMapInfo();
-	// We'll set the new map name later when we draw it
-	// We don't know yet if the memory is ready for that
-	ClearMapArea();
-	// ForceRedrawMapArea();
-	m_currentMapUniqueName = "";
+	if (bShowTransition == true)
+	{
+		//OutputDebugString(L"Started transition!\n");
+		// Save the old map
+		SaveCurrentMapInfo();
+		// We'll set the new map name later when we draw it
+		// We don't know yet if the memory is ready for that
+		ClearMapArea();
+		//ForceRedrawMapArea();
+		m_currentMapUniqueName = "";
+	}
+	else
+	{
+		//OutputDebugString(L"       Ended transition!\n");
+	}
 }
 
 #pragma warning(push)
 #pragma warning(disable : 26451)
 void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 {
-	UINT cleanX = (x < MAP_WIDTH  ? x : MAP_WIDTH - 1);
-	UINT cleanY = (y < MAP_HEIGHT ? y : MAP_HEIGHT - 1);
-	if (m_avatarPosition.x == cleanX && m_avatarPosition.x == cleanY)
+	// Make sure we don't draw on the wrong map!
+	if (m_currentMapUniqueName != GetCurrentMapUniqueName())
+		InitializeCurrentMapInfo();
+
+	UINT32 cleanX = (x < MAP_WIDTH  ? x : MAP_WIDTH - 1);
+	UINT32 cleanY = (y < MAP_HEIGHT ? y : MAP_HEIGHT - 1);
+	if ((m_avatarPosition.x == cleanX) && (m_avatarPosition.y == cleanY))
 		return;
+
+	char _buf[400];
+	sprintf_s(_buf, 400, "X: %03d / %03d, Y: %03d / %03d, Map name: %s\n", 
+		cleanX, m_avatarPosition.x, cleanY, m_avatarPosition.y, m_currentMapUniqueName.c_str());
+	OutputDebugStringA(_buf);
 
 	// Set to redraw the previous tile, and then the next one
 	// Also add the footstep to the new tile
@@ -190,12 +213,13 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 	CopyRect(&m_currentMapRect, mapRect);
 	auto tileset = TilesetCreator::GetInstance();
 
-	// Set the new map info if necessary
-	InitializeCurrentMapInfo();
-
 	// Now draw the automap tiles
 	if (g_isInGameMap && m_autoMapTexture != NULL)
 	{
+		// Set the new map info if necessary
+		if (m_currentMapUniqueName != GetCurrentMapUniqueName())
+			InitializeCurrentMapInfo();
+
 		float mapScale = (float)MAP_WIDTH_IN_VIEWPORT / (float)(MAP_WIDTH * PNGTW);
 		// Use the tilemap texture
 		commandList->SetGraphicsRootDescriptorTable(0, m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet));
@@ -207,7 +231,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 		for (UINT32 mapPos = 0; mapPos < MAP_LENGTH; mapPos++)
 		{
 			//OutputDebugStringA((std::to_string(mapPos)).append(std::string(" tile on screen\n")).c_str());
-			
+
 			// TODO: This is disabled as we redraw everything every frame
 			// Only redraw the current backbuffer when a tile changes, as well as forbid ClearRenderTargetView
 			// if (m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] == (UINT8)mapMemPtr[mapPos])    // it's been drawn
@@ -236,6 +260,10 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 				m_currentMapRect.left + (posX * PNGTW * mapScale),
 				m_currentMapRect.top + (posY * PNGTH * mapScale)
 			);
+			XMFLOAT2 overlayPosInMap(	// Display the avatar/footsteps in the center of the tile
+				tilePosInMap.x + 2,
+				tilePosInMap.y
+			);
 			if (shouldDraw)
 			{
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
@@ -248,7 +276,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 			{
 				auto gamePtr = GetGamePtr();
 				(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "@",
-					tilePosInMap, Colors::Yellow, 0.f, Vector2(0.f, 0.f), 1.f);
+					overlayPosInMap, Colors::Yellow, 0.f, Vector2(0.f, 0.f), 1.f);
 			}
 			else // don't draw footsteps on the current tile but on anything else that has footsteps
 			{
@@ -257,7 +285,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 					auto gamePtr = GetGamePtr();
 					// draw a # in yellow at 0.5 alpha
 					(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "~",
-						tilePosInMap, { 1.0f, 1.0f, 0.0f, 0.2f }, 0.f, Vector2(0.f, 0.f), 1.f);
+						overlayPosInMap, { 1.f, 1.f, 1.f, .9f }, 0.f, Vector2(0.f, 0.f), 1.f);
 				}
 			}
 		}

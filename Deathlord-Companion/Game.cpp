@@ -231,10 +231,6 @@ void Game::Tick()
     {
         Update(m_timer);
     });
-
-	// poll memory and fire triggers at specific intervals
-	if (g_isInGameMap)
-		m_trigger->Process();
     Render();
 }
 
@@ -244,6 +240,19 @@ void Game::Update(DX::StepTimer const& timer)
     PIXBeginEvent(PIX_COLOR_DEFAULT, L"Update");
 
 	EmulatorMessageLoopProcessing();
+
+    auto autoMap = AutoMap::GetInstance();
+    auto memTriggers = MemoryTriggers::GetInstance();
+    if (g_isInGameMap && (autoMap != NULL))
+    {
+        memTriggers->PollKeyMemoryLocations();  // But not the avatar XY
+        if (!autoMap->isInTransition())
+        {
+            //  We right away want to update the avatar position
+            // Otherwise we can miss steps if the player walks really quickly
+            autoMap->UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
+        }
+    }
 
     auto pad = m_gamePad->GetState(0);
     if (pad.IsConnected())
@@ -600,7 +609,7 @@ void Game::CreateDeviceDependentResources()
 
     // finish up
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
-	SpriteBatchPipelineStateDescription spd(rtState);
+	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied);
 	m_spriteBatch = std::make_unique<SpriteBatch>(device, resourceUpload, spd);
 
     auto uploadResourcesFinished = resourceUpload.End(command_queue);

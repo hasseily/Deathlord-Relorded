@@ -157,6 +157,7 @@ SOFT SWITCH STATUS FLAGS
 //		. So 'mem' remains correct for both r&w operations, but the physical 64K mem block becomes stale
 // - if RD & WR point to different 256-byte pages, then memwrite will point to the page in the physical 64K mem block
 //		. writes will still set the dirty flag (but can be ignored)
+//		. writes will still set the dirty flag (but can be ignored)
 //		. UpdatePaging() ignores this, as it only copies back to the physical 64K mem block when memshadow changes (for that 256-byte page)
 //
 // memdirty
@@ -1723,7 +1724,8 @@ void MemReset()
 	memmain[ 0xBFFF ] = 0;
 
 	// SET UP THE MEMORY IMAGE
-	mem = memimage;
+	//mem = memimage;
+	mem = &memmain[_6502_MEM_END + 1];
 
 	// INITIALIZE PAGING, FILLING IN THE 64K MEMORY IMAGE
 	ResetPaging(TRUE);		// Initialize=1, init memmode
