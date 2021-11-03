@@ -286,7 +286,8 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 
 			RECT spriteRect;
 			bool shouldDraw = true;
-			if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
+			if (((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
+				|| (g_nonVolatile.showFog == false))
 			{
 				spriteRect = tileset->tileSpritePositions.at(mapMemPtr[mapPos]);
 			}
