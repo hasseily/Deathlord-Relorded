@@ -349,6 +349,35 @@ void EmulatorMessageLoopProcessing()
 		Sleep(1);		// Stop process hogging CPU (NB. don't delay for too long otherwise key input can be slow in other apps - GH#569)
 }
 
+void EmulatorSetSpeed(UINT8 speed)
+{
+	switch (speed)
+	{
+	case 0:
+		g_dwSpeed = SPEED_MIN;
+		break;
+	case 1:
+		g_dwSpeed = SPEED_NORMAL;
+		break;
+	case 2:
+		g_dwSpeed = 20;
+		break;
+	case 3:
+		g_dwSpeed = 40;
+		break;
+	case 4:
+		g_dwSpeed = 60;
+		break;
+	case 5:
+		g_dwSpeed = 80;
+		break;
+	case 6:
+		g_dwSpeed = SPEED_MAX;
+		break;
+	default:
+		g_dwSpeed = SPEED_NORMAL;
+	}
+}
 
 // DO ONE-TIME INITIALIZATION
 void EmulatorOneTimeInitialization(HWND window)

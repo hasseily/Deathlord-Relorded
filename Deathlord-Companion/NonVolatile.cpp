@@ -20,6 +20,7 @@ static nlohmann::json nv_json = R"(
     "diskScenBPath":	  "Images\\Deathlord Scenario B.nib",
 	"speed":			  1,
 	"scanlines":		  false,
+	"showMap":			  true,
 	"video":			  0,
     "volumeSpeaker":	  2,
 	"useGameLink":        true,
@@ -53,6 +54,7 @@ int NonVolatile::SaveToDisk()
 	nv_json["diskScenBPath"]		= sDiskScenBPath;
 	nv_json["speed"]				= speed;
 	nv_json["scanlines"]			= scanlines;
+	nv_json["showMap"]				= showMap;
 	nv_json["video"]				= video;
 	nv_json["volumeSpeaker"]		= volumeSpeaker;
 	nv_json["useGameLink"]			= useGameLink;
@@ -106,6 +108,7 @@ int NonVolatile::LoadFromDisk()
 
 	speed = nv_json["speed"].get<int>();
 	scanlines = nv_json["scanlines"].get<bool>();
+	showMap = nv_json["showMap"].get<bool>();
 	video = nv_json["video"].get<int>();
 	volumeSpeaker = nv_json["volumeSpeaker"].get<int>();
 	useGameLink = nv_json["useGameLink"].get<bool>();

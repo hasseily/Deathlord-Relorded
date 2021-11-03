@@ -1,4 +1,14 @@
 #pragma once
+
+enum class AutoMapQuandrant
+{
+	All,
+	TopLeft,
+	TopRight,
+	BottomLeft,
+	BottomRight
+};
+
 class NonVolatile
 {
 public:
@@ -8,10 +18,12 @@ public:
 	std::wstring diskScenBPath;
 	int speed = 1;
 	bool scanlines = false;
+	bool showMap = true;
 	int video = 1;
 	int volumeSpeaker = 1;
 	bool useGameLink = false;
 	bool logCombat = false;
+	AutoMapQuandrant mapQuadrant = AutoMapQuandrant::All;	// Not saved, always reverts to All upon restart
 
 	// contains markers data (8 bits per tile) for all maps
 	// saved in an independent file
