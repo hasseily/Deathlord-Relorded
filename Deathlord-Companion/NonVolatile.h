@@ -20,6 +20,7 @@ public:
 	bool scanlines = false;
 	bool showMap = true;
 	bool showFog = true;
+	bool showFootsteps = true;
 	bool showSpells = true;
 	int video = 1;
 	int volumeSpeaker = 1;

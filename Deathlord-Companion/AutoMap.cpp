@@ -13,6 +13,12 @@ extern std::unique_ptr<Game>* GetGamePtr();
 
 constexpr UINT8 TILEID_REDRAW = 0xFF;			// when we see this nonexistent tile id we automatically redraw the tile
 
+constexpr XMVECTORF32 COLORTRANSLUCENTWHITE = { 1.f, 1.f, 1.f, .8f };
+
+UINT m_avatarStrobeIdx = 0;
+constexpr UINT AVATARSTROBECT = 14;
+constexpr float AVATARSTROBE[AVATARSTROBECT] = { .75f, .74f, .73f, .72f, .71f, .7f, .7f, .7f, .7f, .71f, .72f, .73f, .74f, .75f };
+
 UINT8 tilesVisibleAroundAvatar[81] = { 0 };
 
 void AutoMap::Initialize()
@@ -306,8 +312,8 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 				m_currentMapRect.top + (posY * PNGTH * mapScale)
 			);
 			XMFLOAT2 overlayPosInMap(	// Display the avatar/footsteps in the center of the tile
-				tilePosInMap.x + 2,
-				tilePosInMap.y
+				tilePosInMap.x + mapScale * FBTW / 2,
+				tilePosInMap.y + mapScale * FBTH / 2
 			);
 			if (shouldDraw)
 			{
@@ -317,20 +323,28 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 			m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] = (UINT8)mapMemPtr[mapPos];
 
 			// now draw the avatar and footsteps
+			auto _texSize = GetTextureSize(m_autoMapAvatar.Get());
+			XMFLOAT2 _origin = { _texSize.x / 2.f, _texSize.y / 2.f };
+			RECT avatarRect = { 0, 0, _texSize.x, _texSize.y };
+
 			if (posX == m_avatarPosition.x && posY == m_avatarPosition.y)
 			{
-				auto gamePtr = GetGamePtr();
-				(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "@",
-					overlayPosInMap, Colors::Yellow, 0.f, Vector2(0.f, 0.f), 1.f);
+
+				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapAvatar), _texSize, 
+					overlayPosInMap, &avatarRect, Colors::White, 0.f, _origin, mapScale * AVATARSTROBE[m_avatarStrobeIdx]);
+				++m_avatarStrobeIdx;
+				if (m_avatarStrobeIdx >= AVATARSTROBECT)
+					m_avatarStrobeIdx = 0;
 			}
 			else // don't draw footsteps on the current tile but on anything else that has footsteps
 			{
-				if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (1 << (UINT8)FogOfWarMarkers::Footstep)) > 0)
+				if (g_nonVolatile.showFootsteps)
 				{
-					auto gamePtr = GetGamePtr();
-					// draw a # in yellow at 0.5 alpha
-					(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "~",
-						overlayPosInMap, { 1.f, 1.f, 1.f, .9f }, 0.f, Vector2(0.f, 0.f), 1.f);
+					if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (1 << (UINT8)FogOfWarMarkers::Footstep)) > 0)
+					{
+						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapAvatar), _texSize,
+							overlayPosInMap, &avatarRect, COLORTRANSLUCENTWHITE, 0.f, _origin, mapScale * 0.3f);
+					}
 				}
 			}
 		}
@@ -370,12 +384,18 @@ void AutoMap::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 			m_autoMapTextureBG.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_autoMapTextureBG.Get(),
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapBackground));
+	DX::ThrowIfFailed(
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/PlayerSprite.png",
+			m_autoMapAvatar.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_autoMapAvatar.Get(),
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapAvatar));
 }
 
 void AutoMap::OnDeviceLost()
 {
 	m_autoMapTexture.Reset();
 	m_autoMapTextureBG.Reset();
+	m_autoMapAvatar.Reset();
 }
 #pragma endregion
 

@@ -161,7 +161,7 @@ void UpdateMenuBarStatus(HWND hwnd)
 		HA::AlertIfError(hwnd);
 	CheckMenuRadioItem(videoMenu, 0, 3, g_nonVolatile.video, MF_BYPOSITION);
 	CheckMenuRadioItem(volumeMenu, 0, 4, g_nonVolatile.volumeSpeaker, MF_BYPOSITION);
-	CheckMenuRadioItem(autoMapMenu, 3, 6, (int)g_nonVolatile.mapQuadrant+3, MF_BYPOSITION);
+	CheckMenuRadioItem(autoMapMenu, 4, 8, (int)g_nonVolatile.mapQuadrant+4, MF_BYPOSITION);
 
 	CheckMenuItem(emuMenu, ID_EMULATOR_GAMELINK,
 		MF_BYCOMMAND | (g_nonVolatile.useGameLink ? MF_CHECKED : MF_UNCHECKED));
@@ -171,6 +171,8 @@ void UpdateMenuBarStatus(HWND hwnd)
 		MF_BYCOMMAND | (g_nonVolatile.showMap ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(autoMapMenu, ID_AUTOMAP_SHOWFOG,
 		MF_BYCOMMAND | (g_nonVolatile.showFog ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(autoMapMenu, ID_AUTOMAP_SHOWFOOTSTEPS,
+		MF_BYCOMMAND | (g_nonVolatile.showFootsteps ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(cmpMenu, ID_COMPANION_SPELLWINDOW,
 		MF_BYCOMMAND | (g_nonVolatile.showSpells ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(logMenu, ID_LOGWINDOW_ALSOLOGCOMBAT,
@@ -838,6 +840,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 		case ID_AUTOMAP_SHOWFOG:
 			g_nonVolatile.showFog = !g_nonVolatile.showFog;
+			g_nonVolatile.SaveToDisk();
+			UpdateMenuBarStatus(hWnd);
+			break;
+		case ID_AUTOMAP_SHOWFOOTSTEPS:
+			g_nonVolatile.showFootsteps = !g_nonVolatile.showFootsteps;
 			g_nonVolatile.SaveToDisk();
 			UpdateMenuBarStatus(hWnd);
 			break;

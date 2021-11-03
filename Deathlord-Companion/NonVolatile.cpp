@@ -22,6 +22,7 @@ static nlohmann::json nv_json = R"(
 	"scanlines":		  false,
 	"showMap":			  true,
 	"showFog":			  true,
+	"showFootsteps":	  true,
 	"showSpells":		  true,
 	"video":			  0,
     "volumeSpeaker":	  2,
@@ -58,6 +59,7 @@ int NonVolatile::SaveToDisk()
 	nv_json["scanlines"]			= scanlines;
 	nv_json["showMap"]				= showMap;
 	nv_json["showFog"]				= showFog;
+	nv_json["showFootsteps"]		= showFootsteps;
 	nv_json["showSpells"]			= showSpells;
 	nv_json["video"]				= video;
 	nv_json["volumeSpeaker"]		= volumeSpeaker;
@@ -114,6 +116,7 @@ int NonVolatile::LoadFromDisk()
 	scanlines = nv_json["scanlines"].get<bool>();
 	showMap = nv_json["showMap"].get<bool>();
 	showFog = nv_json["showFog"].get<bool>();
+	showFootsteps = nv_json["showFootsteps"].get<bool>();
 	showSpells = nv_json["showSpells"].get<bool>();
 	video = nv_json["video"].get<int>();
 	volumeSpeaker = nv_json["volumeSpeaker"].get<int>();
