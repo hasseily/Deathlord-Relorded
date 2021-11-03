@@ -99,7 +99,9 @@ void MemoryTriggers::PollChanged_MapType(UINT8 oldVal)  // unused
 void MemoryTriggers::PollChanged_Floor(UINT8 oldVal)
 {
 	//OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_LEVEL)[0]) + L" Floor changed!\n").c_str());
-    // TODO: In dungeons and towers, zoom to the current level (each map is 4 levels)
+	AutoMap* aM = AutoMap::GetInstance();
+	aM->SetShowTransition(true);
+	DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 0);
 }
 
 void MemoryTriggers::PollChanged_XPos(UINT8 oldVal) // Unused
