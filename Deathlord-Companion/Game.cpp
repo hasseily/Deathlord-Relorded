@@ -239,6 +239,11 @@ void Game::Update(DX::StepTimer const& timer)
 {
     PIXBeginEvent(PIX_COLOR_DEFAULT, L"Update");
 
+	UINT8* memPtr = MemGetMainPtr(0);
+	g_isInGameMap = (memPtr[0xFCE0] == 0xE5);	// when not in game map, that area is all zeros
+	if (g_isInGameMap)
+		EmulatorSetSpeed(SPEED_NORMAL);
+
 	EmulatorMessageLoopProcessing();
 
     auto autoMap = AutoMap::GetInstance();
@@ -277,9 +282,6 @@ void Game::Update(DX::StepTimer const& timer)
 // Draws the scene.
 void Game::Render()
 {
-	UINT8* memPtr = MemGetMainPtr(0);
-	g_isInGameMap = (memPtr[0xFCE0] == 0xE5);	// when not in game map, that area is all zeros
-
     // use shouldRender to pause/activate rendering
     if (!shouldRender)
         return;
@@ -359,6 +361,7 @@ void Game::Render()
 			clientRect.bottom - clientRect.top, 0, 0, 1));
 		m_lineEffectLines->Apply(commandList);
 		m_primitiveBatchLines->Begin(commandList);
+        m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
 		m_spriteBatch->Begin(commandList);
         for each (auto sb in m_sbM.sidebars)
         {
@@ -485,8 +488,6 @@ void Game::Clear()
     // Set the Gamelink viewport as the first default viewport for the geometry shaders to use
     // So we don't have to specifiy the viewport in the shader
     // TODO: figure out how that's done
-    // D3D12_VIEWPORT viewports[2] = { m_deviceResources->GetGamelinkViewport(), m_deviceResources->GetScreenViewport() };
-    // D3D12_RECT scissorRects[2] = { m_deviceResources->GetScissorRect(), m_deviceResources->GetScissorRect() };
     D3D12_VIEWPORT viewports[1] = { m_deviceResources->GetScreenViewport() };
     D3D12_RECT scissorRects[1] = { m_deviceResources->GetScissorRect() };
     commandList->RSSetViewports(1, viewports);
