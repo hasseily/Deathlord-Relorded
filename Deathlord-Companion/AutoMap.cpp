@@ -327,13 +327,18 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 			XMFLOAT2 _origin = { _texSize.x / 2.f, _texSize.y / 2.f };
 			RECT avatarRect = { 0, 0, _texSize.x, _texSize.y };
 
+			// Slow down the strobe based on the chosen frame rate
+			UINT strobeSlowness = 4;
+#ifdef _DEBUG
+			strobeSlowness = 1;
+#endif
 			if (posX == m_avatarPosition.x && posY == m_avatarPosition.y)
 			{
 
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapAvatar), _texSize, 
-					overlayPosInMap, &avatarRect, Colors::White, 0.f, _origin, mapScale * AVATARSTROBE[m_avatarStrobeIdx]);
+					overlayPosInMap, &avatarRect, Colors::White, 0.f, _origin, mapScale * AVATARSTROBE[m_avatarStrobeIdx / strobeSlowness]);
 				++m_avatarStrobeIdx;
-				if (m_avatarStrobeIdx >= AVATARSTROBECT)
+				if (m_avatarStrobeIdx >= (AVATARSTROBECT * strobeSlowness))
 					m_avatarStrobeIdx = 0;
 			}
 			else // don't draw footsteps on the current tile but on anything else that has footsteps
