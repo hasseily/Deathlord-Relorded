@@ -33,7 +33,7 @@ void EmulatorOneTimeInitialization(HWND window);
 void EmulatorRepeatInitialization();
 void EmulatorReboot();
 void EmulatorMessageLoopProcessing();
-void EmulatorSetSpeed(WORD speed);
+void EmulatorSetSpeed(UINT8 speed);
 
 void UseClockMultiplier(double clockMultiplier);
 
