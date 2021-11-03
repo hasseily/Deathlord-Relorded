@@ -8,6 +8,7 @@ public:
 	std::wstring diskScenBPath;
 	int speed = 1;
 	bool scanlines = false;
+	bool showMap = true;
 	int video = 1;
 	int volumeSpeaker = 1;
 	bool useGameLink = false;

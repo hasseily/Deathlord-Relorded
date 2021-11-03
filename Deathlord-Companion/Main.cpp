@@ -144,7 +144,8 @@ void UpdateMenuBarStatus(HWND hwnd)
 	HMENU speedMenu = GetSubMenu(emuMenu, 10);
 	HMENU videoMenu = GetSubMenu(emuMenu, 11);
 	HMENU volumeMenu = GetSubMenu(emuMenu, 12);
-	HMENU logMenu = GetSubMenu(cmpMenu, 2);
+	HMENU autoMapMenu = GetSubMenu(cmpMenu, 3);
+	HMENU logMenu = GetSubMenu(cmpMenu, 4);
 
 	bool res;
 	res = CheckMenuRadioItem(speedMenu, 0, 6, g_nonVolatile.speed, MF_BYPOSITION);
@@ -157,6 +158,8 @@ void UpdateMenuBarStatus(HWND hwnd)
 		MF_BYCOMMAND | (g_nonVolatile.useGameLink ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(videoMenu, ID_VIDEO_SCANLINES,
 		MF_BYCOMMAND | (g_nonVolatile.scanlines ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(autoMapMenu, ID_AUTOMAP_SHOWMAP,
+		MF_BYCOMMAND | (g_nonVolatile.showMap ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(logMenu, ID_LOGWINDOW_ALSOLOGCOMBAT,
 		MF_BYCOMMAND | (g_nonVolatile.logCombat ? MF_CHECKED : MF_UNCHECKED));
 	
@@ -808,6 +811,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_nonVolatile.useGameLink = !g_nonVolatile.useGameLink;
 			g_nonVolatile.SaveToDisk();
 			UpdateMenuBarStatus(hWnd);
+			break;
+		case ID_AUTOMAP_SHOWMAP:
+			g_nonVolatile.showMap = !g_nonVolatile.showMap;
+			g_nonVolatile.SaveToDisk();
+			UpdateMenuBarStatus(hWnd);
+			game->SetWindowSizeOnChangedProfile();
 			break;
 		case ID_LOGWINDOW_ALSOLOGCOMBAT:
 			g_nonVolatile.logCombat = !g_nonVolatile.logCombat;

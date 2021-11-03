@@ -203,7 +203,23 @@ void AutoMap::CreateNewTileSpriteMap()
 
 void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RECT* mapRect)
 {
+	// Scale the viewport, then translate it in reverse to how much
+	// the center of the mapRect was translated when scaled
+	// In this way the map is always centered when scaled, within the mapRect requested
 	auto commandList = m_deviceResources->GetCommandList();
+	SimpleMath::Viewport mapViewport(m_deviceResources->GetScreenViewport());
+	SimpleMath::Rectangle mapScissorRect(*mapRect);
+	float _scale = 2.f;
+	Vector2 _mapCenter = mapScissorRect.Center();
+	Vector2 _mapCenterScaled(_mapCenter * _scale);
+	Vector2 _mapTranslation = _mapCenterScaled - _mapCenter;
+	mapViewport.x -= _mapTranslation.x;
+	mapViewport.y -= _mapTranslation.y;
+	mapViewport.width *= _scale;
+	mapViewport.height *= _scale;
+	commandList->RSSetViewports(1, mapViewport.Get12());
+	commandList->RSSetScissorRects(1, &(RECT)mapScissorRect);
+
 	spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
 	if (bShowTransition)
 	{
@@ -314,6 +330,10 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 	}
 
 	spriteBatch->End();
+	D3D12_VIEWPORT viewports[1] = { m_deviceResources->GetScreenViewport() };
+	D3D12_RECT scissorRects[1] = { m_deviceResources->GetScissorRect() };
+	commandList->RSSetViewports(1, viewports);
+	commandList->RSSetScissorRects(1, scissorRects);
 	// End drawing automap
 
 }

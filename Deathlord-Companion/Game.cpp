@@ -209,6 +209,8 @@ void Game::SetWindowSizeOnChangedProfile()
 void Game::GetBaseSize(__out int& width, __out int& height) noexcept
 {
 	m_sbM.GetBaseSize(width, height);
+    if (!g_nonVolatile.showMap)
+        return;
 	width = width + MAP_WIDTH_IN_VIEWPORT;
     UINT32 mapHeight = MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW;
 	if (height < mapHeight)
@@ -447,19 +449,20 @@ void Game::Render()
 		m_spriteBatch->End();
 		// End drawing text
 
-
-		// Now draw automap
-		// TODO: Do most of this outside of render, much of it is fixed between renders
-		auto mmOrigin = Vector2(clientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
-		RECT mapRectInViewport = {
-			mmOrigin.x,
-			mmOrigin.y,
-			mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
-			mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
-		};
-		m_automap->DrawAutoMap(m_spriteBatch, &mapRectInViewport);
-		// End drawing automap
-
+        if (g_nonVolatile.showMap)
+        {
+			// Now draw automap
+			// TODO: Do most of this outside of render, much of it is fixed between renders
+			auto mmOrigin = Vector2(clientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
+			RECT mapRectInViewport = {
+				mmOrigin.x,
+				mmOrigin.y,
+				mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
+				mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
+			};
+			m_automap->DrawAutoMap(m_spriteBatch, &mapRectInViewport);
+			// End drawing automap
+        }
 
 		PIXEndEvent(commandList);
 
@@ -487,9 +490,7 @@ void Game::Clear()
     commandList->ClearDepthStencilView(dsvDescriptor, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
     // Set the viewports and scissor rects.
-    // Set the Gamelink viewport as the first default viewport for the geometry shaders to use
-    // So we don't have to specifiy the viewport in the shader
-    // TODO: figure out how that's done
+    // Those get modified when displaying the automap, but get reverted to the below after that
     D3D12_VIEWPORT viewports[1] = { m_deviceResources->GetScreenViewport() };
     D3D12_RECT scissorRects[1] = { m_deviceResources->GetScissorRect() };
     commandList->RSSetViewports(1, viewports);

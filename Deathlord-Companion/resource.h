@@ -89,6 +89,14 @@
 #define ID_EMULATOR_SELECTSCENARIOB     32834
 #define ID_SCENARIOS_BACKUP             32835
 #define ID_SCENARIOS_RESTORE            32836
+#define ID_Menu32840                    32840
+#define ID_AutoMap                      32841
+#define ID_AUTOMAP_SHOWMAP              32842
+#define ID_Menu32843                    32843
+#define ID_AUTOMAP_DISPLAYTOPLEFTQUADRANT 32844
+#define ID_AUTOMAP_DISPLAYTOPRIGHTQUANDRANT 32845
+#define ID_AUTOMAP_DISPLAYBOTTOMLEFTQUADRANT 32846
+#define ID_AUTOMAP_DISPLAYBOTTOMRIGHTQUADRANT 32847
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -97,7 +105,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        147
-#define _APS_NEXT_COMMAND_VALUE         32840
+#define _APS_NEXT_COMMAND_VALUE         32848
 #define _APS_NEXT_CONTROL_VALUE         1008
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
