@@ -153,6 +153,7 @@ void UpdateMenuBarStatus(HWND hwnd)
 		HA::AlertIfError(hwnd);
 	CheckMenuRadioItem(videoMenu, 0, 3, g_nonVolatile.video, MF_BYPOSITION);
 	CheckMenuRadioItem(volumeMenu, 0, 4, g_nonVolatile.volumeSpeaker, MF_BYPOSITION);
+	CheckMenuRadioItem(autoMapMenu, 2, 6, (int)g_nonVolatile.mapQuadrant+2, MF_BYPOSITION);
 
 	CheckMenuItem(emuMenu, ID_EMULATOR_GAMELINK,
 		MF_BYCOMMAND | (g_nonVolatile.useGameLink ? MF_CHECKED : MF_UNCHECKED));
@@ -817,6 +818,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_nonVolatile.SaveToDisk();
 			UpdateMenuBarStatus(hWnd);
 			game->SetWindowSizeOnChangedProfile();
+			break;
+		case ID_AUTOMAP_DISPLAYFULL:
+			g_nonVolatile.mapQuadrant = AutoMapQuandrant::All;
+			UpdateMenuBarStatus(hWnd);
+			break;
+		case ID_AUTOMAP_DISPLAYTOPLEFTQUADRANT:
+			g_nonVolatile.mapQuadrant = AutoMapQuandrant::TopLeft;
+			UpdateMenuBarStatus(hWnd);
+			break;
+		case ID_AUTOMAP_DISPLAYTOPRIGHTQUADRANT:
+			g_nonVolatile.mapQuadrant = AutoMapQuandrant::TopRight;
+			UpdateMenuBarStatus(hWnd);
+			break;
+		case ID_AUTOMAP_DISPLAYBOTTOMLEFTQUADRANT:
+			g_nonVolatile.mapQuadrant = AutoMapQuandrant::BottomLeft;
+			UpdateMenuBarStatus(hWnd);
+			break;
+		case ID_AUTOMAP_DISPLAYBOTTOMRIGHTQUADRANT:
+			g_nonVolatile.mapQuadrant = AutoMapQuandrant::BottomRight;
+			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_LOGWINDOW_ALSOLOGCOMBAT:
 			g_nonVolatile.logCombat = !g_nonVolatile.logCombat;

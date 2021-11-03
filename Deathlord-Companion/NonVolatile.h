@@ -1,4 +1,14 @@
 #pragma once
+
+enum class AutoMapQuandrant
+{
+	All,
+	TopLeft,
+	TopRight,
+	BottomLeft,
+	BottomRight
+};
+
 class NonVolatile
 {
 public:
@@ -13,6 +23,7 @@ public:
 	int volumeSpeaker = 1;
 	bool useGameLink = false;
 	bool logCombat = false;
+	AutoMapQuandrant mapQuadrant = AutoMapQuandrant::All;	// Not saved, always reverts to All upon restart
 
 	// contains markers data (8 bits per tile) for all maps
 	// saved in an independent file

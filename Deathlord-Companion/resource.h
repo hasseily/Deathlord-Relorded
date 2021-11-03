@@ -40,7 +40,6 @@
 #define ID_VIDEOFLIP_FLIPX              32777
 #define ID_VIDEOFLIP_FLIPY              32778
 #define ID_VIDEOFLIP_FLIPXY             32779
-#define ID_Menu                         32780
 #define ID_FILE_DEACTIVATEPROFILE       32781
 #define ID_GAMEPLAY_LOGWINDOW           32782
 #define IDM_LOG                         32783
@@ -84,19 +83,18 @@
 #define ID_EMULATOR_INSERTINTODISK2     32825
 #define ID_COMPANION_HACKS              32830
 #define ID_EMULATOR_SELECTDISKBOOT      32831
-#define ID_Menu32832                    32832
 #define ID_EMULATOR_SELECTSCENARIOA     32833
 #define ID_EMULATOR_SELECTSCENARIOB     32834
 #define ID_SCENARIOS_BACKUP             32835
 #define ID_SCENARIOS_RESTORE            32836
-#define ID_Menu32840                    32840
 #define ID_AutoMap                      32841
 #define ID_AUTOMAP_SHOWMAP              32842
-#define ID_Menu32843                    32843
 #define ID_AUTOMAP_DISPLAYTOPLEFTQUADRANT 32844
-#define ID_AUTOMAP_DISPLAYTOPRIGHTQUANDRANT 32845
 #define ID_AUTOMAP_DISPLAYBOTTOMLEFTQUADRANT 32846
 #define ID_AUTOMAP_DISPLAYBOTTOMRIGHTQUADRANT 32847
+#define ID_AUTOMAP_DISPLAYFULL          32848
+#define ID_AUTOMAP_DISPLAYTOPRIGHTQUADRANT 32849
+#define ID_MAPQUAD_BR                   32854
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -105,7 +103,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        147
-#define _APS_NEXT_COMMAND_VALUE         32848
+#define _APS_NEXT_COMMAND_VALUE         32856
 #define _APS_NEXT_CONTROL_VALUE         1008
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

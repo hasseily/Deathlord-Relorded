@@ -206,11 +206,33 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 	// Scale the viewport, then translate it in reverse to how much
 	// the center of the mapRect was translated when scaled
 	// In this way the map is always centered when scaled, within the mapRect requested
+	// Also the center of the mapRect is shifted to one of the quadrants if a zoomed-in map is asked for
+
+
 	auto commandList = m_deviceResources->GetCommandList();
 	SimpleMath::Viewport mapViewport(m_deviceResources->GetScreenViewport());
 	SimpleMath::Rectangle mapScissorRect(*mapRect);
-	float _scale = 2.f;
+	float _scale = (g_nonVolatile.mapQuadrant == AutoMapQuandrant::All ? 1.f : 2.f);
 	Vector2 _mapCenter = mapScissorRect.Center();
+	switch (g_nonVolatile.mapQuadrant)
+	{
+	case AutoMapQuandrant::TopLeft:
+		_mapCenter.x -= mapScissorRect.width / 2.f;
+		_mapCenter.y -= mapScissorRect.height / 2.f;
+		break;
+	case AutoMapQuandrant::TopRight:
+		_mapCenter.x += mapScissorRect.width / 2.f;
+		_mapCenter.y -= mapScissorRect.height / 2.f;
+		break;
+	case AutoMapQuandrant::BottomLeft:
+		_mapCenter.x -= mapScissorRect.width / 2.f;
+		_mapCenter.y += mapScissorRect.height / 2.f;
+		break;
+	case AutoMapQuandrant::BottomRight:
+		_mapCenter.x += mapScissorRect.width / 2.f;
+		_mapCenter.y += mapScissorRect.height / 2.f;
+		break;
+	}
 	Vector2 _mapCenterScaled(_mapCenter * _scale);
 	Vector2 _mapTranslation = _mapCenterScaled - _mapCenter;
 	mapViewport.x -= _mapTranslation.x;
