@@ -575,6 +575,14 @@ void Game::MenuShowLogWindow()
     m_logWindow->ShowLogWindow();
 }
 
+void Game::MenuShowSpellWindow()
+{
+    m_spellWindow = GetSpellWindow();
+    m_spellWindow->ShowSpellWindow();
+	g_nonVolatile.showSpells = true;
+	g_nonVolatile.SaveToDisk();
+}
+
 void Game::MenuToggleLogWindow()
 {
 	m_logWindow = GetLogWindow();
@@ -582,6 +590,17 @@ void Game::MenuToggleLogWindow()
         m_logWindow->HideLogWindow();
     else
         m_logWindow->ShowLogWindow();
+}
+
+void Game::MenuToggleSpellWindow()
+{
+	m_spellWindow = GetSpellWindow();
+	if (m_spellWindow->IsSpellWindowDisplayed())
+        m_spellWindow->HideSpellWindow();
+	else
+        m_spellWindow->ShowSpellWindow();
+	g_nonVolatile.showSpells = m_spellWindow->IsSpellWindowDisplayed();
+	g_nonVolatile.SaveToDisk();
 }
 
 void Game::MenuToggleHacksWindow()

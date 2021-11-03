@@ -6,6 +6,7 @@
 #define IDS_APP_TITLE                   3
 #define IDS_GAMELINK_TITLE              4
 #define IDD_LOGVIEW                     101
+#define IDD_SPELLSVIEW                  101
 #define IDD_DEATHLORD_DIALOG            102
 #define IDD_ABOUTBOX                    103
 #define IDM_ABOUT                       104
@@ -23,6 +24,8 @@
 #define IDD_HACKS                       143
 #define IDI_DEATHLORDICON               146
 #define IDR_DISK2_16SECTOR_FW           150
+#define IDB_BITMAP1                     151
+#define IDB_SPELLS                      151
 #define IDC_LOGSTATIC                   1000
 #define IDC_EDIT_MEMLOC                 1001
 #define IDC_EDIT_MEMVAL                 1002
@@ -94,7 +97,7 @@
 #define ID_AUTOMAP_DISPLAYBOTTOMRIGHTQUADRANT 32847
 #define ID_AUTOMAP_DISPLAYFULL          32848
 #define ID_AUTOMAP_DISPLAYTOPRIGHTQUADRANT 32849
-#define ID_MAPQUAD_BR                   32854
+#define ID_COMPANION_SPELLWINDOW        32856
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -102,8 +105,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        147
-#define _APS_NEXT_COMMAND_VALUE         32856
+#define _APS_NEXT_RESOURCE_VALUE        152
+#define _APS_NEXT_COMMAND_VALUE         32857
 #define _APS_NEXT_CONTROL_VALUE         1008
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

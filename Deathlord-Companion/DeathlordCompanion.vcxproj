@@ -211,6 +211,7 @@
     <ClCompile Include="Sidebar.cpp" />
     <ClCompile Include="SidebarContent.cpp" />
     <ClCompile Include="SidebarManager.cpp" />
+    <ClCompile Include="SpellWindow.cpp" />
     <ClCompile Include="TilesetCreator.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -264,6 +265,7 @@
     <ClInclude Include="Sidebar.h" />
     <ClInclude Include="SidebarContent.h" />
     <ClInclude Include="SidebarManager.h" />
+    <ClInclude Include="SpellWindow.h" />
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TilesetCreator.h" />
@@ -312,6 +314,7 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </Image>
+    <Image Include="Assets\SpellList.bmp" />
     <Image Include="DeathlordCompanion.ico">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </Image>

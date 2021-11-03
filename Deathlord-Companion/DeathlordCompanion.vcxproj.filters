@@ -132,6 +132,9 @@
     <ClCompile Include="AutoMap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SpellWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATGColors.h">
@@ -293,6 +296,9 @@
     <ClInclude Include="Descriptors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SpellWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="emulator\cpu\cpu_general.inl">
@@ -368,6 +374,9 @@
     </Image>
     <Image Include="Assets\Background_NoMap.png">
       <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SpellList.bmp">
+      <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>

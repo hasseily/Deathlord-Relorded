@@ -11,6 +11,7 @@
 #include "RemoteControl/GameLink.h"
 #include "Keyboard.h"
 #include "LogWindow.h"
+#include "SpellWindow.h"
 #include "Emulator/AppleWin.h"
 #include "Emulator/CardManager.h"
 #include "Emulator/Disk.h"
@@ -52,6 +53,7 @@ namespace
 {
 	std::unique_ptr<Game> g_game;
 	std::shared_ptr<LogWindow> g_logW;
+	std::shared_ptr<SpellWindow> g_spellW;
 	std::shared_ptr<DeathlordHacks> g_dlHacks;
 }
 
@@ -108,6 +110,12 @@ std::shared_ptr<LogWindow> GetLogWindow()
 	return g_logW;
 }
 
+
+std::shared_ptr<SpellWindow> GetSpellWindow()
+{
+	return g_spellW;
+}
+
 std::shared_ptr<DeathlordHacks> GetDeathlordHacks()
 {
 	return g_dlHacks;
@@ -161,6 +169,8 @@ void UpdateMenuBarStatus(HWND hwnd)
 		MF_BYCOMMAND | (g_nonVolatile.scanlines ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(autoMapMenu, ID_AUTOMAP_SHOWMAP,
 		MF_BYCOMMAND | (g_nonVolatile.showMap ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(cmpMenu, ID_COMPANION_SPELLWINDOW,
+		MF_BYCOMMAND | (g_nonVolatile.showSpells ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(logMenu, ID_LOGWINDOW_ALSOLOGCOMBAT,
 		MF_BYCOMMAND | (g_nonVolatile.logCombat ? MF_CHECKED : MF_UNCHECKED));
 	
@@ -257,14 +267,19 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 			// create the instances of important blocks at the start
 			g_logW = std::make_unique<LogWindow>(g_hInstance, hwnd);
+			g_spellW = std::make_unique<SpellWindow>(g_hInstance, hwnd);
 			g_dlHacks = std::make_unique<DeathlordHacks>(g_hInstance, hwnd);
 
 			// Game has now loaded the saved/default settings
 			// Update the menu bar with the settings
 			UpdateMenuBarStatus(hwnd);
 
-			// And autoload the last used profile
+			// Autoload the last used profile
 			g_game->ActivateLastUsedProfile();
+
+			// And open the spells window if necessary
+			if (g_nonVolatile.showSpells)
+				g_game->MenuShowSpellWindow();
 		}
 
 		// Main message loop
@@ -839,6 +854,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_nonVolatile.mapQuadrant = AutoMapQuandrant::BottomRight;
 			UpdateMenuBarStatus(hWnd);
 			break;
+		case ID_COMPANION_SPELLWINDOW:
+		{
+			if (game)
+			{
+				game->MenuToggleSpellWindow();
+			}
+			g_nonVolatile.showSpells = !g_nonVolatile.showSpells;
+			g_nonVolatile.SaveToDisk();
+			UpdateMenuBarStatus(hWnd);
+			break;
+		}
 		case ID_LOGWINDOW_ALSOLOGCOMBAT:
 			g_nonVolatile.logCombat = !g_nonVolatile.logCombat;
 			g_nonVolatile.SaveToDisk();
