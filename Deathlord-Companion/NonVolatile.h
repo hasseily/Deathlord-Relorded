@@ -19,6 +19,7 @@ public:
 	int speed = 1;
 	bool scanlines = false;
 	bool showMap = true;
+	bool showSpells = true;
 	int video = 1;
 	int volumeSpeaker = 1;
 	bool useGameLink = false;

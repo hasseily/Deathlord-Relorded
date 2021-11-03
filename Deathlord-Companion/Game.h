@@ -7,6 +7,7 @@
 #include "DeviceResources.h"
 #include "StepTimer.h"
 #include "LogWindow.h"
+#include "SpellWindow.h"
 #include "Sidebar.h"
 #include "DeathlordHacks.h"
 #include "TilesetCreator.h"
@@ -45,6 +46,7 @@ extern bool g_isInGameMap;          // is the player in-game or on the loading/u
 extern bool g_wantsToSave;          // only TRUE when the player is asking to save
 extern NonVolatile g_nonVolatile;
 static std::shared_ptr<LogWindow>m_logWindow;
+static std::shared_ptr<SpellWindow>m_spellWindow;
 static std::shared_ptr<DeathlordHacks>m_dlHacks;
 
 // A game implementation that creates a D3D12 device and
@@ -85,7 +87,9 @@ public:
     void MenuActivateProfile();
     void MenuDeactivateProfile();
     void MenuShowLogWindow();
+    void MenuShowSpellWindow();
 	void MenuToggleLogWindow();
+	void MenuToggleSpellWindow();
 	void MenuToggleHacksWindow();
 
     // Other methods

@@ -21,6 +21,7 @@ static nlohmann::json nv_json = R"(
 	"speed":			  1,
 	"scanlines":		  false,
 	"showMap":			  true,
+	"showSpells":		  true,
 	"video":			  0,
     "volumeSpeaker":	  2,
 	"useGameLink":        true,
@@ -55,6 +56,7 @@ int NonVolatile::SaveToDisk()
 	nv_json["speed"]				= speed;
 	nv_json["scanlines"]			= scanlines;
 	nv_json["showMap"]				= showMap;
+	nv_json["showSpells"]			= showSpells;
 	nv_json["video"]				= video;
 	nv_json["volumeSpeaker"]		= volumeSpeaker;
 	nv_json["useGameLink"]			= useGameLink;
@@ -109,6 +111,7 @@ int NonVolatile::LoadFromDisk()
 	speed = nv_json["speed"].get<int>();
 	scanlines = nv_json["scanlines"].get<bool>();
 	showMap = nv_json["showMap"].get<bool>();
+	showSpells = nv_json["showSpells"].get<bool>();
 	video = nv_json["video"].get<int>();
 	volumeSpeaker = nv_json["volumeSpeaker"].get<int>();
 	useGameLink = nv_json["useGameLink"].get<bool>();

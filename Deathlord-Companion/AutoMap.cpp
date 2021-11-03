@@ -342,12 +342,12 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 			m_currentMapRect, nullptr, Colors::White, 0.f, XMFLOAT2());
 		// write text on top of automap area
 		Vector2 awaitTextPos(
-			m_currentMapRect.left + (mapRect->right - mapRect->left) / 2 - 200.f,
+			m_currentMapRect.left + (mapRect->right - mapRect->left) / 2 - 240.f,
 			m_currentMapRect.top + (mapRect->bottom - mapRect->top) / 2 - 20.f);
 		auto gamePtr = GetGamePtr();
-		(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "Awaiting Masochists...",
+		(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "THE LANDS OF LORN AWAIT",
 			awaitTextPos - Vector2(3.f, -2.f), Colors::White, 0.f, Vector2(0.f, 0.f), 3.f);
-		(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "Awaiting Masochists...",
+		(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "THE LANDS OF LORN AWAIT",
 			awaitTextPos, COLOR_APPLE2_VIOLET, 0.f, Vector2(0.f, 0.f), 3.f);
 	}
 
