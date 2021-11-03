@@ -321,7 +321,8 @@
                 "0xFDDE"
               ],
               "fixedlength": 5,
-              "type": "int"
+              "type": "int",
+              "padchar": "0"
             },
 			{
               "mem": [ "0xFE40", "0xFE41", "0xFE42", "0xFE43", "0xFE44", "0xFE45", "0xFE46", "0xFE47" ],
@@ -343,7 +344,8 @@
             {
               "mem": [ "0xFDD9", "0xFDDF" ],
               "fixedlength": 5,
-              "type": "int"
+              "type": "int",
+              "padchar":  "0"
             },
 			{
               "mem": [ "0xFE60", "0xFE61", "0xFE62", "0xFE63", "0xFE64", "0xFE65", "0xFE66", "0xFE67" ],
@@ -365,7 +367,8 @@
             {
               "mem": [ "0xFDDA", "0xFDE0" ],
               "fixedlength": 5,
-              "type": "int"
+              "type": "int",
+              "padchar": "0"
             }
           ]
         },
@@ -871,7 +874,8 @@
                 "0xFDE1"
               ],
               "fixedlength": 5,
-              "type": "int"
+              "type": "int",
+              "padchar": "0"
             },
 			{
               "mem": [ "0xFEA0", "0xFEA1", "0xFEA2", "0xFEA3", "0xFEA4", "0xFEA5", "0xFEA6", "0xFEA7" ],
@@ -893,7 +897,8 @@
             {
               "mem": [ "0xFDDC", "0xFDE2" ],
               "fixedlength": 5,
-              "type": "int"
+              "type": "int",
+              "padchar": "0"
             },
 			{
               "mem": [ "0xFEC0", "0xFEC1", "0xFEC2", "0xFEC3", "0xFEC4", "0xFEC5", "0xFEC6", "0xFEC7" ],
@@ -915,7 +920,8 @@
             {
               "mem": [ "0xFDDD", "0xFDE3" ],
               "fixedlength": 5,
-              "type": "int"
+              "type": "int",
+              "padchar": "0"
             }
           ]
         },

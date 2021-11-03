@@ -396,8 +396,8 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
             memOffset = std::stoul(j["mem"][memIdx].get<std::string>(), nullptr, 0);
             x += (*(pmem + memOffset)) * (int)pow(0x100, memIdx);
         }
-		char cbuf[3];
-		snprintf(cbuf, 3, "%.02d", x);
+		char cbuf[100];
+		snprintf(cbuf, 100, "%d", x);
 		s.insert(0, string(cbuf));
         return s;
     }
@@ -411,8 +411,8 @@ std::string SidebarContent::SerializeVariable(nlohmann::json* pvar)
         {
             memOffset = std::stoul(j["mem"][memIdx].get<std::string>(), nullptr, 0);
 
-            char cbuf[3];
-            snprintf(cbuf, 3, "%.02x", *(pmem + memOffset));
+            char cbuf[100];
+            snprintf(cbuf, 100, "%x", *(pmem + memOffset));
             s.insert(0, string(cbuf));
         }
         return s;
@@ -465,7 +465,17 @@ std::string SidebarContent::FormatBlockText(nlohmann::json* pdata)
                 string sPadChar = data["vars"][i]["padchar"];
                 padchar = sPadChar.c_str()[0];
             }
-            sVars[i].resize((int)data["vars"][i]["fixedlength"], padchar);
+            // prepend for integers
+            if ((data["vars"][i]["type"] == "int") || (data["vars"][i]["type"] == "int_literal"))
+            {
+                int numCharsToInsert = (int)data["vars"][i]["fixedlength"] - sVars[i].size();
+                sVars[i].insert(0, numCharsToInsert, padchar);
+            }
+            else
+            {
+                // append for strings
+                sVars[i].resize((int)data["vars"][i]["fixedlength"], padchar);
+            }
         }
         txt.replace(txt.find(SIDEBAR_FORMAT_PLACEHOLDER), SIDEBAR_FORMAT_PLACEHOLDER.length(), sVars[i]);
     }
