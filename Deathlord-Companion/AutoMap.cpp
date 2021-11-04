@@ -331,8 +331,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 			m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] = (UINT8)mapMemPtr[mapPos];
 
 			// Show a marker for hidden/unopened items
-			// The game uses by 7 of the tile id for this
-			// But any enemies have the bit set, so we need to remove it for tiles in the 0x40-0x4F range
+			// Anything above 0x4F is basically a "hidden" or special bit
 			if (g_nonVolatile.showHidden)
 			{
 				if (mapMemPtr[mapPos] > 0x4F)
