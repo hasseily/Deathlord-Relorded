@@ -23,9 +23,13 @@ You can optionally load the profile of your choice (they're located in the Profi
 
 Ther are a number of emulation options, all directly accessible from the main menu bar. Playing at max speed automatically disables sound, and it will generally play so fast that you won't see battle animations. This is highly discouraged unless you've become very adept at the game.
 
+## Automap
+
+The most obvious feature of the Companion is its automapping. It's straightforward except for the "quadrants" menu items. Every Deathlord map is 64x64 tiles, but most dungeons and towers have levels of 16x16 tiles. Deathlord puts together 4 levels in a single map. The Companion allows you to "zoom in" to the quadrant that you want, showing you a better view of where you are.
+
 ## Profiles
 
-The key feature of the Companion is its profiles. A profile is a JSON document that specifies what the Companion should display, and where. The Companion has support for many types of data in memory, including being able to translate numeric identifiers into strings (something very useful when you want to show "Short Sword +1" instead of 0x0b).
+The other key feature of the Companion is its profiles. A profile is a JSON document that specifies what the Companion should display, and where. The Companion has support for many types of data in memory, including being able to translate numeric identifiers into strings (something very useful when you want to show "Short Sword +1" instead of 0x0b).
 
 The documentation for profiles is sorely lacking, but I've included a base profile that will autoload upon launch. Feel free to experiment and ping me for more info.
 
@@ -43,9 +47,6 @@ There's a hack window where you can modify a byte of memory, and save the curren
 Also the current map will save if you hit PAGEDOWN. When saving the map, it also saves the related tileset for import in your favorite mapping program. The tileset data is 448x512 pixels, in RGBA format. Use Gimp or other programs to transform it into PNG or anything else.
 
 Another unique feature of the Deathlord Companion is that it doesn't skip a turn if you wait too long. The time and food usage pass normally though, so if you want to be away from your keyboard for a long time make sure you at least put yourself in a character stats screen (press 1-6 on the keyboard).
-
-Finally, there's a tileset generator that will grab visible tiles that haven't yet been seen by the program and will append them to a tileset that is saved on disk inside the Maps/ folder. Contact me for more info.
-The tileset generator is started with NUMPAD 1. It acquires tiles with NUMPAD 0. Save the file with NUMPAD 9. Reset the whole file with NUMPAD 5.
 
 Happy retro RPG gaming, and see you on the Lost Sectors Discord server.
 

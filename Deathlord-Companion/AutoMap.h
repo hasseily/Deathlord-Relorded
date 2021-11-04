@@ -109,6 +109,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBG;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTexture;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapAvatar;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTileHidden;
 	D3D12_SUBRESOURCE_DATA m_textureDataMap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_textureUploadHeapMap;
 

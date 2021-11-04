@@ -15,9 +15,21 @@ constexpr UINT8 TILEID_REDRAW = 0xFF;			// when we see this nonexistent tile id 
 
 constexpr XMVECTORF32 COLORTRANSLUCENTWHITE = { 1.f, 1.f, 1.f, .8f };
 
+// This is used for any animated sprite to accelerate or slow its framerate (so one doesn't have to build 30 frames!)
+#ifdef _DEBUG
+constexpr UINT STROBESLOWAVATAR = 1;
+constexpr UINT STROBESLOWHIDDEN = 2;
+#else
+constexpr UINT STROBESLOWAVATAR = 3;
+constexpr UINT STROBESLOWHIDDEN = 5;
+#endif
+
 UINT m_avatarStrobeIdx = 0;
 constexpr UINT AVATARSTROBECT = 14;
 constexpr float AVATARSTROBE[AVATARSTROBECT] = { .75f, .74f, .73f, .72f, .71f, .7f, .7f, .7f, .7f, .71f, .72f, .73f, .74f, .75f };
+
+UINT m_hiddenSpriteIdx = 0;
+constexpr UINT HIDDENSPRITECT = 5;
 
 UINT8 tilesVisibleAroundAvatar[81] = { 0 };
 
@@ -295,7 +307,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 			if (((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
 				|| (g_nonVolatile.showFog == false))
 			{
-				spriteRect = tileset->tileSpritePositions.at(mapMemPtr[mapPos]);
+				spriteRect = tileset->tileSpritePositions.at(mapMemPtr[mapPos] % 0x50);
 			}
 			else
 			{
@@ -311,10 +323,6 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 				m_currentMapRect.left + (posX * PNGTW * mapScale),
 				m_currentMapRect.top + (posY * PNGTH * mapScale)
 			);
-			XMFLOAT2 overlayPosInMap(	// Display the avatar/footsteps in the center of the tile
-				tilePosInMap.x + mapScale * FBTW / 2,
-				tilePosInMap.y + mapScale * FBTH / 2
-			);
 			if (shouldDraw)
 			{
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
@@ -322,23 +330,38 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 			}
 			m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] = (UINT8)mapMemPtr[mapPos];
 
+			// Show a marker for hidden/unopened items
+			// The game uses by 7 of the tile id for this
+			// But any enemies have the bit set, so we need to remove it for tiles in the 0x40-0x4F range
+			if (g_nonVolatile.showHidden)
+			{
+				if (mapMemPtr[mapPos] > 0x4F)
+				{
+					// start the strobe for each tile independently, so that it looks a bit better on the map
+					int _hiddenIdx = ((m_hiddenSpriteIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
+					RECT _hiddenRect = { _hiddenIdx * FBTW, 0, (_hiddenIdx + 1) * FBTW, FBTH };
+					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileHidden), GetTextureSize(m_autoMapTileHidden.Get()),
+						tilePosInMap, &_hiddenRect, Colors::White, 0.f, spriteOrigin, mapScale);
+				}
+			}
+
 			// now draw the avatar and footsteps
 			auto _texSize = GetTextureSize(m_autoMapAvatar.Get());
 			XMFLOAT2 _origin = { _texSize.x / 2.f, _texSize.y / 2.f };
 			RECT avatarRect = { 0, 0, _texSize.x, _texSize.y };
 
-			// Slow down the strobe based on the chosen frame rate
-			UINT strobeSlowness = 4;
-#ifdef _DEBUG
-			strobeSlowness = 1;
-#endif
+			XMFLOAT2 overlayPosInMap(	// Display the avatar/footsteps in the center of the tile
+				tilePosInMap.x + mapScale * FBTW / 2,
+				tilePosInMap.y + mapScale * FBTH / 2
+			);
+
 			if (posX == m_avatarPosition.x && posY == m_avatarPosition.y)
 			{
 
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapAvatar), _texSize, 
-					overlayPosInMap, &avatarRect, Colors::White, 0.f, _origin, mapScale * AVATARSTROBE[m_avatarStrobeIdx / strobeSlowness]);
+					overlayPosInMap, &avatarRect, Colors::White, 0.f, _origin, mapScale * AVATARSTROBE[m_avatarStrobeIdx / STROBESLOWAVATAR]);
 				++m_avatarStrobeIdx;
-				if (m_avatarStrobeIdx >= (AVATARSTROBECT * strobeSlowness))
+				if (m_avatarStrobeIdx >= (AVATARSTROBECT * STROBESLOWAVATAR))
 					m_avatarStrobeIdx = 0;
 			}
 			else // don't draw footsteps on the current tile but on anything else that has footsteps
@@ -353,6 +376,17 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 				}
 			}
 		}
+		++m_hiddenSpriteIdx;
+		if (m_hiddenSpriteIdx >= (HIDDENSPRITECT * STROBESLOWHIDDEN))
+			m_hiddenSpriteIdx = 0;
+
+/*
+		// Uncomment to debug and display the tilesheet
+#ifdef _DEBUG
+		XMFLOAT2 zeroOrigin(800, 200);
+		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize, zeroOrigin);
+#endif
+*/
 	}
 	else // draw the background if not in game
 	{
@@ -394,6 +428,11 @@ void AutoMap::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 			m_autoMapAvatar.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_autoMapAvatar.Get(),
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapAvatar));
+	DX::ThrowIfFailed(
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/TileHidden.png",
+			m_autoMapTileHidden.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_autoMapTileHidden.Get(),
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapTileHidden));
 }
 
 void AutoMap::OnDeviceLost()
@@ -401,6 +440,7 @@ void AutoMap::OnDeviceLost()
 	m_autoMapTexture.Reset();
 	m_autoMapTextureBG.Reset();
 	m_autoMapAvatar.Reset();
+	m_autoMapTileHidden.Reset();
 }
 #pragma endregion
 

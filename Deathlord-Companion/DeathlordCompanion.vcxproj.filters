@@ -381,6 +381,9 @@
     <Image Include="Assets\PlayerSprite.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\TileHidden.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\PixelShader.hlsl">
