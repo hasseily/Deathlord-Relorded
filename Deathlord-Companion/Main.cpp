@@ -20,6 +20,7 @@
 #include "Emulator/RGBMonitor.h"
 #include "DeathlordHacks.h"
 #include "TilesetCreator.h"
+#include "AutoMap.h"
 // For WinPixGpuCapture
 #include <filesystem>
 #include <shlobj.h>
@@ -874,6 +875,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_AUTOMAP_DISPLAYBOTTOMRIGHTQUADRANT:
 			g_nonVolatile.mapQuadrant = AutoMapQuandrant::BottomRight;
 			UpdateMenuBarStatus(hWnd);
+			break;
+		case ID_AUTOMAP_ERASE:
+			if (MessageBox(HWND_TOP, TEXT("Are you sure you want to erase all knowledge of this map?\nFootsteps and seen tiles will be forgotten.\n"), TEXT("Erase Map Knowledge"), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SYSTEMMODAL) == IDYES)
+			{
+				auto _aM = AutoMap::GetInstance();
+				_aM->ClearMapArea();
+			}
 			break;
 		case ID_COMPANION_SPELLWINDOW:
 		{

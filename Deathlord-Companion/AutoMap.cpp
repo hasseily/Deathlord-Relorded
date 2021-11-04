@@ -2,6 +2,7 @@
 #include "AutoMap.h"
 #include "Game.h"
 #include "MemoryTriggers.h"
+#include "resource.h"
 
 using namespace DirectX;
 
@@ -172,6 +173,45 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 	// during the safe period when the game is waiting on the player
 	auto mT = MemoryTriggers::GetInstance();
 	mT->DelayedTriggerInsert(DelayedTriggersFunction::VISIBLE_TILES, 0);
+
+	// Automatically switch the visible quadrant if the map isn't visible in full
+	AutoMapQuandrant _newQuadrant = AutoMapQuandrant::All;
+	if (g_nonVolatile.mapQuadrant != AutoMapQuandrant::All)
+	{
+		if (m_avatarPosition.x < 0x20)
+		{
+			if (m_avatarPosition.y < 0x20)
+				_newQuadrant = AutoMapQuandrant::TopLeft;
+			else
+				_newQuadrant = AutoMapQuandrant::BottomLeft;
+		}
+		else
+		{
+			if (m_avatarPosition.y < 0x20)
+				_newQuadrant = AutoMapQuandrant::TopRight;
+			else
+				_newQuadrant = AutoMapQuandrant::BottomRight;
+		}
+		if (g_nonVolatile.mapQuadrant != _newQuadrant) {
+			switch (_newQuadrant)
+			{
+			case AutoMapQuandrant::TopLeft:
+				PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_AUTOMAP_DISPLAYTOPLEFTQUADRANT, 1);
+				break;
+			case AutoMapQuandrant::BottomLeft:
+				PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_AUTOMAP_DISPLAYBOTTOMLEFTQUADRANT, 1);
+				break;
+			case AutoMapQuandrant::TopRight:
+				PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_AUTOMAP_DISPLAYTOPRIGHTQUADRANT, 1);
+				break;
+			case AutoMapQuandrant::BottomRight:
+				PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_AUTOMAP_DISPLAYBOTTOMRIGHTQUADRANT, 1);
+				break;
+			default:
+				break;
+			}
+		}
+	}
 }
 
 void AutoMap::AnalyzeVisibleTiles()
@@ -327,22 +367,22 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 			{
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
 					tilePosInMap, &spriteRect, Colors::White, 0.f, spriteOrigin, mapScale);
-			}
-			m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] = (UINT8)mapMemPtr[mapPos];
 
-			// Show a marker for hidden/unopened items
-			// Anything above 0x4F is basically a "hidden" or special bit
-			if (g_nonVolatile.showHidden)
-			{
-				if (mapMemPtr[mapPos] > 0x4F)
+				// Show a marker for hidden/unopened items
+				// Anything above 0x4F is basically a "hidden" or special bit
+				if (g_nonVolatile.showHidden)
 				{
-					// start the strobe for each tile independently, so that it looks a bit better on the map
-					int _hiddenIdx = ((m_hiddenSpriteIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
-					RECT _hiddenRect = { _hiddenIdx * FBTW, 0, (_hiddenIdx + 1) * FBTW, FBTH };
-					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileHidden), GetTextureSize(m_autoMapTileHidden.Get()),
-						tilePosInMap, &_hiddenRect, Colors::White, 0.f, spriteOrigin, mapScale);
+					if (mapMemPtr[mapPos] > 0x4F)
+					{
+						// start the strobe for each tile independently, so that it looks a bit better on the map
+						int _hiddenIdx = ((m_hiddenSpriteIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
+						RECT _hiddenRect = { _hiddenIdx * FBTW, 0, (_hiddenIdx + 1) * FBTW, FBTH };
+						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileHidden), GetTextureSize(m_autoMapTileHidden.Get()),
+							tilePosInMap, &_hiddenRect, Colors::White, 0.f, spriteOrigin, mapScale);
+					}
 				}
 			}
+			m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] = (UINT8)mapMemPtr[mapPos];
 
 			// now draw the avatar and footsteps
 			auto _texSize = GetTextureSize(m_autoMapAvatar.Get());
@@ -412,6 +452,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 	// End drawing automap
 
 }
+
 
 # pragma region D3D stuff
 void AutoMap::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload)
