@@ -89,11 +89,17 @@ void MemoryTriggers::PollChanged_InGameMap(UINT8 oldVal)
 void MemoryTriggers::PollChanged_MapID(UINT8 oldVal)    // unused
 {
 	//OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_ID)[0]) + L" MapID changed!\n").c_str());
+	AutoMap* aM = AutoMap::GetInstance();
+	aM->SetShowTransition(true);
+	DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 0);
 }
 
 void MemoryTriggers::PollChanged_MapType(UINT8 oldVal)  // unused
 {
     //OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_IS_OVERLAND)[0]) + L" MapType changed!\n").c_str());
+	AutoMap* aM = AutoMap::GetInstance();
+	aM->SetShowTransition(true);
+	DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 0);
 }
 
 void MemoryTriggers::PollChanged_Floor(UINT8 oldVal)

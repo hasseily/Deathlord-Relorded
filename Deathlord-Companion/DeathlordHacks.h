@@ -6,7 +6,7 @@
 /// 
 
 constexpr UINT16 MAP_IS_IN_GAME_MAP = 0xFCE0;		// If set to 0xE5, player is in-game and not on title screen or utilities
-constexpr UINT16 MAP_IS_OVERLAND = 0xFC10;		// Is set to 0x80 if on the overland area
+constexpr UINT16 MAP_IS_OVERLAND = 0xFC10;			// Is set to 0x80 if on the overland area
 constexpr UINT16 MAP_ID = 0xFC4E;					// ID of the map
 constexpr UINT16 MAP_FLOOR = 0xFC4F;				// Which floor.
 constexpr UINT16 MAP_TYPE = 0xFC04;					// Level "2" is the default ground for towers and dungeons. "1" for overland, "0" for towns
