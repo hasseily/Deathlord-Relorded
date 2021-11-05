@@ -97,7 +97,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "LogWindow.h"
 #include "NonVolatile.h"
 #include "Game.h"
-#include "MemoryTriggers.h"	// trigger the memory polling upon passing time because we know the state is safe
 
 static int numInstructions = 0;
 static bool b_in_combat =		false;		// bool for tracking when we're in combat to suppress logging

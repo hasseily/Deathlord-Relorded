@@ -22,6 +22,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include "LogWindow.h"
+#include "MemoryTriggers.h"	// trigger the memory polling upon passing time because we know the state is safe
+
 //===========================================================================
 
 static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
