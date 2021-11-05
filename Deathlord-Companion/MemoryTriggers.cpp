@@ -98,7 +98,7 @@ void MemoryTriggers::PollChanged_MapType(UINT8 oldVal)  // unused
 
 void MemoryTriggers::PollChanged_Floor(UINT8 oldVal)
 {
-	//OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_LEVEL)[0]) + L" Floor changed!\n").c_str());
+	//OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_FLOOR)[0]) + L" Floor changed!\n").c_str());
 	AutoMap* aM = AutoMap::GetInstance();
 	aM->SetShowTransition(true);
 	DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 0);

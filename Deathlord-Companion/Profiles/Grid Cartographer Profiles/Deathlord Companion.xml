@@ -15,13 +15,13 @@
 
     <!-- Deathlord Companion version 1 -->
     <detect system="APPLE II" sys="40a3f909" prg="8ce1a6e3" ph3="8ce1a6e3" ph2="1" ph1="0" ph0="0">
-      <!-- 0:mapID 1:overland? 2:floor 3:xpos 4:ypos 5:overland_submap_xx 6:overland_submap_yy -->
+      <!-- 0:mapID 1:overland? 2:mapType 3:xpos 4:ypos 5:overland_submap_xx 6:overland_submap_yy 7:floor -->
       <!-- The overland map is a stitched up 16x16 of 64x64 submaps using 8 overlapping margin tiles, with 5 and 6 -->
       <!-- above being their x and y coords in the supermap. Here we merge 4 submaps at a time, with 16 levels of 200x200 maps -->
-      <!-- Floor "2" is the default ground for towers and dungeons. "1" for overland, "0" for towns -->
+      <!-- mapType "2" is the default for towers and dungeons. "1" for overland, "0" for towns -->
       <!-- Note that for this to work, the x and y coords have been pre-processed in Deathlord Companion using -->
       <!-- this function (here for x): peek->data[3] = peek->data[3] + (p_sysmem[0xFC4B] % 4)*56; -->
-			<peek bytes="FC4E FC10 FC04 FC06 FC07 FC4B FC4C" />
+			<peek bytes="FC4E FC10 FC04 FC06 FC07 FC4B FC4C FC4F" />
 		</detect>
 
 	</dsub>
@@ -73,21 +73,21 @@
 
 	<views>
     <class name="Towers">
-      <!-- Max 3 groups of 4 floors, starting at 2 and going to 0 -->
+      <!-- Max 3 groups of 4 floors -->
       <xpos offset="3" length="1" min="0" max="ff" />
       <ypos offset="4" length="1" min="0" max="ff" />
       <check offset="1" length="1" value="0" />
-      <floor offset="2" length="1" adjust="-2" dir="down" />
+      <floor offset="7" length="1" />
     </class>
     <class name="Dungeons">
-      <!-- Max 3 groups of 4 floors, starting at 2 and going to 0 -->
+      <!-- Max 3 groups of 4 floors -->
       <xpos offset="3" length="1" min="0" max="ff" />
       <ypos offset="4" length="1" min="0" max="ff" />
       <check offset="1" length="1" value="0" />
-      <floor offset="2" length="1" adjust="-2" dir="up" />
+      <floor offset="7" length="1" />
     </class>
     <class name="Towns">
-      <!-- Floor as "0" -->
+      <!-- MapType as "0" -->
       <xpos offset="3" length="1" min="0" max="ff" />
       <ypos offset="4" length="1" min="0" max="ff" />
       <check offset="1" length="1" value="0" />

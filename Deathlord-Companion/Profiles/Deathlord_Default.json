@@ -2,8 +2,8 @@
   "meta": {
     "name": "Deathlord Basic",
     "author": "Rikkles",
-    "revision": 2,
-    "date": "2021.10.10",
+    "revision": 3,
+    "date": "2021.11.05",
     "api_version": 3
   },
   "tables": {
@@ -1298,6 +1298,53 @@
               "fixedlength": 13,
               "padchar": ".",
               "lookup": "/tables/equipment"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Bottom",
+      "height": 40,
+      "blocks": [
+        {
+          "type": "Content",
+          "template": "Map ID: {} | Type: {} | Floor: {} | Overland Coordinates: {}, {} | Map Coordinates: {}, {}",
+          "vars": [
+            {
+              "mem": [ "0xFC4E" ],
+              "type": "int",
+              "fixedlength": 2
+            },
+            {
+              "mem": [ "0xFC04" ],
+              "type": "int",
+              "fixedlength": 2
+            },
+            {
+              "mem": [ "0xFC4F" ],
+              "type": "int",
+              "fixedlength": 2
+            },
+            {
+              "mem": [ "0xFC4B" ],
+              "type": "int",
+              "fixedlength": 2
+            },
+            {
+              "mem": [ "0xFC4C" ],
+              "type": "int",
+              "fixedlength": 2
+            },
+            {
+              "mem": [ "0xFC06" ],
+              "type": "int",
+              "fixedlength": 2
+            },
+            {
+              "mem": [ "0xFC07" ],
+              "type": "int",
+              "fixedlength": 2
             }
           ]
         }

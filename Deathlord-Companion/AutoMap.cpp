@@ -90,7 +90,7 @@ std::string AutoMap::GetCurrentMapUniqueName()
 	else {
 		sprintf_s(_buf, sizeof(_buf), "Map_%.3d_%.2d",
 			memPtr[MAP_ID],
-			memPtr[MAP_LEVEL]);
+			memPtr[MAP_FLOOR]);
 	}
 	return std::string(_buf);
 }

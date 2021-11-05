@@ -75,7 +75,7 @@ private:
 		p_timer = ptimer;
 
 		memPollMap[MAP_IS_OVERLAND] = &MemoryTriggers::PollChanged_MapType;
-		memPollMap[MAP_LEVEL] = &MemoryTriggers::PollChanged_Floor;
+		memPollMap[MAP_FLOOR] = &MemoryTriggers::PollChanged_Floor;
 		memPollMap[MAP_OVERLAND_X] = &MemoryTriggers::PollChanged_OverlandMapX;
 		memPollMap[MAP_OVERLAND_Y] = &MemoryTriggers::PollChanged_OverlandMapY;
 		// Unused

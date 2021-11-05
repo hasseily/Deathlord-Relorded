@@ -223,7 +223,7 @@ void DeathlordHacks::SaveMapDataToDisk()
 	if (memPtr[MAP_IS_OVERLAND] == 0x80)
 		sprintf_s(nameSuffix, 100, "Overland %02X %02X.txt", memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
 	else
-		sprintf_s(nameSuffix, 100, "%02X-%02X.txt", memPtr[MAP_ID], memPtr[MAP_LEVEL]);
+		sprintf_s(nameSuffix, 100, "%02X-%02X.txt", memPtr[MAP_ID], memPtr[MAP_FLOOR]);
 	fileName.append(nameSuffix);
 	std::filesystem::path mapPath = std::filesystem::path(wsAppPath);
 	mapPath.replace_filename(fileName);
@@ -238,7 +238,7 @@ void DeathlordHacks::SaveMapDataToDisk()
 	if (memPtr[MAP_IS_OVERLAND] == 0x80)
 		sprintf_s(nameSuffix, 100, "Overland %02X %02X.data", memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
 	else
-		sprintf_s(nameSuffix, 100, "%02X-%02X.data", memPtr[MAP_ID], memPtr[MAP_LEVEL]);
+		sprintf_s(nameSuffix, 100, "%02X-%02X.data", memPtr[MAP_ID], memPtr[MAP_FLOOR]);
 	fileName.append(nameSuffix);
 	std::filesystem::path tilesetPath = std::filesystem::path(wsAppPath);
 	tilesetPath.replace_filename(fileName);
