@@ -125,6 +125,8 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 				memPtr[i] = 0;
 				// set HP to maxHP
 				memPtr[i + (0xFD4E - 0xFD36)] = memPtr[i + (0xFD42 - 0xFD36)];
+				// set SP to maxSP
+				memPtr[i + (0xFD96 - 0xFD36)] = memPtr[i + (0xFD9C - 0xFD36)];
 			}
 			break;
 		}
