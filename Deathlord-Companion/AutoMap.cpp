@@ -372,14 +372,24 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 				// Anything above 0x4F is basically a "hidden" or special bit
 				if (g_nonVolatile.showHidden)
 				{
+					int _hiddenIdx = ((m_hiddenSpriteIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
+					RECT _hiddenRect = { _hiddenIdx * FBTW, 0, (_hiddenIdx + 1) * FBTW, FBTH };
 					if (mapMemPtr[mapPos] > 0x4F)
 					{
 						// start the strobe for each tile independently, so that it looks a bit better on the map
-						int _hiddenIdx = ((m_hiddenSpriteIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
-						RECT _hiddenRect = { _hiddenIdx * FBTW, 0, (_hiddenIdx + 1) * FBTW, FBTH };
 						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileHidden), GetTextureSize(m_autoMapTileHidden.Get()),
 							tilePosInMap, &_hiddenRect, Colors::White, 0.f, spriteOrigin, mapScale);
 					}
+//#ifdef _DEBUG
+					char _tileHexVal[5];
+					sprintf_s(_tileHexVal, 4, "%02x", mapMemPtr[mapPos]);
+					// Display the tile ID to see the difference between regular and hidden walls, chutes, etc...
+					auto gamePtr = GetGamePtr();
+					(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileHexVal,
+						tilePosInMap + XMFLOAT2(.5f, .5f), Colors::Black, 0.f, spriteOrigin, .5f);
+					(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileHexVal,
+						tilePosInMap, Colors::Cyan, 0.f, spriteOrigin, .5f);
+//#endif
 				}
 			}
 			m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] = (UINT8)mapMemPtr[mapPos];
