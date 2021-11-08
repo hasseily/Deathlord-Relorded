@@ -27,9 +27,9 @@ constexpr UINT STROBESLOWHIDDEN = 5;
 
 UINT m_avatarStrobeIdx = 0;
 constexpr UINT AVATARSTROBECT = 14;
-constexpr float AVATARSTROBE[AVATARSTROBECT] = { .75f, .74f, .73f, .72f, .71f, .7f, .7f, .7f, .7f, .71f, .72f, .73f, .74f, .75f };
+constexpr float AVATARSTROBE[AVATARSTROBECT] = { .75f, .7f, .62f, .56f, .49f, .40f, .30f, .30f, .40f, .49f, .56f, .62f, .7f, .75f };
 
-UINT m_hiddenSpriteIdx = 0;
+UINT m_spriteAnimationIdx = 0;
 constexpr UINT HIDDENSPRITECT = 5;
 
 UINT8 tilesVisibleAroundAvatar[81] = { 0 };
@@ -88,8 +88,9 @@ std::string AutoMap::GetCurrentMapUniqueName()
 			memPtr[MAP_OVERLAND_Y]);
 	}
 	else {
-		sprintf_s(_buf, sizeof(_buf), "Map_%.3d_%.2d",
+		sprintf_s(_buf, sizeof(_buf), "Map_%.3d_%.2d_%.2d",
 			memPtr[MAP_ID],
+			memPtr[MAP_TYPE],
 			memPtr[MAP_FLOOR]);
 	}
 	return std::string(_buf);
@@ -368,19 +369,76 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
 					tilePosInMap, &spriteRect, Colors::White, 0.f, spriteOrigin, mapScale);
 
-				// Show a marker for hidden/unopened items
-				// Anything above 0x4F is basically a "hidden" or special bit
-				if (g_nonVolatile.showHidden)
+				// Show a marker for traps, hidden and unopened items
+				// Only when not on the overland map
+				auto memPtr = MemGetMainPtr(0);
+				if (g_nonVolatile.showHidden && (memPtr[MAP_IS_OVERLAND] != 0x80))
 				{
-					int _hiddenIdx = ((m_hiddenSpriteIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
-					RECT _hiddenRect = { _hiddenIdx * FBTW, 0, (_hiddenIdx + 1) * FBTW, FBTH };
-					if (mapMemPtr[mapPos] > 0x4F)
+					XMUINT2 _tileSheetPos(0, 0);
+					RECT _tileSheetRect;
+					bool _hasOverlay = true;	// some tiles will not have overlays (in the default: section)
+
+					switch (mapMemPtr[mapPos])
 					{
-						// start the strobe for each tile independently, so that it looks a bit better on the map
-						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileHidden), GetTextureSize(m_autoMapTileHidden.Get()),
-							tilePosInMap, &_hiddenRect, Colors::White, 0.f, spriteOrigin, mapScale);
+					case 0x2a:	// weapon chest
+						_tileSheetPos.x = 0;
+						_tileSheetPos.y = 1;
+						break;
+					case 0x2b:	// armor chest
+						_tileSheetPos.x = 1;
+						_tileSheetPos.y = 1;
+						break;
+					case 0xc6:	// water poison
+						_tileSheetPos.x = 2;
+						_tileSheetPos.y = 1;
+						break;
+					case 0x7e:	// pit
+						_tileSheetPos.x = 3;
+						_tileSheetPos.y = 1;
+						break;
+					case 0xce:	// chute / teleporter
+						_tileSheetPos.x = 0;
+						_tileSheetPos.y = 2;
+						break;
+					case 0x02:	// illusiory wall
+						_tileSheetPos.x = 1;
+						_tileSheetPos.y = 2;
+						break;
+					case 0x57:	// hidden door
+						_tileSheetPos.x = 2;
+						_tileSheetPos.y = 2;
+						break;
+					case 0x76:	// water bonus! "Z"-drink it and hope for the best!
+						[[fallthrough]];
+					case 0x37:	// jar unopened
+						[[fallthrough]];
+					case 0x39:	// coffin unopened	(could have a vampire or gold or nothing in it)
+						[[fallthrough]];
+					case 0x3b:	// chest unopened
+						[[fallthrough]];
+					case 0x3d:	// coffer unopened
+						// this tile is animated. Start the strobe for each tile independently, so that it looks a bit better on the map
+						_tileSheetPos.x = ((m_spriteAnimationIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
+						_tileSheetPos.y = 0;
+						break;
+					default:
+						_hasOverlay = false;
+						break;
 					}
-//#ifdef _DEBUG
+					if (_hasOverlay)	// draw the overlay if it exists
+					{
+						_tileSheetRect =
+						{
+							((UINT16)_tileSheetPos.x) * FBTW,
+							((UINT16)_tileSheetPos.y) * FBTH,
+							((UINT16)(_tileSheetPos.x + 1)) * FBTW,
+							((UINT16)(_tileSheetPos.y + 1)) * FBTH
+						};
+						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileHidden), GetTextureSize(m_autoMapSpriteSheet.Get()),
+							tilePosInMap, &_tileSheetRect, Colors::White, 0.f, spriteOrigin, mapScale);
+					}
+
+#ifdef _DEBUGXXX
 					char _tileHexVal[5];
 					sprintf_s(_tileHexVal, 4, "%02x", mapMemPtr[mapPos]);
 					// Display the tile ID to see the difference between regular and hidden walls, chutes, etc...
@@ -389,7 +447,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 						tilePosInMap + XMFLOAT2(.5f, .5f), Colors::Black, 0.f, spriteOrigin, .5f);
 					(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileHexVal,
 						tilePosInMap, Colors::Cyan, 0.f, spriteOrigin, .5f);
-//#endif
+#endif
 				}
 			}
 			m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] = (UINT8)mapMemPtr[mapPos];
@@ -425,17 +483,17 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 				}
 			}
 		}
-		++m_hiddenSpriteIdx;
-		if (m_hiddenSpriteIdx >= (HIDDENSPRITECT * STROBESLOWHIDDEN))
-			m_hiddenSpriteIdx = 0;
+		++m_spriteAnimationIdx;
+		if (m_spriteAnimationIdx >= (HIDDENSPRITECT * STROBESLOWHIDDEN))
+			m_spriteAnimationIdx = 0;
 
-/*
+
 		// Uncomment to debug and display the tilesheet
-#ifdef _DEBUG
+#ifdef _DEBUGXXX
 		XMFLOAT2 zeroOrigin(800, 200);
 		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize, zeroOrigin);
 #endif
-*/
+
 	}
 	else // draw the background if not in game
 	{
@@ -479,9 +537,9 @@ void AutoMap::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 	CreateShaderResourceView(device, m_autoMapAvatar.Get(),
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapAvatar));
 	DX::ThrowIfFailed(
-		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/TileHidden.png",
-			m_autoMapTileHidden.ReleaseAndGetAddressOf()));
-	CreateShaderResourceView(device, m_autoMapTileHidden.Get(),
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/SpriteSheet.png",
+			m_autoMapSpriteSheet.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_autoMapSpriteSheet.Get(),
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapTileHidden));
 }
 
@@ -490,7 +548,7 @@ void AutoMap::OnDeviceLost()
 	m_autoMapTexture.Reset();
 	m_autoMapTextureBG.Reset();
 	m_autoMapAvatar.Reset();
-	m_autoMapTileHidden.Reset();
+	m_autoMapSpriteSheet.Reset();
 }
 #pragma endregion
 

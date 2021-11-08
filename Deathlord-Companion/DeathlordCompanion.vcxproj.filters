@@ -381,7 +381,7 @@
     <Image Include="Assets\PlayerSprite.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\TileHidden.png">
+    <Image Include="Assets\SpriteSheet.png">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>

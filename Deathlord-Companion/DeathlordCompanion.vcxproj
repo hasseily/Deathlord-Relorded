@@ -331,7 +331,7 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </Image>
     <Image Include="Assets\SpellList.bmp" />
-    <Image Include="Assets\TileHidden.png">
+    <Image Include="Assets\SpriteSheet.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </Image>
