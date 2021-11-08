@@ -194,10 +194,11 @@ void TilesetCreator::analyzeVisibleTiles(UINT8* pVisibleTiles)
 			}
 		FINISHEDTILE:
 			{
-				
+				/*
 				char _buf[500];
 				sprintf_s(_buf, 500, "Tile at %d,%d is %d\n", ir, jc, isBlack);
 				OutputDebugStringA(_buf);
+				*/
 				
 			}
 
