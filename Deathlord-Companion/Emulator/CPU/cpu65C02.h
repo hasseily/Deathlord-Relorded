@@ -61,8 +61,12 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 		WORD _origPC = regs.pc;
 		if (g_isInGameMap)
 		{
-			// Starting transit between maps, either from the overland or into the overland
-			if ((_origPC == PC_TRANSIT_IN_OVERLAND) || (_origPC == PC_TRANSIT_OUT_OVERLAND))
+			switch (_origPC)
+			{
+			case PC_TRANSIT_IN_OVERLAND:
+				// Starting transit between maps, either from the overland or into the overland
+				[[fallthrough]];
+			case PC_TRANSIT_OUT_OVERLAND:
 			{
 				// OutputDebugStringA("STARTED TRANSITION\n");
 				auto aM = AutoMap::GetInstance();
@@ -71,25 +75,26 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				// It will itself insert a trigger to finish the transition, which will be run later
 				auto memT = MemoryTriggers::GetInstance();
 				memT->DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 0);
+				break;
 			}
-
-			// Process memory triggers every time the game processes the turn pass decrement timer
-			// We know here that we're in a safe place to parse the video screen, etc...
-			// And furthermore we disable that timer because who in his right mind wants turns to pass when not doing anything?
-			if (_origPC == PC_DECREMENT_TIMER) {
+			case PC_DECREMENT_TIMER:
+			{
+				// Process memory triggers every time the game processes the turn pass decrement timer
+				// We know here that we're in a safe place to parse the video screen, etc...
+				// And furthermore we disable that timer because who in his right mind wants turns to pass when not doing anything?
 				auto memT = MemoryTriggers::GetInstance();
 				if (memT != NULL)
 					memT->Process();
 				CYC(6);		// NOP 6 cycles. The DEC instruction takes 6 cycles
 				regs.pc = _origPC + 3;
 				goto AFTERFETCH;
+				break;
 			}
-
-			if (_origPC == PC_END_DRAWING_TILES)
+			case PC_END_DRAWING_TILES:
 			{
 				auto aM = AutoMap::GetInstance();
 				aM->AnalyzeVisibleTiles();
-				
+
 				if ((__posX != MemGetMainPtr(MAP_XPOS)[0])
 					|| (__posY != MemGetMainPtr(MAP_YPOS)[0]))
 				{
@@ -119,7 +124,11 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 					__posY = MemGetMainPtr(MAP_YPOS)[0];
 					*/
 				}
+				break;
 			}
+			default:
+				break;
+			}	// switch
 		}
 
 		/// END DEATHLORD HOOKS
