@@ -8,16 +8,8 @@
 #define PC_DECREMENT_TIMER		0x621F		// routine to decrement a timer before it makes the player "wait" and pass a turn
 #define PC_TRANSIT_OUT_OVERLAND	0xE8F4		// routine that gets the player into a dungeon or town
 #define PC_TRANSIT_IN_OVERLAND	0xEF0A		// routine that gets the player back in the overland
-
-/* Those were for Nox Archaist
-#define PC_PRINTSTR				0x7aa1		// program counter of PRINT.STR routine (can be overriden before screen output, especially in combat for variables)
-#define PC_CARRIAGE_RETURN1		0x7d5c		// program counter of a CARRIAGE.RETURN that breaks the lines down in specific lengths (16 chars max). Only use it in battle!
-#define PC_CARRIAGE_RETURN2		0x7db4		// program counter of a CARRIAGE.RETURN that finishes a line
-#define PC_COUT					0x7998		// program counter of COUT routine which is the lowest level and prints a single char at A
-#define A_PRINT_RIGHT			0x05		// A register's value for printing to right scroll area (where the conversations are)
-#define PC_INITIATE_COMBAT		0x159f		// when combat routine starts
-#define PC_END_COMBAT			0x15eb		// when combat routine ends (don't log during combat)
-*/
+#define PC_BEGIN_DRAWING_TILES	0x5931		// Beginning of the tiles drawing routine on the main screen. $300-350 contains the "current" map, $351-3A0 contains the "new" map
+#define PC_END_DRAWING_TILES	0x586A		// After all the drawing is done and the LOS is updated. $300-350 contains the map
 
 struct regsrec
 {

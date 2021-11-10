@@ -7,7 +7,10 @@
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
-constexpr UINT32 GAMEMAP_START_MEM = 0xC00;		// Start of memory area of the in-game map
+constexpr UINT32 GAMEMAP_START_MEM = 0xC00;					// Start of memory area of the in-game map
+constexpr UINT32 GAMEMAP_START_CURRENT_TILELIST = 0x300;	// Start of the current tilelist of the in-game map
+constexpr UINT32 GAMEMAP_START_NEW_TILELIST = 0x351;		// Start of the new tilelist of the in-game map which will be swapped with current on an update
+
 constexpr UINT8 MAP_WIDTH = 64;
 constexpr UINT8 MAP_HEIGHT = 64;
 constexpr int MAP_LENGTH = MAP_WIDTH * MAP_HEIGHT;			// Size of map (in bytes)

@@ -26,6 +26,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 //===========================================================================
 
+#ifndef posxy
+static int __posX = 0xff;
+static int __posY = 0xff;
+#define posxy
+#endif
+
 static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 {
 	WORD addr;
@@ -77,6 +83,42 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				CYC(6);		// NOP 6 cycles. The DEC instruction takes 6 cycles
 				regs.pc = _origPC + 3;
 				goto AFTERFETCH;
+			}
+
+			if (_origPC == PC_END_DRAWING_TILES)
+			{
+				auto aM = AutoMap::GetInstance();
+				aM->AnalyzeVisibleTiles();
+				
+				if ((__posX != MemGetMainPtr(MAP_XPOS)[0])
+					|| (__posY != MemGetMainPtr(MAP_YPOS)[0]))
+				{
+					// This displays the current and new visible tiles.
+					// By the time of PC_END_DRAWING_TILES they're the same
+					// (use PC_BEGIN_DRAWING_TILES for them to be different)
+					// The game uses both arrays to compare and only draw tiles that changed.
+					// Also the game later on does an LOS pass and updates the current tiles.
+					/*
+					BYTE* memPtr = MemGetMainPtr(0);
+					char _obuf[500];
+					for (size_t i = 0; i < 9; i++)
+					{
+						sprintf_s(_obuf, 500, "%02X %02X %02X %02X %02X %02X %02X %02X %02X      %02X %02X %02X %02X %02X %02X %02X %02X %02X\n",
+							memPtr[0x300 + 9 * i], memPtr[0x301 + 9 * i], memPtr[0x302 + 9 * i],
+							memPtr[0x303 + 9 * i], memPtr[0x306 + 9 * i], memPtr[0x305 + 9 * i],
+							memPtr[0x306 + 9 * i], memPtr[0x307 + 9 * i], memPtr[0x308 + 9 * i],
+
+							memPtr[0x351 + 9 * i], memPtr[0x352 + 9 * i], memPtr[0x353 + 9 * i],
+							memPtr[0x354 + 9 * i], memPtr[0x355 + 9 * i], memPtr[0x356 + 9 * i],
+							memPtr[0x357 + 9 * i], memPtr[0x358 + 9 * i], memPtr[0x359 + 9 * i]
+						);
+						OutputDebugStringA(_obuf);
+					}
+					OutputDebugStringA("End Tile Drawing\n");
+					__posX = MemGetMainPtr(MAP_XPOS)[0];
+					__posY = MemGetMainPtr(MAP_YPOS)[0];
+					*/
+				}
 			}
 		}
 
@@ -349,8 +391,8 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 		}
 		
 		/*
-		if (_origPC == PC_DECREMENT_TIMER)
-			numInstructions = 10;
+		if ((_origPC >= PC_BEGIN_DRAWING_TILES) && (_origPC <= PC_END_DRAWING_TILES))
+			numInstructions = 1;
 
 		if (numInstructions > 0)
 		{
@@ -622,6 +664,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			OutputDebugStringA(_buf);
 		}
 		*/
+
 
 AFTERFETCH:
 		CheckSynchronousInterruptSources(uExecutedCycles - uPreviousCycles, uExecutedCycles);

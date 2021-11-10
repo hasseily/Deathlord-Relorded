@@ -32,8 +32,6 @@ constexpr float AVATARSTROBE[AVATARSTROBECT] = { .75f, .7f, .62f, .56f, .49f, .4
 UINT m_spriteAnimationIdx = 0;
 constexpr UINT HIDDENSPRITECT = 5;
 
-UINT8 tilesVisibleAroundAvatar[81] = { 0 };
-
 void AutoMap::Initialize()
 {
 	bShowTransition = false;
@@ -169,12 +167,6 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 	OutputDebugStringA(_buf);
 	*/
 
-	// Now get the visible tiles to be analyzed when the state is safe
-	// So ask MemoryTriggers to run AutoMap::AnalyzeVisibleTiles() on its next processing
-	// during the safe period when the game is waiting on the player
-	auto mT = MemoryTriggers::GetInstance();
-	mT->DelayedTriggerInsert(DelayedTriggersFunction::VISIBLE_TILES, 0);
-
 	// Automatically switch the visible quadrant if the map isn't visible in full
 	AutoMapQuandrant _newQuadrant = AutoMapQuandrant::All;
 	if (g_nonVolatile.mapQuadrant != AutoMapQuandrant::All)
@@ -217,12 +209,12 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 
 void AutoMap::AnalyzeVisibleTiles()
 {
-
+	UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
 	// Now check the visible tiles around the avatar (tiles that aren't black)
 	// Those will have their fog-of-war bit unset
-	auto tileset = TilesetCreator::GetInstance();
-	tileset->analyzeVisibleTiles(&tilesVisibleAroundAvatar[0]);
+	BYTE* tilesVisibleAroundAvatar = MemGetMainPtr(GAMEMAP_START_CURRENT_TILELIST);
 	UINT8 oldBufVal;
+	char _pbuf[100];
 	for (UINT8 j = 0; j < 9; j++)	// rows
 	{
 		for (UINT8 i = 0; i < 9; i++)	// columns
@@ -237,8 +229,11 @@ void AutoMap::AnalyzeVisibleTiles()
 				// Move the visibility bit to the FogOfWar position, and OR it with the value in the vector.
 				// If the user ever sees the tile, it stays "seen"
 				oldBufVal = m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH];
-				m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] |=
-					(tilesVisibleAroundAvatar[i + 9 * j] << (UINT8)FogOfWarMarkers::UnFogOfWar);
+				if (tilesVisibleAroundAvatar[i + 9 * j] != 0)
+				{
+					m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] |=
+						(1 << (UINT8)FogOfWarMarkers::UnFogOfWar);
+				}
 
 				// redraw all the tiles in the Deathlord viewport
 				m_bbufCurrentMapTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] = TILEID_REDRAW;

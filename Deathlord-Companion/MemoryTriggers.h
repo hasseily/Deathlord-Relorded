@@ -6,7 +6,6 @@
 enum class DelayedTriggersFunction
 {
 	PARSE_TILES,
-	VISIBLE_TILES,
 	FINISH_TRANSITION,
 	COUNT
 };
@@ -29,7 +28,6 @@ public:
 	// Poll Delayed Trigger Functions
 	bool DelayedTrigger_ParseTiles();
 	bool DelayedTrigger_FinishMapTransitionState();
-	bool DelayedTrigger_AnalyzeVisibleTiles();
 
 	// public singleton code
 	static MemoryTriggers* GetInstance(const DX::StepTimer* timer) {
@@ -84,7 +82,6 @@ private:
 		//memPollMap[MAP_YPOS] = &MemoryTriggers::PollChanged_YPos;
 
 		delayedTriggerFuncIDs[DelayedTriggersFunction::PARSE_TILES] = &MemoryTriggers::DelayedTrigger_ParseTiles;
-		delayedTriggerFuncIDs[DelayedTriggersFunction::VISIBLE_TILES] = &MemoryTriggers::DelayedTrigger_AnalyzeVisibleTiles;
 		delayedTriggerFuncIDs[DelayedTriggersFunction::FINISH_TRANSITION] = &MemoryTriggers::DelayedTrigger_FinishMapTransitionState;
 	}
 };

@@ -254,13 +254,7 @@ void Game::Update(DX::StepTimer const& timer)
     auto memTriggers = MemoryTriggers::GetInstance();
     if (g_isInGameMap && (autoMap != NULL))
     {
-        memTriggers->PollKeyMemoryLocations();  // But not the avatar XY
-        if (!autoMap->isInTransition())
-        {
-            //  We right away want to update the avatar position
-            // Otherwise we can miss steps if the player walks really quickly
-            autoMap->UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
-        }
+		memTriggers->PollKeyMemoryLocations();  // But not the avatar XY
     }
 
     auto pad = m_gamePad->GetState(0);
