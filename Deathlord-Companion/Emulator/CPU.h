@@ -10,6 +10,9 @@
 #define PC_TRANSIT_IN_OVERLAND	0xEF0A		// routine that gets the player back in the overland
 #define PC_BEGIN_DRAWING_TILES	0x5931		// Beginning of the tiles drawing routine on the main screen. $300-350 contains the "current" map, $351-3A0 contains the "new" map
 #define PC_END_DRAWING_TILES	0x586A		// After all the drawing is done and the LOS is updated. $300-350 contains the map
+#define PC_CHECK_REAR_ATTACK	0xA7EF		// Check for the rear rank not allowed to attack
+#define MEM_CURRENT_CHAR_POS	0xFC21		// Current active character position (1-6)
+#define MEM_CHAR_1_WEAP_READY	0xFDEA		// Character 1 weapon ready status: ff = fists, 00 = melee, 01 = ranged
 
 struct regsrec
 {

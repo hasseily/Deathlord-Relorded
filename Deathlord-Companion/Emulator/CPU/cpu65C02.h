@@ -94,35 +94,19 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			{
 				auto aM = AutoMap::GetInstance();
 				aM->AnalyzeVisibleTiles();
-
-				if ((__posX != MemGetMainPtr(MAP_XPOS)[0])
-					|| (__posY != MemGetMainPtr(MAP_YPOS)[0]))
+				break;
+			}
+			case PC_CHECK_REAR_ATTACK:
+			{
+				// Let rear characters use their ranged weapons
+				UINT8 currCharPos = MemGetMainPtr(MEM_CURRENT_CHAR_POS)[0];
+				if (currCharPos > 2)	// rear line of characters (rear 3 chars)
 				{
-					// This displays the current and new visible tiles.
-					// By the time of PC_END_DRAWING_TILES they're the same
-					// (use PC_BEGIN_DRAWING_TILES for them to be different)
-					// The game uses both arrays to compare and only draw tiles that changed.
-					// Also the game later on does an LOS pass and updates the current tiles.
-					/*
-					BYTE* memPtr = MemGetMainPtr(0);
-					char _obuf[500];
-					for (size_t i = 0; i < 9; i++)
+					if (MemGetMainPtr(MEM_CHAR_1_WEAP_READY + currCharPos)[0] == 0x01)	// current character has ranged weapon readied
 					{
-						sprintf_s(_obuf, 500, "%02X %02X %02X %02X %02X %02X %02X %02X %02X      %02X %02X %02X %02X %02X %02X %02X %02X %02X\n",
-							memPtr[0x300 + 9 * i], memPtr[0x301 + 9 * i], memPtr[0x302 + 9 * i],
-							memPtr[0x303 + 9 * i], memPtr[0x306 + 9 * i], memPtr[0x305 + 9 * i],
-							memPtr[0x306 + 9 * i], memPtr[0x307 + 9 * i], memPtr[0x308 + 9 * i],
-
-							memPtr[0x351 + 9 * i], memPtr[0x352 + 9 * i], memPtr[0x353 + 9 * i],
-							memPtr[0x354 + 9 * i], memPtr[0x355 + 9 * i], memPtr[0x356 + 9 * i],
-							memPtr[0x357 + 9 * i], memPtr[0x358 + 9 * i], memPtr[0x359 + 9 * i]
-						);
-						OutputDebugStringA(_obuf);
+						CYC(2); // BCS uses 2 cycles;
+						regs.pc = _origPC + 2;	// Jump to the next instruction, disregard the branch
 					}
-					OutputDebugStringA("End Tile Drawing\n");
-					__posX = MemGetMainPtr(MAP_XPOS)[0];
-					__posY = MemGetMainPtr(MAP_YPOS)[0];
-					*/
 				}
 				break;
 			}
