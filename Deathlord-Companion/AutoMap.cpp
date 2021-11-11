@@ -407,6 +407,12 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 						_tileSheetPos.x = 2;
 						_tileSheetPos.y = 2;
 						break;
+					case 0x7F:	// interesting tombstone
+						[[fallthrough]];
+					case 0x50:	// interesting dark tile
+						[[fallthrough]];
+					case 0x85:	// interesting trees/bushes. No idea what this is
+						[[fallthrough]];
 					case 0x76:	// water bonus! "Z"-drink it and hope for the best!
 						[[fallthrough]];
 					case 0x37:	// jar unopened
