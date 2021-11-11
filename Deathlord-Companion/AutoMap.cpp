@@ -399,6 +399,10 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 						_tileSheetPos.x = 1;
 						_tileSheetPos.y = 2;
 						break;
+					case 0x05:	// illusiory Rock
+						_tileSheetPos.x = 1;
+						_tileSheetPos.y = 2;
+						break;
 					case 0x57:	// hidden door
 						_tileSheetPos.x = 2;
 						_tileSheetPos.y = 2;
