@@ -110,6 +110,13 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				}
 				break;
 			}
+			case PC_CHECK_SEARCH_SUCCESS:
+			{
+				// Always succeed when explicitly "s"earching for a hidden door or pit
+				CYC(2); // BCS uses 2 cycles;
+				regs.pc = _origPC + 2;	// Jump to the next instruction, disregard the branch
+				break;
+			}
 			default:
 				break;
 			}	// switch
