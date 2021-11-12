@@ -117,6 +117,20 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				regs.pc = _origPC + 2;	// Jump to the next instruction, disregard the branch
 				break;
 			}
+			case PC_ENEMY_ACTION_DRAIN:
+			{
+				CYC(2); // BCS uses 2 cycles;
+				regs.pc = regs.pc + 2 + MemGetMainPtr(regs.pc+1)[0];	// Always branch to the new instruction
+				break;
+			}
+			/*	Another option for removing level drain. This one makes the level drain always miss, and is earlier in the process
+			case PC_ENEMY_ACTION_DRAIN2:
+			{
+				CYC(2); // BCS uses 2 cycles;
+				regs.pc = regs.pc + 2 + MemGetMainPtr(regs.pc + 1)[0];	// Always branch to the new instruction
+				break;
+			}
+			*/
 			default:
 				break;
 			}	// switch

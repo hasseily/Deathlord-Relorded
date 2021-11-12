@@ -12,6 +12,8 @@
 #define PC_END_DRAWING_TILES		0x586A		// After all the drawing is done and the LOS is updated. $300-350 contains the map
 #define PC_CHECK_REAR_ATTACK		0xA7EF		// BCS after CMP that checks for the rear rank not allowed to attack
 #define PC_CHECK_SEARCH_SUCCESS		0x9428		// BCS after CMP that checks success of search
+#define PC_ENEMY_ACTION_DRAIN		0xAB19		// BCS: Always branch to avoid level drain. This option makes the enemy skip the turn without feedback
+#define PC_ENEMY_ACTION_DRAIN2		0xAADF		// BCS: Always branch to avoid level drain. This option makes the enemy always Miss the level drain
 
 // Memory Locations used for hijacking
 #define MEM_CURRENT_CHAR_POS	0xFC21		// Current active character position (1-6)
