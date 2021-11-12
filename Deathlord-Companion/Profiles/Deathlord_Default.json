@@ -30,6 +30,16 @@
       "0x0e": "Illusionist",
       "0x0f": "Peasant"
     },
+    "race": {
+      "0x00": "Human",
+      "0x01": "Elf",
+      "0x02": "Half-Elf",
+      "0x03": "Dwarf",
+      "0x04": "Gnome",
+      "0x05": "Dark Elf",
+      "0x06": "Orc",
+      "0x07": "Half Orc"
+    },
     "equipment": {
       "0x00": "Tanto",
       "0x01": "Cloak",
