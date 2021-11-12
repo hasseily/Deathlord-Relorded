@@ -17,6 +17,9 @@ const wchar_t CLASS_NAME[] = L"Deathlord Hacks Class";
 static HINSTANCE appInstance = nullptr;
 static HWND hwndMain = nullptr;				// handle to main window
 
+
+#pragma region Static Methods
+
 INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	UNREFERENCED_PARAMETER(wParam);
@@ -145,6 +148,60 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 	};
 	return false;
 }
+
+bool PartyLeaderIsOfClass(DeathlordClasses aClass)
+{
+	return (MemGetMainPtr(PARTY_CLASS_START + MemGetMainPtr(PARTY_CHAR_LEADER)[0])[0] == (UINT16)aClass);
+}
+
+bool PartyLeaderIsOfClass(DeathlordClasses aClass1, DeathlordClasses aClass2)
+{
+	UINT8 classLeader = MemGetMainPtr(PARTY_CLASS_START + MemGetMainPtr(PARTY_CHAR_LEADER)[0])[0];
+	if (classLeader == (UINT16)aClass1)
+		return true;
+	if (classLeader == (UINT16)aClass2)
+		return true;
+	return false;
+}
+
+bool PartyLeaderIsOfRace(DeathlordRaces aRace)
+{
+	return (MemGetMainPtr(PARTY_RACE_START + MemGetMainPtr(PARTY_CHAR_LEADER)[0])[0] == (UINT16)aRace);
+}
+
+bool PartyHasClass(DeathlordClasses aClass)
+{
+	for (size_t i = 0; i < 6; i++)
+	{
+		if (MemGetMainPtr(PARTY_CLASS_START + i)[0] == (UINT16)aClass)
+			return true;
+	}
+	return false;
+}
+
+bool PartyHasClass(DeathlordClasses aClass1, DeathlordClasses aClass2)
+{
+	for (size_t i = 0; i < 6; i++)
+	{
+		if (MemGetMainPtr(PARTY_CLASS_START + i)[0] == (UINT16)aClass1)
+			return true;
+		if (MemGetMainPtr(PARTY_CLASS_START + i)[0] == (UINT16)aClass2)
+			return true;
+	}
+	return false;
+}
+
+bool PartyHasRace(DeathlordRaces aRace)
+{
+	for (size_t i = 0; i < 6; i++)
+	{
+		if (MemGetMainPtr(PARTY_RACE_START + i)[0] == (UINT16)aRace)
+			return true;
+	}
+	return false;
+}
+
+#pragma endregion
 
 DeathlordHacks::DeathlordHacks(HINSTANCE app, HWND hMainWindow)
 {

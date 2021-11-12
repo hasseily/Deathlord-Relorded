@@ -103,6 +103,7 @@ public:
     SpriteFont* GetSpriteFontAtIndex(FontDescriptors fontIndex);
     // TODO: Either don't allow these accessors, or change them to return the underlying pointer
     std::shared_ptr<DirectX::SpriteBatch> GetSpriteBatch() { return m_spriteBatch; };
+    Microsoft::WRL::ComPtr<ID3D12Resource>GetGamelinkTexture() { return m_texture; };
 
     // Properties
 	bool shouldRender;

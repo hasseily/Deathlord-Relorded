@@ -456,6 +456,10 @@ void Game::Render()
 			};
 			m_automap->DrawAutoMap(m_spriteBatch, &mapRectInViewport);
 			// End drawing automap
+            
+            // now draw the hidden layer around the player if he's allowed to see it
+            // inside the original Deathlord viewport
+            m_automap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch);
         }
 
 		PIXEndEvent(commandList);

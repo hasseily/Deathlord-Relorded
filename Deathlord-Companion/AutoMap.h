@@ -21,7 +21,7 @@ enum class FogOfWarMarkers
 {
 	UnFogOfWar = 0,	// Set the tile has been seen by the player
 	Footstep,		// Set if the player has walked on the tile
-	Bit3,
+	Hidden,			// Set if the player has identified the hidden layer (illusion, poison water, etc...)
 	Bit4,
 	Bit5,
 	Bit6,
@@ -49,16 +49,23 @@ enum class FogOfWarMarkers
 /// Hence, the automapper should remember for each level all the seen tiles and store/load as necessary
 /// 
 /// Finally, the automapper should provide the player's X/Y position on that map
+/// 
+/// PS:
+/// There's ConditionallyDisplayHiddenLayerAroundPlayer() which will display the layer of pits, illusions...
+/// based on the composition of the party, when the party is 1 tile away from it. For example, thieves and 
+/// rangers will see pits and hidden doors
 
 class AutoMap	// Singleton
 {
 public:
 	// Vector2 drawOrigin = Vector2();
 	void DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RECT* mapRect);
+
 	void UpdateAvatarPositionOnAutoMap(UINT x, UINT y);
 	void ClearMapArea();
 	void ForceRedrawMapArea();
 	void AnalyzeVisibleTiles();
+	void ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch);
 	void CreateNewTileSpriteMap();
 	void SaveCurrentMapInfo();
 	void InitializeCurrentMapInfo();

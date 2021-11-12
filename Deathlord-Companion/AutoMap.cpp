@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "MemoryTriggers.h"
 #include "resource.h"
+#include "DeathlordHacks.h"
 
 using namespace DirectX;
 
@@ -214,7 +215,6 @@ void AutoMap::AnalyzeVisibleTiles()
 	// Those will have their fog-of-war bit unset
 	BYTE* tilesVisibleAroundAvatar = MemGetMainPtr(GAMEMAP_START_CURRENT_TILELIST);
 	UINT8 oldBufVal;
-	char _pbuf[100];
 	for (UINT8 j = 0; j < 9; j++)	// rows
 	{
 		for (UINT8 i = 0; i < 9; i++)	// columns
@@ -242,6 +242,179 @@ void AutoMap::AnalyzeVisibleTiles()
 	}
 }
 
+void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch)
+{
+	if (!g_isInGameMap)
+		return;
+	if (MemGetMainPtr(MAP_IS_OVERLAND)[0] == 0x80)	// Don't do anything if we're in the overland
+		return;
+
+	std::shared_ptr<DeathlordHacks>hw = GetDeathlordHacks();
+	BYTE* tilesVisibleAroundAvatar = MemGetMainPtr(GAMEMAP_START_CURRENT_TILELIST);
+	UINT8 oldBufVal;
+	XMFLOAT2 spriteOrigin(0, 0);
+	UINT32 fbBorderLeft = GetFrameBufferBorderWidth();	// these are additional shifts to make the tiles align
+	UINT32 fbBorderTop = GetFrameBufferBorderHeight() + 16;	// these are additional shifts to make the tiles align
+	float mapScale = 1.f;
+
+	auto commandList = m_deviceResources->GetCommandList();
+	spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
+
+	for (UINT8 j = 3; j < 6; j++)	// rows
+	{
+		for (UINT8 i = 3; i < 6; i++)	// columns
+		{
+			UINT32 tilePosX = m_avatarPosition.x - 4 + i;
+			UINT32 tilePosY = m_avatarPosition.y - 4 + j;
+			if ((tilePosX >= MAP_WIDTH) || (tilePosY >= MAP_HEIGHT)) // outside the map (no need to check < 0, it'll roll over as a UINT32)
+				continue;
+
+			if ((i == 4) && (j == 4))	//player tile. Always enable the hidden layer there, but don't draw it over the player icon
+			{
+				for (size_t ibb = 0; ibb < m_deviceResources->GetBackBufferCount(); ibb++)
+				{
+					// Move the visibility bit to the hidden position, and OR it with the value in the vector.
+					// If the user ever sees the hidden info, it stays "seen"
+					m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] |=
+						(1 << (UINT8)FogOfWarMarkers::Hidden);
+				}
+				continue;
+			}
+
+			// Now look at the tiles around the player
+			XMFLOAT2 tilePosInMap(
+				fbBorderLeft + i * FBTW,
+				fbBorderTop + j * FBTH
+			);
+			int mapPos = i + j * 9;	// the actual viewport map is 9x9 although we only look at the 8 tiles around the avatar
+			{
+				XMUINT2 _tileSheetPos(0, 0);
+				RECT _tileSheetRect;
+				bool _hasOverlay = false;
+
+				switch (tilesVisibleAroundAvatar[mapPos])
+				{
+				case 0x2a:	// weapon chest
+					_tileSheetPos.x = 0;
+					_tileSheetPos.y = 1;
+					if (PartyHasClass(DeathlordClasses::Thief))
+						_hasOverlay = true;
+					break;
+				case 0x2b:	// armor chest
+					_tileSheetPos.x = 1;
+					_tileSheetPos.y = 1;
+					if (PartyHasClass(DeathlordClasses::Thief))
+						_hasOverlay = true;
+					break;
+				case 0xc6:	// water poison
+					_tileSheetPos.x = 2;
+					_tileSheetPos.y = 1;
+					if (PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Druid))
+						_hasOverlay = true;
+					if (PartyHasClass(DeathlordClasses::Barbarian))
+						_hasOverlay = true;
+					break;
+				case 0x76:	// water bonus! "Z"-drink it and hope for the best!
+					// this tile is animated. Start the strobe for each tile independently, so that it looks a bit better on the map
+					_tileSheetPos.x = ((m_spriteAnimationIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
+					_tileSheetPos.y = 0;
+					if (PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Druid))
+						_hasOverlay = true;
+					if (PartyHasClass(DeathlordClasses::Barbarian))
+						_hasOverlay = true;
+					break;
+				case 0x7e:	// pit
+					_tileSheetPos.x = 3;
+					_tileSheetPos.y = 1;
+					if (PartyLeaderIsOfClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
+						_hasOverlay = true;
+					if (PartyLeaderIsOfRace(DeathlordRaces::DarkElf))
+						_hasOverlay = true;
+					break;
+				case 0xce:	// chute / teleporter
+					_tileSheetPos.x = 0;
+					_tileSheetPos.y = 2;
+					if (PartyHasClass(DeathlordClasses::Illusionist))
+						_hasOverlay = true;
+					break;
+				case 0x02:	// illusiory wall
+					_tileSheetPos.x = 1;
+					_tileSheetPos.y = 2;
+					if (PartyHasClass(DeathlordClasses::Illusionist))
+						_hasOverlay = true;
+					break;
+				case 0x05:	// illusiory Rock
+					_tileSheetPos.x = 1;
+					_tileSheetPos.y = 2;
+					if (PartyHasClass(DeathlordClasses::Illusionist))
+						_hasOverlay = true;
+					break;
+				case 0x57:	// hidden door
+					_tileSheetPos.x = 2;
+					_tileSheetPos.y = 2;
+					if (PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
+						_hasOverlay = true;
+					if (PartyHasRace(DeathlordRaces::DarkElf))
+						_hasOverlay = true;
+					break;
+				case 0x7F:	// interesting tombstone
+					[[fallthrough]];
+				case 0x50:	// interesting dark tile
+					[[fallthrough]];
+				case 0x85:	// interesting trees/bushes. No idea what this is
+					// this tile is animated. Start the strobe for each tile independently, so that it looks a bit better on the map
+					_tileSheetPos.x = ((m_spriteAnimationIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
+					_tileSheetPos.y = 0;
+					if (PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
+						_hasOverlay = true;
+					if (PartyHasRace(DeathlordRaces::DarkElf))
+						_hasOverlay = true;
+					break;
+				case 0x37:	// jar unopened
+					[[fallthrough]];
+				case 0x39:	// coffin unopened	(could have a vampire or gold or nothing in it)
+					[[fallthrough]];
+				case 0x3b:	// chest unopened
+					[[fallthrough]];
+				case 0x3d:	// coffer unopened
+					// this tile is animated. Start the strobe for each tile independently, so that it looks a bit better on the map
+					_tileSheetPos.x = ((m_spriteAnimationIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
+					_tileSheetPos.y = 0;
+					_hasOverlay = true;
+					break;
+				default:
+					_hasOverlay = false;
+					break;
+				}
+
+				if (_hasOverlay)	// draw the overlay if it exists
+				{
+					_tileSheetRect =
+					{
+						((UINT16)_tileSheetPos.x) * FBTW,
+						((UINT16)_tileSheetPos.y) * FBTH,
+						((UINT16)(_tileSheetPos.x + 1)) * FBTW,
+						((UINT16)(_tileSheetPos.y + 1)) * FBTH
+					};
+					// draw it on the game's original viewport area
+					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileHidden), GetTextureSize(m_autoMapSpriteSheet.Get()),
+						tilePosInMap, &_tileSheetRect, Colors::White, 0.f, spriteOrigin, mapScale);
+
+					// Now turn that on always for the automap, so we remember that the player has seen it
+					for (size_t ibb = 0; ibb < m_deviceResources->GetBackBufferCount(); ibb++)
+					{
+						// Move the visibility bit to the hidden position, and OR it with the value in the vector.
+						// If the user ever sees the hidden info, it stays "seen"
+						m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] |=
+							(1 << (UINT8)FogOfWarMarkers::Hidden);
+					}
+				}
+			}
+		}
+	}
+	spriteBatch->End();
+}
+
 #pragma warning(pop)
 
 void AutoMap::CreateNewTileSpriteMap()
@@ -254,6 +427,7 @@ void AutoMap::CreateNewTileSpriteMap()
 		&m_autoMapTexture, DXGI_FORMAT_R8G8B8A8_UNORM, PNGBUFFERWIDTH, PNGBUFFERHEIGHT);
 	//OutputDebugStringA("Loaded map into GPU\n");
 }
+
 
 void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RECT* mapRect)
 {
@@ -366,8 +540,19 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 
 				// Show a marker for traps, hidden and unopened items
 				// Only when not on the overland map
+
+				// First check if the player has already identified the hidden marker
+				bool hasSeenHidden = false;
+				if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (1 << (UINT8)FogOfWarMarkers::Hidden)) > 0)
+				{
+					hasSeenHidden = true;
+				}
+				
+				// The below shows the hidden items in the non-overland map,
+				// either when the player has encountered them, or when the player has enabled this cheat
 				auto memPtr = MemGetMainPtr(0);
-				if (g_nonVolatile.showHidden && (memPtr[MAP_IS_OVERLAND] != 0x80))
+				if ((g_nonVolatile.showHidden || hasSeenHidden)
+					&& (memPtr[MAP_IS_OVERLAND] != 0x80))
 				{
 					XMUINT2 _tileSheetPos(0, 0);
 					RECT _tileSheetRect;
