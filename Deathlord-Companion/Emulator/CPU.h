@@ -14,6 +14,8 @@
 #define PC_CHECK_SEARCH_SUCCESS		0x9428		// BCS after CMP that checks success of search
 #define PC_ENEMY_ACTION_DRAIN		0xAB19		// BCS: Always branch to avoid level drain. This option makes the enemy skip the turn without feedback
 #define PC_ENEMY_ACTION_DRAIN2		0xAADF		// BCS: Always branch to avoid level drain. This option makes the enemy always Miss the level drain
+#define PC_MAGIC_WATER_EFFECT		0xB707		// Set X register to 0 to always branch to stat +1
+#define PC_STAT_INCREASE_CEILING	0xB7A3		// BCS: Don't branch to remove the max 18 of the stat increase from magic water
 
 // Memory Locations used for hijacking
 #define MEM_CURRENT_CHAR_POS	0xFC21		// Current active character position (1-6)

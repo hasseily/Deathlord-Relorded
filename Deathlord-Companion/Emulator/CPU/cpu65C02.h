@@ -131,6 +131,17 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				break;
 			}
 			*/
+			case PC_MAGIC_WATER_EFFECT:
+			{
+				regs.x = 0;		// always choose stat increase
+				break;
+			}
+			case PC_STAT_INCREASE_CEILING:
+			{
+				CYC(2); // BCS uses 2 cycles;
+				regs.pc = _origPC + 2;	// Jump to the next instruction, disregard the branch
+				break;
+			}
 			default:
 				break;
 			}	// switch
