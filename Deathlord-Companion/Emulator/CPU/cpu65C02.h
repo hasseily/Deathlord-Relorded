@@ -145,9 +145,10 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			
 			case PC_CHECK_STARVATION:
 			{
-				// In the previous instruction it sets A to 1, which is the amount to reduce HP by.
-				// The reduction is done in the subroutine at 0x605D. Here we reset A to 0 so that no HP is reduced
+				// In the previous instructions it sets A to 1 (lo byte) and Y to 0 (hi byte), which is the amount to reduce HP by.
+				// The reduction is done in the subroutine at 0x605D. Here we reset A and Y to 0 so that no HP is reduced
 				regs.a = 0;
+				regs.y = 0;
 				break;
 			}
 			case PC_SAVE_AFTER_DEATH:
