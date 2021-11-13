@@ -297,19 +297,10 @@
           "vars": [
             {
               "mem": [
-                "0xFE20",
-                "0xFE21",
-                "0xFE22",
-                "0xFE23",
-                "0xFE24",
-                "0xFE25",
-                "0xFE26",
-                "0xFE27"
+                "0xFD3C"
               ],
               "fixedlength": 3,
-              "type": "lookup_aggregate",
-              "startvalue": 10,
-              "lookup": "/tables/equipmentarmor"
+              "type": "int"
             },
             {
               "mem": [
@@ -334,12 +325,12 @@
               "type": "int",
               "padchar": "0"
             },
-			{
-              "mem": [ "0xFE40", "0xFE41", "0xFE42", "0xFE43", "0xFE44", "0xFE45", "0xFE46", "0xFE47" ],
+            {
+              "mem": [
+                "0xFD3D"
+              ],
               "fixedlength": 3,
-              "type": "lookup_aggregate",
-              "startvalue": 10,
-              "lookup": "/tables/equipmentarmor"
+              "type": "int"
             },
             {
               "mem": [ "0xFDD3" ],
@@ -355,14 +346,14 @@
               "mem": [ "0xFDD9", "0xFDDF" ],
               "fixedlength": 5,
               "type": "int",
-              "padchar":  "0"
+              "padchar": "0"
             },
-			{
-              "mem": [ "0xFE60", "0xFE61", "0xFE62", "0xFE63", "0xFE64", "0xFE65", "0xFE66", "0xFE67" ],
+            {
+              "mem": [
+                "0xFD3E"
+              ],
               "fixedlength": 3,
-              "type": "lookup_aggregate",
-              "startvalue": 10,
-              "lookup": "/tables/equipmentarmor"
+              "type": "int"
             },
             {
               "mem": [ "0xFDD4" ],
@@ -858,11 +849,11 @@
           "template": "A {}  F {}  T {}  G {}  | A {}  F {}  T {}  G {}  | A {}  F {}  T {}  G {}",
           "vars": [
             {
-              "mem": [ "0xFE80", "0xFE81", "0xFE82", "0xFE83", "0xFE84", "0xFE85", "0xFE86", "0xFE87" ],
+              "mem": [
+                "0xFD3F"
+              ],
               "fixedlength": 3,
-              "type": "lookup_aggregate",
-              "startvalue": 10,
-              "lookup": "/tables/equipmentarmor"
+              "type": "int"
             },
             {
               "mem": [
@@ -887,12 +878,12 @@
               "type": "int",
               "padchar": "0"
             },
-			{
-              "mem": [ "0xFEA0", "0xFEA1", "0xFEA2", "0xFEA3", "0xFEA4", "0xFEA5", "0xFEA6", "0xFEA7" ],
+            {
+              "mem": [
+                "0xFD40"
+              ],
               "fixedlength": 3,
-              "type": "lookup_aggregate",
-              "startvalue": 10,
-              "lookup": "/tables/equipmentarmor"
+              "type": "int"
             },
             {
               "mem": [ "0xFDD6" ],
@@ -910,12 +901,12 @@
               "type": "int",
               "padchar": "0"
             },
-			{
-              "mem": [ "0xFEC0", "0xFEC1", "0xFEC2", "0xFEC3", "0xFEC4", "0xFEC5", "0xFEC6", "0xFEC7" ],
+            {
+              "mem": [
+                "0xFD41"
+              ],
               "fixedlength": 3,
-              "type": "lookup_aggregate",
-              "startvalue": 10,
-              "lookup": "/tables/equipmentarmor"
+              "type": "int"
             },
             {
               "mem": [ "0xFDD7" ],
