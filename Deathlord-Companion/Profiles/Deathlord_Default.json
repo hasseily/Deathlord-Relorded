@@ -217,83 +217,110 @@
                 "0xFD00"
               ],
               "type": "string",
-			  "fixedlength": 9
+              "fixedlength": 9
             },
             {
               "mem": [
                 "0xFD66"
               ],
               "type": "int",
-			  "fixedlength": 3
+              "fixedlength": 3
             },
             {
               "mem": [
                 "0xFD6C"
               ],
               "type": "int",
-			  "fixedlength": 2
+              "fixedlength": 2
             },
-			{
+            {
               "mem": [ "0xFD09" ],
               "type": "string",
-			  "fixedlength": 9
+              "fixedlength": 9
             },
             {
               "mem": [ "0xFD67" ],
               "type": "int",
-			  "fixedlength": 3
+              "fixedlength": 3
             },
             {
               "mem": [ "0xFD6D" ],
               "type": "int",
-			  "fixedlength": 2
+              "fixedlength": 2
             },
-			{
+            {
               "mem": [ "0xFD12" ],
               "type": "string",
-			  "fixedlength": 9
+              "fixedlength": 9
             },
             {
               "mem": [ "0xFD68" ],
               "type": "int",
-			  "fixedlength": 3
+              "fixedlength": 3
             },
             {
               "mem": [ "0xFD6E" ],
               "type": "int",
-			  "fixedlength": 2
+              "fixedlength": 2
             }
           ]
         },
         {
           "type": "Content",
-          "template": "{} | {} | {}",
+          "template": "{}   XP: {} | {}   XP: {} | {}   XP: {}",
           "vars": [
             {
               "mem": [
                 "0xFD60"
               ],
-              "fixedlength": 29,
+              "fixedlength": 17,
               "type": "lookup",
               "lookup": "/tables/class"
             },
-			            {
+            {
+              "mem": [
+                "0xFDF6",
+                "0xFDFC"
+              ],
+              "fixedlength": 5,
+              "type": "int",
+              "padchar": "0"
+            },
+            {
               "mem": [ "0xFD61" ],
-              "fixedlength": 29,
+              "fixedlength": 17,
               "type": "lookup",
               "lookup": "/tables/class"
             },
-			{
+            {
+              "mem": [
+                "0xFDF7",
+                "0xFDFD"
+              ],
+              "fixedlength": 5,
+              "type": "int",
+              "padchar": "0"
+            },
+            {
               "mem": [ "0xFD62" ],
-              "fixedlength": 29,
+              "fixedlength": 17,
               "type": "lookup",
               "lookup": "/tables/class"
+            },
+            {
+              "mem": [
+                "0xFDF8",
+                "0xFDFE"
+              ],
+              "fixedlength": 5,
+              "type": "int",
+              "padchar": "0"
             }
           ]
         },
         {
           "type": "Content",
-          "template": "A {}  F {}  T {}  G {}  | A {}  F {}  T {}  G {}  | A {}  F {}  T {}  G {}",
+          "template": "A:{}  F:{}  T:{}  G: {} | A:{}  F:{}  T:{}  G: {} | A:{}  F:{}  T:{}  G: {}",
           "vars": [
             {
               "mem": [
@@ -820,33 +847,60 @@
         },
         {
           "type": "Content",
-          "template": "{} | {} | {}",
+          "template": "{}   XP: {} | {}   XP: {} | {}   XP: {}",
           "vars": [
             {
               "mem": [
                 "0xFD63"
               ],
-              "fixedlength": 29,
+              "fixedlength": 17,
               "type": "lookup",
               "lookup": "/tables/class"
             },
-			            {
+            {
+              "mem": [
+                "0xFDF9",
+                "0xFDFF"
+              ],
+              "fixedlength": 5,
+              "type": "int",
+              "padchar": "0"
+            },
+            {
               "mem": [ "0xFD64" ],
-              "fixedlength": 29,
+              "fixedlength": 17,
               "type": "lookup",
               "lookup": "/tables/class"
             },
-			{
+            {
+              "mem": [
+                "0xFDFA",
+                "0xFE00"
+              ],
+              "fixedlength": 5,
+              "type": "int",
+              "padchar": "0"
+            },
+            {
               "mem": [ "0xFD65" ],
-              "fixedlength": 29,
+              "fixedlength": 17,
               "type": "lookup",
               "lookup": "/tables/class"
+            },
+            {
+              "mem": [
+                "0xFDFB",
+                "0xFE01"
+              ],
+              "fixedlength": 5,
+              "type": "int",
+              "padchar": "0"
             }
           ]
         },
         {
           "type": "Content",
-          "template": "A {}  F {}  T {}  G {}  | A {}  F {}  T {}  G {}  | A {}  F {}  T {}  G {}",
+          "template": "A:{}  F:{}  T:{}  G: {} | A:{}  F:{}  T:{}  G: {} | A:{}  F:{}  T:{}  G: {}",
           "vars": [
             {
               "mem": [
