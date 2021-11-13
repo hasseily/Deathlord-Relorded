@@ -119,6 +119,8 @@ LPBYTE RemoteControlManager::initializeMem(UINT size)
 	{
 		iOldVolumeLevel = (UINT8)SpkrGetVolume();
 		LPBYTE _mem = (LPBYTE)GameLink::AllocRAM(size);
+		if (_mem == 0)
+			return NULL;
 
 		// initialize the gamelink previous input to 0
 		memset(&g_gamelink.input_prev, 0, sizeof(GameLink::sSharedMMapInput_R2));
