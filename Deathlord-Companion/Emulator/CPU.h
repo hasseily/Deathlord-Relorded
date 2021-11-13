@@ -16,7 +16,8 @@
 #define PC_ENEMY_ACTION_DRAIN2		0xAADF		// BCS: Always branch to avoid level drain. This option makes the enemy always Miss the level drain
 #define PC_MAGIC_WATER_EFFECT		0xB707		// Set X register to 0 to always branch to stat +1
 #define PC_STAT_INCREASE_CEILING	0xB7A3		// BCS: Don't branch to remove the max 18 of the stat increase from magic water
-#define PC_CHECK_STARVATION			0x54EC		// ORA #$02 that sets STV state on char. Bypass this instruction
+#define PC_CHECK_STARVATION			0x54B6		// At 0x54B4, it sets A to 01, which is the amount we'll drop HP by because of starvation, when calling subroutine 0x605D. Here set A=0 and we're good
+#define PC_CHECK_STARVATION2			0x54EC		// ORA #$02 that sets STV state on char. Bypass this instruction
 #define PC_SAVE_AFTER_DEATH			0x5BC5		// BNE should not branch in order to stop saving after a char dies in combat
 
 // Memory Locations used for hijacking

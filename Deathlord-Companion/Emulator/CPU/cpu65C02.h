@@ -142,10 +142,12 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				regs.pc = _origPC + 2;	// Jump to the next instruction, disregard the branch
 				break;
 			}
+			
 			case PC_CHECK_STARVATION:
 			{
-				CYC(2); // ORA uses 2 cycles;
-				regs.pc = _origPC + 2;	// Jump to the next instruction
+				// In the previous instruction it sets A to 1, which is the amount to reduce HP by.
+				// The reduction is done in the subroutine at 0x605D. Here we reset A to 0 so that no HP is reduced
+				regs.a = 0;
 				break;
 			}
 			case PC_SAVE_AFTER_DEATH:
@@ -428,8 +430,8 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 		}
 		
 		/*
-		if ((_origPC >= PC_BEGIN_DRAWING_TILES) && (_origPC <= PC_END_DRAWING_TILES))
-			numInstructions = 1;
+		if ((_origPC == 0x5482))
+			numInstructions = 1000;
 
 		if (numInstructions > 0)
 		{
