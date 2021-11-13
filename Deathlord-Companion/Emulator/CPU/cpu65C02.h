@@ -142,6 +142,18 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				regs.pc = _origPC + 2;	// Jump to the next instruction, disregard the branch
 				break;
 			}
+			case PC_CHECK_STARVATION:
+			{
+				CYC(2); // ORA uses 2 cycles;
+				regs.pc = _origPC + 2;	// Jump to the next instruction
+				break;
+			}
+			case PC_SAVE_AFTER_DEATH:
+			{
+				CYC(2); // BNE uses 2 cycles;
+				regs.pc = _origPC + 2;	// Jump to the next instruction
+				break;
+			}
 			default:
 				break;
 			}	// switch
