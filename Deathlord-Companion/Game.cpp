@@ -244,10 +244,16 @@ void Game::Update(DX::StepTimer const& timer)
 	UINT8* memPtr = MemGetMainPtr(0);
 	g_isInGameMap = (memPtr[0xFCE0] == 0xE5);	// when not in game map, that area is all zeros
     if (g_isInGameMap)
-        EmulatorSetSpeed(1);    // SPEED_NORMAL
+    {    // Always set speed to SPEED_NORMAL when playing, otherwise things are too fast
+		if (EmulatorGetSpeed() != 1)
+			EmulatorSetSpeed(1);    // SPEED_NORMAL
+    }
     else
-        EmulatorSetSpeed(g_nonVolatile.speed);
-        
+    {
+		if (EmulatorGetSpeed() != g_nonVolatile.speed)
+			EmulatorSetSpeed(g_nonVolatile.speed);
+    }
+
 	EmulatorMessageLoopProcessing();
 
     auto autoMap = AutoMap::GetInstance();

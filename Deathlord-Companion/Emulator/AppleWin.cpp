@@ -349,6 +349,30 @@ void EmulatorMessageLoopProcessing()
 		Sleep(1);		// Stop process hogging CPU (NB. don't delay for too long otherwise key input can be slow in other apps - GH#569)
 }
 
+UINT8 EmulatorGetSpeed()
+{
+	switch (g_dwSpeed)
+	{
+	case SPEED_MIN:
+		return 0;
+	case SPEED_NORMAL:
+		return 1;
+	case 20:
+		return 2;
+	case 40:
+		return 3;
+	case 60:
+		return 4;
+	case 80:
+		return 5;
+	case SPEED_MAX:
+		return 6;
+	default:
+		break;
+	}
+	return UINT8_MAX;
+}
+
 void EmulatorSetSpeed(UINT8 speed)
 {
 	switch (speed)
@@ -377,6 +401,8 @@ void EmulatorSetSpeed(UINT8 speed)
 	default:
 		g_dwSpeed = SPEED_NORMAL;
 	}
+	SetCurrentCLK6502();
+	VideoReinitialize(true);
 }
 
 // DO ONE-TIME INITIALIZATION
