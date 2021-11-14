@@ -155,6 +155,50 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				}
 				break;
 			}
+			case PC_CHAR_SWAMP_DAMAGE:
+			{
+				// this is a JSR to a swamp damage routine that triggers for each char (regs.x has the char position)
+				bool avoidsSwampDamage = false;
+				// the following types never get damaged by swamp
+				switch ((DeathlordClasses)(MemGetMainPtr(PARTY_CLASS_START + regs.x)[0]))
+				{
+				case DeathlordClasses::Barbarian:
+					[[fallthrough]];
+				case DeathlordClasses::Druid:
+					[[fallthrough]];
+				case DeathlordClasses::Peasant:
+					[[fallthrough]];
+				case DeathlordClasses::Ranger:
+					avoidsSwampDamage = true;
+					break;
+				default:
+					avoidsSwampDamage = false;
+					break;
+				}
+				switch ((DeathlordRaces)(MemGetMainPtr(PARTY_RACE_START + regs.x)[0]))
+				{
+				case DeathlordRaces::Elf:
+					[[fallthrough]];
+				case DeathlordRaces::HalfElf:
+					avoidsSwampDamage = true;
+					break;
+				case DeathlordRaces::Orc:
+					avoidsSwampDamage = true;
+					break;
+				case DeathlordRaces::HalfOrc:
+					avoidsSwampDamage = true;
+					break;
+				default:
+					avoidsSwampDamage = false;
+					break;
+				}
+				if (avoidsSwampDamage)
+				{
+					CYC(6); // JSR (0x20) uses 6 cycles;
+					regs.pc = _origPC + 3;	// Skip to the next instruction
+				}
+				break;
+			}
 			case PC_SAVE_AFTER_DEATH:
 			{
 				CYC(2); // BNE uses 2 cycles;
