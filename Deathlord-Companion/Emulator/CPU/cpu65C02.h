@@ -180,11 +180,9 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				case DeathlordRaces::Elf:
 					[[fallthrough]];
 				case DeathlordRaces::HalfElf:
-					avoidsSwampDamage = true;
-					break;
+					[[fallthrough]];
 				case DeathlordRaces::Orc:
-					avoidsSwampDamage = true;
-					break;
+					[[fallthrough]];
 				case DeathlordRaces::HalfOrc:
 					avoidsSwampDamage = true;
 					break;
