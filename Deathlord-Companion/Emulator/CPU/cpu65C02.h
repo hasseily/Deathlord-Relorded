@@ -192,8 +192,10 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				}
 				if (avoidsSwampDamage)
 				{
-					CYC(6); // JSR (0x20) uses 6 cycles;
-					regs.pc = _origPC + 3;	// Skip to the next instruction
+					// This instruction is a JSR to the damage.
+					// The next instruction is a JSR to highlight the character and beep. We bypass both
+					CYC(12); // JSR (0x20) uses 6 cycles;
+					regs.pc = _origPC + 6;	// Skip to the next instruction
 				}
 				break;
 			}
