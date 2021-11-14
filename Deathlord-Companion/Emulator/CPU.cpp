@@ -363,7 +363,6 @@ static __forceinline void IRQ(ULONG& uExecutedCycles, BOOL& flagc, BOOL& flagn, 
 #define WRITE(value) _WRITE(value)
 #define HEATMAP_X(address)
 
-#include "CPU/cpu6502.h"  // MOS 6502
 #include "CPU/cpu65C02.h" // WDC 65C02
 
 #undef READ
@@ -379,10 +378,6 @@ static __forceinline void IRQ(ULONG& uExecutedCycles, BOOL& flagc, BOOL& flagn, 
 
 #include "CPU/cpu_heatmap.inl"
 
-#define Cpu6502 Cpu6502_debug
-#include "CPU/cpu6502.h"  // MOS 6502
-#undef Cpu6502
-
 #define Cpu65C02 Cpu65C02_debug
 #include "CPU/cpu65C02.h" // WDC 65C02
 #undef Cpu65C02
@@ -397,11 +392,9 @@ static DWORD InternalCpuExecute(const DWORD uTotalCycles, const bool bVideoUpdat
 {
 	if (g_nAppMode == AppMode_e::MODE_RUNNING)
 	{
-		if (GetMainCpu() == CPU_6502)
-			return Cpu6502(uTotalCycles, bVideoUpdate);		// Apple ][, ][+, //e, Clones
-		else
-			return Cpu65C02(uTotalCycles, bVideoUpdate);	// Enhanced Apple //e
+		return Cpu65C02(uTotalCycles, bVideoUpdate);	// Enhanced Apple //e
 	}
+	return 0;
 }
 
 //

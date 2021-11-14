@@ -227,7 +227,6 @@
     <ClInclude Include="emulator\CardManager.h" />
     <ClInclude Include="emulator\Common.h" />
     <ClInclude Include="emulator\CPU.h" />
-    <ClInclude Include="emulator\cpu\cpu6502.h" />
     <ClInclude Include="emulator\cpu\cpu65C02.h" />
     <ClInclude Include="Emulator\Disk.h" />
     <ClInclude Include="Emulator\Disk2CardManager.h" />

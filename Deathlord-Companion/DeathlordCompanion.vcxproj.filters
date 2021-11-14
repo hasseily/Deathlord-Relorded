@@ -254,9 +254,6 @@
     <ClInclude Include="emulator\Video.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="emulator\cpu\cpu6502.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="emulator\cpu\cpu65C02.h">
       <Filter>Header Files</Filter>
     </ClInclude>
