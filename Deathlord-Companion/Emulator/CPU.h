@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-
+#include "DeathlordHacks.h"
 
 // Program Counter locations to hijack when processing the game
 // to change the behavior on the fly without patching the original code
@@ -16,12 +16,9 @@
 #define PC_ENEMY_ACTION_DRAIN2		0xAADF		// BCS: Always branch to avoid level drain. This option makes the enemy always Miss the level drain
 #define PC_MAGIC_WATER_EFFECT		0xB707		// Set X register to 0 to always branch to stat +1
 #define PC_STAT_INCREASE_CEILING	0xB7A3		// BCS: Don't branch to remove the max 18 of the stat increase from magic water
-#define PC_CHECK_STARVATION			0x54B8		// It sets A to 01 (lo byte) and Y to 00 (hi byte), which is the amount we'll drop HP by because of starvation, when calling subroutine 0x605D.
+#define PC_CHAR_HP_LOSS				0x54B8		// It sets A to 01 (lo byte) and Y to 00 (hi byte), which is the amount we'll drop HP by because of starvation, toxicity, etc... when calling subroutine 0x605D. X has the player position.
 #define PC_SAVE_AFTER_DEATH			0x5BC5		// BNE should not branch in order to stop saving after a char dies in combat
-
-// Memory Locations used for hijacking
-#define MEM_CURRENT_CHAR_POS	0xFC21		// Current active character position (1-6)
-#define MEM_CHAR_1_WEAP_READY	0xFDEA		// Character 1 weapon ready status: ff = fists, 00 = melee, 01 = ranged
+#define PC_NINJA_MONK_AC_RESET		0xA952		// AND with 0F that resets the Ninja and Monk A/C to 0 every 32 levels. Bypass this bug.
 
 struct regsrec
 {
