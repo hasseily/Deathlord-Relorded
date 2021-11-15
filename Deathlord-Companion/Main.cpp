@@ -277,16 +277,17 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			g_spellW = std::make_unique<SpellWindow>(g_hInstance, hwnd);
 			g_dlHacks = std::make_unique<DeathlordHacks>(g_hInstance, hwnd);
 
-			// Game has now loaded the saved/default settings
-			// Update the menu bar with the settings
-			UpdateMenuBarStatus(hwnd);
-
 			// Autoload the last used profile
 			g_game->ActivateLastUsedProfile();
 
 			// And open the spells window if necessary
 			if (g_nonVolatile.showSpells)
 				g_game->MenuShowSpellWindow();
+			
+			// Game has now loaded the saved/default settings
+			// Update the menu bar with the settings
+			UpdateMenuBarStatus(hwnd);
+
 		}
 
 		// Main message loop
