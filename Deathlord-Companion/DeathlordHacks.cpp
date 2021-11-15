@@ -280,7 +280,7 @@ void DeathlordHacks::SaveMapDataToDisk()
 	// Save the map file
 	memPtr = MemGetMainPtr(0);
 	fileName = "Maps\\Map ";
-	if (memPtr[MAP_IS_OVERLAND] == 0x80)
+	if (PlayerIsOverland())
 		sprintf_s(nameSuffix, 100, "Overland %02X %02X.txt", memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
 	else
 		sprintf_s(nameSuffix, 100, "%02X-%02X.txt", memPtr[MAP_ID], memPtr[MAP_FLOOR]);
@@ -295,7 +295,7 @@ void DeathlordHacks::SaveMapDataToDisk()
 	LPBYTE tilesetRGBAData = tileset->GetCurrentTilesetBuffer();
 	// Save the tile file
 	fileName = "Maps\\Tileset ";
-	if (memPtr[MAP_IS_OVERLAND] == 0x80)
+	if (PlayerIsOverland())
 		sprintf_s(nameSuffix, 100, "Overland %02X %02X.data", memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
 	else
 		sprintf_s(nameSuffix, 100, "%02X-%02X.data", memPtr[MAP_ID], memPtr[MAP_FLOOR]);

@@ -80,7 +80,7 @@ std::string AutoMap::GetCurrentMapUniqueName()
 {
 	auto memPtr = MemGetMainPtr(0);
 	char _buf[60];
-	if (memPtr[MAP_IS_OVERLAND] == 0x80)
+	if (PlayerIsOverland())
 	{
 		sprintf_s(_buf, sizeof(_buf), "Overland_%.2d_%.2d",
 			memPtr[MAP_OVERLAND_X],
@@ -246,7 +246,7 @@ void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<Direct
 {
 	if (!g_isInGameMap)
 		return;
-	if (MemGetMainPtr(MAP_IS_OVERLAND)[0] == 0x80)	// Don't do anything if we're in the overland
+	if (PlayerIsOverland())	// Don't do anything if we're in the overland
 		return;
 
 	std::shared_ptr<DeathlordHacks>hw = GetDeathlordHacks();
@@ -552,7 +552,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 				// either when the player has encountered them, or when the player has enabled this cheat
 				auto memPtr = MemGetMainPtr(0);
 				if ((g_nonVolatile.showHidden || hasSeenHidden)
-					&& (memPtr[MAP_IS_OVERLAND] != 0x80))
+					&& !PlayerIsOverland())
 				{
 					XMUINT2 _tileSheetPos(0, 0);
 					RECT _tileSheetRect;

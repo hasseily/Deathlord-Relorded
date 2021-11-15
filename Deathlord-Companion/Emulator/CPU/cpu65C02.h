@@ -155,9 +155,25 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				}
 				break;
 			}
-			case PC_CHAR_SWAMP_DAMAGE:
+			case PC_CHAR_TILE_DAMAGE:
 			{
-				// this is a JSR to a swamp damage routine that triggers for each char (regs.x has the char position)
+				// this is a JSR to a tile damage routine that triggers for each char (regs.x has the char position)
+				// Only handle the case of cactus and swamp, overland and in dungeons
+				UINT8 _tileId = MemGetMainPtr(TILEVIEW_CURRENT_PLAYERTILE)[0];
+				if (PlayerIsOverland())
+				{
+					if (_tileId == TILE_OVERLAND_FIRE_OFFSET)
+						break;
+				}
+				else
+				{
+					if (_tileId == TILE_DUNGEON_FIRE_OFFSET)
+						break;
+					if (_tileId == TILE_DUNGEON_ACID_OFFSET)
+						break;
+					if (_tileId == TILE_DUNGEON_MAGIC_OFFSET)
+						break;
+				}
 				bool avoidsSwampDamage = false;
 				// the following types never get damaged by swamp
 				switch ((DeathlordClasses)(MemGetMainPtr(PARTY_CLASS_START + regs.x)[0]))

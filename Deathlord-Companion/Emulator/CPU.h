@@ -17,7 +17,7 @@
 #define PC_MAGIC_WATER_EFFECT		0xB707		// Set X register to 0 to always branch to stat +1
 #define PC_STAT_INCREASE_CEILING	0xB7A3		// BCS: Don't branch to remove the max 18 of the stat increase from magic water
 #define PC_CHAR_HP_LOSS				0x54B8		// It sets A to 01 (lo byte) and Y to 00 (hi byte), which is the amount we'll drop HP by because of starvation, toxicity, etc... when calling subroutine 0x605D. X has the char position.
-#define PC_CHAR_SWAMP_DAMAGE		0x6038		// JSR to the swamp damage subroutine at 0x6063. Bypass it to avoid swamp damage to char at index in X.
+#define PC_CHAR_TILE_DAMAGE			0x6038		// JSR to the tile damage subroutine at 0x6063. Bypass it to avoid tile damage to char at index in X.
 #define PC_SAVE_AFTER_DEATH			0x5BC5		// BNE should not branch in order to stop saving after a char dies in combat
 #define PC_NINJA_MONK_AC_RESET		0xA952		// AND with 0F that resets the Ninja and Monk A/C to 0 every 32 levels. Bypass this bug.
 
