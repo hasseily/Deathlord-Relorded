@@ -127,7 +127,8 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 				// set state to healthy
 				memPtr[i] = 0;
 				// set HP to maxHP
-				memPtr[i + (0xFD4E - 0xFD36)] = memPtr[i + (0xFD42 - 0xFD36)];
+				memPtr[i + (0xFD4E - 0xFD36)] = memPtr[i + (0xFD42 - 0xFD36)];	// HP low
+				memPtr[i + (0xFD54 - 0xFD36)] = memPtr[i + (0xFD48 - 0xFD36)];	// HP high
 				// set SP to maxSP
 				memPtr[i + (0xFD96 - 0xFD36)] = memPtr[i + (0xFD9C - 0xFD36)];
 			}
