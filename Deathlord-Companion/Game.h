@@ -12,6 +12,7 @@
 #include "DeathlordHacks.h"
 #include "TilesetCreator.h"
 #include "AutoMap.h"
+#include "InvOverlay.h"
 #include "HAUtils.h"
 #include "NonVolatile.h"
 #include <Keyboard.h>
@@ -130,6 +131,7 @@ private:
 
 	static float m_clientFrameScale;    // TODO: unused
     AutoMap* m_automap;
+    InvOverlay* m_invOverlay;
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
