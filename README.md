@@ -35,9 +35,7 @@ The documentation for profiles is sorely lacking, but I've included a base profi
 
 ## Logging
 
-LOGGING ISN'T YET FUNCTIONAL FOR DEATHLORD
-The Companion automatically logs all conversations.
-You can show the log file from the menu. You can copy, paste, or otherwise modify the text within the log window. You can (also from the menu) load and save the log.
+The Companion can automatically log all interactions with the world, conversations and battles. Logging is automatic when the log window is displayed, but you can turn on or off the logging of battles from the menu. You can copy, paste, or otherwise modify the text within the log window. You can (also from the menu) load and save the log.
 
 WARNING: Save or copy the log window content somewhere else before you quit the app or it is lost forever!
 
