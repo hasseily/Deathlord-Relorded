@@ -165,6 +165,11 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				// Also don't log if the log window isn't visible
 				if (!__logWindow->IsLogWindowDisplayed())
 					break;
+
+				// And don't log if we're in combat and we don't want to log combat
+				if (!g_nonVolatile.logCombat && (MemGetMainPtr(MEM_MODULE_STATE)[0] == (int)ModuleStates::Combat))
+					break;
+
 				char _glyph = regs.a;
 				// And don't log special characters
 				if ((ARRAY_DEATHLORD_CHARSET[_glyph] == 0xAD) 

@@ -42,7 +42,16 @@ constexpr UINT16 TILE_DUNGEON_FIRE_OFFSET = 0x2D;
 constexpr UINT16 TILE_DUNGEON_ACID_OFFSET = 0x2C;
 constexpr UINT16 TILE_DUNGEON_MAGIC_OFFSET = 0x38;		// Magic damage tile in dungeon tileset
 
-// Interesting Memory Areas
+// Module State
+constexpr UINT16 MEM_MODULE_STATE = 0x0060;
+enum class ModuleStates	// in memory at MEM_MODULE_STATE
+	// TODO: Any others?
+{
+	Combat = 0,
+	Exploration = 2
+};
+
+// Printing characters on screen
 constexpr UINT16 MEM_PRINT_INVERSE	= 0x00B4;			// 00 for regular, 7F for inverse glyph
 constexpr UINT16 MEM_PRINT_X_ORIGIN = 0x00AD;			// Starting X when printing a string of glyphs
 constexpr UINT16 MEM_PRINT_Y_ORIGIN = 0x00AA;			// Starting Y when printing a string of glyphs
@@ -53,8 +62,8 @@ constexpr UINT16 MEM_PRINT_HEIGHT = 0x00AC;				// Area height for printing curre
 constexpr UINT8	 PRINT_Y_MIN = 12;						// Value of PRINT_Y below which we don't print (it's the char list)
 
 constexpr unsigned char ARRAY_DEATHLORD_CHARSET[128]{
-	'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',	// unused
-	'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',	// unused
+	'.','.','.','.','.','.','.','.','.','.','.','.','.','\n','.','.',
+	'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',
 	' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/',
 	'0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?',
 	'@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O',
