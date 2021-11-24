@@ -1,3 +1,4 @@
+#pragma once
 /*
 AppleWin : An Apple //e emulator for Windows
 
@@ -24,13 +25,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "LogWindow.h"
 #include "MemoryTriggers.h"	// trigger the memory polling upon passing time because we know the state is safe
 #include "DeathlordHacks.h"
+#include <string>
 //===========================================================================
 
-#ifndef posxy
 static int __posX = 0xff;
 static int __posY = 0xff;
-#define posxy
-#endif
+static bool __setNewLine = false;
+static std::string interactiveTextOutput = "";
+static int interactiveTextOutputLineCt = 0;
+static std::shared_ptr<LogWindow> __logWindow;
+extern std::shared_ptr<LogWindow> GetLogWindow();
 
 static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 {
@@ -94,6 +98,107 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			{
 				auto aM = AutoMap::GetInstance();
 				aM->AnalyzeVisibleTiles();
+				break;
+			}
+			case PC_FLAG_NEWLINE:
+			{
+				__setNewLine = true;
+				break;
+			}
+			/*
+			* This is obsoleted by PC_PRINT_CHAR
+			* 
+			case PC_PRINT_STATIC_TEXT:
+			{
+				if (__setNewLine)
+				{
+					// Need to add a new line before anything
+					// And delete an old one if the buffer has gotten too big
+					if (interactiveTextOutputLineCt > 15)
+					{
+						size_t _nlpos = interactiveTextOutput.find_first_of("\n");
+						if (_nlpos != std::string::npos)
+						{
+							interactiveTextOutput.erase(0, _nlpos + 1);
+							--interactiveTextOutputLineCt;
+						}
+					}
+					interactiveTextOutput.append("\n");
+					__setNewLine = false;
+				}
+				int memPosString = 1 + MemGetMainPtr(regs.sp)[1]
+					+ ((UINT16)MemGetMainPtr(regs.sp)[2] << 8);
+				char aString[256];
+				BYTE aChar;
+				for (size_t i = 0; i < 255; i++)
+				{
+					aChar = MemGetMainPtr(memPosString)[i];
+					if (aChar >= sizeof(ARRAY_DEATHLORD_CHARSET_EOR) + 0x80)	// shouldn't happen!
+					{
+						aString[i] = '.';
+						continue;
+					}
+					if (aChar < 0x80)	// Not end of string
+					{
+						aString[i] = ARRAY_DEATHLORD_CHARSET_EOR[aChar];
+					}
+					else // We're done, it's the end of the string
+					{
+						aString[i] = ARRAY_DEATHLORD_CHARSET_EOR[aChar - 0x80];
+						interactiveTextOutput.append(aString, i+1);
+						__setNewLine = true;
+						OutputDebugStringA((interactiveTextOutput + "\n").c_str());
+						break;
+					}
+				}
+				break;
+			}
+			*/
+			case PC_PRINT_CHAR:
+			{
+				// First check if it's the topright area. If so, do nothing. We don't need to display changes
+				// in the list of characters
+				if (MemGetMainPtr(MEM_PRINT_Y)[0] < PRINT_Y_MIN)
+					break;
+
+				__logWindow = GetLogWindow();
+				// Also don't log if the log window isn't visible
+				if (!__logWindow->IsLogWindowDisplayed())
+					break;
+
+				// And don't log if we're in combat and we don't want to log combat
+				if (!g_nonVolatile.logCombat && (MemGetMainPtr(MEM_MODULE_STATE)[0] == (int)ModuleStates::Combat))
+					break;
+
+				char _glyph = regs.a;
+				// And don't log special characters
+				if ((ARRAY_DEATHLORD_CHARSET[_glyph] == 0xAD) 
+					|| (ARRAY_DEATHLORD_CHARSET[_glyph] == 0x7F))		// Special chars
+					break;
+				if (_glyph < 0)	// regular non-end-of-string
+				{
+					_glyph += 0x80;
+					__logWindow->AppendLog((wchar_t)ARRAY_DEATHLORD_CHARSET[_glyph], false);
+				}
+				else
+				{
+					// End of String
+					__logWindow->AppendLog((wchar_t)ARRAY_DEATHLORD_CHARSET[_glyph], false);
+					__logWindow->AppendLog(L'\n', true);
+				}
+				if (MemGetMainPtr(MEM_PRINT_INVERSE)[0] == 0x7F)	// Inverse glyph
+				{
+					// TODO: Print Bold/Colored Glyph
+				}
+#ifdef _DEBUG
+				char _bufPrint[200];
+				sprintf_s(_bufPrint, 200, "%c/%2X (%2X) == XOrig: %2d, YOrig: %2d, X:%2d, Y:%2d, Width: %2d, Height %2d\n",
+					ARRAY_DEATHLORD_CHARSET[_glyph], regs.a, MemGetMainPtr(MEM_PRINT_INVERSE)[0], 
+					MemGetMainPtr(MEM_PRINT_X_ORIGIN)[0], MemGetMainPtr(MEM_PRINT_Y_ORIGIN)[0],
+					MemGetMainPtr(MEM_PRINT_X)[0], MemGetMainPtr(MEM_PRINT_Y)[0],
+					MemGetMainPtr(MEM_PRINT_WIDTH)[0], MemGetMainPtr(MEM_PRINT_HEIGHT)[0]);
+				OutputDebugStringA(_bufPrint);
+#endif
 				break;
 			}
 			case PC_CHECK_REAR_ATTACK:

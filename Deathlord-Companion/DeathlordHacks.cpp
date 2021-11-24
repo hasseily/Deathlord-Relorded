@@ -493,3 +493,45 @@ bool DeathlordHacks::RestoreScenarioImages()
 	}
 	return true;
 }
+
+/*
+//	The character set can be extracted wit the following code
+//	Each glyph is a sequence of 8 bytes which are the rows
+//	Each bit is a pixel, except for the high bit which is always set
+//	but then it's unset for displaying.
+//  Hence each glyph is exactly 7 pixels wide by 8 pixels high.
+//	The charset starts at 0x4B00, and runs for 96 glyphs.
+//	This code creates a b/w bitmap of the glyphs, 16 wide by 6 high
+//	The bitmap is 128x48 pixels.
+//
+//	Note: the first glyph is actually at position 0x20, so Deathlord
+//	      discards the first 2 top rows
+
+	constexpr int tilesTotal = 0x60;
+	constexpr int tilesAcross = 16;
+	constexpr int tilesDown = 6;
+	constexpr int tileHeight = 8;
+	char* transposed = new char[tilesTotal * tileHeight];
+	int memStart = 0x4b00;
+	int transByteStart = 0;
+	for (size_t j = 0; j < tilesDown; j++)
+	{
+		for (size_t i = 0; i < tilesAcross * tileHeight; i++)
+		{
+			int tilePos = i / tileHeight;
+			int tileLayer = i % tileHeight;
+			char b = MemGetMainPtr(memStart)[i] ^ 0x7F;
+			// Reverses the bits, because the first bit is the leftmost pixel
+			b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+			b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+			b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+			transposed[transByteStart + tileLayer * tilesAcross + tilePos] = b;
+		}
+		memStart += tilesAcross * tileHeight;
+		transByteStart += tilesAcross * tileHeight;
+	}
+	std::fstream fsFile("Deathlord Charset.data", std::ios::out | std::ios::binary);
+	fsFile.write(transposed, PNGBUFFERSIZE);
+	fsFile.close();
+	delete[] transposed;
+*/

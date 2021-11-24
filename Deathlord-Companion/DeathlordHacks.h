@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Emulator/Memory.h"
+#include <utility>
+
 /// <summary>
 /// The DeathlordHacks class includes methods to do special Deathlord things, and a related window.
 /// </summary>
@@ -22,6 +24,7 @@ constexpr UINT16 PARTY_WEAP_READY_START = 0xFDEA;		// Start of the array of weap
 constexpr UINT16 PARTY_STATUS_START = 0xFD36;			// Start of the status bitmask: 0x1:???, 0x2:STV, 0x4:TOX, 0x8:DIS, 0x10:PAR, 0x20:STN 0x40:RIP, 0x80:STO
 constexpr UINT16 PARTY_CHAR_LEADER = 0xFC19;			// Leader of the party (0-based)
 constexpr UINT16 PARTY_CURRENT_CHAR_POS = 0xFC21;		// Char we're getting info on (0-based)
+constexpr UINT16 PARTY_CURRENT_CHAR_CLASS = 0xFC22;		// Class of the party leader or active char in battle (determines icon)
 
 constexpr UINT16 TILEVIEW_CURRENT_START = 0x0300;		// Start of the current tiles in the viewport. Ends at 0x0350. There are 9x9 tiles
 constexpr UINT16 TILEVIEW_NEW_START = 0x0351;			// Start of the new tileset. Ends 0x03A1.
@@ -38,6 +41,47 @@ constexpr UINT16 TILE_DUNGEON_SWAMP_OFFSET = 0x36;
 constexpr UINT16 TILE_DUNGEON_FIRE_OFFSET = 0x2D;
 constexpr UINT16 TILE_DUNGEON_ACID_OFFSET = 0x2C;
 constexpr UINT16 TILE_DUNGEON_MAGIC_OFFSET = 0x38;		// Magic damage tile in dungeon tileset
+
+// Module State
+constexpr UINT16 MEM_MODULE_STATE = 0x0060;
+enum class ModuleStates	// in memory at MEM_MODULE_STATE
+	// TODO: Any others?
+{
+	Combat = 0,
+	Exploration = 2
+};
+
+// Printing characters on screen
+constexpr UINT16 MEM_PRINT_INVERSE	= 0x00B4;			// 00 for regular, 7F for inverse glyph
+constexpr UINT16 MEM_PRINT_X_ORIGIN = 0x00AD;			// Starting X when printing a string of glyphs
+constexpr UINT16 MEM_PRINT_Y_ORIGIN = 0x00AA;			// Starting Y when printing a string of glyphs
+constexpr UINT16 MEM_PRINT_X = 0x00AE;					// Current X when printing a string of glyphs
+constexpr UINT16 MEM_PRINT_Y = 0x00AF;					// Current Y when printing a string of glyphs
+constexpr UINT16 MEM_PRINT_WIDTH = 0x00AB;				// Area width for printing current string
+constexpr UINT16 MEM_PRINT_HEIGHT = 0x00AC;				// Area height for printing current string
+constexpr UINT8	 PRINT_Y_MIN = 12;						// Value of PRINT_Y below which we don't print (it's the char list)
+
+constexpr unsigned char ARRAY_DEATHLORD_CHARSET[128]{
+	'.','.','.','.','.','.','.','.','.','.','.','.','.','\n','.','.',
+	'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',
+	' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/',
+	'0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?',
+	'@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O',
+	'P','Q','R','S','T','U','V','W','X','Y','Z',0xAD,' ',' ',' ',' ',	// 0xAD is wide dash (I think used to just clear)
+	'`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o',
+	'p','q','r','s','t','u','v','w','x','y','z',0x7F,' ',' ','[',']'	// 0x7F is the cursor
+};
+
+constexpr unsigned char ARRAY_DEATHLORD_CHARSET_EOR[128]{	// The array EOR'd with 0xE5, which Deathlord uses to obfuscate strings in RAM
+	'e','d','g','f','a','`','c','b','m','l','o','n','i','h','k','j',
+	'u','t','w','v','q','p','s','r',' ',' ',']','[','y','x',0x7F,'z',	// 0x7F is the cursor
+	'E','D','G','F','A','@','C','B','M','L','O','N','I','H','K','J',
+	'U','T','W','V','Q','P','S','R',' ',' ',' ',' ','Y','X',0xAD,'Z',	// 0xAD is wide dash
+	'%','$','\'','&','!',' ','#','"','-',',','/','.',')','(','+','*',
+	'5','4','7','6','1','0','3','2','=','<','?','>','9','8',';',':',
+	'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',	// unused
+	'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.'		// unused
+};
 
 enum class DeathlordClasses		// in memory at 0xFD60-0xFD65
 {
