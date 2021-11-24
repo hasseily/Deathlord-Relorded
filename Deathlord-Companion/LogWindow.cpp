@@ -341,14 +341,17 @@ void LogWindow::AppendLog(const wchar_t wchar, bool shouldPrint)
 	{
 		printIt = true;
 	}
+	/*
 	else if (wchar == L'\n')
 	{
 		printIt = true;
 	}
+	*/
 
 	if (printIt)
 	{
-		PrintLog(currentBuffer);
+		if (currentBuffer != L"\n")
+			PrintLog(currentBuffer);
 		currentBuffer.clear();
 	}
 }

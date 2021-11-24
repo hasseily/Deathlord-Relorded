@@ -20,6 +20,10 @@
 #define PC_CHAR_TILE_DAMAGE			0x6038		// JSR to the tile damage subroutine at 0x6063. Bypass it to avoid tile damage to char at index in X.
 #define PC_SAVE_AFTER_DEATH			0x5BC5		// BNE should not branch in order to stop saving after a char dies in combat
 #define PC_NINJA_MONK_AC_RESET		0xA952		// AND with 0F that resets the Ninja and Monk A/C to 0 every 32 levels. Bypass this bug.
+#define PC_PRINT_STATIC_TEXT		0x540E		// This routine prints static text in the bottom areas, including "Talk" and "Info" static text, but not "Chat".
+												// The top of the stack contain the LO and HI bytes of the address right before the string to print
+#define PC_FLAG_NEWLINE				0x540B		// If we reach here, it's a flag to start a newline before getting to PC_PRINT_STATIC_TEXT, but only on the bottom right area
+#define PC_PRINT_CHAR				0x532D		// Prints a char on screen using: AF is active Y, AE is active X, AB is width, AC is height, AD is original X (for line-feed), AA is original Y
 
 struct regsrec
 {
