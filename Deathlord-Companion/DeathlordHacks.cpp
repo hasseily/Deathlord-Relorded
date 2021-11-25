@@ -316,6 +316,98 @@ void DeathlordHacks::SaveMapDataToDisk()
 
 void DeathlordHacks::BackupScenarioImages()
 {
+	constexpr int tilesTotal = 0x10;
+	constexpr int tileHeight = 16;	// number of rows per tile
+	constexpr int bytesPerRow = 2;
+	constexpr int dotsPerByte = 7;	// 7 dots in each byte, 2 dots per pixel
+	constexpr int sqPixelsPerRow = 14;	// There are really 7 pixels, but they're rectangular so we duplicate square pixels
+	constexpr UINT32 color_black		= 0xFF000000;	// ABGR
+	constexpr UINT32 color_white		= 0xFFFFFFFF;
+	constexpr UINT32 color_blue			= 0xFFFFA10D;
+	constexpr UINT32 color_orange		= 0xFF005EF2;
+	constexpr UINT32 color_green		= 0xFF00CB38;
+	constexpr UINT32 color_purple		= 0xFFFF34C7;
+
+	UINT32* transposed = new UINT32[tilesTotal * tileHeight * sqPixelsPerRow];	// ARGB pixels, 7 per 2 bytes of mem
+	int memStart = 0x46e0;
+	int transStart = 0;
+	bool isGroup2 = false;	// Group 1: 0b01: green, 0b10: violet.     Group 2: 0b01: orange, 0b10: blue
+	
+	for (size_t iTile = 0; iTile < tilesTotal; iTile++)
+	{
+		for (size_t iRow = 0; iRow < tileHeight; iRow++)
+		{
+			char _buf[20];
+			unsigned char b = MemGetMainPtr(memStart)[0];
+			isGroup2 = b >> 7;
+			b = b & 0b01111111;	// remove the color bit
+			for (size_t iShift = 0; iShift < 6; iShift+=2)		// Process only 6 dots (3 pixels)
+			{
+				switch ((b & (0b11 << iShift)) >> iShift)
+				{
+				case 0b00:
+					transposed[transStart] = color_black;
+					break;
+				case 0b01:
+					transposed[transStart] = (isGroup2 ? color_orange : color_green);
+					break;
+				case 0b10:
+					transposed[transStart] = (isGroup2 ? color_blue : color_purple);
+					break;
+				case 0b11:
+					transposed[transStart] = color_white;
+					break;
+				default:	// should not happen!
+					transposed[transStart] = 0x800000FF;
+					break;
+				}
+				// Duplicate the square pixels
+				transposed[transStart + 1] = transposed[transStart];
+				transStart += 2;			// Created a rectangular pixel (2 square ones)
+			}
+
+			// Now deal with the last bit that will roll over to the other byte
+			int _over = (b & 0b01000000) >> 6;	// move the last bit into first position
+
+			b = MemGetMainPtr(memStart)[1];
+			isGroup2 = b >> 7;
+			b = b & 0b01111111;	// remove the color bit
+			b = (b << 1) + _over;		// put the rollover bit in b, which now has 8 dots (4 pixels to process)
+
+			for (size_t iShift = 0; iShift < 8; iShift += 2)	// Process 8 dots (4 pixels)
+			{
+				switch ((b & (0b11 << iShift)) >> iShift)
+				{
+				case 0b00:
+					transposed[transStart] = color_black;
+					break;
+				case 0b01:
+					transposed[transStart] = (isGroup2 ? color_orange : color_green);
+					break;
+				case 0b10:
+					transposed[transStart] = (isGroup2 ? color_blue : color_purple);
+					break;
+				case 0b11:
+					transposed[transStart] = color_white;
+					break;
+				default:	// should not happen!
+					transposed[transStart] = 0x8FF00000;
+					break;
+				}
+				// Duplicate the square pixels
+				transposed[transStart + 1] = transposed[transStart];
+				transStart += 2;			// Created a rectangular pixel (2 square ones)
+			}
+			memStart += bytesPerRow;
+		}
+	}
+
+	std::fstream fsFile("Deathlord Player Sprites.data", std::ios::out | std::ios::binary);
+	fsFile.write((char *)transposed, tilesTotal * tileHeight * sqPixelsPerRow * sizeof(UINT32));
+	fsFile.close();
+	delete[] transposed;
+	return;
+	//
 	std::wstring imageName;
 	std::wstring imageExtension;
 	std::wstring imageDirPath;
