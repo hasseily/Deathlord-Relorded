@@ -328,77 +328,110 @@ void DeathlordHacks::BackupScenarioImages()
 	constexpr UINT32 color_green		= 0xFF00CB38;
 	constexpr UINT32 color_purple		= 0xFFFF34C7;
 
+#define  SETRGBCOLOR(r,g,b) {r,g,b,0xff}
+	static RGBQUAD pPalette[] =
+	{
+	SETRGBCOLOR(/*HGR_BLACK, */ 0x00,0x00,0x00),
+	SETRGBCOLOR(/*HGR_WHITE, */ 0xFF,0xFF,0xFF),
+	SETRGBCOLOR(/*BLUE,      */ 0x00,0x8A,0xB5),
+	SETRGBCOLOR(/*ORANGE,    */ 0xFF,0x72,0x47),
+	SETRGBCOLOR(/*GREEN,     */ 0x6F,0xE6,0x2C),
+	SETRGBCOLOR(/*MAGENTA,   */ 0xAA,0x1A,0xD1),
+// TV emu
+	SETRGBCOLOR(/*HGR_GREY1, */ 0x80,0x80,0x80),
+	SETRGBCOLOR(/*HGR_GREY2, */ 0x80,0x80,0x80),
+	SETRGBCOLOR(/*HGR_YELLOW,*/ 0x9E,0x9E,0x00), // 0xD0,0xB0,0x10 -> 0x9E,0x9E,0x00
+	SETRGBCOLOR(/*HGR_AQUA,  */ 0x00,0xCD,0x4A), // 0x20,0xB0,0xB0 -> 0x00,0xCD,0x4A
+	SETRGBCOLOR(/*HGR_PURPLE,*/ 0x61,0x61,0xFF), // 0x60,0x50,0xE0 -> 0x61,0x61,0xFF
+	SETRGBCOLOR(/*HGR_PINK,  */ 0xFF,0x32,0xB5), // 0xD0,0x40,0xA0 -> 0xFF,0x32,0xB5
+	};
+
 	UINT32* transposed = new UINT32[tilesTotal * tileHeight * sqPixelsPerRow];	// ARGB pixels, 7 per 2 bytes of mem
-	int memStart = 0x46e0;
+	memset(transposed, 0, tilesTotal * tileHeight * sqPixelsPerRow * sizeof(UINT32));
+	int memStart = 0xD000;
 	int transStart = 0;
-	bool isGroup2 = false;	// Group 1: 0b01: green, 0b10: violet.     Group 2: 0b01: orange, 0b10: blue
-	
+	bool isGroup2 = false;	// Group 1: 0b01: green (odd), 0b10: violet (even).     Group 2: 0b01: orange (odd), 0b10: blue (even)
+	bool bitPairColor[2] = { false, false };
+	bool isBW = false;
+
 	for (size_t iTile = 0; iTile < tilesTotal; iTile++)
 	{
 		for (size_t iRow = 0; iRow < tileHeight; iRow++)
 		{
-			char _buf[20];
-			unsigned char b = MemGetMainPtr(memStart)[0];
-			isGroup2 = b >> 7;
-			b = b & 0b01111111;	// remove the color bit
-			for (size_t iShift = 0; iShift < 6; iShift+=2)		// Process only 6 dots (3 pixels)
+			int xoffset = 0; // offset to start of the 2 bytes
+			uint8_t* pMain = MemGetMainPtr(memStart);
+
+			// We need all 28 bits because each pixel needs a three bit evaluation
+			// We use black around the 2 bytes
+			uint8_t byteval1 = 0;
+			uint8_t byteval2 = *pMain;
+			uint8_t byteval3 = *(pMain + 1);
+			uint8_t byteval4 = 0;
+
+			// all 28 bits chained
+			DWORD dwordval = (byteval1 & 0x7F) | ((byteval2 & 0x7F) << 7) | ((byteval3 & 0x7F) << 14) | ((byteval4 & 0x7F) << 21);
+
+			// Extraction of 14 color pixels
+			UINT32 colors[14];
+			int color = 0;
+			DWORD dwordval_tmp = dwordval;
+			dwordval_tmp = dwordval_tmp >> 7;
+			bool offset = (byteval2 & 0x80) ? true : false;
+			for (int i = 0; i < 14; i++)
 			{
-				switch ((b & (0b11 << iShift)) >> iShift)
-				{
-				case 0b00:
-					transposed[transStart] = color_black;
-					break;
-				case 0b01:
-					transposed[transStart] = (isGroup2 ? color_orange : color_green);
-					break;
-				case 0b10:
-					transposed[transStart] = (isGroup2 ? color_blue : color_purple);
-					break;
-				case 0b11:
-					transposed[transStart] = color_white;
-					break;
-				default:	// should not happen!
-					transposed[transStart] = 0x800000FF;
-					break;
-				}
-				// Duplicate the square pixels
-				transposed[transStart + 1] = transposed[transStart];
-				transStart += 2;			// Created a rectangular pixel (2 square ones)
+				if (i == 7) offset = (byteval3 & 0x80) ? true : false;
+				color = dwordval_tmp & 0x3;
+				// Two cases because AppleWin's palette is in a strange order
+				if (offset)
+					colors[i] = *reinterpret_cast<const UINT32*>(&pPalette[1 + color]);
+				else
+					colors[i] = *reinterpret_cast<const UINT32*>(&pPalette[6 - color]);
+				if (i % 2) dwordval_tmp >>= 2;
 			}
+			// Black and White
+			UINT32 bw[2];
+			bw[0] = *reinterpret_cast<const UINT32*>(&pPalette[0]);
+			bw[1] = *reinterpret_cast<const UINT32*>(&pPalette[1]);
 
-			// Now deal with the last bit that will roll over to the other byte
-			int _over = (b & 0b01000000) >> 6;	// move the last bit into first position
+			DWORD mask = 0x01C0; //  00|000001 1|1000000
+			DWORD chck1 = 0x0140; //  00|000001 0|1000000
+			DWORD chck2 = 0x0080; //  00|000000 1|0000000
 
-			b = MemGetMainPtr(memStart)[1];
-			isGroup2 = b >> 7;
-			b = b & 0b01111111;	// remove the color bit
-			b = (b << 1) + _over;		// put the rollover bit in b, which now has 8 dots (4 pixels to process)
+			// HIRES render in RGB works on a pixel-basis (1-bit data in framebuffer)
+			// The pixel can be 'color', if it makes a 101 or 010 pattern with the two neighbour bits
+			// In all other cases, it's black if 0 and white if 1
+			// The value of 'color' is defined on a 2-bits basis
 
-			for (size_t iShift = 0; iShift < 8; iShift += 2)	// Process 8 dots (4 pixels)
+			dwordval_tmp = dwordval;
+			for (size_t byteOfPair = 0; byteOfPair < 2; byteOfPair++)
 			{
-				switch ((b & (0b11 << iShift)) >> iShift)
+				dwordval = dwordval_tmp;
+				if (byteOfPair == 1)
 				{
-				case 0b00:
-					transposed[transStart] = color_black;
-					break;
-				case 0b01:
-					transposed[transStart] = (isGroup2 ? color_orange : color_green);
-					break;
-				case 0b10:
-					transposed[transStart] = (isGroup2 ? color_blue : color_purple);
-					break;
-				case 0b11:
-					transposed[transStart] = color_white;
-					break;
-				default:	// should not happen!
-					transposed[transStart] = 0x8FF00000;
-					break;
+					// Second byte of the 14 pixels block
+					dwordval = dwordval >> 7;
+					xoffset = 7;
 				}
-				// Duplicate the square pixels
-				transposed[transStart + 1] = transposed[transStart];
-				transStart += 2;			// Created a rectangular pixel (2 square ones)
+
+				for (int i = xoffset; i < xoffset + 7; i++)
+				{
+					if (((dwordval & mask) == chck1) || ((dwordval & mask) == chck2))
+					{
+						// Color pixel
+						transposed[transStart] = colors[i];
+						transStart++;
+					}
+					else
+					{
+						// B&W pixel
+						transposed[transStart] = bw[(dwordval & chck2 ? 1 : 0)];
+						transStart++;
+					}
+					// Next pixel
+					dwordval = dwordval >> 1;
+				}
 			}
-			memStart += bytesPerRow;
+			memStart+=2;
 		}
 	}
 
