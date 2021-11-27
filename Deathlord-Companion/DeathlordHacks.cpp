@@ -139,6 +139,56 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 			hw->SaveMapDataToDisk();
 			break;
 		}
+		case IDC_BUTTON_SPRITESAVE:
+		{
+			HWND hdlSpriteMem = GetDlgItem(hwndDlg, IDC_EDIT_SPRITEMEM);
+			HWND hdlSpriteCt = GetDlgItem(hwndDlg, IDC_EDIT_SPRITECT);
+			HWND hdlSpriteFile = GetDlgItem(hwndDlg, IDC_EDIT_SPRITEFILE);
+			if (HIWORD(wParam) == BN_CLICKED)
+			{
+				// Get the memory area for sprites
+				wchar_t _cEdit[5] = L"0000";
+				GetWindowTextW(hdlSpriteMem, _cEdit, 5);
+				int iMemLoc = 0;
+				try {
+					iMemLoc = std::stoi(_cEdit, nullptr, 16);
+				}
+				catch (std::invalid_argument& e) {
+					// std::cout << e.what();
+					SetWindowText(hdlSpriteMem, L"");
+					break;
+				}
+				// Get the sprite count
+				GetWindowTextW(hdlSpriteCt, _cEdit, 5);
+				int iSpriteCt = 0;
+				try {
+					iSpriteCt = std::stoi(_cEdit, nullptr, 16);
+				}
+				catch (std::invalid_argument& e) {
+					// std::cout << e.what();
+					SetWindowText(hdlSpriteCt, L"");
+					break;
+				}
+				// And the filename
+				wchar_t _cEditFilename[200] = L"";
+				GetWindowText(hdlSpriteFile, _cEditFilename, 194);
+				std::wstring spriteFilename(_cEditFilename);
+				auto tileset = TilesetCreator::GetInstance();
+				try
+				{
+					tileset->extractSpritesFromMemory(iMemLoc, iSpriteCt, 8, spriteFilename);
+					std::wstring msg(L"Saved sprite data: ");
+					msg.append(spriteFilename.c_str());
+					msg.append(L"\n\nSprite format data is RGBA\n14x16 per tile, 8 tiles per row");
+					MessageBox(g_hFrameWindow, msg.c_str(), TEXT("Deathlord Sprite Data"), MB_OK);
+				}
+				catch (const std::exception&)
+				{
+					HA::AlertIfError(g_hFrameWindow);
+				}
+			}
+			break;
+		}
 		default:
 			break;
 		}
@@ -217,10 +267,14 @@ DeathlordHacks::DeathlordHacks(HINSTANCE app, HWND hMainWindow)
 	{
 		RECT cR;
 		GetClientRect(hwndHacks, &cR);
-		HWND hdlMemLoc = GetDlgItem(hwndHacks, IDC_EDIT_MEMLOC);
-		SendMessage(hdlMemLoc, EM_SETLIMITTEXT, 4, 0);	// set the limit to a max of ffff
-		HWND hdlNewVal = GetDlgItem(hwndHacks, IDC_EDIT_MEMVAL);
-		SendMessage(hdlNewVal, EM_SETLIMITTEXT, 2, 0);	// set the limit to a max of ff
+		HWND hdl = GetDlgItem(hwndHacks, IDC_EDIT_MEMLOC);
+		SendMessage(hdl, EM_SETLIMITTEXT, 4, 0);	// set the limit to a max of ffff
+		hdl = GetDlgItem(hwndHacks, IDC_EDIT_MEMVAL);
+		SendMessage(hdl, EM_SETLIMITTEXT, 2, 0);	// set the limit to a max of ff
+		hdl = GetDlgItem(hwndHacks, IDC_EDIT_SPRITEMEM);
+		SendMessage(hdl, EM_SETLIMITTEXT, 4, 0);	// set the limit to a max of ffff
+		hdl = GetDlgItem(hwndHacks, IDC_EDIT_SPRITECT);
+		SendMessage(hdl, EM_SETLIMITTEXT, 2, 0);	// set the limit to a max of ff
 	}
 }
 void DeathlordHacks::ShowHacksWindow()
@@ -316,131 +370,6 @@ void DeathlordHacks::SaveMapDataToDisk()
 
 void DeathlordHacks::BackupScenarioImages()
 {
-	constexpr int tilesTotal = 0x10;
-	constexpr int tileHeight = 16;	// number of rows per tile
-	constexpr int bytesPerRow = 2;
-	constexpr int dotsPerByte = 7;	// 7 dots in each byte, 2 dots per pixel
-	constexpr int sqPixelsPerRow = 14;	// There are really 7 pixels, but they're rectangular so we duplicate square pixels
-	constexpr UINT32 color_black		= 0xFF000000;	// ABGR
-	constexpr UINT32 color_white		= 0xFFFFFFFF;
-	constexpr UINT32 color_blue			= 0xFFFFA10D;
-	constexpr UINT32 color_orange		= 0xFF005EF2;
-	constexpr UINT32 color_green		= 0xFF00CB38;
-	constexpr UINT32 color_purple		= 0xFFFF34C7;
-
-#define  SETRGBCOLOR(r,g,b) {r,g,b,0xff}
-	static RGBQUAD pPalette[] =
-	{
-	SETRGBCOLOR(/*HGR_BLACK, */ 0x00,0x00,0x00),
-	SETRGBCOLOR(/*HGR_WHITE, */ 0xFF,0xFF,0xFF),
-	SETRGBCOLOR(/*BLUE,      */ 0x00,0x8A,0xB5),
-	SETRGBCOLOR(/*ORANGE,    */ 0xFF,0x72,0x47),
-	SETRGBCOLOR(/*GREEN,     */ 0x6F,0xE6,0x2C),
-	SETRGBCOLOR(/*MAGENTA,   */ 0xAA,0x1A,0xD1),
-// TV emu
-	SETRGBCOLOR(/*HGR_GREY1, */ 0x80,0x80,0x80),
-	SETRGBCOLOR(/*HGR_GREY2, */ 0x80,0x80,0x80),
-	SETRGBCOLOR(/*HGR_YELLOW,*/ 0x9E,0x9E,0x00), // 0xD0,0xB0,0x10 -> 0x9E,0x9E,0x00
-	SETRGBCOLOR(/*HGR_AQUA,  */ 0x00,0xCD,0x4A), // 0x20,0xB0,0xB0 -> 0x00,0xCD,0x4A
-	SETRGBCOLOR(/*HGR_PURPLE,*/ 0x61,0x61,0xFF), // 0x60,0x50,0xE0 -> 0x61,0x61,0xFF
-	SETRGBCOLOR(/*HGR_PINK,  */ 0xFF,0x32,0xB5), // 0xD0,0x40,0xA0 -> 0xFF,0x32,0xB5
-	};
-
-	UINT32* transposed = new UINT32[tilesTotal * tileHeight * sqPixelsPerRow];	// ARGB pixels, 7 per 2 bytes of mem
-	memset(transposed, 0, tilesTotal * tileHeight * sqPixelsPerRow * sizeof(UINT32));
-	int memStart = 0xD000;
-	int transStart = 0;
-	bool isGroup2 = false;	// Group 1: 0b01: green (odd), 0b10: violet (even).     Group 2: 0b01: orange (odd), 0b10: blue (even)
-	bool bitPairColor[2] = { false, false };
-	bool isBW = false;
-
-	for (size_t iTile = 0; iTile < tilesTotal; iTile++)
-	{
-		for (size_t iRow = 0; iRow < tileHeight; iRow++)
-		{
-			int xoffset = 0; // offset to start of the 2 bytes
-			uint8_t* pMain = MemGetMainPtr(memStart);
-
-			// We need all 28 bits because each pixel needs a three bit evaluation
-			// We use black around the 2 bytes
-			uint8_t byteval1 = 0;
-			uint8_t byteval2 = *pMain;
-			uint8_t byteval3 = *(pMain + 1);
-			uint8_t byteval4 = 0;
-
-			// all 28 bits chained
-			DWORD dwordval = (byteval1 & 0x7F) | ((byteval2 & 0x7F) << 7) | ((byteval3 & 0x7F) << 14) | ((byteval4 & 0x7F) << 21);
-
-			// Extraction of 14 color pixels
-			UINT32 colors[14];
-			int color = 0;
-			DWORD dwordval_tmp = dwordval;
-			dwordval_tmp = dwordval_tmp >> 7;
-			bool offset = (byteval2 & 0x80) ? true : false;
-			for (int i = 0; i < 14; i++)
-			{
-				if (i == 7) offset = (byteval3 & 0x80) ? true : false;
-				color = dwordval_tmp & 0x3;
-				// Two cases because AppleWin's palette is in a strange order
-				if (offset)
-					colors[i] = *reinterpret_cast<const UINT32*>(&pPalette[1 + color]);
-				else
-					colors[i] = *reinterpret_cast<const UINT32*>(&pPalette[6 - color]);
-				if (i % 2) dwordval_tmp >>= 2;
-			}
-			// Black and White
-			UINT32 bw[2];
-			bw[0] = *reinterpret_cast<const UINT32*>(&pPalette[0]);
-			bw[1] = *reinterpret_cast<const UINT32*>(&pPalette[1]);
-
-			DWORD mask = 0x01C0; //  00|000001 1|1000000
-			DWORD chck1 = 0x0140; //  00|000001 0|1000000
-			DWORD chck2 = 0x0080; //  00|000000 1|0000000
-
-			// HIRES render in RGB works on a pixel-basis (1-bit data in framebuffer)
-			// The pixel can be 'color', if it makes a 101 or 010 pattern with the two neighbour bits
-			// In all other cases, it's black if 0 and white if 1
-			// The value of 'color' is defined on a 2-bits basis
-
-			dwordval_tmp = dwordval;
-			for (size_t byteOfPair = 0; byteOfPair < 2; byteOfPair++)
-			{
-				dwordval = dwordval_tmp;
-				if (byteOfPair == 1)
-				{
-					// Second byte of the 14 pixels block
-					dwordval = dwordval >> 7;
-					xoffset = 7;
-				}
-
-				for (int i = xoffset; i < xoffset + 7; i++)
-				{
-					if (((dwordval & mask) == chck1) || ((dwordval & mask) == chck2))
-					{
-						// Color pixel
-						transposed[transStart] = colors[i];
-						transStart++;
-					}
-					else
-					{
-						// B&W pixel
-						transposed[transStart] = bw[(dwordval & chck2 ? 1 : 0)];
-						transStart++;
-					}
-					// Next pixel
-					dwordval = dwordval >> 1;
-				}
-			}
-			memStart+=2;
-		}
-	}
-
-	std::fstream fsFile("Deathlord Player Sprites.data", std::ios::out | std::ios::binary);
-	fsFile.write((char *)transposed, tilesTotal * tileHeight * sqPixelsPerRow * sizeof(UINT32));
-	fsFile.close();
-	delete[] transposed;
-	return;
-	//
 	std::wstring imageName;
 	std::wstring imageExtension;
 	std::wstring imageDirPath;
