@@ -20,7 +20,7 @@
 #include "Emulator/RGBMonitor.h"
 #include "DeathlordHacks.h"
 #include "TilesetCreator.h"
-#include "AutoMap.h"
+#include "InvOverlay.h"
 // For WinPixGpuCapture
 #include <filesystem>
 #include <shlobj.h>
@@ -494,13 +494,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			}
 			default:
-				// No need to poll any more here, it's done at specific intervals in the game update loop
-				// game->PollKeyMemoryLocations();
 				break;
 			}
 		}
 		KeybQueueKeypress(wParam, ASCII);
 		break;
+	case WM_KEYUP:
+		[[fallthrough]];
 	case WM_KEYDOWN:		// Send to the applewin emulator
 /*
 		if (g_isInGameMap)	// Allow for arrow keys when on the game map
@@ -529,7 +529,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			KeybQueueKeypress(wParam, NOT_ASCII);
 		}
 		*/
-					KeybQueueKeypress(wParam, NOT_ASCII);
+		KeybQueueKeypress(wParam, NOT_ASCII);
+		Keyboard::ProcessMessage(message, wParam, lParam);
 
 		break;
 

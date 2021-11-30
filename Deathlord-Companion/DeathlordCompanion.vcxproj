@@ -201,6 +201,7 @@
     <ClCompile Include="emulator\Video.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="HAUtils.cpp" />
+    <ClCompile Include="InvOverlay.cpp" />
     <ClCompile Include="LogWindow.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MemoryTriggers.cpp" />
@@ -252,6 +253,7 @@
     <ClInclude Include="FindMedia.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="HAUtils.h" />
+    <ClInclude Include="InvOverlay.h" />
     <ClInclude Include="libyaml\win32\config.h" />
     <ClInclude Include="LogWindow.h" />
     <ClInclude Include="MemoryTriggers.h" />
@@ -325,6 +327,7 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </Image>
+    <Image Include="Assets\InventoryTest.png" />
     <Image Include="Assets\PlayerSprite.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>

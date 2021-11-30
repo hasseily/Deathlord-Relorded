@@ -135,6 +135,9 @@
     <ClCompile Include="SpellWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="InvOverlay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATGColors.h">
@@ -296,6 +299,9 @@
     <ClInclude Include="SpellWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="InvOverlay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="emulator\cpu\cpu_general.inl">
@@ -379,6 +385,9 @@
       <Filter>Assets</Filter>
     </Image>
     <Image Include="Assets\SpriteSheet.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\InventoryTest.png">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>

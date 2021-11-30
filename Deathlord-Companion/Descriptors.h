@@ -8,6 +8,7 @@ enum class TextureDescriptors
 	AutoMapTileSheet,
 	AutoMapAvatar,
 	AutoMapTileHidden,
+	InvOverlayBackground,
 	FontA2Regular,
 	FontA2Bold,
 	FontA2Italic,
