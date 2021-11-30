@@ -1,4 +1,4 @@
-	   Fightrs Thfs Magi
+	               Fightrs Thfs Magi
 		Id $$$ SKRYKSR YANS SZMG  Name           TH A/Dmg  +AC   
 			   1 	2     3 4 56
 		  ~ Melee Weapons (Slot 0) ~
@@ -7,19 +7,16 @@
 		26  -  +++++++ ++++ ..++  ROD OF LIGHT   +1   1-8        casts S3:MOAKARI (#24)
 		3b  -  ....... .... ..+.  POWERSTAFF     +2   1-12 +4AC  casts M3:ZUMA (#20)
 		46  -  +++++++ ++++ ..++  SUNSPEAR       +3   1-24 +3AC  slays Deathlord
-
 		02  30 +++++++ .... ++..  JO-STICK       -1   1-7
 		32  -  +++++++ .... ++..  ROD OF DEATH   +2 2x1-10 +1AC
-		49  -  +++++++ .... ++..  EMERALD ROD    +4   1-10 +6AC  slays demons,
-																   casts Z4:SANTATE
+		49  -  +++++++ .... ++..  EMERALD ROD    +4   1-10 +6AC  slays demons, casts Z4:SANTATE
 		04  50 +++++++ ++++ ....  SAI               2x1-4
 		1c 100 ....... ..+. ....  NUNCHAKU       +3 2x1-9        
 		1d 400 .....+. .... ....  WAKIZASHI      +1 2x1-10       
 		27  -  +++++++ ++++ ....  DRAGONSLAYER   +1   1-12 +1AC  slays dragons
 		28  -  +++++++ ++++ ....  GIANTSLAYER    +1   1-12 +1AC  slays giants
 		29  -  +++++++ ++++ ....  DEFENDER       +1   1-10 +4AC  casts M5:HOHYO (#10)
-		31  -  +++++++ ++++ ....  SWORD OF FIRE  +1   1-12 +1AC  slays undead,
-																   casts Z4:HITATE (#10)
+		31  -  +++++++ ++++ ....  SWORD OF FIRE  +1   1-12 +1AC  slays undead, casts Z4:HITATE (#10)
 		10  80 +++++++ .... ....  MASAKARI            1-8
 		13 120 +++++++ .... ....  GLAIVE              1-9
 		19 250 +++++++ .... ....  NAGINATA       +1   1-10 +1AC
@@ -28,8 +25,7 @@
 		33  -  +++++++ .... ....  THUNDERBLADE   +2   1-14 +1AC  casts M3:ZUMA (#08)
 		37  -  ......+ .... ....  UNHOLY BLADE   +3   1-10 +2AC  casts M6:KOROSU (#06)
 		3c  -  +++++++ .... ....  RUNEBLADE      +2   1-15 +2AC  casts M6:KOROSU (#06)
-		38  -  .+..... .... ....  HOLY BLADE     +3   1-15 +2AC  slays demons, 
-																   casts S6:ALNASU (#06)
+		38  -  .+..... .... ....  HOLY BLADE     +3   1-15 +2AC  slays demons,  casts S6:ALNASU (#06)
 		  ~ Missile Weapons (Slot 1) ~
 		08  30 +++++++ .... ++..  SLING          -2   1-6  +1AC
 		2f  -                     KOBITO HAMMER  +1   1-16 +2AC  KOBITO only
