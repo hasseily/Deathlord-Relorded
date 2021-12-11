@@ -140,19 +140,4 @@ namespace HA
 		}
         return false;
     }
-
-	bool isPointInConvexPolygon(DirectX::XMFLOAT2 aPoint, DirectX::XMFLOAT2* aClockwisePolygon, UINT8 aPolygonSides)
-	{
-        float d;
-        for (size_t i = 0; i < aPolygonSides; i++)
-        {
-            DirectX::XMFLOAT2 p1 = aClockwisePolygon[i % aPolygonSides];
-            DirectX::XMFLOAT2 p2 = aClockwisePolygon[(i + 1) % aPolygonSides];
-            d = (p2.x - p1.x) * (aPoint.y - p1.y) - (aPoint.x - p1.x) * (p2.y - p1.y);
-            if (d > 0)
-                return false;
-        }
-        return true;
-	}
-
 }
