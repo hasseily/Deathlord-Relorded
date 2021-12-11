@@ -33,6 +33,7 @@ ComPtr<ID3D12Resource> g_textureUploadHeap;
 HWND m_window;
 static SidebarManager m_sbM;
 static SidebarContent m_sbC;
+Mouse::ButtonStateTracker tracker;
 
 AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
 
@@ -284,7 +285,6 @@ void Game::Update(DX::StepTimer const& timer)
             m_invOverlay->ShowInvOverlay();
     }
 
-    Mouse::ButtonStateTracker tracker;
     using ButtonState = Mouse::ButtonStateTracker::ButtonState;
     auto mo = m_mouse->GetState();
     tracker.Update(mo);
@@ -535,14 +535,12 @@ void Game::OnDeactivated()
 void Game::OnSuspending()
 {
     shouldRender = false;
-    Mouse::ButtonStateTracker tracker;
     tracker.Reset();
 }
 
 void Game::OnResuming()
 {
     m_timer.ResetElapsedTime();
-	Mouse::ButtonStateTracker tracker;
 	tracker.Reset();
     shouldRender = true;
 }
