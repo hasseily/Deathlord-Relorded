@@ -90,6 +90,9 @@ void Game::Initialize(HWND window, int width, int height)
 
     m_gamePad = std::make_unique<GamePad>();
     m_keyboard = std::make_unique<Keyboard>();
+	m_mouse = std::make_unique<Mouse>();
+
+	m_mouse->SetWindow(window);
 
     g_nonVolatile.LoadFromDisk();
 
@@ -272,7 +275,7 @@ void Game::Update(DX::StepTimer const& timer)
     }
     auto kb = m_keyboard->GetState();
     // TODO: Should we pass the keystrokes back to AppleWin here?
-      if (kb.Enter)
+    if (kb.Enter)
     {
         // Do something when escape or other keys pressed
         if (m_invOverlay->IsInvOverlayDisplayed())
@@ -281,6 +284,14 @@ void Game::Update(DX::StepTimer const& timer)
             m_invOverlay->ShowInvOverlay();
     }
 
+    Mouse::ButtonStateTracker tracker;
+    using ButtonState = Mouse::ButtonStateTracker::ButtonState;
+    auto mo = m_mouse->GetState();
+    tracker.Update(mo);
+    if (tracker.rightButton == ButtonState::PRESSED)
+    {
+
+    }
     PIXEndEvent();
 }
 #pragma endregion
@@ -524,11 +535,15 @@ void Game::OnDeactivated()
 void Game::OnSuspending()
 {
     shouldRender = false;
+    Mouse::ButtonStateTracker tracker;
+    tracker.Reset();
 }
 
 void Game::OnResuming()
 {
     m_timer.ResetElapsedTime();
+	Mouse::ButtonStateTracker tracker;
+	tracker.Reset();
     shouldRender = true;
 }
 
