@@ -270,9 +270,11 @@ void Game::Update(DX::StepTimer const& timer)
 	}
 
     // Modern keyboard handling
+    // Keystrokes are passed to AppleWin in Main.cpp before getting here
+    // So the only thing one should do here is handle special keys that
+    // we know don't do anything under the emulated Deathlord
 	auto kb = m_keyboard->GetState();
 	kbTracker.Update(kb);
-	// TODO: Should we pass the keystrokes back to AppleWin here?
 	if (kbTracker.pressed.Enter)
 	{
 		// Do something when escape or other keys pressed

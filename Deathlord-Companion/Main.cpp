@@ -481,7 +481,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		Mouse::ProcessMessage(message, wParam, lParam);
 		break;
 	case WM_CHAR:			// Send to the applewin emulator
-		if (g_isInGameMap)	// Only enable write on scenario disks when saving via 'q'
+		// Only enable write on scenario disks when saving via 'q'
+		// This is disabled because it can corrupt save games due to autosave of town state
+		if (g_isInGameMap)
 		{
 			switch (wParam)
 			{
