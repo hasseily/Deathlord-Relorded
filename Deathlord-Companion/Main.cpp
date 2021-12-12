@@ -502,33 +502,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_KEYUP:
 		[[fallthrough]];
 	case WM_KEYDOWN:		// Send to the applewin emulator
-/*
-		if (g_isInGameMap)	// Allow for arrow keys when on the game map
-			// TODO: DISABLED because selecting items in shops for example necessitates arrow keys
-		{
-			switch (wParam)
-			{
-			case VK_LEFT:
-				KeybQueueKeypress('j', ASCII);
-				break;
-			case VK_RIGHT:
-				KeybQueueKeypress('k', ASCII);
-				break;
-			case VK_UP:
-				KeybQueueKeypress('i', ASCII);
-				break;
-			case VK_DOWN:
-				KeybQueueKeypress('m', ASCII);
-				break;
-			default:
-				KeybQueueKeypress(wParam, NOT_ASCII);
-				break;
-			}
-		}
-		else {
-			KeybQueueKeypress(wParam, NOT_ASCII);
-		}
-		*/
 		KeybQueueKeypress(wParam, NOT_ASCII);
 		Keyboard::ProcessMessage(message, wParam, lParam);
 

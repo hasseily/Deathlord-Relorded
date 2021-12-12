@@ -258,6 +258,39 @@ void Game::Update(DX::StepTimer const& timer)
 			EmulatorSetSpeed(g_nonVolatile.speed);
     }
 
+    // Now parse input
+    // Pad is unused, just kept here for reference
+	auto pad = m_gamePad->GetState(0);
+	if (pad.IsConnected())
+	{
+		if (pad.IsViewPressed())
+		{
+			// Do something when gamepad keys are pressed
+		}
+	}
+
+    // Modern keyboard handling
+	auto kb = m_keyboard->GetState();
+	kbTracker.Update(kb);
+	// TODO: Should we pass the keystrokes back to AppleWin here?
+	if (kbTracker.pressed.Enter)
+	{
+		// Do something when escape or other keys pressed
+		if (m_invOverlay->IsInvOverlayDisplayed())
+			m_invOverlay->HideInvOverlay();
+		else
+			m_invOverlay->ShowInvOverlay();
+	}
+
+    // Modern mouse handling
+	using ButtonState = Mouse::ButtonStateTracker::ButtonState;
+	auto mo = m_mouse->GetState();
+	moTracker.Update(mo);
+	if (moTracker.rightButton == ButtonState::PRESSED)
+	{
+
+	}
+
 	EmulatorMessageLoopProcessing();
 
     auto autoMap = AutoMap::GetInstance();
@@ -267,33 +300,6 @@ void Game::Update(DX::StepTimer const& timer)
 		memTriggers->PollKeyMemoryLocations();  // But not the avatar XY
     }
 
-    auto pad = m_gamePad->GetState(0);
-    if (pad.IsConnected())
-    {
-        if (pad.IsViewPressed())
-        {
-            // Do something when gamepad keys are pressed
-        }
-    }
-    auto kb = m_keyboard->GetState();
-    kbTracker.Update(kb);
-    // TODO: Should we pass the keystrokes back to AppleWin here?
-    if (kbTracker.pressed.Enter)
-    {
-        // Do something when escape or other keys pressed
-        if (m_invOverlay->IsInvOverlayDisplayed())
-            m_invOverlay->HideInvOverlay();
-        else
-            m_invOverlay->ShowInvOverlay();
-    }
-
-    using ButtonState = Mouse::ButtonStateTracker::ButtonState;
-    auto mo = m_mouse->GetState();
-    moTracker.Update(mo);
-    if (moTracker.rightButton == ButtonState::PRESSED)
-    {
-
-    }
     PIXEndEvent();
 }
 #pragma endregion
