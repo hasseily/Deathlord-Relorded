@@ -12,6 +12,7 @@ InvOverlay* InvOverlay::s_instance;
 
 // In main
 extern std::unique_ptr<Game>* GetGamePtr();
+extern void SetSendKeystrokesToAppleWin(bool shouldSend);
 
 void InvOverlay::Initialize()
 {
@@ -44,11 +45,13 @@ void InvOverlay::DrawInvOverlay(std::shared_ptr<DirectX::SpriteBatch>& spriteBat
 
 void InvOverlay::ShowInvOverlay()
 {
+	SetSendKeystrokesToAppleWin(false);
 	bIsDisplayed = true;
 }
 
 void InvOverlay::HideInvOverlay()
 {
+	SetSendKeystrokesToAppleWin(true);
 	bIsDisplayed = false;
 }
 
@@ -56,6 +59,15 @@ bool InvOverlay::IsInvOverlayDisplayed()
 {
 	return bIsDisplayed;
 }
+
+#pragma region actions
+
+void InvOverlay::leftMouseButtonClicked(int x, int y)
+{
+	DirectX::XMFLOAT2 clickPoint = XMFLOAT2((float)x, (float)y);
+}
+
+#pragma endregion
 
 # pragma region D3D stuff
 void InvOverlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload)
@@ -72,4 +84,5 @@ void InvOverlay::OnDeviceLost()
 {
 	m_inventoryTextureBG.Reset();
 }
+
 #pragma endregion

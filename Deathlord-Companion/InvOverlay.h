@@ -12,6 +12,7 @@ public:
 	void ShowInvOverlay();
 	void HideInvOverlay();
 	bool IsInvOverlayDisplayed();
+	void leftMouseButtonClicked(int x, int y);
 
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();

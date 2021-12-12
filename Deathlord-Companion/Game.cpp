@@ -288,12 +288,17 @@ void Game::Update(DX::StepTimer const& timer)
 	using ButtonState = Mouse::ButtonStateTracker::ButtonState;
 	auto mo = m_mouse->GetState();
 	moTracker.Update(mo);
-	if (moTracker.rightButton == ButtonState::PRESSED)
-	{
+    if (m_invOverlay->IsInvOverlayDisplayed())
+    {
+		if (moTracker.leftButton == ButtonState::PRESSED)
+		{
+            m_invOverlay->leftMouseButtonClicked(moTracker.GetLastState().x, moTracker.GetLastState().y);
+		}
+    }
 
-	}
-
-	EmulatorMessageLoopProcessing();
+    // Should we pause the emulator?
+    // Not pausing it allows us to get automatic feedback of inventory changes
+    EmulatorMessageLoopProcessing();
 
     auto autoMap = AutoMap::GetInstance();
     auto memTriggers = MemoryTriggers::GetInstance();

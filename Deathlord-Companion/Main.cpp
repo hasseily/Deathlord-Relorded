@@ -50,6 +50,8 @@ int m_extraWindowHeight = 0;
 int m_initialWindowWidth = 0;
 int m_initialWindowHeight = 0;
 
+bool shouldSendKeystrokesToAppleWin = true;
+
 namespace
 {
 	std::unique_ptr<Game> g_game;
@@ -59,6 +61,11 @@ namespace
 }
 
 void ExitGame() noexcept;
+
+void SetSendKeystrokesToAppleWin(bool shouldSend)
+{
+	shouldSendKeystrokesToAppleWin = shouldSend;
+}
 
 static void ExceptionHandler(LPCSTR pError)
 {
@@ -481,6 +488,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		Mouse::ProcessMessage(message, wParam, lParam);
 		break;
 	case WM_CHAR:			// Send to the applewin emulator
+		if (!shouldSendKeystrokesToAppleWin)
+			break;
 		// Only enable write on scenario disks when saving via 'q'
 		// This is disabled because it can corrupt save games due to autosave of town state
 		if (g_isInGameMap)
@@ -504,7 +513,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_KEYUP:
 		[[fallthrough]];
 	case WM_KEYDOWN:		// Send to the applewin emulator
-		KeybQueueKeypress(wParam, NOT_ASCII);
+		if (shouldSendKeystrokesToAppleWin)
+			KeybQueueKeypress(wParam, NOT_ASCII);
 		Keyboard::ProcessMessage(message, wParam, lParam);
 
 		break;
