@@ -33,7 +33,8 @@ ComPtr<ID3D12Resource> g_textureUploadHeap;
 HWND m_window;
 static SidebarManager m_sbM;
 static SidebarContent m_sbC;
-Mouse::ButtonStateTracker tracker;
+Mouse::ButtonStateTracker moTracker;
+Keyboard::KeyboardStateTracker kbTracker;
 
 AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
 
@@ -275,8 +276,9 @@ void Game::Update(DX::StepTimer const& timer)
         }
     }
     auto kb = m_keyboard->GetState();
+    kbTracker.Update(kb);
     // TODO: Should we pass the keystrokes back to AppleWin here?
-    if (kb.Enter)
+    if (kbTracker.pressed.Enter)
     {
         // Do something when escape or other keys pressed
         if (m_invOverlay->IsInvOverlayDisplayed())
@@ -287,8 +289,8 @@ void Game::Update(DX::StepTimer const& timer)
 
     using ButtonState = Mouse::ButtonStateTracker::ButtonState;
     auto mo = m_mouse->GetState();
-    tracker.Update(mo);
-    if (tracker.rightButton == ButtonState::PRESSED)
+    moTracker.Update(mo);
+    if (moTracker.rightButton == ButtonState::PRESSED)
     {
 
     }
@@ -535,13 +537,15 @@ void Game::OnDeactivated()
 void Game::OnSuspending()
 {
     shouldRender = false;
-    tracker.Reset();
+    moTracker.Reset();
+	kbTracker.Reset();
 }
 
 void Game::OnResuming()
 {
     m_timer.ResetElapsedTime();
-	tracker.Reset();
+	moTracker.Reset();
+	kbTracker.Reset();
     shouldRender = true;
 }
 
