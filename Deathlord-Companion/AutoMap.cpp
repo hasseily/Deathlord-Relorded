@@ -470,7 +470,6 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 	commandList->RSSetViewports(1, mapViewport.Get12());
 	commandList->RSSetScissorRects(1, &(RECT)mapScissorRect);
 
-	spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
 	if (bShowTransition)
 	{
 		// Whatever happens we must show the transition right now
@@ -702,7 +701,6 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 			awaitTextPos, COLOR_APPLE2_VIOLET, 0.f, Vector2(0.f, 0.f), 3.f);
 	}
 
-	spriteBatch->End();
 	D3D12_VIEWPORT viewports[1] = { m_deviceResources->GetScreenViewport() };
 	D3D12_RECT scissorRects[1] = { m_deviceResources->GetScissorRect() };
 	commandList->RSSetViewports(1, viewports);

@@ -390,12 +390,12 @@ void Game::Render()
         GetBaseSize(origW, origH);
 
         // Now time to draw the text and lines
-		m_lineEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
+		m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
 			clientRect.bottom - clientRect.top, 0, 0, 1));
-		m_lineEffectLines->Apply(commandList);
-		m_primitiveBatchLines->Begin(commandList);
+		m_dxtEffect->Apply(commandList);
+		m_primitiveBatch->Begin(commandList);
         m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
-		m_spriteBatch->Begin(commandList);
+		m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
         for each (auto sb in m_sbM.sidebars)
         {
 
@@ -440,7 +440,7 @@ void Game::Render()
 			default:
 				break;
 			}
-			m_primitiveBatchLines->DrawLine(
+			m_primitiveBatch->DrawLine(
 				VertexPositionColor(lstart, static_cast<XMFLOAT4>(Colors::DimGray)),
 				VertexPositionColor(lend, static_cast<XMFLOAT4>(Colors::Black))
 			);
@@ -460,28 +460,23 @@ void Game::Render()
 		const UINT8 visTileSide = 9;	// 9 tiles per side visible
         for (UINT8 ir = 0; ir <= visTileSide; ir++)		// rows
         {
-			m_primitiveBatchLines->DrawLine(
+			m_primitiveBatch->DrawLine(
 				VertexPositionColor(XMFLOAT3(fbBorderLeft, fbBorderTop + ir * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red)),
 				VertexPositionColor(XMFLOAT3(fbBorderLeft + visTileSide * FBTW, fbBorderTop + ir * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red))
 			);
         }
 		for (UINT8 jc = 0; jc <= visTileSide; jc++)	// columns
 		{
-			m_primitiveBatchLines->DrawLine(
+			m_primitiveBatch->DrawLine(
 				VertexPositionColor(XMFLOAT3(fbBorderLeft + jc * FBTW, fbBorderTop, 0), static_cast<XMFLOAT4>(Colors::Red)),
 				VertexPositionColor(XMFLOAT3(fbBorderLeft + jc * FBTW, fbBorderTop + visTileSide * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red))
 			);
 		}
 #endif // _DEBUG
 
-		m_primitiveBatchLines->End();
-		m_spriteBatch->End();
-		// End drawing text
-
         if (g_nonVolatile.showMap)
         {
 			// Now draw automap
-			// TODO: Do most of this outside of render, much of it is fixed between renders
 			auto mmOrigin = Vector2(clientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
 			RECT mapRectInViewport = {
 				mmOrigin.x,
@@ -496,8 +491,20 @@ void Game::Render()
             // inside the original Deathlord viewport
             m_automap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch);
         }
+		m_primitiveBatch->End();
+		m_spriteBatch->End();
+
+        // TODO: Let m_invOverlay create its own effect, spritebatch and primitivebatch?
+		m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
+			clientRect.bottom - clientRect.top, 0, 0, 1));
+		m_dxtEffect->Apply(commandList);
+		m_primitiveBatch->Begin(commandList);
+		m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
         if (m_invOverlay->IsInvOverlayDisplayed())
-            m_invOverlay->DrawInvOverlay(m_spriteBatch, &clientRect);
+            m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatch, &clientRect);
+		m_primitiveBatch->End();
+		m_spriteBatch->End();
+		// End drawing text
 
 		PIXEndEvent(commandList);
 
@@ -905,10 +912,10 @@ void Game::CreateDeviceDependentResources()
         CommonStates::DepthDefault,
         CommonStates::CullNone,
         rtState,
-        D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
-    m_lineEffectLines = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epd);
-    m_lineEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
-	m_primitiveBatchLines = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
+        D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+    m_dxtEffect = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epd);
+    m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
+	m_primitiveBatch = std::make_shared<PrimitiveBatch<VertexPositionColor>>(device);
 
     /// <summary>
     /// Finish
@@ -1011,7 +1018,7 @@ void Game::UpdateGamelinkVertexData(int width, int height, float wRatio, float h
     }
 
     // And update the projection for line drawing
-    m_lineEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
+    m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
 
 }
 
