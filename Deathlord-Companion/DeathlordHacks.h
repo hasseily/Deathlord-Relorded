@@ -21,6 +21,7 @@ constexpr UINT16 MAP_OVERLAND_Y = 0xFC4C;				// Y position of the overland subma
 constexpr UINT16 PARTY_CLASS_START = 0xFD60;			// Start of the array of party classes
 constexpr UINT16 PARTY_RACE_START = 0xFD5A;				// Start of the array of party races
 constexpr UINT16 PARTY_WEAP_READY_START = 0xFDEA;		// Start of the array of weapon ready status: ff = fists, 00 = melee, 01 = ranged
+constexpr UINT16 PARTY_INVENTORY_START = 0xFE20;		// Start of inventory. 8 items / char, and 8 charges. Next char is 0x20 down.
 constexpr UINT16 PARTY_STATUS_START = 0xFD36;			// Start of the status bitmask: 0x1:???, 0x2:STV, 0x4:TOX, 0x8:DIS, 0x10:PAR, 0x20:STN 0x40:RIP, 0x80:STO
 constexpr UINT16 PARTY_CHAR_LEADER = 0xFC19;			// Leader of the party (0-based)
 constexpr UINT16 PARTY_CURRENT_CHAR_POS = 0xFC21;		// Char we're getting info on (0-based)

@@ -138,6 +138,12 @@
     <ClCompile Include="InvOverlay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="InvManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InvItem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATGColors.h">
@@ -302,6 +308,12 @@
     <ClInclude Include="InvOverlay.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="InvManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InvItem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="emulator\cpu\cpu_general.inl">
@@ -345,6 +357,9 @@
       <Filter>Assets</Filter>
     </None>
     <None Include="Profiles\Deathlord_Default.json">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Assets\InventoryList.csv">
       <Filter>Assets</Filter>
     </None>
   </ItemGroup>
