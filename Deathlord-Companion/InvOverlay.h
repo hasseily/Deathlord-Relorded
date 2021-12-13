@@ -45,12 +45,12 @@ public:
 	{
 		"Name", "TH0", "Damage", "AC", "Special"
 	};
-	std::array<int, 5>WidthHeadersWeapons = { 160, 40, 110, 40, 200 };
-	std::array<std::string, 4>StringsHeadersOther =
+	std::array<int, 5>WidthHeadersWeapons = { 140, 20, 70, 20, 200 };
+	std::array<std::string, 5>StringsHeadersOther =
 	{
-		"Name", "TH0", "AC", "Special"
+		"Name", "TH0", "AC", "Special", ""
 	};
-	std::array<int, 5>WidthHeadersOthers = { 160, 40, 40, 200 };
+	std::array<int, 5>WidthHeadersOthers = { 140, 20, 20, 200, 0 };
 
 	// public singleton code
 	static InvOverlay* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,

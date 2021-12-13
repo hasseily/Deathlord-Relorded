@@ -60,6 +60,8 @@ void InvOverlay::MousePosInPixels(int x, int y)
 	if (!bIsDisplayed)
 		return;
 	Vector2 mousePoint(x, y);
+
+	// Tabs management
 	highlightedSlot = InventorySlots::TOTAL;
 	int iSlot = 0;
 	for each (auto iRect in slotsTabsRects)
@@ -78,6 +80,8 @@ void InvOverlay::LeftMouseButtonClicked(int x, int y)
 	if (!bIsDisplayed)
 		return;
 	Vector2 mousePoint(x, y);
+
+	// Tabs management
 	int iSlot = 0;
 	for each (auto iRect in slotsTabsRects)
 	{
@@ -208,6 +212,35 @@ void InvOverlay::DrawInvOverlay(
 		VertexPositionColor(XMFLOAT3(invSlotsOriginX, invSlotsOriginY + 20.f + lineThickness, 0), ColorAmber)
 	);
 	///// End Draw inventory slots tabs
+
+	///// Begin Draw Inventory Headers
+	int iCol = 0;
+	int ctCols = 0;
+	int colBegin = invSlotsOriginX;
+	int rowBegin = invSlotsOriginY + 40;
+	std::array<std::string, 5>stringsHeaders;
+	std::array<int, 5>widthHeaders;
+	if (selectedSlot < InventorySlots::Chest)
+	{
+		stringsHeaders = StringsHeadersWeapons;
+		widthHeaders = WidthHeadersWeapons;
+		ctCols = 5;
+	}
+	else
+	{
+		stringsHeaders = StringsHeadersOther;
+		widthHeaders = WidthHeadersOthers;
+		ctCols = 4;
+	}
+	for (size_t i = 0; i < ctCols; i++)
+	{
+		font->DrawString(spriteBatch.get(), stringsHeaders[i].c_str(),
+			Vector2(colBegin, rowBegin),
+			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
+		colBegin += widthHeaders[i] + stringHalfSpacing;
+	}
+	///// End Draw Inventory Headers
+
 
 	//spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlayBackground), mmBGTexSize,
 //	m_currentRect, nullptr, Colors::White, 0.f, XMFLOAT2());
