@@ -290,9 +290,11 @@ void Game::Update(DX::StepTimer const& timer)
 	moTracker.Update(mo);
     if (m_invOverlay->IsInvOverlayDisplayed())
     {
+        m_invOverlay->UpdateState();
+        m_invOverlay->MousePosInPixels(mo.x, mo.y);
 		if (moTracker.leftButton == ButtonState::PRESSED)
 		{
-            m_invOverlay->leftMouseButtonClicked(moTracker.GetLastState().x, moTracker.GetLastState().y);
+            m_invOverlay->LeftMouseButtonClicked(moTracker.GetLastState().x, moTracker.GetLastState().y);
 		}
     }
 
@@ -473,6 +475,8 @@ void Game::Render()
 			);
 		}
 #endif // _DEBUG
+		m_primitiveBatch->End();
+		m_spriteBatch->End();
 
         if (g_nonVolatile.showMap)
         {
@@ -491,19 +495,19 @@ void Game::Render()
             // inside the original Deathlord viewport
             m_automap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch);
         }
-		m_primitiveBatch->End();
-		m_spriteBatch->End();
 
         // TODO: Let m_invOverlay create its own effect, spritebatch and primitivebatch?
-		m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
-			clientRect.bottom - clientRect.top, 0, 0, 1));
-		m_dxtEffect->Apply(commandList);
-		m_primitiveBatch->Begin(commandList);
-		m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
         if (m_invOverlay->IsInvOverlayDisplayed())
-            m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatch, &clientRect);
-		m_primitiveBatch->End();
-		m_spriteBatch->End();
+        {
+			m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
+				clientRect.bottom - clientRect.top, 0, 0, 1));
+			m_dxtEffect->Apply(commandList);
+			m_primitiveBatch->Begin(commandList);
+			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
+			m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatch, &clientRect);
+			m_primitiveBatch->End();
+			m_spriteBatch->End();
+        }
 		// End drawing text
 
 		PIXEndEvent(commandList);

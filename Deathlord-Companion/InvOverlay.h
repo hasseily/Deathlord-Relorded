@@ -27,7 +27,9 @@ public:
 	void ShowInvOverlay();
 	void HideInvOverlay();
 	bool IsInvOverlayDisplayed();
-	void leftMouseButtonClicked(int x, int y);
+	void UpdateState();
+	void LeftMouseButtonClicked(int x, int y);
+	void MousePosInPixels(int x, int y);
 
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();
@@ -74,7 +76,7 @@ private:
 
 	static InvOverlay* s_instance;
 	bool bIsDisplayed;
-	RECT m_currentRect;	// Rect as requested by the game engine
+	RECT m_currentRect;	// Rect of the overlay
 
 	InvOverlay(std::unique_ptr<DX::DeviceResources>& deviceResources,
 		std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)

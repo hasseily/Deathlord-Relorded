@@ -4,8 +4,11 @@
 #include "Game.h"
 #include "resource.h"
 #include "DeathlordHacks.h"
+#include <SimpleMath.h>
+#include <vector>
 
 using namespace DirectX;
+using namespace DirectX::SimpleMath;
 
 // below because "The declaration of a static data member in its class definition is not a definition"
 InvOverlay* InvOverlay::s_instance;
@@ -13,6 +16,13 @@ InvOverlay* InvOverlay::s_instance;
 // In main
 extern std::unique_ptr<Game>* GetGamePtr();
 extern void SetSendKeystrokesToAppleWin(bool shouldSend);
+
+// Game data
+InventorySlots selectedSlot = InventorySlots::Melee;
+InventorySlots highlightedSlot = InventorySlots::TOTAL;	// No highlight by default
+
+// Interactable shapes for the overlay
+std::vector<SimpleMath::Rectangle>slotsTabsRects;
 
 void InvOverlay::Initialize()
 {
@@ -39,9 +49,45 @@ bool InvOverlay::IsInvOverlayDisplayed()
 
 #pragma region actions
 
-void InvOverlay::leftMouseButtonClicked(int x, int y)
+// Update the inventory state based on the game's data
+void InvOverlay::UpdateState()
 {
-	DirectX::XMFLOAT2 clickPoint = XMFLOAT2((float)x, (float)y);
+
+}
+
+void InvOverlay::MousePosInPixels(int x, int y)
+{
+	if (!bIsDisplayed)
+		return;
+	Vector2 mousePoint(x, y);
+	highlightedSlot = InventorySlots::TOTAL;
+	int iSlot = 0;
+	for each (auto iRect in slotsTabsRects)
+	{
+		if (iRect.Contains(mousePoint))
+		{
+			highlightedSlot = (InventorySlots)iSlot;
+			break;
+		}
+		iSlot++;
+	}
+}
+
+void InvOverlay::LeftMouseButtonClicked(int x, int y)
+{
+	if (!bIsDisplayed)
+		return;
+	Vector2 mousePoint(x, y);
+	int iSlot = 0;
+	for each (auto iRect in slotsTabsRects)
+	{
+		if (iRect.Contains(mousePoint))
+		{
+			selectedSlot = (InventorySlots)iSlot;
+			break;
+		}
+		iSlot++;
+	}
 }
 
 #pragma endregion
@@ -87,7 +133,7 @@ void InvOverlay::DrawInvOverlay(
 	int glyphWidth = 7;		// Width of each glyph in pixels, including spacing
 	int lineThickness = 3;	// Will be drawn as quads
 
-	// Draw
+	///// Begin Draw Border (2 quads, the black one 10px smaller per side for a 5px thickness
 	primitiveBatch->DrawQuad(
 		VertexPositionColor(XMFLOAT3(m_currentRect.left, m_currentRect.top, 0), ColorAmber),
 		VertexPositionColor(XMFLOAT3(m_currentRect.right, m_currentRect.top, 0), ColorAmber),
@@ -100,18 +146,24 @@ void InvOverlay::DrawInvOverlay(
 		VertexPositionColor(XMFLOAT3(m_currentRect.right-5, m_currentRect.bottom-5, 0), static_cast<XMFLOAT4>(Colors::Black)),
 		VertexPositionColor(XMFLOAT3(m_currentRect.left+5, m_currentRect.bottom-5, 0), static_cast<XMFLOAT4>(Colors::Black))
 	);
+	///// End Draw Border
 
-	//spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlayBackground), mmBGTexSize,
-	//	m_currentRect, nullptr, Colors::White, 0.f, XMFLOAT2());
+	///// Begin Draw inventory slots tabs
 	float invSlotsOriginX = m_currentRect.left + 20.f;
 	float invSlotsOriginY = m_currentRect.top + 200.f;
 	int stringHalfSpacing = 10;			// Half spacing between the strings
 	int invSlotBegin = invSlotsOriginX;	// Beginning of the inventory slot string, including half spacing
 	int invSlotEnd = 0;					// End of the inventory slot string, including half spacing
+	slotsTabsRects.clear();
+	int iSlot = 0;
 	for each (auto _str in StringsInventorySlots)
 	{
+		// Calculate the clickable rectangle for mouse input
 		invSlotEnd = invSlotBegin + stringHalfSpacing + _str.length() * glyphWidth + stringHalfSpacing;
-		if (_str == "JEWELRY")
+		SimpleMath::Rectangle r(invSlotBegin, invSlotsOriginY, invSlotEnd - invSlotBegin, 20.f);
+		slotsTabsRects.push_back(r);
+		// Draw selected tab graphics (border around the tab)
+		if ((InventorySlots)iSlot == selectedSlot)
 		{
 			primitiveBatch->DrawQuad(
 				VertexPositionColor(XMFLOAT3(invSlotBegin, invSlotsOriginY - 10.f, 0), ColorAmber),
@@ -126,20 +178,39 @@ void InvOverlay::DrawInvOverlay(
 				VertexPositionColor(XMFLOAT3(invSlotBegin + lineThickness, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black))
 			);
 		}
-
-
+		if (((InventorySlots)iSlot == highlightedSlot) && (selectedSlot != highlightedSlot))
+		{
+			primitiveBatch->DrawQuad(
+				VertexPositionColor(XMFLOAT3(invSlotBegin, invSlotsOriginY - 10.f, 0), ColorAmberDark),
+				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), ColorAmberDark),
+				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY + lineThickness + 20.f, 0), ColorAmberDark),
+				VertexPositionColor(XMFLOAT3(invSlotBegin, invSlotsOriginY + lineThickness + 20.f, 0), ColorAmberDark)
+			);
+			primitiveBatch->DrawQuad(
+				VertexPositionColor(XMFLOAT3(invSlotBegin + lineThickness, invSlotsOriginY - 10.f + lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY - 10.f + lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(invSlotBegin + lineThickness, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black))
+			);
+		}
+		// Draw tab string
 		font->DrawString(spriteBatch.get(), _str.c_str(),
 			Vector2(invSlotBegin + stringHalfSpacing, invSlotsOriginY),
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		invSlotBegin = invSlotEnd;
+		iSlot++;
 	}
+	// Draw line below tabs
 	primitiveBatch->DrawQuad(
 		VertexPositionColor(XMFLOAT3(invSlotsOriginX, invSlotsOriginY + 20.f, 0), ColorAmber),
 		VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY + 20.f, 0), ColorAmber),
 		VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY + 20.f + lineThickness, 0), ColorAmber),
 		VertexPositionColor(XMFLOAT3(invSlotsOriginX, invSlotsOriginY + 20.f + lineThickness, 0), ColorAmber)
 	);
+	///// End Draw inventory slots tabs
 
+	//spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlayBackground), mmBGTexSize,
+//	m_currentRect, nullptr, Colors::White, 0.f, XMFLOAT2());
 
 	bIsDisplayed = true;
 }
