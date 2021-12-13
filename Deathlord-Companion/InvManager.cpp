@@ -173,7 +173,9 @@ void InvManager::Initialize()
 
 void InvManager::deleteItem(UINT8 slot, UINT8 stashPosition)
 {
-	std::pair<UINT8, UINT8> theItem = stash.at(slot + stashPosition);
+	if (stashPosition >= STASH_MAX_ITEMS_PER_SLOT)
+		return;
+	std::pair<UINT8, UINT8> theItem = stash.at(STASH_MAX_ITEMS_PER_SLOT*slot + stashPosition);
 	theItem.first = EMPTY_ITEM_ID;
 	theItem.second = 0;
 }
@@ -181,14 +183,14 @@ void InvManager::deleteItem(UINT8 slot, UINT8 stashPosition)
 // stash position is the position within the possible stash items for this inventory slot
 void InvManager::swapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosition, UINT8 memberSlot)
 {
-	if (stashPosition >= stash.size())
+	if (stashPosition >= STASH_MAX_ITEMS_PER_SLOT)
 		return;
 	if (memberPosition >= DEATHLORD_PARTY_SIZE)
 		return;
 	if (memberSlot >= DEATHLORD_INVENTORY_SLOTS)
 		return;
 
-	std::pair<UINT8,UINT8> theItem = stash.at(memberSlot + stashPosition);
+	std::pair<UINT8,UINT8> theItem = stash.at(STASH_MAX_ITEMS_PER_SLOT*memberSlot + stashPosition);
 	UINT8 otherItemId;
 	UINT8 otherItemCharges;
 	// Members' inventory takes up 0x20 in memory
