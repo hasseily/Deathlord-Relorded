@@ -224,4 +224,9 @@ void InvManager::exchangeBetweeenPartyMembers(UINT8 m1Position, UINT8 m1Slot, UI
 	MemGetMainPtr(m2MemSlot)[ITEM_CHARGES_OFFSET] = tmpItemCharges;
 }
 
+const InvItem InvManager::itemWithId(UINT8 itemId)
+{
+	return itemList[itemId];
+}
+
 #pragma endregion

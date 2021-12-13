@@ -26,6 +26,7 @@ public:
 	void deleteItem(UINT8 slot, UINT8 stashPosition);
 	void swapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosition, UINT8 memberSlot);
 	void exchangeBetweeenPartyMembers(UINT8 m1Position, UINT8 m1Slot, UINT8 m2Position, UINT8 m2Slot);
+	const InvItem itemWithId(UINT8 itemId);
 
 	// properties
 
