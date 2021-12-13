@@ -23,5 +23,10 @@ namespace HA
     bool AlertIfError(HWND parentWindow);
 
     bool checkMenuItemByPosition(HMENU m, int pos);
+
+	// Check if a point is within the bounds of a convex clockwise polygon
+	// The polygon is defined by a series of points (XMFLOAT2)
+	bool isPointInConvexPolygon(DirectX::XMFLOAT2 aPoint, DirectX::XMFLOAT2* aClockwisePolygon, UINT8 aPolygonSides);
+
 }
 

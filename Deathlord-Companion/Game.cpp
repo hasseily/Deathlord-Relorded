@@ -33,6 +33,8 @@ ComPtr<ID3D12Resource> g_textureUploadHeap;
 HWND m_window;
 static SidebarManager m_sbM;
 static SidebarContent m_sbC;
+Mouse::ButtonStateTracker moTracker;
+Keyboard::KeyboardStateTracker kbTracker;
 
 AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
 
@@ -90,6 +92,9 @@ void Game::Initialize(HWND window, int width, int height)
 
     m_gamePad = std::make_unique<GamePad>();
     m_keyboard = std::make_unique<Keyboard>();
+	m_mouse = std::make_unique<Mouse>();
+
+	m_mouse->SetWindow(window);
 
     g_nonVolatile.LoadFromDisk();
 
@@ -253,32 +258,55 @@ void Game::Update(DX::StepTimer const& timer)
 			EmulatorSetSpeed(g_nonVolatile.speed);
     }
 
-	EmulatorMessageLoopProcessing();
+    // Now parse input
+    // Pad is unused, just kept here for reference
+	auto pad = m_gamePad->GetState(0);
+	if (pad.IsConnected())
+	{
+		if (pad.IsViewPressed())
+		{
+			// Do something when gamepad keys are pressed
+		}
+	}
+
+    // Modern keyboard handling
+    // Keystrokes are passed to AppleWin in Main.cpp before getting here
+    // So the only thing one should do here is handle special keys that
+    // we know don't do anything under the emulated Deathlord
+	auto kb = m_keyboard->GetState();
+	kbTracker.Update(kb);
+	if (kbTracker.pressed.Enter)
+	{
+		// Do something when escape or other keys pressed
+		if (m_invOverlay->IsInvOverlayDisplayed())
+			m_invOverlay->HideInvOverlay();
+		else
+			m_invOverlay->ShowInvOverlay();
+	}
+
+    // Modern mouse handling
+	using ButtonState = Mouse::ButtonStateTracker::ButtonState;
+	auto mo = m_mouse->GetState();
+	moTracker.Update(mo);
+    if (m_invOverlay->IsInvOverlayDisplayed())
+    {
+        m_invOverlay->UpdateState();
+        m_invOverlay->MousePosInPixels(mo.x, mo.y);
+		if (moTracker.leftButton == ButtonState::PRESSED)
+		{
+            m_invOverlay->LeftMouseButtonClicked(moTracker.GetLastState().x, moTracker.GetLastState().y);
+		}
+    }
+
+    // Should we pause the emulator?
+    // Not pausing it allows us to get automatic feedback of inventory changes
+    EmulatorMessageLoopProcessing();
 
     auto autoMap = AutoMap::GetInstance();
     auto memTriggers = MemoryTriggers::GetInstance();
     if (g_isInGameMap && (autoMap != NULL))
     {
 		memTriggers->PollKeyMemoryLocations();  // But not the avatar XY
-    }
-
-    auto pad = m_gamePad->GetState(0);
-    if (pad.IsConnected())
-    {
-        if (pad.IsViewPressed())
-        {
-            // Do something when gamepad keys are pressed
-        }
-    }
-    auto kb = m_keyboard->GetState();
-    // TODO: Should we pass the keystrokes back to AppleWin here?
-      if (kb.Enter)
-    {
-        // Do something when escape or other keys pressed
-        if (m_invOverlay->IsInvOverlayDisplayed())
-            m_invOverlay->HideInvOverlay();
-        else
-            m_invOverlay->ShowInvOverlay();
     }
 
     PIXEndEvent();
@@ -364,12 +392,12 @@ void Game::Render()
         GetBaseSize(origW, origH);
 
         // Now time to draw the text and lines
-		m_lineEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
+		m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
 			clientRect.bottom - clientRect.top, 0, 0, 1));
-		m_lineEffectLines->Apply(commandList);
-		m_primitiveBatchLines->Begin(commandList);
+		m_dxtEffect->Apply(commandList);
+		m_primitiveBatch->Begin(commandList);
         m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
-		m_spriteBatch->Begin(commandList);
+		m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
         for each (auto sb in m_sbM.sidebars)
         {
 
@@ -414,7 +442,7 @@ void Game::Render()
 			default:
 				break;
 			}
-			m_primitiveBatchLines->DrawLine(
+			m_primitiveBatch->DrawLine(
 				VertexPositionColor(lstart, static_cast<XMFLOAT4>(Colors::DimGray)),
 				VertexPositionColor(lend, static_cast<XMFLOAT4>(Colors::Black))
 			);
@@ -434,28 +462,25 @@ void Game::Render()
 		const UINT8 visTileSide = 9;	// 9 tiles per side visible
         for (UINT8 ir = 0; ir <= visTileSide; ir++)		// rows
         {
-			m_primitiveBatchLines->DrawLine(
+			m_primitiveBatch->DrawLine(
 				VertexPositionColor(XMFLOAT3(fbBorderLeft, fbBorderTop + ir * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red)),
 				VertexPositionColor(XMFLOAT3(fbBorderLeft + visTileSide * FBTW, fbBorderTop + ir * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red))
 			);
         }
 		for (UINT8 jc = 0; jc <= visTileSide; jc++)	// columns
 		{
-			m_primitiveBatchLines->DrawLine(
+			m_primitiveBatch->DrawLine(
 				VertexPositionColor(XMFLOAT3(fbBorderLeft + jc * FBTW, fbBorderTop, 0), static_cast<XMFLOAT4>(Colors::Red)),
 				VertexPositionColor(XMFLOAT3(fbBorderLeft + jc * FBTW, fbBorderTop + visTileSide * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red))
 			);
 		}
 #endif // _DEBUG
-
-		m_primitiveBatchLines->End();
+		m_primitiveBatch->End();
 		m_spriteBatch->End();
-		// End drawing text
 
         if (g_nonVolatile.showMap)
         {
 			// Now draw automap
-			// TODO: Do most of this outside of render, much of it is fixed between renders
 			auto mmOrigin = Vector2(clientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
 			RECT mapRectInViewport = {
 				mmOrigin.x,
@@ -470,8 +495,20 @@ void Game::Render()
             // inside the original Deathlord viewport
             m_automap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch);
         }
+
+        // TODO: Let m_invOverlay create its own effect, spritebatch and primitivebatch?
         if (m_invOverlay->IsInvOverlayDisplayed())
-            m_invOverlay->DrawInvOverlay(m_spriteBatch, &clientRect);
+        {
+			m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
+				clientRect.bottom - clientRect.top, 0, 0, 1));
+			m_dxtEffect->Apply(commandList);
+			m_primitiveBatch->Begin(commandList);
+			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
+			m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatch, &clientRect);
+			m_primitiveBatch->End();
+			m_spriteBatch->End();
+        }
+		// End drawing text
 
 		PIXEndEvent(commandList);
 
@@ -524,11 +561,15 @@ void Game::OnDeactivated()
 void Game::OnSuspending()
 {
     shouldRender = false;
+    moTracker.Reset();
+	kbTracker.Reset();
 }
 
 void Game::OnResuming()
 {
     m_timer.ResetElapsedTime();
+	moTracker.Reset();
+	kbTracker.Reset();
     shouldRender = true;
 }
 
@@ -875,10 +916,10 @@ void Game::CreateDeviceDependentResources()
         CommonStates::DepthDefault,
         CommonStates::CullNone,
         rtState,
-        D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
-    m_lineEffectLines = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epd);
-    m_lineEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
-	m_primitiveBatchLines = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
+        D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+    m_dxtEffect = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epd);
+    m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
+	m_primitiveBatch = std::make_shared<PrimitiveBatch<VertexPositionColor>>(device);
 
     /// <summary>
     /// Finish
@@ -981,7 +1022,7 @@ void Game::UpdateGamelinkVertexData(int width, int height, float wRatio, float h
     }
 
     // And update the projection for line drawing
-    m_lineEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
+    m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
 
 }
 

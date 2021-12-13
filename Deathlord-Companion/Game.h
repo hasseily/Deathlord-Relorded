@@ -149,7 +149,7 @@ private:
     // Input devices.
     std::unique_ptr<DirectX::GamePad>       m_gamePad;
     std::unique_ptr<DirectX::Keyboard>      m_keyboard;
-
+	std::unique_ptr<DirectX::Mouse>         m_mouse;
 
 	std::unique_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
 
@@ -157,8 +157,8 @@ private:
 
 	// fonts and primitives from dxtoolkit12 to draw lines
 	std::map<FontDescriptors, std::unique_ptr<SpriteFont>> m_spriteFonts;
-	std::unique_ptr<PrimitiveBatch<VertexPositionColor>> m_primitiveBatchLines;
-	std::unique_ptr<BasicEffect> m_lineEffectLines;
+	std::shared_ptr<PrimitiveBatch<VertexPositionColor>> m_primitiveBatch;
+	std::unique_ptr<BasicEffect> m_dxtEffect;
 	std::shared_ptr<DirectX::SpriteBatch> m_spriteBatch;
     DirectX::SimpleMath::Vector2 m_fontPos;
 

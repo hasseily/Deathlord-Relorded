@@ -438,6 +438,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 
 
 	auto commandList = m_deviceResources->GetCommandList();
+	spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
 	SimpleMath::Viewport mapViewport(m_deviceResources->GetScreenViewport());
 	SimpleMath::Rectangle mapScissorRect(*mapRect);
 	float _scale = (g_nonVolatile.mapQuadrant == AutoMapQuandrant::All ? 1.f : 2.f);
@@ -470,7 +471,6 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 	commandList->RSSetViewports(1, mapViewport.Get12());
 	commandList->RSSetScissorRects(1, &(RECT)mapScissorRect);
 
-	spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
 	if (bShowTransition)
 	{
 		// Whatever happens we must show the transition right now
