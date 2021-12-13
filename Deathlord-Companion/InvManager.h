@@ -14,7 +14,7 @@ public:
 	// public singleton code
 	static InvManager* GetInstance()
 	{
-		if (NULL == s_instance)
+		if (nullptr == s_instance)
 			s_instance = new InvManager();
 		return s_instance;
 	}
@@ -39,7 +39,7 @@ private:
 	}
 
 	void Initialize();
-	std::vector<std::vector<UINT8,UINT8>> stash;	// id, charges
+	std::vector<std::pair<UINT8,UINT8>> stash;	// id, charges
 	std::map<INT8, InvItem> itemList;
 };
 

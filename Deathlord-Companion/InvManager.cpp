@@ -164,7 +164,7 @@ void InvManager::Initialize()
 	// Finally, fill the stash with empty items with 0 charges
 	for (size_t i = 0; i < (STASH_MAX_ITEMS_PER_SLOT * DEATHLORD_INVENTORY_SLOTS); i++)
 	{
-		std::vector<UINT8, UINT8> emptyItem = { EMPTY_ITEM_ID, 0 };
+		std::pair<UINT8, UINT8> emptyItem = { EMPTY_ITEM_ID, 0 };
 		stash.push_back(emptyItem);
 	}
 }
@@ -173,9 +173,9 @@ void InvManager::Initialize()
 
 void InvManager::deleteItem(UINT8 slot, UINT8 stashPosition)
 {
-	std::vector<UINT8, UINT8> theItem = stash.at(slot + stashPosition);
-	theItem[0] = EMPTY_ITEM_ID;
-	theItem[1] = 0;
+	std::pair<UINT8, UINT8> theItem = stash.at(slot + stashPosition);
+	theItem.first = EMPTY_ITEM_ID;
+	theItem.second = 0;
 }
 
 // stash position is the position within the possible stash items for this inventory slot
@@ -188,7 +188,7 @@ void InvManager::swapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosit
 	if (memberSlot >= DEATHLORD_INVENTORY_SLOTS)
 		return;
 
-	std::vector<UINT8,UINT8> theItem = stash.at(memberSlot + stashPosition);
+	std::pair<UINT8,UINT8> theItem = stash.at(memberSlot + stashPosition);
 	UINT8 otherItemId;
 	UINT8 otherItemCharges;
 	// Members' inventory takes up 0x20 in memory
@@ -197,10 +197,10 @@ void InvManager::swapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosit
 	// Swap items
 	otherItemId = MemGetMainPtr(memberMemSlot)[0];
 	otherItemCharges = MemGetMainPtr(memberMemSlot)[ITEM_CHARGES_OFFSET];
-	MemGetMainPtr(memberMemSlot)[0] = theItem[0];
-	MemGetMainPtr(memberMemSlot)[ITEM_CHARGES_OFFSET] = theItem[1];
-	theItem[0] = otherItemId;
-	theItem[1] = otherItemCharges;
+	MemGetMainPtr(memberMemSlot)[0] = theItem.first;
+	MemGetMainPtr(memberMemSlot)[ITEM_CHARGES_OFFSET] = theItem.second;
+	theItem.first = otherItemId;
+	theItem.second = otherItemCharges;
 }
 
 void InvManager::exchangeBetweeenPartyMembers(UINT8 m1Position, UINT8 m1Slot, UINT8 m2Position, UINT8 m2Slot)
