@@ -139,6 +139,56 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 			hw->SaveMapDataToDisk();
 			break;
 		}
+		case IDC_BUTTON_SPRITESAVE:
+		{
+			HWND hdlSpriteMem = GetDlgItem(hwndDlg, IDC_EDIT_SPRITEMEM);
+			HWND hdlSpriteCt = GetDlgItem(hwndDlg, IDC_EDIT_SPRITECT);
+			HWND hdlSpriteFile = GetDlgItem(hwndDlg, IDC_EDIT_SPRITEFILE);
+			if (HIWORD(wParam) == BN_CLICKED)
+			{
+				// Get the memory area for sprites
+				wchar_t _cEdit[5] = L"0000";
+				GetWindowTextW(hdlSpriteMem, _cEdit, 5);
+				int iMemLoc = 0;
+				try {
+					iMemLoc = std::stoi(_cEdit, nullptr, 16);
+				}
+				catch (std::invalid_argument& e) {
+					// std::cout << e.what();
+					SetWindowText(hdlSpriteMem, L"");
+					break;
+				}
+				// Get the sprite count
+				GetWindowTextW(hdlSpriteCt, _cEdit, 5);
+				int iSpriteCt = 0;
+				try {
+					iSpriteCt = std::stoi(_cEdit, nullptr, 16);
+				}
+				catch (std::invalid_argument& e) {
+					// std::cout << e.what();
+					SetWindowText(hdlSpriteCt, L"");
+					break;
+				}
+				// And the filename
+				wchar_t _cEditFilename[200] = L"";
+				GetWindowText(hdlSpriteFile, _cEditFilename, 194);
+				std::wstring spriteFilename(_cEditFilename);
+				auto tileset = TilesetCreator::GetInstance();
+				try
+				{
+					tileset->extractSpritesFromMemory(iMemLoc, iSpriteCt, 8, spriteFilename);
+					std::wstring msg(L"Saved sprite data: ");
+					msg.append(spriteFilename.c_str());
+					msg.append(L"\n\nSprite format data is RGBA\n14x16 per tile, 8 tiles per row");
+					MessageBox(g_hFrameWindow, msg.c_str(), TEXT("Deathlord Sprite Data"), MB_OK);
+				}
+				catch (const std::exception&)
+				{
+					HA::AlertIfError(g_hFrameWindow);
+				}
+			}
+			break;
+		}
 		default:
 			break;
 		}
@@ -217,10 +267,14 @@ DeathlordHacks::DeathlordHacks(HINSTANCE app, HWND hMainWindow)
 	{
 		RECT cR;
 		GetClientRect(hwndHacks, &cR);
-		HWND hdlMemLoc = GetDlgItem(hwndHacks, IDC_EDIT_MEMLOC);
-		SendMessage(hdlMemLoc, EM_SETLIMITTEXT, 4, 0);	// set the limit to a max of ffff
-		HWND hdlNewVal = GetDlgItem(hwndHacks, IDC_EDIT_MEMVAL);
-		SendMessage(hdlNewVal, EM_SETLIMITTEXT, 2, 0);	// set the limit to a max of ff
+		HWND hdl = GetDlgItem(hwndHacks, IDC_EDIT_MEMLOC);
+		SendMessage(hdl, EM_SETLIMITTEXT, 4, 0);	// set the limit to a max of ffff
+		hdl = GetDlgItem(hwndHacks, IDC_EDIT_MEMVAL);
+		SendMessage(hdl, EM_SETLIMITTEXT, 2, 0);	// set the limit to a max of ff
+		hdl = GetDlgItem(hwndHacks, IDC_EDIT_SPRITEMEM);
+		SendMessage(hdl, EM_SETLIMITTEXT, 4, 0);	// set the limit to a max of ffff
+		hdl = GetDlgItem(hwndHacks, IDC_EDIT_SPRITECT);
+		SendMessage(hdl, EM_SETLIMITTEXT, 2, 0);	// set the limit to a max of ff
 	}
 }
 void DeathlordHacks::ShowHacksWindow()

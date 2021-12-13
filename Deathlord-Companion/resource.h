@@ -33,7 +33,12 @@
 #define IDC_MEMCURRENTVAL               1004
 #define IDC_BUTTON_EXPORT_MAP           1005
 #define IDC_BUTTON1                     1006
+#define IDC_EDIT_SPRITEFILE             1006
 #define IDC_BUTTON_RESURRECT_ALL        1007
+#define IDC_BUTTON2                     1008
+#define IDC_BUTTON_SPRITESAVE           1008
+#define IDC_EDIT_SPRITEMEM              1009
+#define IDC_EDIT_SPRITECT               1010
 #define ID_FILE_ACTIVATEPROFILE         32771
 #define ID_EMULATOR_PAUSE               32772
 #define ID_EMULATOR_RESET               32773
@@ -100,7 +105,7 @@
 #define ID_AUTOMAP_DISPLAYTOPRIGHTQUADRANT 32849
 #define ID_AUTOMAP_SHOWFOOTSTEPS        32850
 #define ID_AUTOMAP_SHOWHIDDEN           32851
-#define ID_AUTOMAP_ERASE				32852
+#define ID_AUTOMAP_ERASE                32852
 #define ID_COMPANION_SPELLWINDOW        32856
 #define IDC_STATIC                      -1
 
@@ -111,7 +116,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        152
 #define _APS_NEXT_COMMAND_VALUE         32857
-#define _APS_NEXT_CONTROL_VALUE         1008
+#define _APS_NEXT_CONTROL_VALUE         1009
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

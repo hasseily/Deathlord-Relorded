@@ -51,6 +51,7 @@ public:
 	LPBYTE parseTilesInHGR2();
 	LPBYTE GetCurrentTilesetBuffer() { return pTilesetBuffer; };
 	void analyzeVisibleTiles(UINT8* pVisibleTiles);
+	void extractSpritesFromMemory(int startAddress, UINT8 spriteCount, UINT8 spritesPerRow, std::wstring fileName);
 private:
 	static TilesetCreator* s_instance;
 

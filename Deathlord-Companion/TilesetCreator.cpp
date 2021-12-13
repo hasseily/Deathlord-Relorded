@@ -142,7 +142,174 @@ LPBYTE TilesetCreator::parseTilesInHGR2()
 	return pTilesetBuffer;
 }
 
+//************************************
+// Method:    extractSpritesFromMemory
+// FullName:  TilesetCreator::extractSpritesFromMemory
+// Access:    public 
+// Returns:   void
+// Qualifier:
+// Parameter: int startAddress
+// Parameter: UINT8 spriteCount
+// Parameter: std::string fileName
 
+// Description: 
+// Given an address in memory, it extracts spriteCount 14x16 HGR sprites and saves them to fileName.
+// The sprites should be 2 bytes per row, with 16 rows each, totalling 32 bytes per sprite
+// The drawing style is RGB, without artifacts. The algorithms is extracted from AppleWin's UpdateHiResRGBCell()
+//************************************
+void TilesetCreator::extractSpritesFromMemory (int startAddress, UINT8 spriteCount,
+	UINT8 spritesPerRow, std::wstring fileName)
+{
+	int memStart = startAddress;
+	int tilesTotal = spriteCount;
+	std::wstring saveFileName(L"Deathlord Sprites.data");
+	if (!fileName.empty())
+		saveFileName = fileName;
+
+	constexpr UINT8 tileHeight = 16;	// number of rows per tile
+	constexpr UINT8 bytesPerRow = 2;
+	constexpr UINT8 dotsPerByte = 7;	// 7 dots in each byte, 2 dots per pixel
+	constexpr UINT16 dotsPerRow = bytesPerRow * dotsPerByte;
+
+		// Group 1: 0b01: green (odd), 0b10: violet (even).     Group 2: 0b01: orange (odd), 0b10: blue (even)
+#define  SETRGBCOLOR(r,g,b) {r,g,b,0xff}
+	static RGBQUAD pPalette[] =
+	{
+	SETRGBCOLOR(/*HGR_BLACK, */ 0x00,0x00,0x00),
+	SETRGBCOLOR(/*HGR_WHITE, */ 0xFF,0xFF,0xFF),
+	SETRGBCOLOR(/*BLUE,      */ 0x0D,0xA1,0xFF),
+	SETRGBCOLOR(/*ORANGE,    */ 0xF2,0x5E,0x00),
+	SETRGBCOLOR(/*GREEN,     */ 0x38,0xCB,0x00),
+	SETRGBCOLOR(/*MAGENTA,   */ 0xC7,0x34,0xFF),
+	};
+
+	UINT32* rgbaTiles = new UINT32[tilesTotal * tileHeight * dotsPerRow];	// RGBA pixels, 7 per 2 bytes of mem
+	memset(rgbaTiles, 0, tilesTotal * tileHeight * dotsPerRow * sizeof(UINT32));
+	int rgbaStart = 0;
+
+	for (size_t iTile = 0; iTile < tilesTotal; iTile++)
+	{
+		for (size_t iRow = 0; iRow < tileHeight; iRow++)
+		{
+			int xoffset = 0; // offset to start of the 2 bytes
+			uint8_t* pMain = MemGetMainPtr(memStart);
+
+			// We need all 28 bits because each pixel needs a three bit evaluation
+			// We use black around the 2 bytes
+			uint8_t byteval1 = 0;
+			uint8_t byteval2 = *pMain;
+			uint8_t byteval3 = *(pMain + 1);
+			uint8_t byteval4 = 0;
+
+			// all 28 bits chained
+			DWORD dwordval = (byteval1 & 0x7F) | ((byteval2 & 0x7F) << 7) | ((byteval3 & 0x7F) << 14) | ((byteval4 & 0x7F) << 21);
+
+			// Extraction of 14 color pixels
+			UINT32 colors[14];
+			int color = 0;
+			DWORD dwordval_tmp = dwordval;
+			dwordval_tmp = dwordval_tmp >> 7;
+			bool offset = (byteval2 & 0x80) ? true : false;
+			for (int i = 0; i < 14; i++)
+			{
+				if (i == 7) offset = (byteval3 & 0x80) ? true : false;
+				color = dwordval_tmp & 0x3;
+				// Two cases because AppleWin's palette is in a strange order
+				if (offset)
+					colors[i] = *reinterpret_cast<const UINT32*>(&pPalette[1 + color]);
+				else
+					colors[i] = *reinterpret_cast<const UINT32*>(&pPalette[6 - color]);
+				if (i % 2) dwordval_tmp >>= 2;
+			}
+			// Black and White
+			UINT32 bw[2];
+			bw[0] = *reinterpret_cast<const UINT32*>(&pPalette[0]);
+			bw[1] = *reinterpret_cast<const UINT32*>(&pPalette[1]);
+
+			DWORD mask = 0x01C0; //  00|000001 1|1000000
+			DWORD chck1 = 0x0140; //  00|000001 0|1000000
+			DWORD chck2 = 0x0080; //  00|000000 1|0000000
+
+			// HIRES render in RGB works on a pixel-basis (1-bit data in framebuffer)
+			// The pixel can be 'color', if it makes a 101 or 010 pattern with the two neighbour bits
+			// In all other cases, it's black if 0 and white if 1
+			// The value of 'color' is defined on a 2-bits basis
+
+			dwordval_tmp = dwordval;
+			for (size_t byteOfPair = 0; byteOfPair < 2; byteOfPair++)
+			{
+				dwordval = dwordval_tmp;
+				if (byteOfPair == 1)
+				{
+					// Second byte of the 14 pixels block
+					dwordval = dwordval >> 7;
+					xoffset = 7;
+				}
+
+				for (int i = xoffset; i < xoffset + 7; i++)
+				{
+					if (((dwordval & mask) == chck1) || ((dwordval & mask) == chck2))
+					{
+						// Color pixel
+						rgbaTiles[rgbaStart] = colors[i];
+						rgbaStart++;
+					}
+					else
+					{
+						// B&W pixel
+						rgbaTiles[rgbaStart] = bw[(dwordval & chck2 ? 1 : 0)];
+						rgbaStart++;
+					}
+					// Next pixel
+					dwordval = dwordval >> 1;
+				}
+			}
+			memStart += 2;
+		}
+	}
+
+	// Now we have a file a single column of sprites wide
+	// Ideally the file is 8 sprites wide, it's much easier to both visualize
+	// and calculate the sprite position (since each sprite has 2 bytes)
+	
+	UINT32 currentMatrixRow = 0;
+	UINT32 currentMatrixCol = 0;
+	UINT32 lastDotIndex = 0;
+
+	// The tile matrix has to be a multiple of sprites per row, with the last sprites
+	// being transparent.
+	UINT32 matrixTileTotal = (1 + tilesTotal / spritesPerRow) * spritesPerRow;
+	UINT32* tileMatrix = new UINT32[matrixTileTotal * tileHeight * dotsPerRow];
+	memset(tileMatrix, 0, matrixTileTotal* tileHeight* dotsPerRow * sizeof(UINT32));
+
+	UINT32* mPtr = tileMatrix;
+	UINT32* tPtr = rgbaTiles;
+
+
+	for (UINT32 _tile = 0; _tile < (tilesTotal); _tile++)
+	{
+		currentMatrixRow = _tile / spritesPerRow;
+		currentMatrixCol = _tile % spritesPerRow;
+		mPtr = tileMatrix
+			+ currentMatrixRow * spritesPerRow * (dotsPerRow * tileHeight)	// skip all the filled rows
+			+ currentMatrixCol * dotsPerRow;							// skip the first line up to our tile
+		for (UINT32 _row = 0; _row < tileHeight; _row++)
+		{
+			memcpy_s(mPtr, dotsPerRow * sizeof(UINT32), tPtr, dotsPerRow * sizeof(UINT32));
+			mPtr += spritesPerRow * dotsPerRow;
+			tPtr += dotsPerRow;
+			lastDotIndex += dotsPerRow;
+		}
+	}
+	std::fstream fsFile(saveFileName.c_str(), std::ios::out | std::ios::binary);
+	fsFile.write((char*)tileMatrix, tilesTotal * tileHeight * dotsPerRow * sizeof(UINT32));
+	fsFile.close();
+	mPtr = NULL;
+	tPtr = NULL;
+	delete[] tileMatrix;
+	delete[] rgbaTiles;
+	return;
+}
 
 /// <summary>
 /// This is not part of tileset creation, but its location here is as good as any.

@@ -13,6 +13,7 @@
 #include "Emulator/Video.h"
 #include "MemoryTriggers.h"
 #include "TilesetCreator.h"
+#include "InvOverlay.h"
 #include <vector>
 #include <string>
 #include <map>
@@ -141,28 +142,26 @@ D3D12_RESOURCE_DESC Game::ChooseTexture()
 		break;
 	}
 	
-    /*
-	#ifdef _DEBUG
-		// In debug mode when pause we display the current tilemap
-		// Enable to debug the tilemap
-		// TODO: Write a PAUSE overlay text in render() when paused. This is a hack that overwrites g+pFramebufferbits
-		case AppMode_e::MODE_PAUSED:
+#ifdef _DEBUG
+	// In debug mode when pause we display the current tilemap
+	// Enable to debug the tilemap
+	// TODO: Write a PAUSE overlay text in render() when paused. This is a hack that overwrites g+pFramebufferbits
+	case AppMode_e::MODE_PAUSED:
+	{
+		auto tileset = TilesetCreator::GetInstance();
+		UINT64 pngW = PNGBUFFERWIDTHB / sizeof(UINT32);
+		UINT64 pngH = PNGBUFFERHEIGHT;
+		LPBYTE tsB = tileset->GetCurrentTilesetBuffer();
+		auto fbI = g_pFramebufferinfo->bmiHeader;
+		UINT64 lineByteWidth = MIN(pngW, fbI.biWidth) * sizeof(UINT32);
+		for (size_t h = 0; h < MIN(PNGBUFFERHEIGHT, fbI.biHeight) ; h++)
 		{
-		    auto tileset = TilesetCreator::GetInstance();
-			UINT64 pngW = PNGBUFFERWIDTHB / sizeof(UINT32);
-			UINT64 pngH = PNGBUFFERHEIGHT;
-			LPBYTE tsB = tileset->GetCurrentTilesetBuffer();
-			auto fbI = g_pFramebufferinfo->bmiHeader;
-			UINT64 lineByteWidth = MIN(pngW, fbI.biWidth) * sizeof(UINT32);
-			for (size_t h = 0; h < MIN(PNGBUFFERHEIGHT, fbI.biHeight) ; h++)
-			{
-				memcpy_s(g_pFramebufferbits + (h * fbI.biWidth * sizeof(UINT32)), lineByteWidth,
-					tsB + (h * PNGBUFFERWIDTHB), lineByteWidth);
-			}
-			SetVideoLayout(EmulatorLayout::NORMAL);
+			memcpy_s(g_pFramebufferbits + (h * fbI.biWidth * sizeof(UINT32)), lineByteWidth,
+				tsB + (h * PNGBUFFERWIDTHB), lineByteWidth);
 		}
-	#endif
-    */
+		SetVideoLayout(EmulatorLayout::NORMAL);
+	}
+#endif
 	
 	default:
 	{
@@ -273,9 +272,13 @@ void Game::Update(DX::StepTimer const& timer)
     }
     auto kb = m_keyboard->GetState();
     // TODO: Should we pass the keystrokes back to AppleWin here?
-    if (kb.Escape)
+      if (kb.Enter)
     {
         // Do something when escape or other keys pressed
+        if (m_invOverlay->IsInvOverlayDisplayed())
+            m_invOverlay->HideInvOverlay();
+        else
+            m_invOverlay->ShowInvOverlay();
     }
 
     PIXEndEvent();
@@ -467,6 +470,8 @@ void Game::Render()
             // inside the original Deathlord viewport
             m_automap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch);
         }
+        if (m_invOverlay->IsInvOverlayDisplayed())
+            m_invOverlay->DrawInvOverlay(m_spriteBatch, &clientRect);
 
 		PIXEndEvent(commandList);
 
@@ -646,9 +651,11 @@ void Game::CreateDeviceDependentResources()
 		m_spriteFonts.at(aFont.first)->SetDefaultCharacter('.');
     }
 
-    // Now initialize the automap and create the automap resources
+    // Now initialize the automap and invOverlay, and create the resources
     m_automap = AutoMap::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_automap->CreateDeviceDependentResources(&resourceUpload);
+	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
+    m_invOverlay->CreateDeviceDependentResources(&resourceUpload);
 
     // finish up
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());

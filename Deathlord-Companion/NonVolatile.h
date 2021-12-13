@@ -23,6 +23,7 @@ public:
 	bool showFootsteps = true;
 	bool showHidden = true;
 	bool showSpells = true;
+	bool showInv = false;
 	int video = 1;
 	int volumeSpeaker = 1;
 	bool useGameLink = false;
