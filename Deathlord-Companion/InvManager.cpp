@@ -15,7 +15,8 @@ InvManager* InvManager::s_instance;
 constexpr UINT8 DEATHLORD_PARTY_SIZE = 6;
 constexpr UINT8 DEATHLORD_INVENTORY_SLOTS = 8;
 constexpr UINT8 EMPTY_ITEM_ID = 0xFF;
-constexpr UINT8 ITEM_CHARGES_OFFSET = 0x10;		// TODO: VERIFY!!! AND VERIFY CHARGES = 0 BY DEFAULT
+constexpr UINT8 EMPTY_CHARGES_COUNT = 0xFF;		// Charges == 0x00 means infinite charges
+constexpr UINT8 ITEM_CHARGES_OFFSET = 0x08;		// Charges == 0xFF by default
 
 enum class InventoryHeaders {
 	id = 0,
@@ -164,7 +165,7 @@ void InvManager::Initialize()
 	// Finally, fill the stash with empty items with 0 charges
 	for (size_t i = 0; i < (STASH_MAX_ITEMS_PER_SLOT * DEATHLORD_INVENTORY_SLOTS); i++)
 	{
-		std::pair<UINT8, UINT8> emptyItem = { EMPTY_ITEM_ID, 0 };
+		std::pair<UINT8, UINT8> emptyItem = { EMPTY_ITEM_ID, EMPTY_CHARGES_COUNT };
 		stash.push_back(emptyItem);
 	}
 }
@@ -177,7 +178,7 @@ void InvManager::deleteItem(UINT8 slot, UINT8 stashPosition)
 		return;
 	std::pair<UINT8, UINT8> theItem = stash.at(STASH_MAX_ITEMS_PER_SLOT*slot + stashPosition);
 	theItem.first = EMPTY_ITEM_ID;
-	theItem.second = 0;
+	theItem.second = EMPTY_CHARGES_COUNT;
 }
 
 // stash position is the position within the possible stash items for this inventory slot
