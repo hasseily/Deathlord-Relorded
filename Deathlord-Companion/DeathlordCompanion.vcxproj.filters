@@ -402,9 +402,6 @@
     <Image Include="Assets\SpriteSheet.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\InventoryTest.png">
-      <Filter>Assets</Filter>
-    </Image>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\PixelShader.hlsl">
