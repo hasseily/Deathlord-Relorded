@@ -171,7 +171,8 @@ void InvManager::Initialize()
 }
 
 #pragma region Methods
-
+#pragma warning(push)
+#pragma warning(disable : 26451)
 void InvManager::deleteItem(UINT8 slot, UINT8 stashPosition)
 {
 	if (stashPosition >= STASH_MAX_ITEMS_PER_SLOT)
@@ -227,9 +228,12 @@ void InvManager::exchangeBetweeenPartyMembers(UINT8 m1Position, UINT8 m1Slot, UI
 	MemGetMainPtr(m2MemSlot)[ITEM_CHARGES_OFFSET] = tmpItemCharges;
 }
 
-const InvItem InvManager::itemWithId(UINT8 itemId)
+InvItem* InvManager::itemWithId(UINT8 itemId)
 {
-	return itemList[itemId];
+	if (itemList.find(itemId) != itemList.end())
+		return &itemList[itemId];
+	return nullptr;
 }
 
+#pragma warning(pop)
 #pragma endregion
