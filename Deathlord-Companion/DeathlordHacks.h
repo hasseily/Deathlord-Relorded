@@ -19,11 +19,13 @@ constexpr UINT16 MAP_YPOS = 0xFC07;						// Y position of the player on a map
 constexpr UINT16 MAP_OVERLAND_X = 0xFC4B;				// X position of the overland submap
 constexpr UINT16 MAP_OVERLAND_Y = 0xFC4C;				// Y position of the overland submap
 
+constexpr UINT16 PARTY_NAME_START = 0xFD00;				// Names of the party members, fixed length of 9
 constexpr UINT16 PARTY_CLASS_START = 0xFD60;			// Start of the array of party classes
 constexpr UINT16 PARTY_RACE_START = 0xFD5A;				// Start of the array of party races
 constexpr UINT16 PARTY_WEAP_READY_START = 0xFDEA;		// Start of the array of weapon ready status: ff = fists, 00 = melee, 01 = ranged
 constexpr UINT16 PARTY_INVENTORY_START = 0xFE20;		// Start of inventory. 8 items / char, and 8 charges. Next char is 0x20 down.
 constexpr UINT16 PARTY_STATUS_START = 0xFD36;			// Start of the status bitmask: 0x1:???, 0x2:STV, 0x4:TOX, 0x8:DIS, 0x10:PAR, 0x20:STN 0x40:RIP, 0x80:STO
+constexpr UINT16 PARTY_ARMORCLASS_START = 0xFD3C;		// Start of Armor Class. When displayed, the AC is substracted from 10 to display
 constexpr UINT16 PARTY_CHAR_LEADER = 0xFC19;			// Leader of the party (0-based)
 constexpr UINT16 PARTY_CURRENT_CHAR_POS = 0xFC21;		// Char we're getting info on (0-based)
 constexpr UINT16 PARTY_CURRENT_CHAR_CLASS = 0xFC22;		// Class of the party leader or active char in battle (determines icon)
@@ -142,6 +144,10 @@ extern bool PartyHasClass(DeathlordClasses aClass1, DeathlordClasses aClass2);
 extern bool PartyHasRace(DeathlordRaces aRace);
 extern std::string NameOfClass(DeathlordClasses aClass, bool inJapan);
 extern std::string NameOfRace(DeathlordRaces aRace, bool inJapan);
+extern std::string StringFromMemory(UINT16 startMem, UINT8 maxLength);
+
+extern std::string& ltrim(std::string& str);
+extern std::string& rtrim(std::string& str);
 
 class DeathlordHacks
 {

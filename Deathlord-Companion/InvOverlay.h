@@ -88,5 +88,5 @@ private:
 
 	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_inventoryTextureBG;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_invOverlaySpriteSheet;
 };

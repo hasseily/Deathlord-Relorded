@@ -18,12 +18,36 @@ extern std::unique_ptr<Game>* GetGamePtr();
 extern void SetSendKeystrokesToAppleWin(bool shouldSend);
 
 // Game data
-InventorySlots selectedSlot = InventorySlots::Melee;
-InventorySlots highlightedSlot = InventorySlots::TOTAL;	// No highlight by default
+static InventorySlots selectedSlot = InventorySlots::Melee;
+static InventorySlots highlightedSlot = InventorySlots::TOTAL;	// No highlight by default
+static UINT8 partySize = 6;		// Also defined in InvManager.cpp
+static UINT8 glyphWidth = 7;		// Width of each glyph in pixels, including spacing
+static UINT8 glyphHeight = 16;
+
+// InvOverlay sprite sheet rectangles
+// It is split into 4 rows of 8 columns of 28x32 pixels
+// The player sprites are the first 2 rows.
+// The last 2 rows are the other sprites which span 2 cols each
+static RECT spRectTrashClosed	= { 28 * 0, 32 * 2, 28 * 2, 32 * 3 };
+static RECT spRectTrashOpen	= { 28 * 2, 32 * 2, 28 * 4, 32 * 3 };
+static RECT spRectStash		= { 28 * 4, 32 * 2, 28 * 6, 32 * 3 };
+static RECT spRectInvEmpty		= { 28 * 0, 32 * 3, 28 * 2, 32 * 4 };
+static RECT spRectInvWorn		= { 28 * 2, 32 * 3, 28 * 4, 32 * 4 };
+static RECT spRectInvCarried	= { 28 * 4, 32 * 3, 28 * 6, 32 * 4 };
 
 // Interactable shapes for the overlay
-std::vector<SimpleMath::Rectangle>slotsTabsRects;
+static std::vector<SimpleMath::Rectangle>slotsTabsRects;
 
+#pragma region utils
+
+inline int PaddingToCenterString(UINT8 maxStringLength, UINT8 stringLength)
+{
+	return ((maxStringLength - stringLength) * glyphWidth) / 2;
+}
+
+#pragma endregion
+
+#pragma region main
 void InvOverlay::Initialize()
 {
 	bIsDisplayed = false;
@@ -46,6 +70,7 @@ bool InvOverlay::IsInvOverlayDisplayed()
 {
 	return bIsDisplayed;
 }
+#pragma endregion
 
 #pragma region actions
 
@@ -101,15 +126,15 @@ void InvOverlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpl
 {
 	auto device = m_deviceResources->GetD3DDevice();
 	DX::ThrowIfFailed(
-		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/InventoryTest.png",
-			m_inventoryTextureBG.ReleaseAndGetAddressOf()));
-	CreateShaderResourceView(device, m_inventoryTextureBG.Get(),
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::InvOverlayBackground));
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/InvOverlaySpriteSheet.png",
+			m_invOverlaySpriteSheet.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_invOverlaySpriteSheet.Get(),
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet));
 }
 
 void InvOverlay::OnDeviceLost()
 {
-	m_inventoryTextureBG.Reset();
+	m_invOverlaySpriteSheet.Reset();
 }
 
 #pragma endregion
@@ -121,9 +146,8 @@ void InvOverlay::DrawInvOverlay(
 	std::shared_ptr<DirectX::PrimitiveBatch<VertexPositionColor>>& primitiveBatch, 
 	RECT* overlayRect)
 {
-	// TODO: Fix this to always show the overlay in the center of the screen given the main overlay background
-	//auto mmBGTexSize = GetTextureSize(m_inventoryTextureBG.Get());
 	auto mmBGTexSize = DirectX::XMUINT2(1400, 700);
+	auto mmSSTextureSize = GetTextureSize(m_invOverlaySpriteSheet.Get());
 	auto commandList = m_deviceResources->GetCommandList();
 	SimpleMath::Rectangle overlayScissorRect(*overlayRect);
 	Vector2 _overlayCenter = overlayScissorRect.Center();
@@ -134,8 +158,18 @@ void InvOverlay::DrawInvOverlay(
 
 	auto gamePtr = GetGamePtr();
 	auto font = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular);
-	int glyphWidth = 7;		// Width of each glyph in pixels, including spacing
 	int lineThickness = 3;	// Will be drawn as quads
+	int borderPadding = 20;	// Empty Pixels inside the border
+	int invMemberColWidth = 150;	// column width for each party member (and stash)
+
+	RECT innerRect = {		// The inner rect after padding has been applied
+		m_currentRect.left + borderPadding,
+		m_currentRect.top + borderPadding,
+		m_currentRect.right - borderPadding,
+		m_currentRect.bottom - borderPadding };
+
+	float invSlotsOriginX = innerRect.left;			// beginning of inventory slots
+	float invSlotsOriginY = innerRect.top + 200.f;
 
 	///// Begin Draw Border (2 quads, the black one 10px smaller per side for a 5px thickness
 	primitiveBatch->DrawQuad(
@@ -152,9 +186,22 @@ void InvOverlay::DrawInvOverlay(
 	);
 	///// End Draw Border
 
+		///// Begin Draw crossed lines
+	primitiveBatch->DrawQuad(
+		VertexPositionColor(XMFLOAT3(innerRect.left,	invSlotsOriginY + 60, 0),					ColorAmber),
+		VertexPositionColor(XMFLOAT3(innerRect.right,	invSlotsOriginY + 60, 0),					ColorAmber),
+		VertexPositionColor(XMFLOAT3(innerRect.right,	invSlotsOriginY + 60 + lineThickness, 0),	ColorAmber),
+		VertexPositionColor(XMFLOAT3(innerRect.left,	invSlotsOriginY + 60 + lineThickness, 0),	ColorAmber)
+	);
+	primitiveBatch->DrawQuad(
+		VertexPositionColor(XMFLOAT3(innerRect.right - invMemberColWidth,					innerRect.top, 0),		ColorAmber),
+		VertexPositionColor(XMFLOAT3(innerRect.right - invMemberColWidth + lineThickness,	innerRect.top, 0),		ColorAmber),
+		VertexPositionColor(XMFLOAT3(innerRect.right - invMemberColWidth + lineThickness,	innerRect.bottom, 0),	ColorAmber),
+		VertexPositionColor(XMFLOAT3(innerRect.right - invMemberColWidth,					innerRect.bottom, 0),	ColorAmber)
+	);
+	///// End Draw crossed lines
+	
 	///// Begin Draw inventory slots tabs
-	float invSlotsOriginX = m_currentRect.left + 20.f;
-	float invSlotsOriginY = m_currentRect.top + 200.f;
 	int stringHalfSpacing = 10;			// Half spacing between the strings
 	int invSlotBegin = invSlotsOriginX;	// Beginning of the inventory slot string, including half spacing
 	int invSlotEnd = 0;					// End of the inventory slot string, including half spacing
@@ -166,8 +213,33 @@ void InvOverlay::DrawInvOverlay(
 		invSlotEnd = invSlotBegin + stringHalfSpacing + _str.length() * glyphWidth + stringHalfSpacing;
 		SimpleMath::Rectangle r(invSlotBegin, invSlotsOriginY, invSlotEnd - invSlotBegin, 20.f);
 		slotsTabsRects.push_back(r);
-		// Draw selected tab graphics (border around the tab)
-		if ((InventorySlots)iSlot == selectedSlot)
+		// Draw tab graphics (border around the tab)
+		if (((InventorySlots)iSlot == highlightedSlot) && (selectedSlot != highlightedSlot))	// Highlighted
+		{
+			primitiveBatch->DrawQuad(
+				VertexPositionColor(XMFLOAT3(invSlotBegin, invSlotsOriginY - 10.f, 0), ColorAmberDark),
+				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), ColorAmberDark),
+				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY + lineThickness + 20.f, 0), ColorAmberDark),
+				VertexPositionColor(XMFLOAT3(invSlotBegin, invSlotsOriginY + lineThickness + 20.f, 0), ColorAmberDark)
+			);
+			primitiveBatch->DrawQuad(
+				VertexPositionColor(XMFLOAT3(invSlotBegin + lineThickness, invSlotsOriginY - 10.f + lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY - 10.f + lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(invSlotBegin + lineThickness, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black))
+			);
+			primitiveBatch->DrawTriangle(
+				VertexPositionColor(XMFLOAT3(invSlotEnd - 11.f, invSlotsOriginY - 10.f, 0), ColorAmberDark),
+				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), ColorAmberDark),
+				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY + 1, 0), ColorAmberDark)
+			);
+			primitiveBatch->DrawTriangle(
+				VertexPositionColor(XMFLOAT3(invSlotEnd - 10.f + lineThickness, invSlotsOriginY - 10.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black))
+			);
+		}
+		if ((InventorySlots)iSlot == selectedSlot)	// Selected
 		{
 			primitiveBatch->DrawQuad(
 				VertexPositionColor(XMFLOAT3(invSlotBegin, invSlotsOriginY - 10.f, 0), ColorAmber),
@@ -181,20 +253,15 @@ void InvOverlay::DrawInvOverlay(
 				VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
 				VertexPositionColor(XMFLOAT3(invSlotBegin + lineThickness, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black))
 			);
-		}
-		if (((InventorySlots)iSlot == highlightedSlot) && (selectedSlot != highlightedSlot))
-		{
-			primitiveBatch->DrawQuad(
-				VertexPositionColor(XMFLOAT3(invSlotBegin, invSlotsOriginY - 10.f, 0), ColorAmberDark),
-				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), ColorAmberDark),
-				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY + lineThickness + 20.f, 0), ColorAmberDark),
-				VertexPositionColor(XMFLOAT3(invSlotBegin, invSlotsOriginY + lineThickness + 20.f, 0), ColorAmberDark)
+			primitiveBatch->DrawTriangle(
+				VertexPositionColor(XMFLOAT3(invSlotEnd -11.f, invSlotsOriginY - 10.f, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY + 1, 0), ColorAmber)
 			);
-			primitiveBatch->DrawQuad(
-				VertexPositionColor(XMFLOAT3(invSlotBegin + lineThickness, invSlotsOriginY - 10.f + lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black)),
-				VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY - 10.f + lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black)),
-				VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
-				VertexPositionColor(XMFLOAT3(invSlotBegin + lineThickness, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black))
+			primitiveBatch->DrawTriangle(
+				VertexPositionColor(XMFLOAT3(invSlotEnd - 10.f + lineThickness, invSlotsOriginY - 10.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black))
 			);
 		}
 		// Draw tab string
@@ -241,9 +308,42 @@ void InvOverlay::DrawInvOverlay(
 	}
 	///// End Draw Inventory Headers
 
+	///// Begin Draw Column Headers (party members)
+	int xCol = 700;		// x value at start of column drawing
+	int maxGlyphs = 12;	// Max number of glyphs in the column
+	int colWidth = maxGlyphs * glyphWidth;	// Column width for party members
+	for (size_t iMember = 0; iMember < partySize; iMember++)
+	{
+		std::string _bufStr;
+		int yCol = innerRect.top;	// y value of the start of drawing
+		// First draw the class icon in the center of the column
+		UINT8 memberClass = MemGetMainPtr(PARTY_CLASS_START)[iMember];
+		int memberLeft = 28 *(memberClass % 8);
+		int memberTop = 32 *(memberClass / 8);
+		RECT memberSpriteRect = { memberLeft, memberTop, memberLeft + 28, memberTop + 32 };
+		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+			mmSSTextureSize, XMFLOAT2(xCol + (colWidth - 28)/2, yCol), &memberSpriteRect, Colors::White, 0.f, XMFLOAT2());
+		// Then draw the member name, class and AC
+		yCol += 32 + 5;
+		_bufStr = StringFromMemory(PARTY_NAME_START + (iMember * 0x09), maxGlyphs);
+		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
+			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
+		yCol += glyphHeight + 2;
+		_bufStr = NameOfClass((DeathlordClasses)memberClass, false);
+		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
+			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
+		yCol += glyphHeight + 2;
+		UINT8 memberArmor = MemGetMainPtr(PARTY_ARMORCLASS_START)[iMember];
+		_bufStr = "AC " + std::to_string((int)10 - memberArmor);
+		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
+			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 
-	//spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlayBackground), mmBGTexSize,
-//	m_currentRect, nullptr, Colors::White, 0.f, XMFLOAT2());
+		xCol += colWidth;
+	}
+	///// End Draw Column Headers (party members)
 
 	bIsDisplayed = true;
 }

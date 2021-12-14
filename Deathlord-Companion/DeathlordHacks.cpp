@@ -327,6 +327,39 @@ std::string NameOfRace(DeathlordRaces aRace, bool inJapan)
 	else
 		return DeathlordRaceNames[(int)aRace];
 }
+
+std::string StringFromMemory(UINT16 startMem, UINT8 maxLength)
+{
+	std::string s;
+	UINT8 i = 0;
+	UINT8 c = MemGetMainPtr(startMem)[i];
+	while (i < maxLength)
+	{
+		if (c >= 0x80)	// end-of-string hi-byte character
+		{
+			s.append(1, ARRAY_DEATHLORD_CHARSET_EOR[c - 0x80]);
+			break;
+		}
+		s.append(1, ARRAY_DEATHLORD_CHARSET_EOR[c]);
+		++i;
+		c = MemGetMainPtr(startMem)[i];
+	}
+	return rtrim(s);
+}
+
+std::string& ltrim(std::string& str)
+{
+	auto it2 = std::find_if(str.begin(), str.end(), [](char ch) { return !std::isspace<char>(ch, std::locale::classic()); });
+	str.erase(str.begin(), it2);
+	return str;
+}
+
+std::string& rtrim(std::string& str)
+{
+	auto it1 = std::find_if(str.rbegin(), str.rend(), [](char ch) { return !std::isspace<char>(ch, std::locale::classic()); });
+	str.erase(it1.base(), str.end());
+	return str;
+}
 #pragma endregion
 
 DeathlordHacks::DeathlordHacks(HINSTANCE app, HWND hMainWindow)
