@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Emulator/Memory.h"
+#include <string>
 #include <utility>
 
 /// <summary>
@@ -139,6 +140,8 @@ extern bool PartyLeaderIsOfRace(DeathlordRaces aRace);
 extern bool PartyHasClass(DeathlordClasses aClass);
 extern bool PartyHasClass(DeathlordClasses aClass1, DeathlordClasses aClass2);
 extern bool PartyHasRace(DeathlordRaces aRace);
+extern std::string NameOfClass(DeathlordClasses aClass, bool inJapan);
+extern std::string NameOfRace(DeathlordRaces aRace, bool inJapan);
 
 class DeathlordHacks
 {

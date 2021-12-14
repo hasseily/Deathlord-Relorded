@@ -11,12 +11,72 @@
 #include "Game.h"
 #include "TilesetCreator.h"
 #include "AutoMap.h"
+#include <array>
 
 const wchar_t CLASS_NAME[] = L"Deathlord Hacks Class";
 
 static HINSTANCE appInstance = nullptr;
 static HWND hwndMain = nullptr;				// handle to main window
 
+static std::array<std::string, 16> DeathlordClassNames{
+	std::string("Fighter"),
+	std::string("Paladin"),
+	std::string("Ranger"),
+	std::string("Barbarian"),
+	std::string("Berzerker"),
+	std::string("Samurai"),
+	std::string("Dark Knight"),
+	std::string("Thief"),
+	std::string("Assassin"),
+	std::string("Ninja"),
+	std::string("Monk"),
+	std::string("Priest"),
+	std::string("Druid"),
+	std::string("Wizard"),
+	std::string("Illusionist"),
+	std::string("Peasant")
+};
+
+static std::array<std::string, 16> DeathlordClassNamesJapan{
+	std::string("Senshi"),
+	std::string("Kishi"),
+	std::string("Ryoshi"),
+	std::string("Yabanjin"),
+	std::string("Kichigai"),
+	std::string("Samurai"),
+	std::string("Ronin"),
+	std::string("Yakuza"),
+	std::string("Ansatusha"),
+	std::string("Ninja"),
+	std::string("Shukenja"),
+	std::string("Shisai"),
+	std::string("Shizen"),
+	std::string("Mahotsukai"),
+	std::string("Genkai"),
+	std::string("Kosaku")
+};
+
+static std::array<std::string, 8> DeathlordRaceNames{
+	std::string("Human"),
+	std::string("Elf"),
+	std::string("Half-Elf"),
+	std::string("Dwarf"),
+	std::string("Gnome"),
+	std::string("Dark Elf"),
+	std::string("Orc"),
+	std::string("Half-Orc")
+};
+
+static std::array<std::string, 8> DeathlordRaceNamesJapan{
+	std::string("Human"),
+	std::string("Toshi"),
+	std::string("Nintoshi"),
+	std::string("Kobito"),
+	std::string("Gnome"),
+	std::string("Obake"),
+	std::string("Troll"),
+	std::string("Ogre")
+};
 
 #pragma region Static Methods
 
@@ -252,6 +312,21 @@ bool PartyHasRace(DeathlordRaces aRace)
 	return false;
 }
 
+std::string NameOfClass(DeathlordClasses aClass, bool inJapan)
+{
+	if (inJapan)
+		return DeathlordClassNamesJapan[(int)aClass];
+	else
+		return DeathlordClassNames[(int)aClass];
+}
+
+std::string NameOfRace(DeathlordRaces aRace, bool inJapan)
+{
+	if (inJapan)
+		return DeathlordRaceNamesJapan[(int)aRace];
+	else
+		return DeathlordRaceNames[(int)aRace];
+}
 #pragma endregion
 
 DeathlordHacks::DeathlordHacks(HINSTANCE app, HWND hMainWindow)
