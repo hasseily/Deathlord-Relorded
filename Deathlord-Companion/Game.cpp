@@ -275,7 +275,7 @@ void Game::Update(DX::StepTimer const& timer)
     // we know don't do anything under the emulated Deathlord
 	auto kb = m_keyboard->GetState();
 	kbTracker.Update(kb);
-	if (kbTracker.pressed.Enter)
+	if (g_isInGameMap && kbTracker.pressed.Insert)
 	{
 		// Do something when escape or other keys pressed
 		if (m_invOverlay->IsInvOverlayDisplayed())
