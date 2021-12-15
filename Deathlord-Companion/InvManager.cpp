@@ -173,30 +173,49 @@ void InvManager::Initialize()
 #pragma region Methods
 #pragma warning(push)
 #pragma warning(disable : 26451)
-void InvManager::deleteItem(UINT8 slot, UINT8 stashPosition)
+
+UINT8 InvManager::MaxItemsPerSlot()
+{
+	return STASH_MAX_ITEMS_PER_SLOT;
+}
+
+UINT8 InvManager::StashSlotCount(InventorySlots slot)
+{
+	// Count the number of non-empty items in the proper slot
+	UINT8 inUse = 0;
+	for (size_t i = 0; i < STASH_MAX_ITEMS_PER_SLOT; i++)
+	{
+		std::pair<UINT8, UINT8> theItem = stash.at(STASH_MAX_ITEMS_PER_SLOT * (UINT8)slot + i);
+		if (theItem.first != EMPTY_ITEM_ID)
+			inUse++;
+	}
+	return inUse;
+}
+
+void InvManager::DeleteItem(InventorySlots slot, UINT8 stashPosition)
 {
 	if (stashPosition >= STASH_MAX_ITEMS_PER_SLOT)
 		return;
-	std::pair<UINT8, UINT8> theItem = stash.at(STASH_MAX_ITEMS_PER_SLOT*slot + stashPosition);
+	std::pair<UINT8, UINT8> theItem = stash.at(STASH_MAX_ITEMS_PER_SLOT*(UINT8)slot + stashPosition);
 	theItem.first = EMPTY_ITEM_ID;
 	theItem.second = EMPTY_CHARGES_COUNT;
 }
 
 // stash position is the position within the possible stash items for this inventory slot
-void InvManager::swapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosition, UINT8 memberSlot)
+void InvManager::SwapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosition, InventorySlots memberSlot)
 {
 	if (stashPosition >= STASH_MAX_ITEMS_PER_SLOT)
 		return;
 	if (memberPosition >= DEATHLORD_PARTY_SIZE)
 		return;
-	if (memberSlot >= DEATHLORD_INVENTORY_SLOTS)
+	if ((UINT8)memberSlot >= DEATHLORD_INVENTORY_SLOTS)
 		return;
 
-	std::pair<UINT8,UINT8> theItem = stash.at(STASH_MAX_ITEMS_PER_SLOT*memberSlot + stashPosition);
+	std::pair<UINT8,UINT8> theItem = stash.at(STASH_MAX_ITEMS_PER_SLOT* (UINT8)memberSlot + stashPosition);
 	UINT8 otherItemId;
 	UINT8 otherItemCharges;
 	// Members' inventory takes up 0x20 in memory
-	UINT16 memberMemSlot = PARTY_INVENTORY_START + memberPosition * 0x20 + memberSlot;
+	UINT16 memberMemSlot = PARTY_INVENTORY_START + memberPosition * 0x20 + (UINT8)memberSlot;
 
 	// Swap items
 	otherItemId = MemGetMainPtr(memberMemSlot)[0];
@@ -207,18 +226,18 @@ void InvManager::swapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosit
 	theItem.second = otherItemCharges;
 }
 
-void InvManager::exchangeBetweeenPartyMembers(UINT8 m1Position, UINT8 m1Slot, UINT8 m2Position, UINT8 m2Slot)
+void InvManager::ExchangeBetweeenPartyMembers(UINT8 m1Position, InventorySlots m1Slot, UINT8 m2Position, InventorySlots m2Slot)
 {
 	if (m1Position >= DEATHLORD_PARTY_SIZE)
 		return;
-	if (m1Slot >= DEATHLORD_INVENTORY_SLOTS)
+	if ((UINT8)m1Slot >= DEATHLORD_INVENTORY_SLOTS)
 		return;
 	if (m2Position >= DEATHLORD_PARTY_SIZE)
 		return;
-	if (m2Slot >= DEATHLORD_INVENTORY_SLOTS)
+	if ((UINT8)m2Slot >= DEATHLORD_INVENTORY_SLOTS)
 		return;
-	UINT16 m1MemSlot = PARTY_INVENTORY_START + m1Position * 0x20 + m1Slot;
-	UINT16 m2MemSlot = PARTY_INVENTORY_START + m2Position * 0x20 + m2Slot;
+	UINT16 m1MemSlot = PARTY_INVENTORY_START + m1Position * 0x20 + (UINT8)m1Slot;
+	UINT16 m2MemSlot = PARTY_INVENTORY_START + m2Position * 0x20 + (UINT8)m2Slot;
 
 	UINT8 tmpItemId = MemGetMainPtr(m1MemSlot)[0];
 	UINT8 tmpItemCharges = MemGetMainPtr(m1MemSlot)[ITEM_CHARGES_OFFSET];
@@ -228,7 +247,7 @@ void InvManager::exchangeBetweeenPartyMembers(UINT8 m1Position, UINT8 m1Slot, UI
 	MemGetMainPtr(m2MemSlot)[ITEM_CHARGES_OFFSET] = tmpItemCharges;
 }
 
-InvItem* InvManager::itemWithId(UINT8 itemId)
+InvItem* InvManager::ItemWithId(UINT8 itemId)
 {
 	if (itemList.find(itemId) != itemList.end())
 		return &itemList[itemId];

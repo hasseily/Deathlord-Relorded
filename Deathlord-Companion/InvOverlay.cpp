@@ -6,6 +6,7 @@
 #include "DeathlordHacks.h"
 #include <SimpleMath.h>
 #include <vector>
+#include "InvManager.h"
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -18,6 +19,7 @@ extern std::unique_ptr<Game>* GetGamePtr();
 extern void SetSendKeystrokesToAppleWin(bool shouldSend);
 
 // Game data
+static InvManager* invMgr = InvManager::GetInstance();
 static InventorySlots selectedSlot = InventorySlots::Melee;
 static InventorySlots highlightedSlot = InventorySlots::TOTAL;	// No highlight by default
 static UINT8 partySize = 6;		// Also defined in InvManager.cpp
@@ -34,6 +36,22 @@ static RECT spRectStash		= { 28 * 4, 32 * 2, 28 * 6, 32 * 3 };
 static RECT spRectInvEmpty		= { 28 * 0, 32 * 3, 28 * 2, 32 * 4 };
 static RECT spRectInvWorn		= { 28 * 2, 32 * 3, 28 * 4, 32 * 4 };
 static RECT spRectInvCarried	= { 28 * 4, 32 * 3, 28 * 6, 32 * 4 };
+
+static std::array<std::string, (int)InventorySlots::TOTAL>StringsInventorySlots =
+{
+	"MELEE", "RANGED", "CHEST", "SHIELD", "MISC", "JEWELRY", "TOOL", "SCROLL"
+};
+static std::array<std::string, 5>StringsHeadersWeapons =
+{
+	"Name", "TH0", "Damage", "AC", "Special"
+};
+static std::array<int, 5>WidthHeadersWeapons = { 140, 20, 70, 20, 200 };
+static std::array<std::string, 5>StringsHeadersOther =
+{
+	"Name", "TH0", "AC", "Special", ""
+};
+static std::array<int, 5>WidthHeadersOthers = { 140, 20, 20, 200, 0 };
+
 
 // Interactable shapes for the overlay
 static std::vector<SimpleMath::Rectangle>slotsTabsRects;
@@ -146,7 +164,7 @@ void InvOverlay::DrawInvOverlay(
 	std::shared_ptr<DirectX::PrimitiveBatch<VertexPositionColor>>& primitiveBatch, 
 	RECT* overlayRect)
 {
-	auto mmBGTexSize = DirectX::XMUINT2(1400, 700);
+	auto mmBGTexSize = DirectX::XMUINT2(1300, 600);
 	auto mmSSTextureSize = GetTextureSize(m_invOverlaySpriteSheet.Get());
 	auto commandList = m_deviceResources->GetCommandList();
 	SimpleMath::Rectangle overlayScissorRect(*overlayRect);
@@ -161,6 +179,7 @@ void InvOverlay::DrawInvOverlay(
 	int lineThickness = 3;	// Will be drawn as quads
 	int borderPadding = 20;	// Empty Pixels inside the border
 	int invMemberColWidth = 150;	// column width for each party member (and stash)
+	std::string _bufStr;
 
 	RECT innerRect = {		// The inner rect after padding has been applied
 		m_currentRect.left + borderPadding,
@@ -169,7 +188,7 @@ void InvOverlay::DrawInvOverlay(
 		m_currentRect.bottom - borderPadding };
 
 	float invSlotsOriginX = innerRect.left;			// beginning of inventory slots
-	float invSlotsOriginY = innerRect.top + 200.f;
+	float invSlotsOriginY = innerRect.top + 90.f;
 
 	///// Begin Draw Border (2 quads, the black one 10px smaller per side for a 5px thickness
 	primitiveBatch->DrawQuad(
@@ -310,12 +329,12 @@ void InvOverlay::DrawInvOverlay(
 
 	///// Begin Draw Column Headers (party members)
 	int xCol = 700;		// x value at start of column drawing
+	int yCol = 0;		// y value of the start of drawing
 	int maxGlyphs = 12;	// Max number of glyphs in the column
 	int colWidth = maxGlyphs * glyphWidth;	// Column width for party members
 	for (size_t iMember = 0; iMember < partySize; iMember++)
 	{
-		std::string _bufStr;
-		int yCol = innerRect.top;	// y value of the start of drawing
+		yCol = innerRect.top;
 		// First draw the class icon in the center of the column
 		UINT8 memberClass = MemGetMainPtr(PARTY_CLASS_START)[iMember];
 		int memberLeft = 28 *(memberClass % 8);
@@ -347,7 +366,7 @@ void InvOverlay::DrawInvOverlay(
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 
-		// Now draw hands/melee/ranged readied status
+		// Now draw hands/melee/ranged readied status background, and then the text
 		yCol += glyphHeight + 10;
 		primitiveBatch->DrawQuad(
 			VertexPositionColor(XMFLOAT3(xCol + 2,				yCol, 0), ColorAmber),
@@ -377,6 +396,27 @@ void InvOverlay::DrawInvOverlay(
 	///// End Draw Column Headers (party members)
 
 	///// Begin Draw Column Headers (stash)
+	UINT8 _maxStashItems = invMgr->MaxItemsPerSlot();
+	UINT8 _currentItems = invMgr->StashSlotCount(selectedSlot);
+	xCol = innerRect.right - invMemberColWidth;
+	// yCol is still aligned with the readied status text
+	if (_currentItems == _maxStashItems)
+	{
+		_bufStr = "FULL";
+		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
+			VColorAmber, 0.f, Vector2(0.f, 0.f), 1.f);
+	}
+	yCol -= glyphHeight + 10 + 2;
+	_bufStr = std::to_string(_currentItems) + " / " + std::to_string(_maxStashItems);
+	font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+		Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
+		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
+	yCol -= glyphHeight + 2;
+	_bufStr = "STASH";
+	font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+		Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
+		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 	///// End Draw Column Headers (stash)
 
 	bIsDisplayed = true;

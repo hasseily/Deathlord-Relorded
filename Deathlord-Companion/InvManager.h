@@ -8,6 +8,19 @@
 
 constexpr UINT8 STASH_MAX_ITEMS_PER_SLOT = 2;
 
+enum class InventorySlots
+{
+	Melee = 0,
+	Ranged,
+	Chest,
+	Shield,
+	Misc,
+	Jewelry,
+	Tool,
+	Scroll,
+	TOTAL
+};
+
 class InvManager	// Singleton
 {
 public:
@@ -23,10 +36,12 @@ public:
 	}
 
 	// methods
-	void deleteItem(UINT8 slot, UINT8 stashPosition);
-	void swapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosition, UINT8 memberSlot);
-	void exchangeBetweeenPartyMembers(UINT8 m1Position, UINT8 m1Slot, UINT8 m2Position, UINT8 m2Slot);
-	InvItem* itemWithId(UINT8 itemId);
+	UINT8 StashSlotCount(InventorySlots slot);
+	UINT8 MaxItemsPerSlot();
+	void DeleteItem(InventorySlots slot, UINT8 stashPosition);
+	void SwapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosition, InventorySlots memberSlot);
+	void ExchangeBetweeenPartyMembers(UINT8 m1Position, InventorySlots m1Slot, UINT8 m2Position, InventorySlots m2Slot);
+	InvItem* ItemWithId(UINT8 itemId);
 
 	// properties
 
@@ -40,7 +55,7 @@ private:
 	}
 
 	void Initialize();
-	std::vector<std::pair<UINT8,UINT8>> stash;	// id, charges
+	std::vector<std::pair<UINT8, UINT8>> stash;	// id, charges
 	std::map<INT8, InvItem> itemList;
 };
 

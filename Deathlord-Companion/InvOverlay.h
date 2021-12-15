@@ -7,19 +7,6 @@
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
-enum class InventorySlots
-{
-	Melee = 0,
-	Ranged,
-	Chest,
-	Shield,
-	Misc,
-	Jewelry,
-	Tool,
-	Scroll,
-	TOTAL
-};
-
 class InvOverlay	// Singleton
 {
 public:
@@ -35,22 +22,9 @@ public:
 	void OnDeviceLost();
 
 	XMFLOAT4 ColorAmber = { 0.5f, 0.2f, 0.f, 1.000000000f };
+	XMVECTORF32 VColorAmber = { { { 0.5f, 0.2f, 0.f, 1.000000000f } } };
 	XMFLOAT4 ColorAmberDark = { 0.25f, 0.1f, 0.f, 1.000000000f };
-
-	std::array<std::string, (int)InventorySlots::TOTAL>StringsInventorySlots =
-	{
-		"MELEE", "RANGED", "CHEST", "SHIELD", "MISC", "JEWELRY", "TOOL", "SCROLL"
-	};
-	std::array<std::string, 5>StringsHeadersWeapons =
-	{
-		"Name", "TH0", "Damage", "AC", "Special"
-	};
-	std::array<int, 5>WidthHeadersWeapons = { 140, 20, 70, 20, 200 };
-	std::array<std::string, 5>StringsHeadersOther =
-	{
-		"Name", "TH0", "AC", "Special", ""
-	};
-	std::array<int, 5>WidthHeadersOthers = { 140, 20, 20, 200, 0 };
+	XMVECTORF32 VColorAmberDark = { { { 0.25f, 0.1f, 0.f, 1.000000000f } } };
 
 	// public singleton code
 	static InvOverlay* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,
