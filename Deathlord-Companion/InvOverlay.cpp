@@ -323,7 +323,7 @@ void InvOverlay::DrawInvOverlay(
 		RECT memberSpriteRect = { memberLeft, memberTop, memberLeft + 28, memberTop + 32 };
 		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 			mmSSTextureSize, XMFLOAT2(xCol + (colWidth - 28)/2, yCol), &memberSpriteRect, Colors::White, 0.f, XMFLOAT2());
-		// Then draw the member name, class and AC
+		// Then draw the member name, class, race and AC
 		yCol += 32 + 5;
 		_bufStr = StringFromMemory(PARTY_NAME_START + (iMember * 0x09), maxGlyphs);
 		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
@@ -347,9 +347,37 @@ void InvOverlay::DrawInvOverlay(
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 
+		// Now draw hands/melee/ranged readied status
+		yCol += glyphHeight + 10;
+		primitiveBatch->DrawQuad(
+			VertexPositionColor(XMFLOAT3(xCol + 2,				yCol, 0), ColorAmber),
+			VertexPositionColor(XMFLOAT3(xCol + colWidth - 2,	yCol, 0), ColorAmber),
+			VertexPositionColor(XMFLOAT3(xCol + colWidth - 2,	yCol + glyphHeight + 4, 0), ColorAmber),
+			VertexPositionColor(XMFLOAT3(xCol + 2,				yCol + glyphHeight + 4, 0), ColorAmber)
+		);
+		yCol += 2;
+		UINT8 memberReady = MemGetMainPtr(PARTY_WEAP_READY_START)[iMember];
+		switch (memberReady)
+		{
+		case 0:
+			_bufStr = "MELEE";
+			break;
+		case 1:
+			_bufStr = "RANGED";
+			break;
+		default:
+			_bufStr = "FISTS";
+		}
+		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
+			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
+
 		xCol += colWidth;
 	}
 	///// End Draw Column Headers (party members)
+
+	///// Begin Draw Column Headers (stash)
+	///// End Draw Column Headers (stash)
 
 	bIsDisplayed = true;
 }
