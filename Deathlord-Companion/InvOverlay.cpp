@@ -335,6 +335,12 @@ void InvOverlay::DrawInvOverlay(
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
+		UINT8 memberRace = MemGetMainPtr(PARTY_RACE_START)[iMember];
+		_bufStr = NameOfRace((DeathlordRaces)memberRace, false);
+		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
+			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
+		yCol += glyphHeight + 2;
 		UINT8 memberArmor = MemGetMainPtr(PARTY_ARMORCLASS_START)[iMember];
 		_bufStr = "AC " + std::to_string((int)10 - memberArmor);
 		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
