@@ -54,6 +54,7 @@ private:
 
 struct InvInstance
 {
+	int extraIdentifier;	// a unique number within a batch to distinguish the same items from each other
 	InvItem* item;
 	UINT8 charges;
 	UINT8 owner;	// The owner. Anything above DEATHLORD_PARTY_SIZE is the stash

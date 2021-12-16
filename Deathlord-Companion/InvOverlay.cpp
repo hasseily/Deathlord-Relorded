@@ -20,6 +20,7 @@ extern void SetSendKeystrokesToAppleWin(bool shouldSend);
 
 // Game data
 static InvManager* invMgr = InvManager::GetInstance();
+std::vector<InvInstance>m_invRows;	// all inventory instances for this slot
 static InventorySlots selectedSlot = InventorySlots::Melee;
 static InventorySlots highlightedSlot = InventorySlots::TOTAL;	// No highlight by default
 static EquipInteractableRect highlightedRect;	// Rect that is currently highlighted
@@ -92,7 +93,7 @@ bool InvOverlay::IsInvOverlayDisplayed()
 // Update the inventory state based on the game's data
 void InvOverlay::UpdateState()
 {
-
+	m_invRows = invMgr->AllInventoryInSlot(selectedSlot);
 }
 
 void InvOverlay::MousePosInPixels(int x, int y)
@@ -153,7 +154,32 @@ void InvOverlay::LeftMouseButtonClicked(int x, int y)
 	{
 		if (eiRect.eRect.Contains(mousePoint))
 		{
-			highlightedRect = eiRect;
+			InvInstance* _invI = &m_invRows.at(eiRect.eRow);
+			if (eiRect.eMember < DEATHLORD_PARTY_SIZE)	// give to a person
+			{
+				if (_invI->owner < DEATHLORD_PARTY_SIZE)
+				{
+					invMgr->ExchangeBetweeenPartyMembers(
+						_invI->owner,
+						eiRect.eMember,
+						selectedSlot
+					);
+				}
+				else
+				{
+					// exchange stash->person
+					invMgr->SwapStashWithPartyMember(
+						_invI->owner - DEATHLORD_PARTY_SIZE,	// the stash slot
+						eiRect.eMember,
+						selectedSlot
+					);
+				}
+			}
+			else // give to the stash
+			{
+				// if stash is full it will do nothing
+				invMgr->PutInStash(_invI->owner, selectedSlot);
+			}
 			return;
 		}
 	}
@@ -448,14 +474,12 @@ void InvOverlay::DrawInvOverlay(
 	m_currentItemInstance = 0;
 	xCol = innerRect.left;
 	yCol = invSlotsOriginY + 60 + invRowSpacing;
-	std::vector<InvInstance>invRows = invMgr->AllInventoryInSlot(selectedSlot);
-	for each (auto _row in invRows)
+	for each (auto _row in m_invRows)
 	{
 		DrawItem(&_row, spriteBatch, font, memberColWidth, xCol, yCol);
 		yCol += glyphHeight + invRowSpacing;
 		++m_currentItemInstance;
 	}
-	invRows.clear();
 	///// End Draw Inventory Rows
 
 	bIsDisplayed = true;

@@ -14,6 +14,16 @@ InvManager* InvManager::s_instance;
 
 constexpr UINT8 ITEM_CHARGES_OFFSET = 0x08;		// Charges == 0xFF by default
 
+
+// The comparator to always keep inventory instances static across movement between party members
+// Otherwise when we swap equipment the list reorders
+static bool compareInvInstance(InvInstance i1, InvInstance i2)
+{
+	if (i1.item->id == i2.item->id)
+		return (i1.extraIdentifier < i2.extraIdentifier);
+	return (i1.item->id < i2.item->id);
+}
+
 enum class InventoryHeaders {
 	id = 0,
 	slot, 
@@ -174,6 +184,7 @@ void InvManager::Initialize()
 	stash.at(1).first = 0x33;	// TODO: Remove this test thing
 }
 
+
 #pragma region Methods
 #pragma warning(push)
 #pragma warning(disable : 26451)
@@ -205,6 +216,20 @@ void InvManager::DeleteItem(InventorySlots slot, UINT8 stashPosition)
 	stash.at(stashPos).second = EMPTY_CHARGES_COUNT;
 }
 
+// Put in the stash in any available empty spot. Returns false if stash is full
+bool InvManager::PutInStash(UINT8 memberPosition, InventorySlots memberSlot)
+{
+	for (size_t i = 0; i < STASH_MAX_ITEMS_PER_SLOT; i++)
+	{
+		if (stash.at((STASH_MAX_ITEMS_PER_SLOT * (UINT8)memberSlot) + i).first == EMPTY_ITEM_ID)
+		{
+			SwapStashWithPartyMember(i, memberPosition, memberSlot);
+			return true;
+		}
+	}
+	return false;
+}
+
 // stash position is the position within the possible stash items for this inventory slot
 void InvManager::SwapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosition, InventorySlots memberSlot)
 {
@@ -215,7 +240,7 @@ void InvManager::SwapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosit
 	if ((UINT8)memberSlot >= DEATHLORD_INVENTORY_SLOTS)
 		return;
 
-	std::pair<UINT8,UINT8> theItem = stash.at(STASH_MAX_ITEMS_PER_SLOT* (UINT8)memberSlot + stashPosition);
+	std::pair<UINT8,UINT8>* theItem = &stash.at(STASH_MAX_ITEMS_PER_SLOT* (UINT8)memberSlot + stashPosition);
 	UINT8 otherItemId;
 	UINT8 otherItemCharges;
 	// Members' inventory takes up 0x20 in memory
@@ -224,24 +249,22 @@ void InvManager::SwapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosit
 	// Swap items
 	otherItemId = MemGetMainPtr(memberMemSlot)[0];
 	otherItemCharges = MemGetMainPtr(memberMemSlot)[ITEM_CHARGES_OFFSET];
-	MemGetMainPtr(memberMemSlot)[0] = theItem.first;
-	MemGetMainPtr(memberMemSlot)[ITEM_CHARGES_OFFSET] = theItem.second;
-	theItem.first = otherItemId;
-	theItem.second = otherItemCharges;
+	MemGetMainPtr(memberMemSlot)[0] = theItem->first;
+	MemGetMainPtr(memberMemSlot)[ITEM_CHARGES_OFFSET] = theItem->second;
+	theItem->first = otherItemId;
+	theItem->second = otherItemCharges;
 }
 
-void InvManager::ExchangeBetweeenPartyMembers(UINT8 m1Position, InventorySlots m1Slot, UINT8 m2Position, InventorySlots m2Slot)
+void InvManager::ExchangeBetweeenPartyMembers(UINT8 m1Position, UINT8 m2Position, InventorySlots mSlot)
 {
 	if (m1Position >= DEATHLORD_PARTY_SIZE)
 		return;
-	if ((UINT8)m1Slot >= DEATHLORD_INVENTORY_SLOTS)
-		return;
 	if (m2Position >= DEATHLORD_PARTY_SIZE)
 		return;
-	if ((UINT8)m2Slot >= DEATHLORD_INVENTORY_SLOTS)
+	if ((UINT8)mSlot >= DEATHLORD_INVENTORY_SLOTS)
 		return;
-	UINT16 m1MemSlot = PARTY_INVENTORY_START + m1Position * 0x20 + (UINT8)m1Slot;
-	UINT16 m2MemSlot = PARTY_INVENTORY_START + m2Position * 0x20 + (UINT8)m2Slot;
+	UINT16 m1MemSlot = PARTY_INVENTORY_START + m1Position * 0x20 + (UINT8)mSlot;
+	UINT16 m2MemSlot = PARTY_INVENTORY_START + m2Position * 0x20 + (UINT8)mSlot;
 
 	UINT8 tmpItemId = MemGetMainPtr(m1MemSlot)[0];
 	UINT8 tmpItemCharges = MemGetMainPtr(m1MemSlot)[ITEM_CHARGES_OFFSET];
@@ -261,6 +284,7 @@ InvItem* InvManager::ItemWithId(UINT8 itemId)
 std::vector<InvInstance> InvManager::AllInventoryInSlot(InventorySlots slot)
 {
 	std::vector<InvInstance> _currentInventory;
+	int extraId = 0;	// extraidentifier to properly sort items with the same id
 	// Get the party inventory for this slot
 	for (UINT8 i = 0; i < (DEATHLORD_PARTY_SIZE); i++)
 	{
@@ -269,6 +293,7 @@ std::vector<InvInstance> InvManager::AllInventoryInSlot(InventorySlots slot)
 		if (itemId == EMPTY_ITEM_ID)
 			continue;
 		InvInstance _inst;
+		_inst.extraIdentifier = extraId;
 		_inst.item = &itemList[MemGetMainPtr(idMemSlot)[0]];
 		_inst.charges = MemGetMainPtr(idMemSlot)[ITEM_CHARGES_OFFSET];
 		_inst.owner = i;
@@ -277,20 +302,24 @@ std::vector<InvInstance> InvManager::AllInventoryInSlot(InventorySlots slot)
 			(DeathlordRaces)MemGetMainPtr(PARTY_RACE_START)[i]
 		);
 		_currentInventory.push_back(_inst);
+		++extraId;
 	}
 	// Get the stash inventory
 	for (UINT8 i = 0; i < STASH_MAX_ITEMS_PER_SLOT; i++)
 	{
-		std::pair<UINT8, UINT8> theItem = stash.at(STASH_MAX_ITEMS_PER_SLOT * (UINT8)slot + i);
-		if (theItem.first == EMPTY_ITEM_ID)
+		std::pair<UINT8, UINT8>* theItem = &stash.at(STASH_MAX_ITEMS_PER_SLOT * (UINT8)slot + i);
+		if (theItem->first == EMPTY_ITEM_ID)
 			continue;
 		InvInstance _inst;
-		_inst.item = &itemList[theItem.first];
-		_inst.charges = theItem.second;
+		_inst.extraIdentifier = extraId;
+		_inst.item = &itemList[theItem->first];
+		_inst.charges = theItem->second;
 		_inst.owner = DEATHLORD_PARTY_SIZE + i;
 		_inst.equipped = false;
 		_currentInventory.push_back(_inst);
+		++extraId;
 	}
+	sort(_currentInventory.begin(), _currentInventory.end(), compareInvInstance);
 	return _currentInventory;
 }
 

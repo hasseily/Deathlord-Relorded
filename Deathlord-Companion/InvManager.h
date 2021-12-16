@@ -30,8 +30,9 @@ public:
 	UINT8 MaxItemsPerSlot();
 	std::vector<InvInstance> AllInventoryInSlot(InventorySlots slot);
 	void DeleteItem(InventorySlots slot, UINT8 stashPosition);
+	bool InvManager::PutInStash(UINT8 memberPosition, InventorySlots memberSlot);
 	void SwapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosition, InventorySlots memberSlot);
-	void ExchangeBetweeenPartyMembers(UINT8 m1Position, InventorySlots m1Slot, UINT8 m2Position, InventorySlots m2Slot);
+	void ExchangeBetweeenPartyMembers(UINT8 m1Position, UINT8 m2Position, InventorySlots mSlot);
 	InvItem* ItemWithId(UINT8 itemId);
 
 	// properties
