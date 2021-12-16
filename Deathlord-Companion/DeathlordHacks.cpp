@@ -262,29 +262,29 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 bool PartyLeaderIsOfClass(DeathlordClasses aClass)
 {
-	return (MemGetMainPtr(PARTY_CLASS_START + MemGetMainPtr(PARTY_CHAR_LEADER)[0])[0] == (UINT16)aClass);
+	return (MemGetMainPtr(PARTY_CLASS_START + MemGetMainPtr(PARTY_CHAR_LEADER)[0])[0] == (UINT8)aClass);
 }
 
 bool PartyLeaderIsOfClass(DeathlordClasses aClass1, DeathlordClasses aClass2)
 {
 	UINT8 classLeader = MemGetMainPtr(PARTY_CLASS_START + MemGetMainPtr(PARTY_CHAR_LEADER)[0])[0];
-	if (classLeader == (UINT16)aClass1)
+	if (classLeader == (UINT8)aClass1)
 		return true;
-	if (classLeader == (UINT16)aClass2)
+	if (classLeader == (UINT8)aClass2)
 		return true;
 	return false;
 }
 
 bool PartyLeaderIsOfRace(DeathlordRaces aRace)
 {
-	return (MemGetMainPtr(PARTY_RACE_START + MemGetMainPtr(PARTY_CHAR_LEADER)[0])[0] == (UINT16)aRace);
+	return (MemGetMainPtr(PARTY_RACE_START + MemGetMainPtr(PARTY_CHAR_LEADER)[0])[0] == (UINT8)aRace);
 }
 
 bool PartyHasClass(DeathlordClasses aClass)
 {
 	for (size_t i = 0; i < 6; i++)
 	{
-		if (MemGetMainPtr(PARTY_CLASS_START + i)[0] == (UINT16)aClass)
+		if (MemGetMainPtr(PARTY_CLASS_START + i)[0] == (UINT8)aClass)
 			return true;
 	}
 	return false;
@@ -294,9 +294,9 @@ bool PartyHasClass(DeathlordClasses aClass1, DeathlordClasses aClass2)
 {
 	for (size_t i = 0; i < 6; i++)
 	{
-		if (MemGetMainPtr(PARTY_CLASS_START + i)[0] == (UINT16)aClass1)
+		if (MemGetMainPtr(PARTY_CLASS_START + i)[0] == (UINT8)aClass1)
 			return true;
-		if (MemGetMainPtr(PARTY_CLASS_START + i)[0] == (UINT16)aClass2)
+		if (MemGetMainPtr(PARTY_CLASS_START + i)[0] == (UINT8)aClass2)
 			return true;
 	}
 	return false;
@@ -306,7 +306,7 @@ bool PartyHasRace(DeathlordRaces aRace)
 {
 	for (size_t i = 0; i < 6; i++)
 	{
-		if (MemGetMainPtr(PARTY_RACE_START + i)[0] == (UINT16)aRace)
+		if (MemGetMainPtr(PARTY_RACE_START + i)[0] == (UINT8)aRace)
 			return true;
 	}
 	return false;
@@ -315,17 +315,17 @@ bool PartyHasRace(DeathlordRaces aRace)
 std::string NameOfClass(DeathlordClasses aClass, bool inJapan)
 {
 	if (inJapan)
-		return DeathlordClassNamesJapan[(int)aClass];
+		return DeathlordClassNamesJapan[(UINT8)aClass];
 	else
-		return DeathlordClassNames[(int)aClass];
+		return DeathlordClassNames[(UINT8)aClass];
 }
 
 std::string NameOfRace(DeathlordRaces aRace, bool inJapan)
 {
 	if (inJapan)
-		return DeathlordRaceNamesJapan[(int)aRace];
+		return DeathlordRaceNamesJapan[(UINT8)aRace];
 	else
-		return DeathlordRaceNames[(int)aRace];
+		return DeathlordRaceNames[(UINT8)aRace];
 }
 
 std::string StringFromMemory(UINT16 startMem, UINT8 maxLength)
@@ -563,7 +563,6 @@ bool DeathlordHacks::RestoreScenarioImages()
 	std::wstring backupsDirPath;
 	std::wstring backupImageFullPath;
 	std::wstring images[2] = { g_nonVolatile.diskScenAPath, g_nonVolatile.diskScenBPath };
-	bool res;
 	DWORD err;
 
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_DISABLE_OLE1DDE);

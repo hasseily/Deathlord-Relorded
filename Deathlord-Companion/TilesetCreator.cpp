@@ -64,9 +64,6 @@ LPBYTE TilesetCreator::parseTilesInHGR2()
 	UINT8 tileByteSize = 2 * 16;   // 2 bytes in each of 16 lines
 	UINT8 tilesSentToHGR1 = 0;
 
-	LPBYTE _hgr1 = MemGetMainPtr(memPtrHGR1Base);
-	LPBYTE _hgr2 = MemGetMainPtr(memPtrHGR2Base);
-
 	UINT32 fbWidth = GetFrameBufferWidth();
 	UINT32 fbHeight = GetFrameBufferHeight();
 	UINT32 fbBorderLeft = GetFrameBufferBorderWidth();
@@ -325,7 +322,6 @@ void TilesetCreator::analyzeVisibleTiles(UINT8* pVisibleTiles)
 	if (!g_isInGameMap)
 		return;
 	UINT32 fbWidth = GetFrameBufferWidth();
-	UINT32 fbHeight = GetFrameBufferHeight();
 	UINT32 fbBorderLeft = GetFrameBufferBorderWidth();		// these are additional shifts to make the tiles align
 	UINT32 fbBorderTop = GetFrameBufferBorderHeight() + 16;	// these are additional shifts to make the tiles align
 	UINT32 iFBOriginByte;

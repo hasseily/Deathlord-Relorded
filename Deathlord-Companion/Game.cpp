@@ -159,7 +159,7 @@ D3D12_RESOURCE_DESC Game::ChooseTexture()
 		LPBYTE tsB = tileset->GetCurrentTilesetBuffer();
 		auto fbI = g_pFramebufferinfo->bmiHeader;
 		UINT64 lineByteWidth = MIN(pngW, fbI.biWidth) * sizeof(UINT32);
-		for (size_t h = 0; h < MIN(PNGBUFFERHEIGHT, fbI.biHeight) ; h++)
+		for (size_t h = 0; h < MIN(pngH, fbI.biHeight) ; h++)
 		{
 			memcpy_s(g_pFramebufferbits + (h * fbI.biWidth * sizeof(UINT32)), lineByteWidth,
 				tsB + (h * PNGBUFFERWIDTHB), lineByteWidth);
@@ -216,7 +216,7 @@ void Game::GetBaseSize(__out int& width, __out int& height) noexcept
     if (!g_nonVolatile.showMap)
         return;
 	width = width + MAP_WIDTH_IN_VIEWPORT;
-    UINT32 mapHeight = MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW;
+    int mapHeight = MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW;
 	if (height < mapHeight)
 		height = mapHeight;
 	return;

@@ -251,7 +251,6 @@ void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<Direct
 
 	std::shared_ptr<DeathlordHacks>hw = GetDeathlordHacks();
 	BYTE* tilesVisibleAroundAvatar = MemGetMainPtr(GAMEMAP_START_CURRENT_TILELIST);
-	UINT8 oldBufVal;
 	XMFLOAT2 spriteOrigin(0, 0);
 	UINT32 fbBorderLeft = GetFrameBufferBorderWidth();	// these are additional shifts to make the tiles align
 	UINT32 fbBorderTop = GetFrameBufferBorderHeight() + 16;	// these are additional shifts to make the tiles align
@@ -469,7 +468,8 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 	mapViewport.width *= _scale;
 	mapViewport.height *= _scale;
 	commandList->RSSetViewports(1, mapViewport.Get12());
-	commandList->RSSetScissorRects(1, &(RECT)mapScissorRect);
+	RECT mSRect = { mapScissorRect.x, mapScissorRect.y, mapScissorRect.x + mapScissorRect.width, mapScissorRect.y + mapScissorRect.height };
+	commandList->RSSetScissorRects(1, &mSRect);
 
 	if (bShowTransition)
 	{
@@ -550,7 +550,6 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 				
 				// The below shows the hidden items in the non-overland map,
 				// either when the player has encountered them, or when the player has enabled this cheat
-				auto memPtr = MemGetMainPtr(0);
 				if ((g_nonVolatile.showHidden || hasSeenHidden)
 					&& !PlayerIsOverland())
 				{
