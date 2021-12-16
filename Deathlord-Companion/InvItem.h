@@ -16,6 +16,8 @@ enum class InventorySlots
 	TOTAL
 };
 
+constexpr UINT8 EMPTY_ITEM_ID = 0xFF;
+
 class InvItem
 {
 public:

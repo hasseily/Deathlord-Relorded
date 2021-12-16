@@ -42,7 +42,7 @@ bool InvItem::canEquip(DeathlordClasses dlClass, DeathlordRaces dlRace)
 
 void InvItem::Initialize()
 {
-	id = 0;
+	id = EMPTY_ITEM_ID;
 	slot = InventorySlots::Melee;
 	classMask = 0;
 	raceMask = 0;
