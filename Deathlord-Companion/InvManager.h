@@ -7,6 +7,10 @@
 // It should also allow the player to change readied weaponry for party members
 
 constexpr UINT8 STASH_MAX_ITEMS_PER_SLOT = 2;
+constexpr UINT8 DEATHLORD_PARTY_SIZE = 6;
+constexpr UINT8 DEATHLORD_INVENTORY_SLOTS = 8;
+constexpr UINT8 EMPTY_ITEM_ID = 0xFF;
+constexpr UINT8 EMPTY_CHARGES_COUNT = 0xFF;		// Charges == 0x00 means infinite charges
 
 class InvManager	// Singleton
 {

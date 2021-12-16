@@ -12,10 +12,6 @@ namespace fs = std::filesystem;
 // below because "The declaration of a static data member in its class definition is not a definition"
 InvManager* InvManager::s_instance;
 
-constexpr UINT8 DEATHLORD_PARTY_SIZE = 6;
-constexpr UINT8 DEATHLORD_INVENTORY_SLOTS = 8;
-constexpr UINT8 EMPTY_ITEM_ID = 0xFF;
-constexpr UINT8 EMPTY_CHARGES_COUNT = 0xFF;		// Charges == 0x00 means infinite charges
 constexpr UINT8 ITEM_CHARGES_OFFSET = 0x08;		// Charges == 0xFF by default
 
 enum class InventoryHeaders {
