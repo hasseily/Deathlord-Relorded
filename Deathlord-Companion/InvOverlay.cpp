@@ -23,9 +23,12 @@ static InvManager* invMgr = InvManager::GetInstance();
 static InventorySlots selectedSlot = InventorySlots::Melee;
 static InventorySlots highlightedSlot = InventorySlots::TOTAL;	// No highlight by default
 static UINT8 partySize = 6;			// Also defined in InvManager.cpp
-static UINT8 glyphWidth = 7;		// Width of each glyph in pixels, including spacing
+
+// Drawing layout
+static UINT8 glyphWidth = 7;			// Width of each glyph in pixels, including spacing
 static UINT8 glyphHeight = 16;
-static UINT8 invRowSpacing = 12;	// Spacing between rows of the inventory
+static UINT8 invRowSpacing = 12;		// Spacing between rows of the inventory
+static int widthTabsArea = 720;			// Width the left tabs area
 
 // InvOverlay sprite sheet rectangles
 // It is split into 4 rows of 8 columns of 28x32 pixels
@@ -294,11 +297,11 @@ void InvOverlay::DrawInvOverlay(
 	char _invhBuf[200];
 	if (selectedSlot < InventorySlots::Chest)
 	{
-		sprintf_s(_invhBuf, 200, "%-18s  %s", "Name", "TH0    Damage    AC   Special");
+		sprintf_s(_invhBuf, 200, "%-20s  %s", "Name", "TH0    Damage    AC   Special");
 	}
 	else
 	{
-		sprintf_s(_invhBuf, 200, "%-18s   %s", "Name", "TH0   AC   Special");
+		sprintf_s(_invhBuf, 200, "%-20s   %s", "Name", "TH0   AC   Special");
 
 	}
 	font->DrawString(spriteBatch.get(), _invhBuf,
@@ -307,8 +310,8 @@ void InvOverlay::DrawInvOverlay(
 	///// End Draw Inventory Headers
 
 	///// Begin Draw Column Headers (party members)
-	int xCol = 700;		// x value at start of column drawing
-	int yCol = 0;		// y value of the start of drawing
+	int xCol = widthTabsArea;		// x value at start of column drawing
+	int yCol = innerRect.top;		// y value of the start of drawing
 	for (size_t iMember = 0; iMember < partySize; iMember++)
 	{
 		yCol = innerRect.top;
@@ -404,20 +407,10 @@ void InvOverlay::DrawInvOverlay(
 	///// Begin Draw Inventory Rows
 	xCol = innerRect.left;
 	yCol = invSlotsOriginY + 60 + invRowSpacing;
-	std::vector<std::pair<InvItem*, UINT8>>invRows = invMgr->AllInventoryInSlot(selectedSlot);
+	std::vector<InvInstance>invRows = invMgr->AllInventoryInSlot(selectedSlot);
 	for each (auto _row in invRows)
 	{
-		InvItem* _item = _row.first;
-		DrawItem(_item, _row.second, spriteBatch, font, &xCol, &yCol);
-		yCol += glyphHeight + invRowSpacing;
-	}
-	invRows.clear();
-	// Now do the stash rows
-	std::vector<std::pair<InvItem*, UINT8>>stashRows = invMgr->StashInSlot(selectedSlot);
-	for each (auto _row in stashRows)
-	{
-		InvItem* _item = _row.first;
-		DrawItem(_item, _row.second, spriteBatch, font, &xCol, &yCol);
+		DrawItem(&_row, spriteBatch, font, memberColWidth, xCol, yCol);
 		yCol += glyphHeight + invRowSpacing;
 	}
 	invRows.clear();
@@ -426,25 +419,41 @@ void InvOverlay::DrawInvOverlay(
 	bIsDisplayed = true;
 }
 
-void InvOverlay::DrawItem(InvItem* item, UINT8 charges, 
+void InvOverlay::DrawItem(InvInstance* pItemInstance, 
 	std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::SpriteFont* font,
-	int* xCol, int* yCol)
+	int memberColWidth, int xPos, int yPos)
 {
 	int stringHalfSpacing = 10;
 	int ctCols = 0;
 	char _spBuf[200];
+	// First draw the item info
+	InvItem* item = pItemInstance->item;
 	if (item->slot < InventorySlots::Chest)
 	{
-		sprintf_s(_spBuf, 200, "%-18s  %+d    %dx %2d-%-2d   %+d   %s", 
-			item->name.c_str(), item->thaco, item->numAttacks, item->damageMin, item->damageMax, item->ac, item->special.c_str());
+		if (pItemInstance->charges != 0xFF)
+			sprintf_s(_spBuf, 200, "%-14s (%03d)  %+d    %dx %2d-%-2d   %+d   %s",
+				item->name.c_str(), pItemInstance->charges, item->thaco, item->numAttacks, item->damageMin, item->damageMax, item->ac, item->special.c_str());
+		else
+			sprintf_s(_spBuf, 200, "%-20s  %+d    %dx %2d-%-2d   %+d   %s", 
+				item->name.c_str(), item->thaco, item->numAttacks, item->damageMin, item->damageMax, item->ac, item->special.c_str());
 	}
 	else
 	{
-		sprintf_s(_spBuf, 200, "%-18s   %+d    %+d   %s",
-			item->name.c_str(), item->thaco, item->ac, item->special.c_str());
+		if (pItemInstance->charges != 0xFF)
+			sprintf_s(_spBuf, 200, "%-14s (%03d)   %+d    %+d   %s",
+				item->name.c_str(), pItemInstance->charges, item->thaco, item->ac, item->special.c_str());
+		else
+			sprintf_s(_spBuf, 200, "%-20s   %+d    %+d   %s",
+				item->name.c_str(), item->thaco, item->ac, item->special.c_str());
 	}
 	font->DrawString(spriteBatch.get(), _spBuf,
-		Vector2(*xCol, *yCol),
+		Vector2(xPos, yPos),
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
+	// Finished drawing the item info. Now draw the equipped status
+	// Calculate the xpos of the first equipment status sprite. It is centered in the column
+	// The next ones will just be shifted by memberColWidth
+	int _xPos = widthTabsArea + (memberColWidth / 2) - (spRectInvWorn.right - spRectInvWorn.left / 2);
+
+
 }
 #pragma endregion

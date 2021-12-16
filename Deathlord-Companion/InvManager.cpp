@@ -260,37 +260,33 @@ InvItem* InvManager::ItemWithId(UINT8 itemId)
 	return nullptr;
 }
 
-std::vector<std::pair<InvItem*, UINT8>> InvManager::AllInventoryInSlot(InventorySlots slot)
+std::vector<InvInstance> InvManager::AllInventoryInSlot(InventorySlots slot)
 {
-	std::vector<std::pair<InvItem*, UINT8>> _currentInventory;
+	std::vector<InvInstance> _currentInventory;
 	// Get the party inventory for this slot
-	for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+	for (UINT8 i = 0; i < (DEATHLORD_PARTY_SIZE); i++)
 	{
 		UINT16 idMemSlot = PARTY_INVENTORY_START + i * 0x20 + (UINT8)slot;
-		std::pair<InvItem*, UINT8> _memberItem;
 		UINT8 itemId = MemGetMainPtr(idMemSlot)[0];
 		if (itemId == EMPTY_ITEM_ID)
 			continue;
-		_memberItem.first = &itemList[MemGetMainPtr(idMemSlot)[0]];
-		_memberItem.second = MemGetMainPtr(idMemSlot)[ITEM_CHARGES_OFFSET];
-		_currentInventory.push_back(_memberItem);
+		InvInstance _inst;
+		_inst.item = &itemList[MemGetMainPtr(idMemSlot)[0]];
+		_inst.charges = MemGetMainPtr(idMemSlot)[ITEM_CHARGES_OFFSET];
+		_inst.owner = i;
+		_currentInventory.push_back(_inst);
 	}
-	return _currentInventory;
-}
-
-std::vector<std::pair<InvItem*, UINT8>> InvManager::StashInSlot(InventorySlots slot)
-{
-	std::vector<std::pair<InvItem*, UINT8>> _currentInventory;
 	// Get the stash inventory
-	for (size_t i = 0; i < STASH_MAX_ITEMS_PER_SLOT; i++)
+	for (UINT8 i = 0; i < STASH_MAX_ITEMS_PER_SLOT; i++)
 	{
 		std::pair<UINT8, UINT8> theItem = stash.at(STASH_MAX_ITEMS_PER_SLOT * (UINT8)slot + i);
 		if (theItem.first == EMPTY_ITEM_ID)
 			continue;
-		std::pair<InvItem*, UINT8> _memberItem;
-		_memberItem.first = &itemList[theItem.first];
-		_memberItem.second = theItem.second;
-		_currentInventory.push_back(_memberItem);
+		InvInstance _inst;
+		_inst.item = &itemList[theItem.first];
+		_inst.charges = theItem.second;
+		_inst.owner = DEATHLORD_PARTY_SIZE + i;
+		_currentInventory.push_back(_inst);
 	}
 	return _currentInventory;
 }

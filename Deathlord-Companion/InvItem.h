@@ -47,3 +47,10 @@ private:
 		UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::string _special);
 };
 
+
+struct InvInstance
+{
+	InvItem* item;
+	UINT8 charges;
+	UINT8 owner;	// The owner. Anything above DEATHLORD_PARTY_SIZE is the stash
+};

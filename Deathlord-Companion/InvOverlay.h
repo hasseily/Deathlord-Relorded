@@ -48,7 +48,7 @@ public:
 	}
 private:
 	void Initialize();
-	void DrawItem(InvItem* item, UINT8 charges, std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::SpriteFont* font, int* xCol, int* yCol);
+	void DrawItem(InvInstance* pItemInstance, std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::SpriteFont* font, int memberColWidth, int xPos, int yPos);
 
 	static InvOverlay* s_instance;
 	bool bIsDisplayed;
