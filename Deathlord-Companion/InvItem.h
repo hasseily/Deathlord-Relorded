@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include "DeathlordHacks.h"
 
 enum class InventorySlots
 {
@@ -36,6 +37,7 @@ public:
 		std::string _name, INT8 _thaco, UINT8 _numAttacks,
 		UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::string _special);
 	void copyPropertiesFromItem(InvItem* item);
+	bool canEquip(DeathlordClasses dlClass, DeathlordRaces dlRace);
 
 private:
 	UINT8 count;
@@ -53,4 +55,5 @@ struct InvInstance
 	InvItem* item;
 	UINT8 charges;
 	UINT8 owner;	// The owner. Anything above DEATHLORD_PARTY_SIZE is the stash
+	bool equipped;	// If the owner has it equipped (i.e. can use it)
 };

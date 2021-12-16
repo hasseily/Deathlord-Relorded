@@ -38,8 +38,8 @@ static RECT spRectTrashClosed	= { 28 * 0, 32 * 2, 28 * 1, 32 * 3 };
 static RECT spRectTrashOpen		= { 28 * 1, 32 * 2, 28 * 2, 32 * 3 };
 static RECT spRectStash			= { 28 * 4, 32 * 2, 28 * 6, 32 * 3 };
 static RECT spRectInvEmpty		= { 28 * 0, 32 * 3, 28 * 1, 32 * 4 };
-static RECT spRectInvWorn		= { 28 * 1, 32 * 3, 28 * 2, 32 * 4 };
-static RECT spRectInvCarried	= { 28 * 2, 32 * 3, 28 * 3, 32 * 4 };
+static RECT spRectInvCarried	= { 28 * 1, 32 * 3, 28 * 2, 32 * 4 };
+static RECT spRectInvWorn		= { 28 * 2, 32 * 3, 28 * 3, 32 * 4 };
 
 static std::array<std::string, (int)InventorySlots::TOTAL>StringsInventorySlots =
 {
@@ -461,9 +461,12 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 		RECT rectSprite = spRectInvEmpty;
 		if (pItemInstance->owner == i)
 		{
-			// TODO: Check if Carried or Worn
-			spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
-				mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
+			if (pItemInstance->equipped)
+				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+					mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvWorn, Colors::White, 0.f, XMFLOAT2());
+			else
+				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+					mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
 		}
 
 		_xPos += memberColWidth;

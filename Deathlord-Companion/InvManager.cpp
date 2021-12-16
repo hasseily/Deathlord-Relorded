@@ -111,7 +111,7 @@ void InvManager::Initialize()
 			case InventoryHeaders::bitWiz:
 			case InventoryHeaders::bitIll:
 			case InventoryHeaders::bitPea:
-				try { item.classMask & (stoi(fields.at(i)) << (i - 2)); }
+				try { item.classMask = item.classMask | (stoi(fields.at(i)) << (i - 2)); }
 				catch (const std::exception&) { hasError = true; }
 				break;
 			case InventoryHeaders::raceMask:
@@ -270,6 +270,10 @@ std::vector<InvInstance> InvManager::AllInventoryInSlot(InventorySlots slot)
 		_inst.item = &itemList[MemGetMainPtr(idMemSlot)[0]];
 		_inst.charges = MemGetMainPtr(idMemSlot)[ITEM_CHARGES_OFFSET];
 		_inst.owner = i;
+		_inst.equipped = _inst.item->canEquip(
+			(DeathlordClasses)MemGetMainPtr(PARTY_CLASS_START)[i], 
+			(DeathlordRaces)MemGetMainPtr(PARTY_RACE_START)[i]
+		);
 		_currentInventory.push_back(_inst);
 	}
 	// Get the stash inventory
@@ -282,6 +286,7 @@ std::vector<InvInstance> InvManager::AllInventoryInSlot(InventorySlots slot)
 		_inst.item = &itemList[theItem.first];
 		_inst.charges = theItem.second;
 		_inst.owner = DEATHLORD_PARTY_SIZE + i;
+		_inst.equipped = false;
 		_currentInventory.push_back(_inst);
 	}
 	return _currentInventory;

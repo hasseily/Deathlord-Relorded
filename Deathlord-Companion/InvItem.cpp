@@ -33,6 +33,13 @@ void InvItem::copyPropertiesFromItem(InvItem* item)
 	special = item->special;
 }
 
+bool InvItem::canEquip(DeathlordClasses dlClass, DeathlordRaces dlRace)
+{
+	int classOK = (1 << (UINT8)dlClass) & classMask;
+	int raceOK = (1 << (UINT8)dlRace) & raceMask;
+	return (classOK && raceOK);
+}
+
 void InvItem::Initialize()
 {
 	id = 0;

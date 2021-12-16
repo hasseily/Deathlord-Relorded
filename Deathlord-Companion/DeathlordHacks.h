@@ -95,7 +95,7 @@ enum class DeathlordClasses		// in memory at 0xFD60-0xFD65
 	Barbarian,
 	Berzerker,
 	Samurai,
-	Brute,
+	DarkKnight,
 	Thief,
 	Assassin,
 	Ninja,
