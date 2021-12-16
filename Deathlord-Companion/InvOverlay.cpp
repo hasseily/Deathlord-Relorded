@@ -22,6 +22,8 @@ extern void SetSendKeystrokesToAppleWin(bool shouldSend);
 static InvManager* invMgr = InvManager::GetInstance();
 static InventorySlots selectedSlot = InventorySlots::Melee;
 static InventorySlots highlightedSlot = InventorySlots::TOTAL;	// No highlight by default
+static EquipInteractableRect highlightedRect;	// Rect that is currently highlighted
+static EquipInteractableRect nohighlightsRect;	// When there are no highlights, highlightedRect == nohighlightsRect
 static UINT8 partySize = 6;			// Also defined in InvManager.cpp
 
 // Drawing layout
@@ -49,6 +51,7 @@ static std::array<std::string, (int)InventorySlots::TOTAL>StringsInventorySlots 
 // Interactable shapes for the overlay
 static std::vector<SimpleMath::Rectangle>slotsTabsRects;
 
+
 #pragma region utils
 
 inline int PaddingToCenterString(UINT8 maxStringLength, UINT8 stringLength)
@@ -63,6 +66,7 @@ void InvOverlay::Initialize()
 {
 	bIsDisplayed = false;
 	m_currentRect = { 0,0,0,0 };
+	m_currentItemInstance = 0;
 }
 
 void InvOverlay::ShowInvOverlay()
@@ -105,10 +109,27 @@ void InvOverlay::MousePosInPixels(int x, int y)
 		if (iRect.Contains(mousePoint))
 		{
 			highlightedSlot = (InventorySlots)iSlot;
-			break;
+			return;
 		}
 		iSlot++;
 	}
+	for each (auto& eiRect in v_eIRects)
+	{
+		if (eiRect.eRect.Contains(mousePoint))
+		{
+			highlightedRect = eiRect;
+			return;
+		}
+	}
+	for each (auto & trashiRect in v_trashIRects)
+	{
+		if (trashiRect.eRect.Contains(mousePoint))
+		{
+			highlightedRect = trashiRect;
+			return;
+		}
+	}
+	highlightedRect = nohighlightsRect;
 }
 
 void InvOverlay::LeftMouseButtonClicked(int x, int y)
@@ -124,9 +145,25 @@ void InvOverlay::LeftMouseButtonClicked(int x, int y)
 		if (iRect.Contains(mousePoint))
 		{
 			selectedSlot = (InventorySlots)iSlot;
-			break;
+			return;
 		}
 		iSlot++;
+	}
+	for each (auto & eiRect in v_eIRects)
+	{
+		if (eiRect.eRect.Contains(mousePoint))
+		{
+			highlightedRect = eiRect;
+			return;
+		}
+	}
+	for each (auto & trashiRect in v_trashIRects)
+	{
+		if (trashiRect.eRect.Contains(mousePoint))
+		{
+			invMgr->DeleteItem(selectedSlot, trashiRect.eMember - DEATHLORD_PARTY_SIZE);
+			return;
+		}
 	}
 }
 
@@ -183,6 +220,9 @@ void InvOverlay::DrawInvOverlay(
 
 	float invSlotsOriginX = innerRect.left;			// beginning of inventory slots
 	float invSlotsOriginY = innerRect.top + 90.f;
+
+	v_eIRects.clear();
+	v_trashIRects.clear();
 
 	///// Begin Draw Border (2 quads, the black one 10px smaller per side for a 5px thickness
 	primitiveBatch->DrawQuad(
@@ -405,6 +445,7 @@ void InvOverlay::DrawInvOverlay(
 	///// End Draw Column Headers (stash)
 
 	///// Begin Draw Inventory Rows
+	m_currentItemInstance = 0;
 	xCol = innerRect.left;
 	yCol = invSlotsOriginY + 60 + invRowSpacing;
 	std::vector<InvInstance>invRows = invMgr->AllInventoryInSlot(selectedSlot);
@@ -412,6 +453,7 @@ void InvOverlay::DrawInvOverlay(
 	{
 		DrawItem(&_row, spriteBatch, font, memberColWidth, xCol, yCol);
 		yCol += glyphHeight + invRowSpacing;
+		++m_currentItemInstance;
 	}
 	invRows.clear();
 	///// End Draw Inventory Rows
@@ -466,23 +508,88 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 					mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
 		}
-
+		else // set up highlighting to do something with the button when the item not equipped for this party member
+		{
+			bool isHighlighted = true;
+			isHighlighted = isHighlighted && (highlightedRect.eSlot == pItemInstance->item->slot);
+			isHighlighted = isHighlighted && (highlightedRect.eRow == m_currentItemInstance);
+			isHighlighted = isHighlighted && (highlightedRect.eMember == i);
+			if (isHighlighted)
+			{
+				if (pItemInstance->item->canEquip(
+					(DeathlordClasses)MemGetMainPtr(PARTY_CLASS_START)[i],
+					(DeathlordRaces)MemGetMainPtr(PARTY_RACE_START)[i])
+					)
+					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+						mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvWorn, Colors::White, 0.f, XMFLOAT2());
+				else
+					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+						mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
+			}
+		}
+		// Tell the system we have an equipment button
+		EquipInteractableRect _aEIR;
+		_aEIR.eRect = { _xPos + 5, yPos, 18, 18 };	// size of the square + 1
+		_aEIR.eRow = m_currentItemInstance;
+		_aEIR.eSlot = pItemInstance->item->slot;
+		_aEIR.eMember = i;
+		_aEIR.isTrash = false;
+		v_eIRects.push_back(_aEIR);
 		_xPos += memberColWidth;
 	}
 	// Now the stash
 	_xPos += 16;	// the width of the vertical bar
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 		mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvEmpty, Colors::White, 0.f, XMFLOAT2());
-	for (UINT8 i = 0; i < STASH_MAX_ITEMS_PER_SLOT; i++)
+
+	EquipInteractableRect _aEIR;
+	_aEIR.eRect = { _xPos + 5, yPos, 18, 18 };	// size of the square + 1
+	_aEIR.eRow = m_currentItemInstance;
+	_aEIR.eSlot = pItemInstance->item->slot;
+	_aEIR.eMember = DEATHLORD_PARTY_SIZE;	// The "member" is the stash
+	_aEIR.isTrash = false;
+	v_eIRects.push_back(_aEIR);
+	for (UINT8 i = DEATHLORD_PARTY_SIZE; i < (DEATHLORD_PARTY_SIZE + STASH_MAX_ITEMS_PER_SLOT); i++)
 	{
-		if (pItemInstance->owner == i + DEATHLORD_PARTY_SIZE)
+		if (pItemInstance->owner == i)
 		{
 			spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 				mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
 			_xPos += 40;
-			spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
-				mmSSTextureSize, XMFLOAT2(_xPos, yPos - 5), &spRectTrashClosed, Colors::White, 0.f, XMFLOAT2());
-			break;
+			// Here draw the open trash when highlighted, otherwise closed trash
+			bool isHighlighted = true;
+			isHighlighted = isHighlighted && (highlightedRect.eSlot == pItemInstance->item->slot);
+			isHighlighted = isHighlighted && (highlightedRect.eRow == m_currentItemInstance);
+			isHighlighted = isHighlighted && (highlightedRect.eMember == i);
+			isHighlighted = isHighlighted && highlightedRect.isTrash;
+			if (isHighlighted)
+				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+					mmSSTextureSize, XMFLOAT2(_xPos, yPos - 5), &spRectTrashOpen, Colors::White, 0.f, XMFLOAT2());
+			else
+				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+					mmSSTextureSize, XMFLOAT2(_xPos, yPos - 5), &spRectTrashClosed, Colors::White, 0.f, XMFLOAT2());
+			// And tell the system we have a trash button
+			EquipInteractableRect _aTrashIR;
+			_aTrashIR.eRect = { _xPos, yPos, 16, 22 };	// trash icon
+			_aTrashIR.eRow = m_currentItemInstance;
+			_aTrashIR.eSlot = pItemInstance->item->slot;
+			_aTrashIR.eMember = i;
+			_aTrashIR.isTrash = true;
+			v_trashIRects.push_back(_aTrashIR);
+			break;	// Need to break here because the stash is unique in that it's one "member" with multiple inventory instances
+		}
+		else
+		{
+				// highlight the equipment button on the stash when the equipment isn't in the stash
+			bool isHighlighted = true;
+			isHighlighted = isHighlighted && (highlightedRect.eSlot == pItemInstance->item->slot);
+			isHighlighted = isHighlighted && (highlightedRect.eRow == m_currentItemInstance);
+			isHighlighted = isHighlighted && (highlightedRect.eMember == DEATHLORD_PARTY_SIZE);
+			if (isHighlighted)
+			{
+				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+					mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
+			}
 		}
 	}
 

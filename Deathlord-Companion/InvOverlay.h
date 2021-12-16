@@ -8,6 +8,15 @@
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
+struct EquipInteractableRect
+{
+	SimpleMath::Rectangle eRect = SimpleMath::Rectangle();
+	InventorySlots eSlot = InventorySlots::TOTAL;
+	UINT8 eRow = 0xFF;
+	UINT8 eMember = 0xFF;
+	bool isTrash = false;
+};
+
 class InvOverlay	// Singleton
 {
 public:
@@ -53,6 +62,9 @@ private:
 	static InvOverlay* s_instance;
 	bool bIsDisplayed;
 	RECT m_currentRect;	// Rect of the overlay
+	std::vector<EquipInteractableRect>v_eIRects;		// equipment interactable buttons
+	std::vector<EquipInteractableRect>v_trashIRects;	// equipment trash buttons
+	UINT8 m_currentItemInstance;	// Row in use
 
 	InvOverlay(std::unique_ptr<DX::DeviceResources>& deviceResources,
 		std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)
