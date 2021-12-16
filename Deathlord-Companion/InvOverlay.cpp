@@ -27,7 +27,7 @@ static UINT8 partySize = 6;			// Also defined in InvManager.cpp
 // Drawing layout
 static UINT8 glyphWidth = 7;			// Width of each glyph in pixels, including spacing
 static UINT8 glyphHeight = 16;
-static UINT8 invRowSpacing = 12;		// Spacing between rows of the inventory
+static UINT8 invRowSpacing = 14;		// Spacing between rows of the inventory
 static int widthTabsArea = 720;			// Width the left tabs area
 
 // InvOverlay sprite sheet rectangles
@@ -169,10 +169,10 @@ void InvOverlay::DrawInvOverlay(
 
 	auto gamePtr = GetGamePtr();
 	auto font = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular);
-	int lineThickness = 3;	// Will be drawn as quads
-	int borderPadding = 20;	// Empty Pixels inside the border
-	int maxGlyphs = 12;						// Max number of glyphs in the column
-	int memberColWidth = maxGlyphs * glyphWidth;	// Column width for party members
+	UINT8 lineThickness = 3;	// Will be drawn as quads
+	UINT8 borderPadding = 20;	// Empty Pixels inside the border
+	UINT8 maxGlyphs = 12;						// Max number of glyphs in the column
+	UINT16 memberColWidth = maxGlyphs * glyphWidth;	// Column width for party members
 	std::string _bufStr;
 
 	RECT innerRect = {		// The inner rect after padding has been applied
@@ -423,8 +423,6 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 	std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::SpriteFont* font,
 	int memberColWidth, int xPos, int yPos)
 {
-	int stringHalfSpacing = 10;
-	int ctCols = 0;
 	char _spBuf[200];
 	// First draw the item info
 	InvItem* item = pItemInstance->item;
@@ -432,10 +430,10 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 	{
 		if (pItemInstance->charges != EMPTY_CHARGES_COUNT)
 			sprintf_s(_spBuf, 200, "%-14s (%03d)  %+d    %dx %2d-%-2d   %+d   %s",
-				item->name.c_str(), pItemInstance->charges, item->thaco, item->numAttacks, item->damageMin, item->damageMax, item->ac, item->special.c_str());
+				item->name.c_str(), pItemInstance->charges, item->thaco, item->numAttacks, item->damageMin, item->damageMax, -1 * item->ac, item->special.c_str());
 		else
 			sprintf_s(_spBuf, 200, "%-20s  %+d    %dx %2d-%-2d   %+d   %s", 
-				item->name.c_str(), item->thaco, item->numAttacks, item->damageMin, item->damageMax, item->ac, item->special.c_str());
+				item->name.c_str(), item->thaco, item->numAttacks, item->damageMin, item->damageMax, -1 * item->ac, item->special.c_str());
 	}
 	else
 	{
@@ -470,6 +468,22 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 		}
 
 		_xPos += memberColWidth;
+	}
+	// Now the stash
+	_xPos += 16;	// the width of the vertical bar
+	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+		mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvEmpty, Colors::White, 0.f, XMFLOAT2());
+	for (UINT8 i = 0; i < STASH_MAX_ITEMS_PER_SLOT; i++)
+	{
+		if (pItemInstance->owner == i + DEATHLORD_PARTY_SIZE)
+		{
+			spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+				mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
+			_xPos += 40;
+			spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+				mmSSTextureSize, XMFLOAT2(_xPos, yPos - 5), &spRectTrashClosed, Colors::White, 0.f, XMFLOAT2());
+			break;
+		}
 	}
 
 }
