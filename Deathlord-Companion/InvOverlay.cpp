@@ -32,8 +32,8 @@ static UINT8 invRowSpacing = 12;	// Spacing between rows of the inventory
 // The player sprites are the first 2 rows.
 // The last 2 rows are the other sprites which span 2 cols each
 static RECT spRectTrashClosed	= { 28 * 0, 32 * 2, 28 * 2, 32 * 3 };
-static RECT spRectTrashOpen	= { 28 * 2, 32 * 2, 28 * 4, 32 * 3 };
-static RECT spRectStash		= { 28 * 4, 32 * 2, 28 * 6, 32 * 3 };
+static RECT spRectTrashOpen		= { 28 * 2, 32 * 2, 28 * 4, 32 * 3 };
+static RECT spRectStash			= { 28 * 4, 32 * 2, 28 * 6, 32 * 3 };
 static RECT spRectInvEmpty		= { 28 * 0, 32 * 3, 28 * 2, 32 * 4 };
 static RECT spRectInvWorn		= { 28 * 2, 32 * 3, 28 * 4, 32 * 4 };
 static RECT spRectInvCarried	= { 28 * 4, 32 * 3, 28 * 6, 32 * 4 };
@@ -373,6 +373,7 @@ void InvOverlay::DrawInvOverlay(
 	///// End Draw Column Headers (party members)
 
 	///// Begin Draw Column Headers (stash)
+	// Here we're drawing backwards because we have the yCol pointer already set to the last row
 	UINT8 _maxStashItems = invMgr->MaxItemsPerSlot();
 	UINT8 _currentItems = invMgr->StashSlotCount(selectedSlot);
 	xCol = innerRect.right - memberColWidth;
@@ -394,6 +395,10 @@ void InvOverlay::DrawInvOverlay(
 	font->DrawString(spriteBatch.get(), _bufStr.c_str(),
 		Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
+	// Finally draw the icon
+	yCol -= spRectStash.bottom - spRectStash.top + 5;
+	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+		mmSSTextureSize, XMFLOAT2(xCol + (memberColWidth - 28*2) / 2, yCol), &spRectStash, Colors::White, 0.f, XMFLOAT2());
 	///// End Draw Column Headers (stash)
 
 	///// Begin Draw Inventory Rows
