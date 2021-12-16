@@ -3,6 +3,7 @@
 #include "DeviceResources.h"
 #include <array>
 #include <string>
+#include "InvItem.h"
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -47,6 +48,7 @@ public:
 	}
 private:
 	void Initialize();
+	void DrawItem(InvItem* item, UINT8 charges, std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::SpriteFont* font, int* xCol, int* yCol);
 
 	static InvOverlay* s_instance;
 	bool bIsDisplayed;
@@ -59,7 +61,6 @@ private:
 		m_resourceDescriptors = resourceDescriptors.get();
 		Initialize();
 	}
-
 	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_invOverlaySpriteSheet;

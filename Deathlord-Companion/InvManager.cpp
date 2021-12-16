@@ -37,7 +37,6 @@ enum class InventoryHeaders {
 	bitWiz,
 	bitIll,
 	bitPea,
-	classMask,
 	raceMask,
 	name,
 	thaco,
@@ -65,6 +64,7 @@ void InvManager::Initialize()
 	int lineIdx = 0;
 	for (std::string line; std::getline(ifs, line); )
 	{
+		fields.clear();
 		stringstream ss(line);
 		while (getline(ss, s, ',')) {
 			if (lineIdx == 0)
@@ -73,24 +73,30 @@ void InvManager::Initialize()
 				fields.push_back(s);
 		}
 		if (lineIdx == 0)	// header, do nothing
-			continue;
-		bool hasError = false;
-		if (fields.size() != (int)InventoryHeaders::COUNT)
 		{
-			hasError = true;
+			lineIdx++;
 			continue;
 		}
+		bool hasError = false;
+		/*
+		if (fields.size() < ((int)InventoryHeaders::COUNT - 1))		// the last "special" field can be empty
+		{
+			hasError = true;
+			lineIdx++;
+			continue;
+		}
+		*/
 		InvItem item;
 		for (size_t i = 0; i < fields.size(); i++)
 		{
 			switch ((InventoryHeaders)i)
 			{
 			case InventoryHeaders::id:
-				try { item.id = stoi(fields.at(i)); }
+				try { item.id = stoi(fields.at(i), 0, 16); }
 				catch (const std::exception&) { hasError = true; }
 				break;
 			case InventoryHeaders::slot:
-				try { item.slot = stoi(fields.at(i)); }
+				try { item.slot = (InventorySlots)stoi(fields.at(i)); }
 				catch (const std::exception&) { hasError = true; }
 				break;
 			case InventoryHeaders::bitFig:
@@ -109,11 +115,7 @@ void InvManager::Initialize()
 			case InventoryHeaders::bitWiz:
 			case InventoryHeaders::bitIll:
 			case InventoryHeaders::bitPea:
-				try { item.equipMask& (stoi(fields.at(i)) << (i - 2)); }
-				catch (const std::exception&) { hasError = true; }
-				break;
-			case InventoryHeaders::classMask:
-				try { item.classMask = stoi(fields.at(i)); }
+				try { item.classMask & (stoi(fields.at(i)) << (i - 2)); }
 				catch (const std::exception&) { hasError = true; }
 				break;
 			case InventoryHeaders::raceMask:
@@ -156,6 +158,10 @@ void InvManager::Initialize()
 		{
 			char _buf[100];
 			sprintf_s(_buf, 100, "Error loading line %.04d: %s\n", lineIdx, line.c_str());
+			MessageBoxA(HWND_TOP,
+				_buf,
+				"Inventory Data Parser Error",
+				MB_ICONEXCLAMATION | MB_SETFOREGROUND);
 		}
 		else {
 			itemList[item.id] = item;
@@ -252,6 +258,41 @@ InvItem* InvManager::ItemWithId(UINT8 itemId)
 	if (itemList.find(itemId) != itemList.end())
 		return &itemList[itemId];
 	return nullptr;
+}
+
+std::vector<std::pair<InvItem*, UINT8>> InvManager::AllInventoryInSlot(InventorySlots slot)
+{
+	std::vector<std::pair<InvItem*, UINT8>> _currentInventory;
+	// Get the party inventory for this slot
+	for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+	{
+		UINT16 idMemSlot = PARTY_INVENTORY_START + i * 0x20 + (UINT8)slot;
+		std::pair<InvItem*, UINT8> _memberItem;
+		UINT8 itemId = MemGetMainPtr(idMemSlot)[0];
+		if (itemId == EMPTY_ITEM_ID)
+			continue;
+		_memberItem.first = &itemList[MemGetMainPtr(idMemSlot)[0]];
+		_memberItem.second = MemGetMainPtr(idMemSlot)[ITEM_CHARGES_OFFSET];
+		_currentInventory.push_back(_memberItem);
+	}
+	return _currentInventory;
+}
+
+std::vector<std::pair<InvItem*, UINT8>> InvManager::StashInSlot(InventorySlots slot)
+{
+	std::vector<std::pair<InvItem*, UINT8>> _currentInventory;
+	// Get the stash inventory
+	for (size_t i = 0; i < STASH_MAX_ITEMS_PER_SLOT; i++)
+	{
+		std::pair<UINT8, UINT8> theItem = stash.at(STASH_MAX_ITEMS_PER_SLOT * (UINT8)slot + i);
+		if (theItem.first == EMPTY_ITEM_ID)
+			continue;
+		std::pair<InvItem*, UINT8> _memberItem;
+		_memberItem.first = &itemList[theItem.first];
+		_memberItem.second = theItem.second;
+		_currentInventory.push_back(_memberItem);
+	}
+	return _currentInventory;
 }
 
 #pragma warning(pop)

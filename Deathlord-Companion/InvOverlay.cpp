@@ -22,9 +22,10 @@ extern void SetSendKeystrokesToAppleWin(bool shouldSend);
 static InvManager* invMgr = InvManager::GetInstance();
 static InventorySlots selectedSlot = InventorySlots::Melee;
 static InventorySlots highlightedSlot = InventorySlots::TOTAL;	// No highlight by default
-static UINT8 partySize = 6;		// Also defined in InvManager.cpp
+static UINT8 partySize = 6;			// Also defined in InvManager.cpp
 static UINT8 glyphWidth = 7;		// Width of each glyph in pixels, including spacing
 static UINT8 glyphHeight = 16;
+static UINT8 invRowSpacing = 12;	// Spacing between rows of the inventory
 
 // InvOverlay sprite sheet rectangles
 // It is split into 4 rows of 8 columns of 28x32 pixels
@@ -41,17 +42,6 @@ static std::array<std::string, (int)InventorySlots::TOTAL>StringsInventorySlots 
 {
 	"MELEE", "RANGED", "CHEST", "SHIELD", "MISC", "JEWELRY", "TOOL", "SCROLL"
 };
-static std::array<std::string, 5>StringsHeadersWeapons =
-{
-	"Name", "TH0", "Damage", "AC", "Special"
-};
-static std::array<int, 5>WidthHeadersWeapons = { 140, 20, 70, 20, 200 };
-static std::array<std::string, 5>StringsHeadersOther =
-{
-	"Name", "TH0", "AC", "Special", ""
-};
-static std::array<int, 5>WidthHeadersOthers = { 140, 20, 20, 200, 0 };
-
 
 // Interactable shapes for the overlay
 static std::vector<SimpleMath::Rectangle>slotsTabsRects;
@@ -164,7 +154,7 @@ void InvOverlay::DrawInvOverlay(
 	std::shared_ptr<DirectX::PrimitiveBatch<VertexPositionColor>>& primitiveBatch, 
 	RECT* overlayRect)
 {
-	auto mmBGTexSize = DirectX::XMUINT2(1300, 600);
+	auto mmBGTexSize = DirectX::XMUINT2(1150, 600);
 	auto mmSSTextureSize = GetTextureSize(m_invOverlaySpriteSheet.Get());
 	auto commandList = m_deviceResources->GetCommandList();
 	SimpleMath::Rectangle overlayScissorRect(*overlayRect);
@@ -178,7 +168,8 @@ void InvOverlay::DrawInvOverlay(
 	auto font = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular);
 	int lineThickness = 3;	// Will be drawn as quads
 	int borderPadding = 20;	// Empty Pixels inside the border
-	int invMemberColWidth = 150;	// column width for each party member (and stash)
+	int maxGlyphs = 12;						// Max number of glyphs in the column
+	int memberColWidth = maxGlyphs * glyphWidth;	// Column width for party members
 	std::string _bufStr;
 
 	RECT innerRect = {		// The inner rect after padding has been applied
@@ -213,10 +204,10 @@ void InvOverlay::DrawInvOverlay(
 		VertexPositionColor(XMFLOAT3(innerRect.left,	invSlotsOriginY + 60 + lineThickness, 0),	ColorAmber)
 	);
 	primitiveBatch->DrawQuad(
-		VertexPositionColor(XMFLOAT3(innerRect.right - invMemberColWidth,					innerRect.top, 0),		ColorAmber),
-		VertexPositionColor(XMFLOAT3(innerRect.right - invMemberColWidth + lineThickness,	innerRect.top, 0),		ColorAmber),
-		VertexPositionColor(XMFLOAT3(innerRect.right - invMemberColWidth + lineThickness,	innerRect.bottom, 0),	ColorAmber),
-		VertexPositionColor(XMFLOAT3(innerRect.right - invMemberColWidth,					innerRect.bottom, 0),	ColorAmber)
+		VertexPositionColor(XMFLOAT3(innerRect.right - memberColWidth,					innerRect.top, 0),		ColorAmber),
+		VertexPositionColor(XMFLOAT3(innerRect.right - memberColWidth + lineThickness,	innerRect.top, 0),		ColorAmber),
+		VertexPositionColor(XMFLOAT3(innerRect.right - memberColWidth + lineThickness,	innerRect.bottom, 0),	ColorAmber),
+		VertexPositionColor(XMFLOAT3(innerRect.right - memberColWidth,					innerRect.bottom, 0),	ColorAmber)
 	);
 	///// End Draw crossed lines
 	
@@ -300,38 +291,24 @@ void InvOverlay::DrawInvOverlay(
 	///// End Draw inventory slots tabs
 
 	///// Begin Draw Inventory Headers
-	int iCol = 0;
-	int ctCols = 0;
-	int colBegin = invSlotsOriginX;
-	int rowBegin = invSlotsOriginY + 40;
-	std::array<std::string, 5>stringsHeaders;
-	std::array<int, 5>widthHeaders;
+	char _invhBuf[200];
 	if (selectedSlot < InventorySlots::Chest)
 	{
-		stringsHeaders = StringsHeadersWeapons;
-		widthHeaders = WidthHeadersWeapons;
-		ctCols = 5;
+		sprintf_s(_invhBuf, 200, "%-18s  %s", "Name", "TH0    Damage    AC   Special");
 	}
 	else
 	{
-		stringsHeaders = StringsHeadersOther;
-		widthHeaders = WidthHeadersOthers;
-		ctCols = 4;
+		sprintf_s(_invhBuf, 200, "%-18s   %s", "Name", "TH0   AC   Special");
+
 	}
-	for (size_t i = 0; i < ctCols; i++)
-	{
-		font->DrawString(spriteBatch.get(), stringsHeaders[i].c_str(),
-			Vector2(colBegin, rowBegin),
-			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
-		colBegin += widthHeaders[i] + stringHalfSpacing;
-	}
+	font->DrawString(spriteBatch.get(), _invhBuf,
+		Vector2(invSlotsOriginX, invSlotsOriginY + 40),
+		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 	///// End Draw Inventory Headers
 
 	///// Begin Draw Column Headers (party members)
 	int xCol = 700;		// x value at start of column drawing
 	int yCol = 0;		// y value of the start of drawing
-	int maxGlyphs = 12;	// Max number of glyphs in the column
-	int colWidth = maxGlyphs * glyphWidth;	// Column width for party members
 	for (size_t iMember = 0; iMember < partySize; iMember++)
 	{
 		yCol = innerRect.top;
@@ -341,7 +318,7 @@ void InvOverlay::DrawInvOverlay(
 		int memberTop = 32 *(memberClass / 8);
 		RECT memberSpriteRect = { memberLeft, memberTop, memberLeft + 28, memberTop + 32 };
 		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
-			mmSSTextureSize, XMFLOAT2(xCol + (colWidth - 28)/2, yCol), &memberSpriteRect, Colors::White, 0.f, XMFLOAT2());
+			mmSSTextureSize, XMFLOAT2(xCol + (memberColWidth - 28)/2, yCol), &memberSpriteRect, Colors::White, 0.f, XMFLOAT2());
 		// Then draw the member name, class, race and AC
 		yCol += 32 + 5;
 		_bufStr = StringFromMemory(PARTY_NAME_START + (iMember * 0x09), maxGlyphs);
@@ -370,8 +347,8 @@ void InvOverlay::DrawInvOverlay(
 		yCol += glyphHeight + 10;
 		primitiveBatch->DrawQuad(
 			VertexPositionColor(XMFLOAT3(xCol + 2,				yCol, 0), ColorAmber),
-			VertexPositionColor(XMFLOAT3(xCol + colWidth - 2,	yCol, 0), ColorAmber),
-			VertexPositionColor(XMFLOAT3(xCol + colWidth - 2,	yCol + glyphHeight + 4, 0), ColorAmber),
+			VertexPositionColor(XMFLOAT3(xCol + memberColWidth - 2,	yCol, 0), ColorAmber),
+			VertexPositionColor(XMFLOAT3(xCol + memberColWidth - 2,	yCol + glyphHeight + 4, 0), ColorAmber),
 			VertexPositionColor(XMFLOAT3(xCol + 2,				yCol + glyphHeight + 4, 0), ColorAmber)
 		);
 		yCol += 2;
@@ -391,14 +368,14 @@ void InvOverlay::DrawInvOverlay(
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 
-		xCol += colWidth;
+		xCol += memberColWidth;
 	}
 	///// End Draw Column Headers (party members)
 
 	///// Begin Draw Column Headers (stash)
 	UINT8 _maxStashItems = invMgr->MaxItemsPerSlot();
 	UINT8 _currentItems = invMgr->StashSlotCount(selectedSlot);
-	xCol = innerRect.right - invMemberColWidth;
+	xCol = innerRect.right - memberColWidth;
 	// yCol is still aligned with the readied status text
 	if (_currentItems == _maxStashItems)
 	{
@@ -419,7 +396,50 @@ void InvOverlay::DrawInvOverlay(
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 	///// End Draw Column Headers (stash)
 
+	///// Begin Draw Inventory Rows
+	xCol = innerRect.left;
+	yCol = invSlotsOriginY + 60 + invRowSpacing;
+	std::vector<std::pair<InvItem*, UINT8>>invRows = invMgr->AllInventoryInSlot(selectedSlot);
+	for each (auto _row in invRows)
+	{
+		InvItem* _item = _row.first;
+		DrawItem(_item, _row.second, spriteBatch, font, &xCol, &yCol);
+		yCol += glyphHeight + invRowSpacing;
+	}
+	invRows.clear();
+	// Now do the stash rows
+	std::vector<std::pair<InvItem*, UINT8>>stashRows = invMgr->StashInSlot(selectedSlot);
+	for each (auto _row in stashRows)
+	{
+		InvItem* _item = _row.first;
+		DrawItem(_item, _row.second, spriteBatch, font, &xCol, &yCol);
+		yCol += glyphHeight + invRowSpacing;
+	}
+	invRows.clear();
+	///// End Draw Inventory Rows
+
 	bIsDisplayed = true;
 }
 
+void InvOverlay::DrawItem(InvItem* item, UINT8 charges, 
+	std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::SpriteFont* font,
+	int* xCol, int* yCol)
+{
+	int stringHalfSpacing = 10;
+	int ctCols = 0;
+	char _spBuf[200];
+	if (item->slot < InventorySlots::Chest)
+	{
+		sprintf_s(_spBuf, 200, "%-18s  %+d    %dx %2d-%-2d   %+d   %s", 
+			item->name.c_str(), item->thaco, item->numAttacks, item->damageMin, item->damageMax, item->ac, item->special.c_str());
+	}
+	else
+	{
+		sprintf_s(_spBuf, 200, "%-18s   %+d    %+d   %s",
+			item->name.c_str(), item->thaco, item->ac, item->special.c_str());
+	}
+	font->DrawString(spriteBatch.get(), _spBuf,
+		Vector2(*xCol, *yCol),
+		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
+}
 #pragma endregion

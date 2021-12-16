@@ -2,13 +2,25 @@
 #include <vector>
 #include <string>
 
+enum class InventorySlots
+{
+	Melee = 0,
+	Ranged,
+	Chest,
+	Shield,
+	Misc,
+	Jewelry,
+	Tool,
+	Scroll,
+	TOTAL
+};
+
 class InvItem
 {
 public:
 	// Properties
 	UINT8 id;
-	UINT8 slot;
-	UINT16 equipMask;
+	InventorySlots slot;
 	UINT16 classMask;
 	UINT16 raceMask;
 	std::string name;
@@ -20,7 +32,7 @@ public:
 	std::string special;
 
 	InvItem();
-	InvItem(UINT8 _id, UINT8 _slot, UINT16 _equipMask, UINT16 _classMask, UINT16 _raceMask,
+	InvItem(UINT8 _id, InventorySlots _slot, UINT16 _classMask, UINT16 _raceMask,
 		std::string _name, INT8 _thaco, UINT8 _numAttacks,
 		UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::string _special);
 	void copyPropertiesFromItem(InvItem* item);
@@ -30,7 +42,7 @@ private:
 	std::vector<UINT8> charges;
 
 	void Initialize();
-	void Initialize(UINT8 _id, UINT8 _slot, UINT16 _equipMask, UINT16 _classMask, UINT16 _raceMask,
+	void Initialize(UINT8 _id, InventorySlots _slot, UINT16 _classMask, UINT16 _raceMask,
 		std::string _name, INT8 _thaco, UINT8 _numAttacks, 
 		UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::string _special);
 };
