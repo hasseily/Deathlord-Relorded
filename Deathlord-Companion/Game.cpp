@@ -392,10 +392,10 @@ void Game::Render()
         GetBaseSize(origW, origH);
 
         // Now time to draw the text and lines
-		m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
+		m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
 			clientRect.bottom - clientRect.top, 0, 0, 1));
-		m_dxtEffect->Apply(commandList);
-		m_primitiveBatch->Begin(commandList);
+		m_dxtEffectLines->Apply(commandList);
+		m_primitiveBatchLines->Begin(commandList);
         m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
 		m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
         for each (auto sb in m_sbM.sidebars)
@@ -442,7 +442,7 @@ void Game::Render()
 			default:
 				break;
 			}
-			m_primitiveBatch->DrawLine(
+			m_primitiveBatchLines->DrawLine(
 				VertexPositionColor(lstart, static_cast<XMFLOAT4>(Colors::DimGray)),
 				VertexPositionColor(lend, static_cast<XMFLOAT4>(Colors::Black))
 			);
@@ -462,20 +462,20 @@ void Game::Render()
 		const UINT8 visTileSide = 9;	// 9 tiles per side visible
         for (UINT8 ir = 0; ir <= visTileSide; ir++)		// rows
         {
-			m_primitiveBatch->DrawLine(
+            m_primitiveBatchLines->DrawLine(
 				VertexPositionColor(XMFLOAT3(fbBorderLeft, fbBorderTop + ir * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red)),
 				VertexPositionColor(XMFLOAT3(fbBorderLeft + visTileSide * FBTW, fbBorderTop + ir * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red))
 			);
         }
 		for (UINT8 jc = 0; jc <= visTileSide; jc++)	// columns
 		{
-			m_primitiveBatch->DrawLine(
+            m_primitiveBatchLines->DrawLine(
 				VertexPositionColor(XMFLOAT3(fbBorderLeft + jc * FBTW, fbBorderTop, 0), static_cast<XMFLOAT4>(Colors::Red)),
 				VertexPositionColor(XMFLOAT3(fbBorderLeft + jc * FBTW, fbBorderTop + visTileSide * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red))
 			);
 		}
 #endif // _DEBUG
-		m_primitiveBatch->End();
+        m_primitiveBatchLines->End();
 		m_spriteBatch->End();
 
         if (g_nonVolatile.showMap)
@@ -499,13 +499,13 @@ void Game::Render()
         // TODO: Let m_invOverlay create its own effect, spritebatch and primitivebatch?
         if (m_invOverlay->IsInvOverlayDisplayed())
         {
-			m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
+			m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
 				clientRect.bottom - clientRect.top, 0, 0, 1));
-			m_dxtEffect->Apply(commandList);
-			m_primitiveBatch->Begin(commandList);
+            m_dxtEffectTriangles->Apply(commandList);
+			m_primitiveBatchTriangles->Begin(commandList);
 			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
-			m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatch, &clientRect);
-			m_primitiveBatch->End();
+			m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatchTriangles, &clientRect);
+            m_primitiveBatchTriangles->End();
 			m_spriteBatch->End();
         }
 		// End drawing text
@@ -906,20 +906,30 @@ void Game::CreateDeviceDependentResources()
     }
 
     /// <summary>
-    /// Set up PrimitiveBatch to draw the lines that will delimit the sidebars and the triangles to clear the sidebars
+    /// Set up PrimitiveBatch to draw the lines and triangles for sidebars and inventory
     /// https://github.com/microsoft/DirectXTK12/wiki/PrimitiveBatch
     /// </summary>
     /// 
-    EffectPipelineStateDescription epd(
+    EffectPipelineStateDescription epdLines(
         &VertexPositionColor::InputLayout,
         CommonStates::Opaque,
         CommonStates::DepthDefault,
         CommonStates::CullNone,
         rtState,
-        D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
-    m_dxtEffect = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epd);
-    m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
-	m_primitiveBatch = std::make_shared<PrimitiveBatch<VertexPositionColor>>(device);
+        D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
+    m_dxtEffectLines = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdLines);
+    m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
+	m_primitiveBatchLines = std::make_shared<PrimitiveBatch<VertexPositionColor>>(device);
+	EffectPipelineStateDescription epdTriangles(
+		&VertexPositionColor::InputLayout,
+		CommonStates::Opaque,
+		CommonStates::DepthDefault,
+		CommonStates::CullNone,
+		rtState,
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+	m_dxtEffectTriangles = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdTriangles);
+    m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
+	m_primitiveBatchTriangles = std::make_shared<PrimitiveBatch<VertexPositionColor>>(device);
 
     /// <summary>
     /// Finish
@@ -1022,7 +1032,8 @@ void Game::UpdateGamelinkVertexData(int width, int height, float wRatio, float h
     }
 
     // And update the projection for line drawing
-    m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
+    m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
+	m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
 
 }
 
