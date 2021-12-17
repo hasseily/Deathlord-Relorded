@@ -480,46 +480,88 @@ void InvOverlay::DrawInvOverlay(
 	// the 2 members swapping (or the stash), for both items that are being swapped
 	// unless one of the items is empty of course
 	// 
-	// We need at most 4 rects which are the endpoints of the 2 helper lines
-	// We already have the toRect of the member highlighted, it's highlighterRect
-	EquipInteractableRect* _fromRect;
-	EquipInteractableRect* _otherToRect;
-	EquipInteractableRect* _otherFromRect;
-	if ((highlightedRect.eSlot < InventorySlots::TOTAL) &&
-		(!highlightedRect.isTrash))// It is a valid highlighted rect
+	// We need at most 2 rects which are the endpoints of the 2 helper lines
+	// We already have the toRect of the member highlighted, it's highlightedRect
+	EquipInteractableRect _fromRect;
+	EquipInteractableRect _otherFromRect;
+	if (highlightedRect.isTrash)
+		goto ENDSWAPHELPERS;
+	if (highlightedRect.eSlot >= InventorySlots::TOTAL)
+		goto ENDSWAPHELPERS;
+	InvInstance* _invI = &m_invRows.at(highlightedRect.eRow);
+	if (_invI->owner == highlightedRect.eMember)	// No need to highlight, the rect is owner or equipped
+		goto ENDSWAPHELPERS;
+	_fromRect = RectOfOwnerOfItemInstance(*_invI);
+	if (_fromRect.eItemId == EMPTY_ITEM_ID)
+		goto ENDSWAPHELPERS;
+	// _xPos0 is the x pos of the rects of the first party member
+	int _xPos0 = widthTabsArea + (memberColWidth / 2) - (spRectInvEmpty.right - spRectInvEmpty.left) / 2;
+	// And the stash x pos is
+	int _xPosStash = _xPos0 + memberColWidth * DEATHLORD_PARTY_SIZE + 20;
+	if (highlightedRect.eMember < DEATHLORD_PARTY_SIZE)	// give to a person
 	{
-		InvInstance* _invI = &m_invRows.at(highlightedRect.eRow);
-		if (_invI->owner == highlightedRect.eMember)	// No need to highlight, the rect is owner or equipped
-			goto ENDSWAPHELPERS;
-		_fromRect = RectOfItemOwner(_invI);
-		if (_fromRect == NULL)
-			goto ENDSWAPHELPERS;
-		// _xPos0 is the x pos of the rects of the first party member
-		int _xPos0 = widthTabsArea + (memberColWidth / 2) - (spRectInvEmpty.right - spRectInvEmpty.left) / 2;
-		if (highlightedRect.eMember < DEATHLORD_PARTY_SIZE)	// give to a person
+		// Figure out the other person/stash that will be impacted by the move
+		bool noOtherItem = false;
+		InvInstance _otherInvI = ItemInstanceOfOwner(highlightedRect.eMember);
+		if (_otherInvI.item == NULL)	// there's no other item
 		{
-			if (_invI->owner < DEATHLORD_PARTY_SIZE)
+			_otherFromRect = highlightedRect;
+			noOtherItem = false;
+		}
+		else
+		{
+			_otherFromRect = RectOfOwnerOfItemInstance(_otherInvI);
+		}
+		if (_invI->owner < DEATHLORD_PARTY_SIZE)
+		{
+			// From a person to a person (_invI->owner to highlighted and vice versa, 2 lines)
+			// First the item we clicked on
+			primitiveBatch->DrawQuad(
+				VertexPositionColor(XMFLOAT3(_fromRect.eRect.Center().x,		_fromRect.eRect.Center().y - 2, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x,	_fromRect.eRect.Center().y - 2, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x,	_fromRect.eRect.Center().y + 2, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(_fromRect.eRect.Center().x,		_fromRect.eRect.Center().y + 2, 0), ColorAmber)
+			);
+			// And then the item that'll be swapped
+			if (!noOtherItem)
 			{
-				// From a person to a person (_invI->owner to highlighted and vice versa, 2 lines)
-			}
-			else
-			{
-				// exchange stash->person (stash _invI->owner to highlighted, potentially 2 lines)
+				primitiveBatch->DrawQuad(
+					VertexPositionColor(XMFLOAT3(_fromRect.eRect.Center().x, _otherFromRect.eRect.Center().y - 2, 0), ColorAmber),
+					VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x, _otherFromRect.eRect.Center().y - 2, 0), ColorAmber),
+					VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x, _otherFromRect.eRect.Center().y + 2, 0), ColorAmber),
+					VertexPositionColor(XMFLOAT3(_fromRect.eRect.Center().x, _otherFromRect.eRect.Center().y + 2, 0), ColorAmber)
+				);
 			}
 		}
-		else // give to the stash
+		else
 		{
-			// exchange person->stash (_invI->owner to stash, only one line)
-			// it won't be highlighted if the stash is full, so we're good
-			// TODO: This is wrong. the highlightedRect is the trash.
-			// Need to get the rect of the original owner
+			// exchange stash->person (stash _invI->owner to highlighted, potentially 2 lines)
+			// First the person we clicked on
 			primitiveBatch->DrawQuad(
-				VertexPositionColor(XMFLOAT3(_fromRect->eRect.Center().x, _fromRect->eRect.Center().y - 2, 0), ColorAmber),
-				VertexPositionColor(XMFLOAT3(_xPos0 + memberColWidth * DEATHLORD_PARTY_SIZE + 16, _fromRect->eRect.Center().y - 2, 0), ColorAmber),
-				VertexPositionColor(XMFLOAT3(_xPos0 + memberColWidth * DEATHLORD_PARTY_SIZE + 16, _fromRect->eRect.Center().y + 2, 0), ColorAmber),
-				VertexPositionColor(XMFLOAT3(_fromRect->eRect.Center().x, _fromRect->eRect.Center().y + 2, 0), ColorAmber)
+				VertexPositionColor(XMFLOAT3(_xPosStash,						_fromRect.eRect.Center().y - 2, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x,	_fromRect.eRect.Center().y - 2, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x,	_fromRect.eRect.Center().y + 2, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(_xPosStash,						_fromRect.eRect.Center().y + 2, 0), ColorAmber)
+			);
+			// And then the person who is going to lose the item
+			primitiveBatch->DrawQuad(
+				VertexPositionColor(XMFLOAT3(_xPosStash,						_otherFromRect.eRect.Center().y - 2, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x,	_otherFromRect.eRect.Center().y - 2, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x,	_otherFromRect.eRect.Center().y + 2, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(_xPosStash,						_otherFromRect.eRect.Center().y + 2, 0), ColorAmber)
 			);
 		}
+	}
+	else // give to the stash
+	{
+		// exchange person->stash (_invI->owner to stash, only one line)
+		// it won't be highlighted if the stash is full, so we're good
+		primitiveBatch->DrawQuad(
+			VertexPositionColor(XMFLOAT3(_fromRect.eRect.Center().x,	_fromRect.eRect.Center().y - 2, 0), ColorAmber),
+			VertexPositionColor(XMFLOAT3(_xPosStash,					_fromRect.eRect.Center().y - 2, 0), ColorAmber),
+			VertexPositionColor(XMFLOAT3(_xPosStash,					_fromRect.eRect.Center().y + 2, 0), ColorAmber),
+			VertexPositionColor(XMFLOAT3(_fromRect.eRect.Center().x,	_fromRect.eRect.Center().y + 2, 0), ColorAmber)
+		);
 	}
 ENDSWAPHELPERS:
 
@@ -544,18 +586,33 @@ ENDSWAPHELPERS:
 	bIsDisplayed = true;
 }
 
-EquipInteractableRect* InvOverlay::RectOfItemOwner(InvInstance* pItemInstance)
+// Returns rect of the owner of an item instance
+// (i.e. given a row, returns the selected column)
+EquipInteractableRect InvOverlay::RectOfOwnerOfItemInstance(InvInstance& pItemInstance)
 {
+	if (pItemInstance.item == NULL)
+		return EquipInteractableRect();
 	std::vector<EquipInteractableRect> _vec;
-	pItemInstance->owner < DEATHLORD_PARTY_SIZE ? _vec = v_eIRects : _vec = v_trashIRects;
+	pItemInstance.owner < DEATHLORD_PARTY_SIZE ? _vec = v_eIRects : _vec = v_trashIRects;
 	for each (auto _eiRect in _vec)
 	{
-		if ((_eiRect.eMember == pItemInstance->owner) && (_eiRect.eRow == pItemInstance->extraIdentifier))
-			return &_eiRect;
+		if ((_eiRect.eMember == pItemInstance.owner) && (_eiRect.eRow == pItemInstance.row))
+			return _eiRect;
 	}
-	return NULL;
+	return EquipInteractableRect();
 }
 
+// Returns the item instance owned by a member
+// (i.e. give a column, returns the selected row)
+InvInstance InvOverlay::ItemInstanceOfOwner(UINT8 owner)
+{
+	for each (auto itemInstance in m_invRows)
+	{
+		if (itemInstance.owner == owner)
+			return itemInstance;
+	}
+	return InvInstance();
+}
 
 void InvOverlay::DrawItem(InvInstance* pItemInstance, 
 	std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::SpriteFont* font,

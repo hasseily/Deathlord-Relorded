@@ -20,7 +20,7 @@ constexpr UINT8 ITEM_CHARGES_OFFSET = 0x08;		// Charges == 0xFF by default
 static bool compareInvInstance(InvInstance i1, InvInstance i2)
 {
 	if (i1.item->id == i2.item->id)
-		return (i1.extraIdentifier < i2.extraIdentifier);
+		return (i1.charges < i2.charges);
 	return (i1.item->id < i2.item->id);
 }
 
@@ -319,11 +319,11 @@ std::vector<InvInstance> InvManager::AllInventoryInSlot(InventorySlots slot)
 		_currentInventory.push_back(_inst);
 		++extraId;
 	}
-	// Finally sort and reset the extra identifier to be the actual row.
+	// Finally sort and set the row.
 	sort(_currentInventory.begin(), _currentInventory.end(), compareInvInstance);
 	for (size_t i = 0; i < _currentInventory.size(); i++)
 	{
-		_currentInventory.at(i).extraIdentifier = i;
+		_currentInventory.at(i).row = i;
 	}
 	return _currentInventory;
 }

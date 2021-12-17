@@ -59,7 +59,8 @@ public:
 private:
 	void Initialize();
 	void DrawItem(InvInstance* pItemInstance, std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::SpriteFont* font, int memberColWidth, int xPos, int yPos);
-	EquipInteractableRect* RectOfItemOwner(InvInstance* pItemInstance);
+	EquipInteractableRect RectOfOwnerOfItemInstance(InvInstance& pItemInstance);
+	InvInstance ItemInstanceOfOwner(UINT8 owner);
 
 	static InvOverlay* s_instance;
 	bool bIsDisplayed;

@@ -58,5 +58,6 @@ struct InvInstance
 	InvItem* item;
 	UINT8 charges;
 	UINT8 owner;	// The owner. Anything above DEATHLORD_PARTY_SIZE is the stash
+	UINT8 row;		// For use by the overlay if it needs it
 	bool equipped;	// If the owner has it equipped (i.e. can use it)
 };
