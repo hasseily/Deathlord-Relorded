@@ -118,6 +118,12 @@ void InvOverlay::MousePosInPixels(int x, int y)
 	{
 		if (eiRect.eRect.Contains(mousePoint))
 		{
+			if (eiRect.eMember >= DEATHLORD_PARTY_SIZE)	// it's the stash
+			{
+				// check if it's full. If so, don't highlight
+				if (invMgr->StashSlotCount(selectedSlot) >= STASH_MAX_ITEMS_PER_SLOT)
+					return;
+			}
 			highlightedRect = eiRect;
 			return;
 		}
@@ -146,7 +152,7 @@ void InvOverlay::LeftMouseButtonClicked(int x, int y)
 		if (iRect.Contains(mousePoint))
 		{
 			selectedSlot = (InventorySlots)iSlot;
-			return;
+			goto ENDLEFTCLICK;
 		}
 		iSlot++;
 	}
@@ -180,7 +186,7 @@ void InvOverlay::LeftMouseButtonClicked(int x, int y)
 				// if stash is full it will do nothing
 				invMgr->PutInStash(_invI->owner, selectedSlot);
 			}
-			return;
+			goto ENDLEFTCLICK;
 		}
 	}
 	for each (auto & trashiRect in v_trashIRects)
@@ -188,9 +194,11 @@ void InvOverlay::LeftMouseButtonClicked(int x, int y)
 		if (trashiRect.eRect.Contains(mousePoint))
 		{
 			invMgr->DeleteItem(selectedSlot, trashiRect.eMember - DEATHLORD_PARTY_SIZE);
-			return;
+			goto ENDLEFTCLICK;
 		}
 	}
+ENDLEFTCLICK:
+	UpdateState();
 }
 
 #pragma endregion
@@ -246,9 +254,6 @@ void InvOverlay::DrawInvOverlay(
 
 	float invSlotsOriginX = innerRect.left;			// beginning of inventory slots
 	float invSlotsOriginY = innerRect.top + 90.f;
-
-	v_eIRects.clear();
-	v_trashIRects.clear();
 
 	///// Begin Draw Border (2 quads, the black one 10px smaller per side for a 5px thickness
 	primitiveBatch->DrawQuad(
@@ -470,7 +475,61 @@ void InvOverlay::DrawInvOverlay(
 		mmSSTextureSize, XMFLOAT2(xCol + (memberColWidth - 28*2) / 2, yCol), &spRectStash, Colors::White, 0.f, XMFLOAT2());
 	///// End Draw Column Headers (stash)
 
+	///// Begin Draw Swapping Helper Lines
+	// When highlighting an item to swap, draw helper lines between
+	// the 2 members swapping (or the stash), for both items that are being swapped
+	// unless one of the items is empty of course
+	// 
+	// We need at most 4 rects which are the endpoints of the 2 helper lines
+	// We already have the toRect of the member highlighted, it's highlighterRect
+	EquipInteractableRect* _fromRect;
+	EquipInteractableRect* _otherToRect;
+	EquipInteractableRect* _otherFromRect;
+	if ((highlightedRect.eSlot < InventorySlots::TOTAL) &&
+		(!highlightedRect.isTrash))// It is a valid highlighted rect
+	{
+		InvInstance* _invI = &m_invRows.at(highlightedRect.eRow);
+		if (_invI->owner == highlightedRect.eMember)	// No need to highlight, the rect is owner or equipped
+			goto ENDSWAPHELPERS;
+		_fromRect = RectOfItemOwner(_invI);
+		if (_fromRect == NULL)
+			goto ENDSWAPHELPERS;
+		// _xPos0 is the x pos of the rects of the first party member
+		int _xPos0 = widthTabsArea + (memberColWidth / 2) - (spRectInvEmpty.right - spRectInvEmpty.left) / 2;
+		if (highlightedRect.eMember < DEATHLORD_PARTY_SIZE)	// give to a person
+		{
+			if (_invI->owner < DEATHLORD_PARTY_SIZE)
+			{
+				// From a person to a person (_invI->owner to highlighted and vice versa, 2 lines)
+			}
+			else
+			{
+				// exchange stash->person (stash _invI->owner to highlighted, potentially 2 lines)
+			}
+		}
+		else // give to the stash
+		{
+			// exchange person->stash (_invI->owner to stash, only one line)
+			// it won't be highlighted if the stash is full, so we're good
+			// TODO: This is wrong. the highlightedRect is the trash.
+			// Need to get the rect of the original owner
+			primitiveBatch->DrawQuad(
+				VertexPositionColor(XMFLOAT3(_fromRect->eRect.Center().x, _fromRect->eRect.Center().y - 2, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(_xPos0 + memberColWidth * DEATHLORD_PARTY_SIZE + 16, _fromRect->eRect.Center().y - 2, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(_xPos0 + memberColWidth * DEATHLORD_PARTY_SIZE + 16, _fromRect->eRect.Center().y + 2, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(_fromRect->eRect.Center().x, _fromRect->eRect.Center().y + 2, 0), ColorAmber)
+			);
+		}
+	}
+ENDSWAPHELPERS:
+
+	///// End Draw Swapping Helper Lines
+
+
 	///// Begin Draw Inventory Rows
+	// Recreate the rects here for the next iteration
+	v_eIRects.clear();
+	v_trashIRects.clear();
 	m_currentItemInstance = 0;
 	xCol = innerRect.left;
 	yCol = invSlotsOriginY + 60 + invRowSpacing;
@@ -484,6 +543,19 @@ void InvOverlay::DrawInvOverlay(
 
 	bIsDisplayed = true;
 }
+
+EquipInteractableRect* InvOverlay::RectOfItemOwner(InvInstance* pItemInstance)
+{
+	std::vector<EquipInteractableRect> _vec;
+	pItemInstance->owner < DEATHLORD_PARTY_SIZE ? _vec = v_eIRects : _vec = v_trashIRects;
+	for each (auto _eiRect in _vec)
+	{
+		if ((_eiRect.eMember == pItemInstance->owner) && (_eiRect.eRow == pItemInstance->extraIdentifier))
+			return &_eiRect;
+	}
+	return NULL;
+}
+
 
 void InvOverlay::DrawItem(InvInstance* pItemInstance, 
 	std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::SpriteFont* font,
@@ -555,6 +627,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 		EquipInteractableRect _aEIR;
 		_aEIR.eRect = { _xPos + 5, yPos, 18, 18 };	// size of the square + 1
 		_aEIR.eRow = m_currentItemInstance;
+		_aEIR.eItemId = pItemInstance->item->id;
 		_aEIR.eSlot = pItemInstance->item->slot;
 		_aEIR.eMember = i;
 		_aEIR.isTrash = false;
@@ -569,6 +642,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 	EquipInteractableRect _aEIR;
 	_aEIR.eRect = { _xPos + 5, yPos, 18, 18 };	// size of the square + 1
 	_aEIR.eRow = m_currentItemInstance;
+	_aEIR.eItemId = pItemInstance->item->id;
 	_aEIR.eSlot = pItemInstance->item->slot;
 	_aEIR.eMember = DEATHLORD_PARTY_SIZE;	// The "member" is the stash
 	_aEIR.isTrash = false;
@@ -596,6 +670,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 			EquipInteractableRect _aTrashIR;
 			_aTrashIR.eRect = { _xPos, yPos, 16, 22 };	// trash icon
 			_aTrashIR.eRow = m_currentItemInstance;
+			_aTrashIR.eItemId = pItemInstance->item->id;
 			_aTrashIR.eSlot = pItemInstance->item->slot;
 			_aTrashIR.eMember = i;
 			_aTrashIR.isTrash = true;

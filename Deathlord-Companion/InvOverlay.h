@@ -13,6 +13,7 @@ struct EquipInteractableRect
 	SimpleMath::Rectangle eRect = SimpleMath::Rectangle();
 	InventorySlots eSlot = InventorySlots::TOTAL;
 	UINT8 eRow = 0xFF;
+	UINT8 eItemId = EMPTY_ITEM_ID;
 	UINT8 eMember = 0xFF;
 	bool isTrash = false;
 };
@@ -58,6 +59,7 @@ public:
 private:
 	void Initialize();
 	void DrawItem(InvInstance* pItemInstance, std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::SpriteFont* font, int memberColWidth, int xPos, int yPos);
+	EquipInteractableRect* RectOfItemOwner(InvInstance* pItemInstance);
 
 	static InvOverlay* s_instance;
 	bool bIsDisplayed;
