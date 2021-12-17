@@ -319,7 +319,12 @@ std::vector<InvInstance> InvManager::AllInventoryInSlot(InventorySlots slot)
 		_currentInventory.push_back(_inst);
 		++extraId;
 	}
+	// Finally sort and reset the extra identifier to be the actual row.
 	sort(_currentInventory.begin(), _currentInventory.end(), compareInvInstance);
+	for (size_t i = 0; i < _currentInventory.size(); i++)
+	{
+		_currentInventory.at(i).extraIdentifier = i;
+	}
 	return _currentInventory;
 }
 
