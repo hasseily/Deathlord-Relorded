@@ -180,8 +180,8 @@ void InvManager::Initialize()
 		std::pair<UINT8, UINT8> emptyItem = { EMPTY_ITEM_ID, EMPTY_CHARGES_COUNT };
 		stash.push_back(emptyItem);
 	}
-	stash.at(0).first = 0x29;	// TODO: Remove this test thing
-	stash.at(1).first = 0x33;	// TODO: Remove this test thing
+	// stash.at(0).first = 0x29;	// test
+	// stash.at(1).first = 0x33;	// test
 }
 
 
