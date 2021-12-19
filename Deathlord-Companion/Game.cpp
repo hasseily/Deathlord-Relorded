@@ -370,8 +370,8 @@ void Game::Render()
         commandList->SetGraphicsRootSignature(m_rootSignature.Get());
         commandList->SetPipelineState(m_pipelineState.Get());
 
-        // One unified heap for all resources
-        ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap() };
+        // The states heap is for the different tile samplers needed
+        ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap(), m_states->Heap() };
         commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
 
         commandList->SetGraphicsRootDescriptorTable(0, m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video));
@@ -488,12 +488,12 @@ void Game::Render()
 				mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
 				mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
 			};
-			m_automap->DrawAutoMap(m_spriteBatch, &mapRectInViewport);
+			m_automap->DrawAutoMap(m_spriteBatch, m_states.get(), &mapRectInViewport);
 			// End drawing automap
             
             // now draw the hidden layer around the player if he's allowed to see it
             // inside the original Deathlord viewport
-            m_automap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch);
+            m_automap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
         }
 
         // TODO: Let m_invOverlay create its own effect, spritebatch and primitivebatch?
@@ -506,7 +506,7 @@ void Game::Render()
 			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
 			m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatchTriangles, &clientRect);
             m_primitiveBatchTriangles->End();
-			m_spriteBatch->End();
+            m_spriteBatch->End();
         }
 		// End drawing text
 
@@ -698,10 +698,13 @@ void Game::CreateDeviceDependentResources()
 	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_invOverlay->CreateDeviceDependentResources(&resourceUpload);
 
-    // finish up
+    // Do the sprite batches.
+	m_states = std::make_unique<CommonStates>(device);
+	auto sampler = m_states->LinearWrap();
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
-	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied);
+	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
 	m_spriteBatch = std::make_unique<SpriteBatch>(device, resourceUpload, spd);
+
 
     auto uploadResourcesFinished = resourceUpload.End(command_queue);
     uploadResourcesFinished.wait();
@@ -1050,6 +1053,7 @@ void Game::OnDeviceLost()
     m_pipelineState.Reset();
     m_rootSignature.Reset();
     m_automap->OnDeviceLost();
+    m_states.reset();
     m_spriteBatch.reset();
     m_graphicsMemory.reset();
 }

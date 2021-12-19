@@ -59,13 +59,13 @@ class AutoMap	// Singleton
 {
 public:
 	// Vector2 drawOrigin = Vector2();
-	void DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RECT* mapRect);
+	void DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states, RECT* mapRect);
 
 	void UpdateAvatarPositionOnAutoMap(UINT x, UINT y);
 	void ClearMapArea();
 	void ForceRedrawMapArea();
 	void AnalyzeVisibleTiles();
-	void ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch);
+	void ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states);
 	void CreateNewTileSpriteMap();
 	void SaveCurrentMapInfo();
 	void InitializeCurrentMapInfo();

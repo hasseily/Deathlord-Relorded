@@ -23,7 +23,7 @@ constexpr UINT STROBESLOWAVATAR = 1;
 constexpr UINT STROBESLOWHIDDEN = 2;
 #else
 constexpr UINT STROBESLOWAVATAR = 3;
-constexpr UINT STROBESLOWHIDDEN = 5;
+constexpr UINT STROBESLOWHIDDEN = 10;
 #endif
 
 UINT m_avatarStrobeIdx = 0;
@@ -31,7 +31,7 @@ constexpr UINT AVATARSTROBECT = 14;
 constexpr float AVATARSTROBE[AVATARSTROBECT] = { .75f, .7f, .62f, .56f, .49f, .40f, .30f, .30f, .40f, .49f, .56f, .62f, .7f, .75f };
 
 UINT m_spriteAnimationIdx = 0;
-constexpr UINT HIDDENSPRITECT = 5;
+constexpr UINT HIDDENSPRITECT = 4;	// number of sprite framess for hidden layer animations
 
 void AutoMap::Initialize()
 {
@@ -242,7 +242,7 @@ void AutoMap::AnalyzeVisibleTiles()
 	}
 }
 
-void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch)
+void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states)
 {
 	if (!g_isInGameMap)
 		return;
@@ -257,7 +257,7 @@ void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<Direct
 	float mapScale = 1.f;
 
 	auto commandList = m_deviceResources->GetCommandList();
-	spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
+	spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
 
 	for (UINT8 j = 3; j < 6; j++)	// rows
 	{
@@ -291,31 +291,28 @@ void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<Direct
 				RECT _tileSheetRect;
 				bool _hasOverlay = false;
 
+				// all tiles are animated. Start the strobe for each tile independently, so that it looks a bit better on the map
+				_tileSheetPos.x = ((m_spriteAnimationIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
 				switch (tilesVisibleAroundAvatar[mapPos])
 				{
 				case 0x2a:	// weapon chest
-					_tileSheetPos.x = 0;
 					_tileSheetPos.y = 1;
 					if (PartyHasClass(DeathlordClasses::Thief))
 						_hasOverlay = true;
 					break;
 				case 0x2b:	// armor chest
-					_tileSheetPos.x = 1;
-					_tileSheetPos.y = 1;
+					_tileSheetPos.y = 2;
 					if (PartyHasClass(DeathlordClasses::Thief))
 						_hasOverlay = true;
 					break;
 				case 0xc6:	// water poison
-					_tileSheetPos.x = 2;
-					_tileSheetPos.y = 1;
+					_tileSheetPos.y = 3;
 					if (PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Druid))
 						_hasOverlay = true;
 					if (PartyHasClass(DeathlordClasses::Barbarian))
 						_hasOverlay = true;
 					break;
 				case 0x76:	// water bonus! "Z"-drink it and hope for the best!
-					// this tile is animated. Start the strobe for each tile independently, so that it looks a bit better on the map
-					_tileSheetPos.x = ((m_spriteAnimationIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
 					_tileSheetPos.y = 0;
 					if (PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Druid))
 						_hasOverlay = true;
@@ -323,34 +320,29 @@ void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<Direct
 						_hasOverlay = true;
 					break;
 				case 0x7e:	// pit
-					_tileSheetPos.x = 3;
-					_tileSheetPos.y = 1;
+					_tileSheetPos.y = 4;
 					if (PartyLeaderIsOfClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
 						_hasOverlay = true;
 					if (PartyLeaderIsOfRace(DeathlordRaces::DarkElf))
 						_hasOverlay = true;
 					break;
 				case 0xce:	// chute / teleporter
-					_tileSheetPos.x = 0;
-					_tileSheetPos.y = 2;
+					_tileSheetPos.y = 5;
 					if (PartyHasClass(DeathlordClasses::Illusionist))
 						_hasOverlay = true;
 					break;
 				case 0x02:	// illusiory wall
-					_tileSheetPos.x = 1;
-					_tileSheetPos.y = 2;
+					_tileSheetPos.y = 7;
 					if (PartyHasClass(DeathlordClasses::Illusionist))
 						_hasOverlay = true;
 					break;
 				case 0x05:	// illusiory Rock
-					_tileSheetPos.x = 1;
-					_tileSheetPos.y = 2;
+					_tileSheetPos.y = 7;
 					if (PartyHasClass(DeathlordClasses::Illusionist))
 						_hasOverlay = true;
 					break;
 				case 0x57:	// hidden door
-					_tileSheetPos.x = 2;
-					_tileSheetPos.y = 2;
+					_tileSheetPos.y = 8;
 					if (PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
 						_hasOverlay = true;
 					if (PartyHasRace(DeathlordRaces::DarkElf))
@@ -361,8 +353,6 @@ void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<Direct
 				case 0x50:	// interesting dark tile
 					[[fallthrough]];
 				case 0x85:	// interesting trees/bushes. No idea what this is
-					// this tile is animated. Start the strobe for each tile independently, so that it looks a bit better on the map
-					_tileSheetPos.x = ((m_spriteAnimationIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
 					_tileSheetPos.y = 0;
 					if (PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
 						_hasOverlay = true;
@@ -376,8 +366,6 @@ void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<Direct
 				case 0x3b:	// chest unopened
 					[[fallthrough]];
 				case 0x3d:	// coffer unopened
-					// this tile is animated. Start the strobe for each tile independently, so that it looks a bit better on the map
-					_tileSheetPos.x = ((m_spriteAnimationIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
 					_tileSheetPos.y = 0;
 					_hasOverlay = true;
 					break;
@@ -428,7 +416,7 @@ void AutoMap::CreateNewTileSpriteMap()
 }
 
 
-void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RECT* mapRect)
+void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states, RECT* mapRect)
 {
 	// Scale the viewport, then translate it in reverse to how much
 	// the center of the mapRect was translated when scaled
@@ -437,8 +425,9 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 
 
 	auto commandList = m_deviceResources->GetCommandList();
-	spriteBatch->Begin(commandList, DirectX::SpriteSortMode_Deferred);
 	SimpleMath::Viewport mapViewport(m_deviceResources->GetScreenViewport());
+	spriteBatch->SetViewport(mapViewport);
+	spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
 	SimpleMath::Rectangle mapScissorRect(*mapRect);
 	float _scale = (g_nonVolatile.mapQuadrant == AutoMapQuandrant::All ? 1.f : 2.f);
 	Vector2 _mapCenter = mapScissorRect.Center();
@@ -535,8 +524,12 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 			);
 			if (shouldDraw)
 			{
+				//spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
+				//	tilePosInMap, &spriteRect, Colors::White, 0.f, spriteOrigin, mapScale);
+				RECT tilePosRectInMap = { tilePosInMap.x, tilePosInMap.y, 
+					tilePosInMap.x + PNGTW * mapScale, tilePosInMap.y + PNGTH * mapScale };
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
-					tilePosInMap, &spriteRect, Colors::White, 0.f, spriteOrigin, mapScale);
+					tilePosRectInMap, &spriteRect);
 
 				// Show a marker for traps, hidden and unopened items
 				// Only when not on the overland map
@@ -557,39 +550,33 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 					RECT _tileSheetRect;
 					bool _hasOverlay = true;	// some tiles will not have overlays (in the default: section)
 
+					// all tiles are animated. Start the strobe for each tile independently, so that it looks a bit better on the map
+					_tileSheetPos.x = ((m_spriteAnimationIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
 					switch (mapMemPtr[mapPos])
 					{
 					case 0x2a:	// weapon chest
-						_tileSheetPos.x = 0;
 						_tileSheetPos.y = 1;
 						break;
 					case 0x2b:	// armor chest
-						_tileSheetPos.x = 1;
-						_tileSheetPos.y = 1;
+						_tileSheetPos.y = 2;
 						break;
 					case 0xc6:	// water poison
-						_tileSheetPos.x = 2;
-						_tileSheetPos.y = 1;
+						_tileSheetPos.y = 3;
 						break;
 					case 0x7e:	// pit
-						_tileSheetPos.x = 3;
-						_tileSheetPos.y = 1;
+						_tileSheetPos.y = 4;
 						break;
 					case 0xce:	// chute / teleporter
-						_tileSheetPos.x = 0;
-						_tileSheetPos.y = 2;
+						_tileSheetPos.y = 5;
 						break;
 					case 0x02:	// illusiory wall
-						_tileSheetPos.x = 1;
-						_tileSheetPos.y = 2;
+						_tileSheetPos.y = 7;
 						break;
 					case 0x05:	// illusiory Rock
-						_tileSheetPos.x = 1;
-						_tileSheetPos.y = 2;
+						_tileSheetPos.y = 7;
 						break;
 					case 0x57:	// hidden door
-						_tileSheetPos.x = 2;
-						_tileSheetPos.y = 2;
+						_tileSheetPos.y = 8;
 						break;
 					case 0x7F:	// interesting tombstone
 						[[fallthrough]];
@@ -606,8 +593,6 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, RE
 					case 0x3b:	// chest unopened
 						[[fallthrough]];
 					case 0x3d:	// coffer unopened
-						// this tile is animated. Start the strobe for each tile independently, so that it looks a bit better on the map
-						_tileSheetPos.x = ((m_spriteAnimationIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
 						_tileSheetPos.y = 0;
 						break;
 					default:

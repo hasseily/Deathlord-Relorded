@@ -155,13 +155,14 @@ private:
 
     std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
 
-	// fonts and primitives from dxtoolkit12 to draw lines
+	// fonts and primitives from dxtoolkit12 to draw everything
 	std::map<FontDescriptors, std::unique_ptr<SpriteFont>> m_spriteFonts;
 	std::shared_ptr<PrimitiveBatch<VertexPositionColor>> m_primitiveBatchLines;
 	std::shared_ptr<PrimitiveBatch<VertexPositionColor>> m_primitiveBatchTriangles;
 	std::unique_ptr<BasicEffect> m_dxtEffectLines;
 	std::unique_ptr<BasicEffect> m_dxtEffectTriangles;
 	std::shared_ptr<DirectX::SpriteBatch> m_spriteBatch;
+	std::unique_ptr<DirectX::CommonStates> m_states;
     DirectX::SimpleMath::Vector2 m_fontPos;
 
     // Direct3D 12 objects for AppleWin video texture
