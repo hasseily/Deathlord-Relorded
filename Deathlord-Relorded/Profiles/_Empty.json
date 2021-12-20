@@ -1,0 +1,96 @@
+{
+  "meta": {
+    "name": "EMPTY",
+    "author": "Rikkles",
+    "revision": 1,
+    "date": "2021.10.10",
+    "api_version": 3
+  },
+  "sidebars": [
+    {
+      "type": "Right",
+      "width": 200,
+      "blocks": [
+        {
+          "type": "Header",
+          "template": "Deathlord Relorded",
+          "color": [
+            0.9,
+            0.9,
+            0.2,
+            1.0
+          ],
+          "vars": []
+        },
+        {
+          "type": "Header",
+          "template": "          by @rikkles",
+          "color": [
+            0.9,
+            0.2,
+            0.9,
+            1.0
+          ],
+          "vars": []
+        },
+        {
+          "type": "Empty"
+        },
+        {
+          "type": "Empty"
+        },
+        {
+          "type": "Empty"
+        },
+        {
+          "type": "Empty"
+        },
+        {
+          "type": "Empty"
+        },
+        {
+          "type": "Empty"
+        },
+        {
+          "type": "Empty"
+        },
+        {
+          "type": "Empty"
+        }
+      ]
+    }
+  ]
+}
+// There are a maximum of 20 entries in the sidebar, including regions and content
+/* EXAMPLES OF USAGE
+	    {
+      "type": "Content",
+      "template": "Food: {}",
+      "vars": [
+        {
+          "mem": ["0xFDD2"],
+          "type": "int"
+        }
+      ]
+    },
+	    {
+      "type": "Content",
+      "template": "3: {}",
+      "vars": [
+        {
+          "mem": ["0x7035"],
+          "type": "lookup",
+          "lookup": "/tables/spells"
+        }
+      ]
+    },
+    {
+      "type": "Content",
+      "template": "Test: {}",
+      "vars": [
+        {
+          "mem": ["0x1242"],
+          "type": "int",
+          ]
+        }
+  */

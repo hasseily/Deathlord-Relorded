@@ -1,0 +1,168 @@
+﻿  compilation object save succeeded; see D:\Repos\Deathlord-Relorded\x64\Debug\PixelShader.cso
+  compilation object save succeeded; see D:\Repos\Deathlord-Relorded\x64\Debug\VertexShader.cso
+  AutoMap.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\AutoMap.cpp(529,43): warning C4838: conversion from 'float' to 'LONG' requires a narrowing conversion
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\AutoMap.cpp(529,59): warning C4838: conversion from 'float' to 'LONG' requires a narrowing conversion
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\AutoMap.cpp(530,21): warning C4838: conversion from 'float' to 'LONG' requires a narrowing conversion
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\AutoMap.cpp(530,56): warning C4838: conversion from 'float' to 'LONG' requires a narrowing conversion
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\AutoMap.cpp(632,38): warning C4838: conversion from 'uint32_t' to 'LONG' requires a narrowing conversion
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\AutoMap.cpp(632,50): warning C4838: conversion from 'uint32_t' to 'LONG' requires a narrowing conversion
+  DeathlordHacks.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\DeathlordHacks.cpp(123,35): warning C4101: 'e': unreferenced local variable
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\DeathlordHacks.cpp(155,35): warning C4101: 'e': unreferenced local variable
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\DeathlordHacks.cpp(170,35): warning C4101: 'e': unreferenced local variable
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\DeathlordHacks.cpp(216,35): warning C4101: 'e': unreferenced local variable
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\DeathlordHacks.cpp(227,35): warning C4101: 'e': unreferenced local variable
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\DeathlordHacks.cpp(287,6): warning C4267: 'argument': conversion from 'size_t' to 'const WORD', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\DeathlordHacks.cpp(297,6): warning C4267: 'argument': conversion from 'size_t' to 'const WORD', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\DeathlordHacks.cpp(299,6): warning C4267: 'argument': conversion from 'size_t' to 'const WORD', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\DeathlordHacks.cpp(309,6): warning C4267: 'argument': conversion from 'size_t' to 'const WORD', possible loss of data
+  DeviceResources.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+  AppleWin.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Disk.h(270,4): warning C4201: nonstandard extension used: nameless struct/union
+  AY8910.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+  CardManager.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Disk.h(270,4): warning C4201: nonstandard extension used: nameless struct/union
+  CPU.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+  Disk.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Disk.h(270,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Disk.cpp(170,2): warning C4996: 'wcscpy': This function or variable may be unsafe. Consider using wcscpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Disk.cpp(579,40): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Disk.cpp(912,9): warning C4189: 'uCompleteRevolutions': local variable is initialized but not referenced
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Disk.cpp(1623,7): warning C4189: 'modechange': local variable is initialized but not referenced
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Disk.cpp(1742,13): warning C4189: 'pImage': local variable is initialized but not referenced
+  Disk2CardManager.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Disk.h(270,4): warning C4201: nonstandard extension used: nameless struct/union
+  DiskFormatTrack.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Disk.h(270,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\DiskFormatTrack.cpp(269,60): warning C4310: cast truncates constant value
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\DiskFormatTrack.cpp(269,90): warning C4310: cast truncates constant value
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\DiskFormatTrack.cpp(282,60): warning C4310: cast truncates constant value
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\DiskFormatTrack.cpp(282,90): warning C4310: cast truncates constant value
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\DiskFormatTrack.cpp(282,10): warning C4189: 'addrPrologue': local variable is initialized but not referenced
+  DiskImage.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.h(378,26): warning C4267: 'return': conversion from 'size_t' to 'UINT', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImage.cpp(275,51): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
+  DiskImageHelper.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.h(378,26): warning C4267: 'return': conversion from 'size_t' to 'UINT', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(392,21): warning C4456: declaration of 'loop' hides previous local declaration
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(378,8): message : see declaration of 'loop'
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1146,4): warning C4389: '==': signed/unsigned mismatch
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1147,18): warning C4389: '!=': signed/unsigned mismatch
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1144,9): warning C4189: 'bitCount': local variable is initialized but not referenced
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1263,1): warning C4267: '=': conversion from 'size_t' to 'UINT', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1271,4): warning C4389: '==': signed/unsigned mismatch
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1272,18): warning C4389: '!=': signed/unsigned mismatch
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1269,9): warning C4189: 'bitCount': local variable is initialized but not referenced
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1438,29): warning C4456: declaration of 'szMetadata' hides previous local declaration
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1416,14): message : see declaration of 'szMetadata'
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1464,37): warning C4267: '=': conversion from 'size_t' to 'UINT', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1414,9): warning C4189: 'pCRC32': local variable is initialized but not referenced
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1538,55): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1535,2): warning C4996: 'wcsncpy': This function or variable may be unsafe. Consider using wcsncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\DiskImageHelper.cpp(1544,2): warning C4996: 'wcsncpy': This function or variable may be unsafe. Consider using wcsncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  Joystick.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Joystick.cpp(188): warning C4701: potentially uninitialized local variable 'info' used
+  Keyboard.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+  LanguageCard.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+  Memory.cpp
+  Mockingboard.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.cpp(202,35): warning C4309: 'initializing': truncation of constant value
+  NoSlotClock.cpp
+  NTSC.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\NTSC.cpp(1285,21): warning C4456: declaration of 'addr' hides previous local declaration
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\NTSC.cpp(1275,12): message : see declaration of 'addr'
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\NTSC.cpp(1275,12): warning C4189: 'addr': local variable is initialized but not referenced
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\NTSC.cpp(1407,21): warning C4456: declaration of 'addr' hides previous local declaration
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\NTSC.cpp(1397,12): message : see declaration of 'addr'
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\NTSC.cpp(1397,12): warning C4189: 'addr': local variable is initialized but not referenced
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\NTSC.cpp(1606,21): warning C4456: declaration of 'addr' hides previous local declaration
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\NTSC.cpp(1596,12): message : see declaration of 'addr'
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\NTSC.cpp(1596,12): warning C4189: 'addr': local variable is initialized but not referenced
+  NTSC_CharSet.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+  RGBMonitor.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+  SoundCore.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+  Speaker.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Speaker.cpp(60,38): warning C4310: cast truncates constant value
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Speaker.cpp(698,12): warning C4189: 'fTicksSecs': local variable is initialized but not referenced
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Speaker.cpp(718,12): warning C4189: 'fTicksSecs': local variable is initialized but not referenced
+  SynchronousEventManager.cpp
+  Video.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+  Game.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Game.cpp(486,13): warning C4838: conversion from 'float' to 'LONG' requires a narrowing conversion
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Game.cpp(487,13): warning C4838: conversion from 'float' to 'LONG' requires a narrowing conversion
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Game.cpp(488,16): warning C4838: conversion from 'float' to 'LONG' requires a narrowing conversion
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Game.cpp(489,16): warning C4838: conversion from 'float' to 'LONG' requires a narrowing conversion
+  HAUtils.cpp
+  InvItem.cpp
+  InvManager.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvManager.cpp(226,58): warning C4267: 'argument': conversion from 'size_t' to 'UINT8', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvManager.cpp(326,34): warning C4267: '=': conversion from 'size_t' to 'UINT8', possible loss of data
+  InvOverlay.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvOverlay.cpp(297,1): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvOverlay.cpp(398,76): warning C4267: 'argument': conversion from 'size_t' to 'UINT16', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvOverlay.cpp(400,68): warning C4267: 'argument': conversion from 'size_t' to 'UINT8', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvOverlay.cpp(405,68): warning C4267: 'argument': conversion from 'size_t' to 'UINT8', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvOverlay.cpp(411,68): warning C4267: 'argument': conversion from 'size_t' to 'UINT8', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvOverlay.cpp(417,68): warning C4267: 'argument': conversion from 'size_t' to 'UINT8', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvOverlay.cpp(442,68): warning C4267: 'argument': conversion from 'size_t' to 'UINT8', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvOverlay.cpp(459,68): warning C4267: 'argument': conversion from 'size_t' to 'UINT8', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvOverlay.cpp(465,67): warning C4267: 'argument': conversion from 'size_t' to 'UINT8', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvOverlay.cpp(470,67): warning C4267: 'argument': conversion from 'size_t' to 'UINT8', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\InvOverlay.cpp(233,7): warning C4189: 'commandList': local variable is initialized but not referenced
+  LogWindow.cpp
+  Main.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Disk.h(270,4): warning C4201: nonstandard extension used: nameless struct/union
+  MemoryTriggers.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+  NonVolatile.cpp
+  pch.cpp
+  Gamelink.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+  RemoteControlManager.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\DiskImageHelper.h(378,26): warning C4267: 'return': conversion from 'size_t' to 'UINT', possible loss of data
+  Sidebar.cpp
+  SidebarContent.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\SidebarContent.cpp(225): warning C4238: nonstandard extension used: class rvalue used as lvalue
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\SidebarContent.cpp(225,52): warning C4238: nonstandard extension used: class rvalue used as lvalue
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\SidebarContent.cpp(471,93): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\SidebarContent.cpp(497,27): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\SidebarContent.cpp(560,40): warning C4018: '<': signed/unsigned mismatch
+  SidebarManager.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+  SpellWindow.cpp
+  TilesetCreator.cpp
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\Emulator\Mockingboard.h(13,4): warning C4201: nonstandard extension used: nameless struct/union
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\TilesetCreator.cpp(72,28): warning C4018: '<': signed/unsigned mismatch
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\TilesetCreator.cpp(77,38): warning C4267: 'initializing': conversion from 'size_t' to 'UINT8', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\TilesetCreator.cpp(78,187): warning C4267: 'argument': conversion from 'size_t' to 'const WORD', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\TilesetCreator.cpp(81,37): warning C4018: '<': signed/unsigned mismatch
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\TilesetCreator.cpp(90,125): warning C4267: 'initializing': conversion from 'size_t' to 'UINT32', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\TilesetCreator.cpp(92,89): warning C4267: 'initializing': conversion from 'size_t' to 'UINT8', possible loss of data
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\TilesetCreator.cpp(68,9): warning C4189: 'fbHeight': local variable is initialized but not referenced
+D:\Repos\Deathlord-Relorded\Deathlord-Relorded\TilesetCreator.cpp(286,31): warning C4018: '<': signed/unsigned mismatch
+  DeathlordRelorded.vcxproj -> D:\Repos\Deathlord-Relorded\x64\Debug\DeathlordRelorded.exe
