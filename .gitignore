@@ -33,11 +33,11 @@
 /.vs
 /Debug
 /x64
-/Deathlord-Companion/Debug
-/Deathlord-Companion/x64/Debug
-/Deathlord-Companion/x64/Release
-/Deathlord-Companion/Deathlord Map 00.txt
-/Deathlord-Companion/Profiles/Deathlord_Test.json
-/Deathlord-Companion/deathlordcompanion.conf
-/Deathlord-Companion/dcmarkers.data
-/Deathlord-Companion/Deathlord Charset.data
+/Deathlord-Relorded/Debug
+/Deathlord-Relorded/x64/Debug
+/Deathlord-Relorded/x64/Release
+/Deathlord-Relorded/Deathlord Map 00.txt
+/Deathlord-Relorded/Profiles/Deathlord_Test.json
+/Deathlord-Relorded/deathlordcompanion.conf
+/Deathlord-Relorded/dcmarkers.data
+/Deathlord-Relorded/Deathlord Charset.data
