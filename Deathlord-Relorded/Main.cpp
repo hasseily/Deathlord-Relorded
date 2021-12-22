@@ -483,7 +483,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		Mouse::ProcessMessage(message, wParam, lParam);
 		break;
 	case WM_CHAR:			// Send to the applewin emulator
-		OutputDebugStringA("WM_CHAR\n");
 		if (!shouldSendKeystrokesToAppleWin)
 			break;
 		// Only enable write on scenario disks when saving via 'q'
@@ -507,7 +506,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		KeybQueueKeypress(wParam, ASCII);
 		break;
 	case WM_KEYDOWN:		// Send to the applewin emulator
+#ifdef _DEBUG
 		OutputDebugStringA("WM_KEYDOWN\n");
+#endif
 		if (shouldSendKeystrokesToAppleWin)
 			KeybQueueKeypress(wParam, NOT_ASCII);
 		else
@@ -522,6 +523,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (wParam == VK_RETURN && (lParam & 0x60000000) == 0x20000000)
 		{
 			// Implements the classic ALT+ENTER fullscreen toggle
+			// TODO: remove it as the game is fullscreen
 			if (s_fullscreen)
 			{
 				SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);

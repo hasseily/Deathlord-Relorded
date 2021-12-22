@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <string>
 //===========================================================================
 
-static int __posX = 0xff;
+static int __posXOrigin = 0xff;
 static int __posY = 0xff;
 static bool __setNewLine = false;
 static std::string interactiveTextOutput = "";
@@ -170,21 +170,22 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				if (!g_nonVolatile.logCombat && (MemGetMainPtr(MEM_MODULE_STATE)[0] == (int)ModuleStates::Combat))
 					break;
 
-				char _glyph = regs.a;
-				// And don't log special characters
-				if ((ARRAY_DEATHLORD_CHARSET[_glyph] == 0xAD) 
-					|| (ARRAY_DEATHLORD_CHARSET[_glyph] == 0x7F))		// Special chars
-					break;
-				if (_glyph < 0)	// regular non-end-of-string
+				unsigned int _glyph = regs.a;
+				// TODO: Display cursor and long dash properly
+				if (ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F] == 0xAD) // long dash
+					__logWindow->AppendLog('-', true);
+				else if (ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F] == 0x7F) // cursor
+					__logWindow->AppendLog('@', true);
+				else if (_glyph > 0x7F)	// regular non-end-of-string
 				{
-					_glyph += 0x80;
-					__logWindow->AppendLog((wchar_t)ARRAY_DEATHLORD_CHARSET[_glyph], false);
+					__logWindow->AppendLog((wchar_t)ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F], false);
 				}
 				else
 				{
-					// End of String
-					__logWindow->AppendLog((wchar_t)ARRAY_DEATHLORD_CHARSET[_glyph], false);
-					__logWindow->AppendLog(L'\n', true);
+					// End of String unless the glyph is a punctuation for some reason
+					// TODO: Instead of \n at end of string, just consider it a buffer flush.
+					// Only do carriage return when X_ORIGIN or Y change
+					__logWindow->AppendLog((wchar_t)ARRAY_DEATHLORD_CHARSET[_glyph], true);
 				}
 				if (MemGetMainPtr(MEM_PRINT_INVERSE)[0] == 0x7F)	// Inverse glyph
 				{
@@ -193,7 +194,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 #ifdef _DEBUG
 				char _bufPrint[200];
 				sprintf_s(_bufPrint, 200, "%c/%2X (%2X) == XOrig: %2d, YOrig: %2d, X:%2d, Y:%2d, Width: %2d, Height %2d\n",
-					ARRAY_DEATHLORD_CHARSET[_glyph], regs.a, MemGetMainPtr(MEM_PRINT_INVERSE)[0], 
+					ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F], regs.a, MemGetMainPtr(MEM_PRINT_INVERSE)[0], 
 					MemGetMainPtr(MEM_PRINT_X_ORIGIN)[0], MemGetMainPtr(MEM_PRINT_Y_ORIGIN)[0],
 					MemGetMainPtr(MEM_PRINT_X)[0], MemGetMainPtr(MEM_PRINT_Y)[0],
 					MemGetMainPtr(MEM_PRINT_WIDTH)[0], MemGetMainPtr(MEM_PRINT_HEIGHT)[0]);
