@@ -232,7 +232,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			wcex.hInstance = hInstance;
 			wcex.hIcon = LoadIconW(hInstance, L"IDI_ICON");
 			wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-			wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+			wcex.hbrBackground = reinterpret_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
 			wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_DeathlordRelorded);
 			wcex.lpszClassName = L"DeathlordRelordedWindowClass";
 			wcex.hIconSm = LoadIconW(wcex.hInstance, L"IDI_ICON");
@@ -243,40 +243,34 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 			// Create window
 			int w, h;
-			SidebarManager::GetBaseSize(w, h);
+			g_game->GetBaseSize(w,h);
 
 			RECT rc = { 0, 0, static_cast<LONG>(w), static_cast<LONG>(h) };
 
-			AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, TRUE);
+			AdjustWindowRect(&rc, WS_POPUP, TRUE);
 			m_initialWindowWidth = rc.right - rc.left;
 			m_initialWindowHeight = rc.bottom - rc.top;
 
 			// TODO: enable resizing the window by using WS_OVERLAPPEDWINDOW
 			//       disable resizing the window by using WS_OVERLAPPED | WS_SYSMENU
-			hwnd = CreateWindowExW(0, L"DeathlordRelordedWindowClass", L"Deathlord Relorded", WS_OVERLAPPED | WS_SYSMENU,
-				CW_USEDEFAULT, CW_USEDEFAULT, m_initialWindowWidth, m_initialWindowHeight, nullptr, nullptr, hInstance,
-				nullptr);
-			// TODO: Change to CreateWindowExW(WS_EX_TOPMOST, L"DeathlordRelordedWindowClass", L"DeathlordRelorded", WS_POPUP,
-			// to default to fullscreen.
+			hwnd = CreateWindowExW(0, L"DeathlordRelordedWindowClass", L"Deathlord Relorded", WS_POPUP,
+				CW_USEDEFAULT, CW_USEDEFAULT, m_initialWindowWidth, m_initialWindowHeight, nullptr, nullptr, hInstance, nullptr);
 
 			if (!hwnd)
 				return 1;
 
-			ShowWindow(hwnd, nCmdShow);
-			// TODO: Change nCmdShow to SW_SHOWMAXIMIZED to default to fullscreen.
-
 			// Set up the accelerators
 			haccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_ACCELERATOR1));
 
-			SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(g_game.get()));
-
+			SetWindowLongPtr(hwnd, GWL_STYLE, 0);
+			SetWindowLongPtr(hwnd, GWL_EXSTYLE, WS_EX_TOPMOST);
 			WINDOWINFO wi;
 			wi.cbSize = sizeof(WINDOWINFO);
 			GetWindowInfo(hwnd, &wi);
 			m_extraWindowWidth = (wi.rcWindow.right - wi.rcClient.right) + (wi.rcClient.left - wi.rcWindow.left);
 			m_extraWindowHeight = (wi.rcWindow.bottom - wi.rcClient.bottom) + (wi.rcClient.top - wi.rcWindow.top);
 
-
+			SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(g_game.get()));
 			g_game->Initialize(hwnd, wi.rcClient.right - wi.rcClient.left, wi.rcClient.bottom - wi.rcClient.top);
 
 			// create the instances of important blocks at the start
@@ -285,7 +279,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			g_dlHacks = std::make_unique<DeathlordHacks>(g_hInstance, hwnd);
 
 			// Autoload the last used profile
-			g_game->ActivateLastUsedProfile();
+			// g_game->ActivateLastUsedProfile();
 
 			// And open the spells window if necessary
 			if (g_nonVolatile.showSpells)
@@ -294,6 +288,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			// Game has now loaded the saved/default settings
 			// Update the menu bar with the settings
 			UpdateMenuBarStatus(hwnd);
+			ShowWindow(hwnd, nCmdShow);
 
 		}
 

@@ -429,6 +429,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 	spriteBatch->SetViewport(mapViewport);
 	spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
 	SimpleMath::Rectangle mapScissorRect(*mapRect);
+	mapScissorRect.width = 1920;
 	float _scale = (g_nonVolatile.mapQuadrant == AutoMapQuandrant::All ? 1.f : 2.f);
 	Vector2 _mapCenter = mapScissorRect.Center();
 	switch (g_nonVolatile.mapQuadrant)
@@ -687,7 +688,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 	}
 
 	spriteBatch->End();
-	D3D12_VIEWPORT viewports[1] = { m_deviceResources->GetScreenViewport() };
+	D3D12_VIEWPORT viewports[2] = { m_deviceResources->GetScreenViewport() };
 	D3D12_RECT scissorRects[1] = { m_deviceResources->GetScissorRect() };
 	commandList->RSSetViewports(1, viewports);
 	commandList->RSSetScissorRects(1, scissorRects);

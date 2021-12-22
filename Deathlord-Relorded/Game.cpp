@@ -209,16 +209,15 @@ void Game::SetWindowSizeOnChangedProfile()
 
 #pragma region Others
 
-// Base size adds the automap after getting the size with the sidebars
+// Base size is the size of the monitor.
 void Game::GetBaseSize(__out int& width, __out int& height) noexcept
 {
-	m_sbM.GetBaseSize(width, height);
-    if (!g_nonVolatile.showMap)
-        return;
-	width = width + MAP_WIDTH_IN_VIEWPORT;
-    int mapHeight = MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW;
-	if (height < mapHeight)
-		height = mapHeight;
+	HMONITOR monitor = MonitorFromWindow(m_window, MONITOR_DEFAULTTONEAREST);
+	MONITORINFO info;
+	info.cbSize = sizeof(MONITORINFO);
+	GetMonitorInfo(monitor, &info);
+    width = info.rcMonitor.right - info.rcMonitor.left;
+    height = info.rcMonitor.bottom - info.rcMonitor.top;
 	return;
 }
 
@@ -381,15 +380,26 @@ void Game::Render()
         commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
         commandList->IASetIndexBuffer(&m_indexBufferView);
 
-        // Draw quad.
+        // Draw quad
+        // If not in game, draw it at a small size for readability
+        auto vp = m_deviceResources->GetScreenViewport();
+        if (!g_isInGameMap)
+        {
+            vp = m_deviceResources->GetGamelinkViewport();
+        }
+        D3D12_VIEWPORT viewports[1] = { vp };
+        commandList->RSSetViewports(1, viewports);
         commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+
         // End drawing video texture
 
         // Drawing text
         RECT clientRect;
         GetClientRect(m_window, &clientRect);
         int origW, origH;
-        GetBaseSize(origW, origH);
+        GetBaseSize(origW, origH);      // TODO: Cache this?
+        clientRect.right = 1920;
+        clientRect.bottom = 1080;
 
         // Now time to draw the text and lines
 		m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
@@ -592,6 +602,7 @@ void Game::OnWindowSizeChanged(LONG width, LONG height)
     {
         _scale = (float)height / (float)bh;
     }
+    _scale = 1;
     newBWidth = GetFrameBufferWidth() * _scale;
     newBHeight = GetFrameBufferHeight() * _scale;
 

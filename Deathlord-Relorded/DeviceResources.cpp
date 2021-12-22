@@ -412,24 +412,36 @@ void DeviceResources::CreateWindowSizeDependentResources()
         m_d3dDevice->CreateDepthStencilView(m_depthStencil.Get(), &dsvDesc, m_dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
     }
 
-    // Set the 3D rendering viewport and scissor rectangle to target the entire window.
+    // Set the 3D rendering viewport and scissor rectangle to target a 1920x1080 area in the center of the screen.
     // Set up the gamelink viewport to only target the gamelink area. This helps properly
-    // keep the correct aspect ratio as the window is resized by the user
-    m_screenViewport.TopLeftX = m_screenViewport.TopLeftY = 0.f;
-    m_screenViewport.Width = static_cast<float>(backBufferWidth);
-    m_screenViewport.Height = static_cast<float>(backBufferHeight);
+
+	HMONITOR monitor = MonitorFromWindow(m_window, MONITOR_DEFAULTTONEAREST);
+	MONITORINFO info;
+	info.cbSize = sizeof(MONITORINFO);
+	GetMonitorInfo(monitor, &info);
+	int monitor_width = info.rcMonitor.right - info.rcMonitor.left;
+	int monitor_height = info.rcMonitor.bottom - info.rcMonitor.top;
+
+	m_screenViewport.Width = 1920;
+	m_screenViewport.Height = 1080;
+	m_screenViewport.TopLeftX = (monitor_width - m_screenViewport.Width) / 2;
+	m_screenViewport.TopLeftY = (monitor_height - m_screenViewport.Height) / 2;
     m_screenViewport.MinDepth = D3D12_MIN_DEPTH;
     m_screenViewport.MaxDepth = D3D12_MAX_DEPTH;
 
-    m_gamelinkViewport.TopLeftX = m_gamelinkViewport.TopLeftY = 0.f;
+
+    // Gamelink viewport is unused for now
     m_gamelinkViewport.Width = GetFrameBufferWidth();
     m_gamelinkViewport.Height = GetFrameBufferHeight();
+	m_gamelinkViewport.TopLeftX = (monitor_width - m_gamelinkViewport.Width) / 2;
+	m_gamelinkViewport.TopLeftY = (monitor_height - m_gamelinkViewport.Height) / 2;
     m_gamelinkViewport.MinDepth = D3D12_MIN_DEPTH;
     m_gamelinkViewport.MaxDepth = D3D12_MAX_DEPTH;
 
-    m_scissorRect.left = m_scissorRect.top = 0;
-    m_scissorRect.right = static_cast<LONG>(backBufferWidth);
-    m_scissorRect.bottom = static_cast<LONG>(backBufferHeight);
+    m_scissorRect.left = m_screenViewport.TopLeftX;
+    m_scissorRect.top = m_screenViewport.TopLeftY;
+    m_scissorRect.right = m_screenViewport.TopLeftX + m_screenViewport.Width;
+    m_scissorRect.bottom = m_screenViewport.TopLeftY + m_screenViewport.Height;
 }
 
 // This method is called when the Win32 window is created (or re-created).
