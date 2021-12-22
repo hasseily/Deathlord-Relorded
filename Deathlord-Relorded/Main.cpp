@@ -483,6 +483,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		Mouse::ProcessMessage(message, wParam, lParam);
 		break;
 	case WM_CHAR:			// Send to the applewin emulator
+		OutputDebugStringA("WM_CHAR\n");
 		if (!shouldSendKeystrokesToAppleWin)
 			break;
 		// Only enable write on scenario disks when saving via 'q'
@@ -505,12 +506,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		KeybQueueKeypress(wParam, ASCII);
 		break;
-	case WM_KEYUP:
-		[[fallthrough]];
 	case WM_KEYDOWN:		// Send to the applewin emulator
+		OutputDebugStringA("WM_KEYDOWN\n");
 		if (shouldSendKeystrokesToAppleWin)
 			KeybQueueKeypress(wParam, NOT_ASCII);
-		Keyboard::ProcessMessage(message, wParam, lParam);
+		else
+			Keyboard::ProcessMessage(message, wParam, lParam);
 
 		break;
 
