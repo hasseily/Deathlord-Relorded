@@ -171,12 +171,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 					break;
 
 				unsigned int _glyph = regs.a;
-				// TODO: Display cursor and long dash properly
-				if (ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F] == 0xAD) // long dash
-					__logWindow->AppendLog('-', true);
-				else if (ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F] == 0x7F) // cursor
-					__logWindow->AppendLog('@', true);
-				else if (_glyph > 0x7F)	// regular non-end-of-string
+				if (_glyph > 0x7F)	// regular non-end-of-string
 				{
 					__logWindow->AppendLog((wchar_t)ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F], false);
 				}

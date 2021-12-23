@@ -336,7 +336,19 @@ void LogWindow::ClearLog()
 void LogWindow::AppendLog(const wchar_t wchar, bool shouldPrint)
 {
 	bool printIt = false;
-	currentBuffer.append(1, wchar);
+	// Display cursor and long dash in a more standard manner for regular fonts
+	// in PR#3 font they don't need unique cases.
+	switch (wchar)
+	{
+	case 0xAD:	// long dash
+		currentBuffer.append(1, L'-');
+		break;
+	case 0x7F:	// cursor, don't display
+		break;
+	default:
+		currentBuffer.append(1, wchar);
+	}
+
 	if (shouldPrint)
 	{
 		printIt = true;

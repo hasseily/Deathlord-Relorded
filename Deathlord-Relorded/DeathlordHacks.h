@@ -79,7 +79,7 @@ constexpr unsigned char ARRAY_DEATHLORD_CHARSET[128]{
 	' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/',
 	'0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?',
 	'@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O',
-	'P','Q','R','S','T','U','V','W','X','Y','Z',0xAD,' ',' ',' ',' ',	// 0xAD is wide dash (I think used to just clear)
+	'P','Q','R','S','T','U','V','W','X','Y','Z',0xAD,' ',' ',' ',' ',	// 0xAD is wide dash that spans the whole glyph, to draw full lines
 	'`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o',
 	'p','q','r','s','t','u','v','w','x','y','z',0x7F,' ',' ','[',']'	// 0x7F is the cursor
 };
@@ -88,7 +88,7 @@ constexpr unsigned char ARRAY_DEATHLORD_CHARSET_EOR[128]{	// The array EOR'd wit
 	'e','d','g','f','a','`','c','b','m','l','o','n','i','h','k','j',
 	'u','t','w','v','q','p','s','r',' ',' ',']','[','y','x',0x7F,'z',	// 0x7F is the cursor
 	'E','D','G','F','A','@','C','B','M','L','O','N','I','H','K','J',
-	'U','T','W','V','Q','P','S','R',' ',' ',' ',' ','Y','X',0xAD,'Z',	// 0xAD is wide dash
+	'U','T','W','V','Q','P','S','R',' ',' ',' ',' ','Y','X',0xAD,'Z',	// 0xAD is wide dash­­
 	'%','$','\'','&','!',' ','#','"','-',',','/','.',')','(','+','*',
 	'5','4','7','6','1','0','3','2','=','<','?','>','9','8',';',':',
 	'.','.','.','.','.','.','.','.','\n','.','.','.','.','.','.','.',	// mistly unused
