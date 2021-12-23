@@ -335,12 +335,9 @@ std::string StringFromMemory(UINT16 startMem, UINT8 maxLength)
 	UINT8 c = MemGetMainPtr(startMem)[i];
 	while (i < maxLength)
 	{
-		if (c >= 0x80)	// end-of-string hi-byte character
-		{
-			s.append(1, ARRAY_DEATHLORD_CHARSET_EOR[c - 0x80]);
+		s.append(1, ARRAY_DEATHLORD_CHARSET_EOR[c & 0x7F]);
+		if (c & 0x80)	// end-of-string hi-byte character
 			break;
-		}
-		s.append(1, ARRAY_DEATHLORD_CHARSET_EOR[c]);
 		++i;
 		c = MemGetMainPtr(startMem)[i];
 	}
