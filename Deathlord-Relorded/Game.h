@@ -173,4 +173,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D12Resource>          m_texture;
     D3D12_VERTEX_BUFFER_VIEW                        m_vertexBufferView;
     D3D12_INDEX_BUFFER_VIEW                         m_indexBufferView;
+
+    // The main game texture background
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_gameTextureBG;
 };

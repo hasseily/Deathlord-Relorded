@@ -373,6 +373,10 @@ void Game::Render()
     if (ticksSinceLastRender > m_timer.TicksPerSecond / MAX_RENDERED_FRAMES_PER_SECOND)
     {
         tickOfLastRender = m_timer.GetTotalTicks();
+		RECT clientRect;
+		GetClientRect(m_window, &clientRect);
+		int origW, origH;
+		GetBaseSize(origW, origH);      // TODO: Cache this?
 
         // First update the sidebar, it doesn't need to be updated until right before the render
         // Only allow x microseconds for updates of sidebar every render
@@ -385,141 +389,146 @@ void Game::Render()
         auto commandList = m_deviceResources->GetCommandList();
         PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"Render");
 
-        // Drawing video texture
-        auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-        commandList->ResourceBarrier(1, &barrier);
-        UpdateSubresources(commandList, m_texture.Get(), g_textureUploadHeap.Get(), 0, 0, 1, &g_textureData);
-        barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        commandList->ResourceBarrier(1, &barrier);
+		// Now set the command list data
+		commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+		commandList->SetPipelineState(m_pipelineState.Get());
+		// The states heap is for the different tile samplers needed
+		ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap(), m_states->Heap() };
+		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
+		commandList->SetGraphicsRootDescriptorTable(0, m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video));
+		// Set necessary state.
+		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+		commandList->IASetIndexBuffer(&m_indexBufferView);
 
-        commandList->SetGraphicsRootSignature(m_rootSignature.Get());
-        commandList->SetPipelineState(m_pipelineState.Get());
-
-        // The states heap is for the different tile samplers needed
-        ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap(), m_states->Heap() };
-        commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
-
-        commandList->SetGraphicsRootDescriptorTable(0, m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video));
-
-        // Set necessary state.
-        commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-        commandList->IASetIndexBuffer(&m_indexBufferView);
-
-        // Draw quad
-        D3D12_VIEWPORT viewports[1] = { GetCurrentViewport() };
-        commandList->RSSetViewports(1, viewports);
-        commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
-
-        // End drawing video texture
-
-        // Drawing text
-        RECT clientRect;
-        GetClientRect(m_window, &clientRect);
-        int origW, origH;
-        GetBaseSize(origW, origH);      // TODO: Cache this?
-
-        // Now time to draw the text and lines
-		m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
-			clientRect.bottom - clientRect.top, 0, 0, 1));
-		m_dxtEffectLines->Apply(commandList);
-		m_primitiveBatchLines->Begin(commandList);
-        m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
-		m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
-        for each (auto sb in m_sbM.sidebars)
+        if (!g_isInGameMap)
         {
+			// Load the AppleWin video texture if we're not inside the game map
+            // Drawing video texture which updates every frame, so it needs to be sent to the GPU every frame
 
-			// shifted sidebar position if the window is different size than original size
-			XMFLOAT2 shiftedPosition = sb.position;
-			switch (sb.type)
-			{
-			case SidebarTypes::Right:
-				shiftedPosition.x += clientRect.right - clientRect.left - origW;
-				break;
-			case SidebarTypes::Bottom:
-				shiftedPosition.y += clientRect.bottom - clientRect.top - origH;
-				break;
-			default:
-				break;
-			}
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+			commandList->ResourceBarrier(1, &barrier);
+			UpdateSubresources(commandList, m_texture.Get(), g_textureUploadHeap.Get(), 0, 0, 1, &g_textureData);
+			barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			commandList->ResourceBarrier(1, &barrier);
+			// It's sent to the GPU
 
-            // Draw each block's text
-            // shift it by the amount the sidebar was shifted
-            XMFLOAT2 sblockPosition;    // shifted block position
-            for each (auto b in sb.blocks)
-            {
-                sblockPosition = b->position;
-                sblockPosition.x += shiftedPosition.x - sb.position.x;
-                sblockPosition.y += shiftedPosition.y - sb.position.y;
-                m_spriteFonts.at(b->fontId)->DrawString(m_spriteBatch.get(), b->text.c_str(),
-                    sblockPosition, b->color, 0.f, m_vector2Zero);
-            }
-
-			// Now draw a delimiter line for the sidebar
-			// TODO: not sure if we want those delimiters
-			XMFLOAT3 lstart = XMFLOAT3(shiftedPosition.x, shiftedPosition.y, 0);
-			XMFLOAT3 lend = lstart;
-			switch (sb.type)
-			{
-			case SidebarTypes::Right:
-				lend.y = lstart.y + clientRect.bottom - clientRect.top;
-				break;
-			case SidebarTypes::Bottom:
-				lend.x = lstart.x + GetFrameBufferWidth();
-				break;
-			default:
-				break;
-			}
-			m_primitiveBatchLines->DrawLine(
-				VertexPositionColor(lstart, static_cast<XMFLOAT4>(Colors::DimGray)),
-				VertexPositionColor(lend, static_cast<XMFLOAT4>(Colors::Black))
-			);
+			// Draw AppleWin textured quad
+			D3D12_VIEWPORT viewports[1] = { GetCurrentViewport() };
+			commandList->RSSetViewports(1, viewports);
+			commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+			// End drawing video texture
         }
+        else    // g_isInGameMap
+        {
+			m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
+			m_spriteBatch->Begin(commandList, m_states->LinearClamp(), SpriteSortMode_Deferred);
 
+			// Draw the game background
+			auto mmBGTexSize = GetTextureSize(m_gameTextureBG.Get());
+			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::MainBackground), mmBGTexSize,
+				clientRect, nullptr, Colors::White, 0.f, XMFLOAT2());
+			// End drawing the game background
 
+			// Now time to draw the text and lines
+			m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
+				clientRect.bottom - clientRect.top, 0, 0, 1));
+			m_dxtEffectLines->Apply(commandList);
+			m_primitiveBatchLines->Begin(commandList);
+			for each (auto sb in m_sbM.sidebars)
+			{
+
+				// shifted sidebar position if the window is different size than original size
+				XMFLOAT2 shiftedPosition = sb.position;
+				switch (sb.type)
+				{
+				case SidebarTypes::Right:
+					shiftedPosition.x += clientRect.right - clientRect.left - origW;
+					break;
+				case SidebarTypes::Bottom:
+					shiftedPosition.y += clientRect.bottom - clientRect.top - origH;
+					break;
+				default:
+					break;
+				}
+
+				// Draw each block's text
+				// shift it by the amount the sidebar was shifted
+				XMFLOAT2 sblockPosition;    // shifted block position
+				for each (auto b in sb.blocks)
+				{
+					sblockPosition = b->position;
+					sblockPosition.x += shiftedPosition.x - sb.position.x;
+					sblockPosition.y += shiftedPosition.y - sb.position.y;
+					m_spriteFonts.at(b->fontId)->DrawString(m_spriteBatch.get(), b->text.c_str(),
+						sblockPosition, b->color, 0.f, m_vector2Zero);
+				}
+
+				// Now draw a delimiter line for the sidebar
+				// TODO: not sure if we want those delimiters
+				XMFLOAT3 lstart = XMFLOAT3(shiftedPosition.x, shiftedPosition.y, 0);
+				XMFLOAT3 lend = lstart;
+				switch (sb.type)
+				{
+				case SidebarTypes::Right:
+					lend.y = lstart.y + clientRect.bottom - clientRect.top;
+					break;
+				case SidebarTypes::Bottom:
+					lend.x = lstart.x + GetFrameBufferWidth();
+					break;
+				default:
+					break;
+				}
+				m_primitiveBatchLines->DrawLine(
+					VertexPositionColor(lstart, static_cast<XMFLOAT4>(Colors::DimGray)),
+					VertexPositionColor(lend, static_cast<XMFLOAT4>(Colors::Black))
+				);
+			}
 #ifdef _DEBUG
-		char pcbuf[4000];
-		//    snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %I64x : %I64x", g_debug_video_field, g_debug_video_data);
-		snprintf(pcbuf, sizeof(pcbuf), "%6.0f usec/frame - Time: %6.2f - Sidebar Time: %6lld\n", 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds(), sbTimeSpent);
-		m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
-			{ 11.f, 11.f }, Colors::Black, 0.f, m_vector2Zero, 1.f);
-		m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
-			{ 10.f, 10.f }, Colors::OrangeRed, 0.f, m_vector2Zero, 1.f);
+			char pcbuf[4000];
+			//    snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %I64x : %I64x", g_debug_video_field, g_debug_video_data);
+			snprintf(pcbuf, sizeof(pcbuf), "%6.0f usec/frame - Time: %6.2f - Sidebar Time: %6lld\n", 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds(), sbTimeSpent);
+			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
+				{ 11.f, 11.f }, Colors::Black, 0.f, m_vector2Zero, 1.f);
+			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
+				{ 10.f, 10.f }, Colors::OrangeRed, 0.f, m_vector2Zero, 1.f);
 #endif // _DEBUG
-        m_primitiveBatchLines->End();
-		m_spriteBatch->End();
+			m_primitiveBatchLines->End();
+			m_spriteBatch->End();
 
-        if (g_nonVolatile.showMap)
-        {
-			// Now draw autoMap
-			auto mmOrigin = Vector2(clientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
-			RECT mapRectInViewport = {
-				mmOrigin.x,
-				mmOrigin.y,
-				mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
-				mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
-			};
-            m_autoMap->DrawAutoMap(m_spriteBatch, m_states.get(), &mapRectInViewport);
-			// End drawing autoMap
-            
-            // now draw the hidden layer around the player if he's allowed to see it
-            // inside the original Deathlord viewport
-            m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
-        }
+			if (g_nonVolatile.showMap)
+			{
+				// Now draw autoMap
+				auto mmOrigin = Vector2(clientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
+				RECT mapRectInViewport = {
+					mmOrigin.x,
+					mmOrigin.y,
+					mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
+					mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
+				};
+				m_autoMap->DrawAutoMap(m_spriteBatch, m_states.get(), &mapRectInViewport);
+				// End drawing autoMap
 
-        // TODO: Let m_invOverlay create its own effect, spritebatch and primitivebatch?
-        if (m_invOverlay->IsInvOverlayDisplayed())
-        {
-            D3D12_VIEWPORT vp = GetCurrentViewport();
-			m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, 0, 0, 1));
-            m_dxtEffectTriangles->Apply(commandList);
-			m_primitiveBatchTriangles->Begin(commandList);
-			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
-			m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatchTriangles, &clientRect);
-            m_primitiveBatchTriangles->End();
-            m_spriteBatch->End();
-        }
-		// End drawing text
+				// now draw the hidden layer around the player if he's allowed to see it
+				// inside the original Deathlord viewport
+				m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
+			}
+
+			// TODO: Let m_invOverlay create its own effect, spritebatch and primitivebatch?
+			if (m_invOverlay->IsInvOverlayDisplayed())
+			{
+				D3D12_VIEWPORT vp = GetCurrentViewport();
+				m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, 0, 0, 1));
+				m_dxtEffectTriangles->Apply(commandList);
+				m_primitiveBatchTriangles->Begin(commandList);
+				m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
+				m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatchTriangles, &clientRect);
+				m_primitiveBatchTriangles->End();
+				m_spriteBatch->End();
+			}
+			// End drawing text
+
+        }   // end if !g_isInGameMap
 
 		PIXEndEvent(commandList);
 
@@ -691,6 +700,13 @@ void Game::CreateDeviceDependentResources()
 
     ResourceUploadBatch resourceUpload(device);
     resourceUpload.Begin();
+
+    // Upload the background of the main window
+	DX::ThrowIfFailed(
+		CreateWICTextureFromFile(device, resourceUpload, L"Assets/Background_Relorded.png",
+            m_gameTextureBG.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_gameTextureBG.Get(),
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::MainBackground));
 
     // Create the sprite fonts based on FontsAvailable
     m_spriteFonts.clear();
@@ -1058,6 +1074,7 @@ void Game::OnDeviceLost()
     {
         it->second.reset();
     }
+    m_gameTextureBG.Reset();
 	m_texture.Reset();
     m_indexBuffer.Reset();
     m_vertexBuffer.Reset();
