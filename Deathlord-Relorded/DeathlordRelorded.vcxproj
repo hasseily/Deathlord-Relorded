@@ -215,6 +215,7 @@
     <ClCompile Include="SidebarContent.cpp" />
     <ClCompile Include="SidebarManager.cpp" />
     <ClCompile Include="SpellWindow.cpp" />
+    <ClCompile Include="TextOutput.cpp" />
     <ClCompile Include="TilesetCreator.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -273,6 +274,7 @@
     <ClInclude Include="SpellWindow.h" />
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="TextOutput.h" />
     <ClInclude Include="TilesetCreator.h" />
   </ItemGroup>
   <ItemGroup>

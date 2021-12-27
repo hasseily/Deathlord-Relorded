@@ -44,9 +44,9 @@ static RECT spRectInvEmpty		= { 28 * 0, 32 * 3, 28 * 1, 32 * 4 };
 static RECT spRectInvCarried	= { 28 * 1, 32 * 3, 28 * 2, 32 * 4 };
 static RECT spRectInvWorn		= { 28 * 2, 32 * 3, 28 * 3, 32 * 4 };
 
-static std::array<std::string, (int)InventorySlots::TOTAL>StringsInventorySlots =
+static std::array<std::wstring, (int)InventorySlots::TOTAL>StringsInventorySlots =
 {
-	"MELEE", "RANGED", "CHEST", "SHIELD", "MISC", "JEWELRY", "TOOL", "SCROLL"
+	L"MELEE", L"RANGED", L"CHEST", L"SHIELD", L"MISC", L"JEWELRY", L"TOOL", L"SCROLL"
 };
 
 // Interactable shapes for the overlay
@@ -223,7 +223,7 @@ void InvOverlay::OnDeviceLost()
 
 #pragma region Drawing
 
-void InvOverlay::DrawInvOverlay(
+void InvOverlay::DrawInvOverlay(	// TODO: Fix the layout!!!
 	std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, 
 	std::shared_ptr<DirectX::PrimitiveBatch<VertexPositionColor>>& primitiveBatch, 
 	RECT* overlayRect)
@@ -244,7 +244,7 @@ void InvOverlay::DrawInvOverlay(
 	UINT8 borderPadding = 20;	// Empty Pixels inside the border
 	UINT8 maxGlyphs = 12;						// Max number of glyphs in the column
 	UINT16 memberColWidth = maxGlyphs * glyphWidth;	// Column width for party members
-	std::string _bufStr;
+	std::wstring _bufStr;
 
 	RECT innerRect = {		// The inner rect after padding has been applied
 		m_currentRect.left + borderPadding,
@@ -412,7 +412,7 @@ void InvOverlay::DrawInvOverlay(
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
 		UINT8 memberArmor = MemGetMainPtr(PARTY_ARMORCLASS_START)[iMember];
-		_bufStr = "AC " + std::to_string((int)10 - memberArmor);
+		_bufStr = L"AC " + std::to_wstring((int)10 - memberArmor);
 		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
@@ -430,13 +430,13 @@ void InvOverlay::DrawInvOverlay(
 		switch (memberReady)
 		{
 		case 0:
-			_bufStr = "MELEE";
+			_bufStr = L"MELEE";
 			break;
 		case 1:
-			_bufStr = "RANGED";
+			_bufStr = L"RANGED";
 			break;
 		default:
-			_bufStr = "FISTS";
+			_bufStr = L"FISTS";
 		}
 		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
@@ -454,18 +454,18 @@ void InvOverlay::DrawInvOverlay(
 	// yCol is still aligned with the readied status text
 	if (_currentItems == _maxStashItems)
 	{
-		_bufStr = "FULL";
+		_bufStr = L"FULL";
 		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			VColorAmber, 0.f, Vector2(0.f, 0.f), 1.f);
 	}
 	yCol -= glyphHeight + 10 + 2;
-	_bufStr = std::to_string(_currentItems) + " / " + std::to_string(_maxStashItems);
+	_bufStr = std::to_wstring(_currentItems) + L" / " + std::to_wstring(_maxStashItems);
 	font->DrawString(spriteBatch.get(), _bufStr.c_str(),
 		Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 	yCol -= glyphHeight + 2;
-	_bufStr = "STASH";
+	_bufStr = L"STASH";
 	font->DrawString(spriteBatch.get(), _bufStr.c_str(),
 		Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);

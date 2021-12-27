@@ -415,17 +415,10 @@ void DeviceResources::CreateWindowSizeDependentResources()
     // Set the 3D rendering viewport and scissor rectangle to target a 1920x1080 area in the center of the screen.
     // Set up the gamelink viewport to only target the gamelink area. This helps properly
 
-	HMONITOR monitor = MonitorFromWindow(m_window, MONITOR_DEFAULTTONEAREST);
-	MONITORINFO info;
-	info.cbSize = sizeof(MONITORINFO);
-	GetMonitorInfo(monitor, &info);
-	int monitor_width = info.rcMonitor.right - info.rcMonitor.left;
-	int monitor_height = info.rcMonitor.bottom - info.rcMonitor.top;
-
-	m_screenViewport.Width = 1920;
-	m_screenViewport.Height = 1080;
-	m_screenViewport.TopLeftX = (monitor_width - m_screenViewport.Width) / 2;
-	m_screenViewport.TopLeftY = (monitor_height - m_screenViewport.Height) / 2;
+	m_screenViewport.Width = MAIN_WINDOW_WIDTH;
+	m_screenViewport.Height = MAIN_WINDOW_HEIGHT;
+    m_screenViewport.TopLeftX = 0;
+    m_screenViewport.TopLeftY = 0;
     m_screenViewport.MinDepth = D3D12_MIN_DEPTH;
     m_screenViewport.MaxDepth = D3D12_MAX_DEPTH;
 
@@ -433,8 +426,8 @@ void DeviceResources::CreateWindowSizeDependentResources()
     // Gamelink viewport is unused for now
     m_gamelinkViewport.Width = GetFrameBufferWidth();
     m_gamelinkViewport.Height = GetFrameBufferHeight();
-	m_gamelinkViewport.TopLeftX = (monitor_width - m_gamelinkViewport.Width) / 2;
-	m_gamelinkViewport.TopLeftY = (monitor_height - m_gamelinkViewport.Height) / 2;
+	m_gamelinkViewport.TopLeftX = (m_screenViewport.Width - m_gamelinkViewport.Width) / 2;
+	m_gamelinkViewport.TopLeftY = (m_screenViewport.Height - m_gamelinkViewport.Height) / 2;
     m_gamelinkViewport.MinDepth = D3D12_MIN_DEPTH;
     m_gamelinkViewport.MaxDepth = D3D12_MAX_DEPTH;
 

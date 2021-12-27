@@ -18,64 +18,64 @@ const wchar_t CLASS_NAME[] = L"Deathlord Hacks Class";
 static HINSTANCE appInstance = nullptr;
 static HWND hwndMain = nullptr;				// handle to main window
 
-static std::array<std::string, 16> DeathlordClassNames{
-	std::string("Fighter"),
-	std::string("Paladin"),
-	std::string("Ranger"),
-	std::string("Barbarian"),
-	std::string("Berzerker"),
-	std::string("Samurai"),
-	std::string("Dark Knight"),
-	std::string("Thief"),
-	std::string("Assassin"),
-	std::string("Ninja"),
-	std::string("Monk"),
-	std::string("Priest"),
-	std::string("Druid"),
-	std::string("Wizard"),
-	std::string("Illusionist"),
-	std::string("Peasant")
+static std::array<std::wstring, 16> DeathlordClassNames{
+	std::wstring(L"Fighter"),
+	std::wstring(L"Paladin"),
+	std::wstring(L"Ranger"),
+	std::wstring(L"Barbarian"),
+	std::wstring(L"Berzerker"),
+	std::wstring(L"Samurai"),
+	std::wstring(L"Dark Knight"),
+	std::wstring(L"Thief"),
+	std::wstring(L"Assassin"),
+	std::wstring(L"Ninja"),
+	std::wstring(L"Monk"),
+	std::wstring(L"Priest"),
+	std::wstring(L"Druid"),
+	std::wstring(L"Wizard"),
+	std::wstring(L"Illusionist"),
+	std::wstring(L"Peasant")
 };
 
-static std::array<std::string, 16> DeathlordClassNamesJapan{
-	std::string("Senshi"),
-	std::string("Kishi"),
-	std::string("Ryoshi"),
-	std::string("Yabanjin"),
-	std::string("Kichigai"),
-	std::string("Samurai"),
-	std::string("Ronin"),
-	std::string("Yakuza"),
-	std::string("Ansatusha"),
-	std::string("Ninja"),
-	std::string("Shukenja"),
-	std::string("Shisai"),
-	std::string("Shizen"),
-	std::string("Mahotsukai"),
-	std::string("Genkai"),
-	std::string("Kosaku")
+static std::array<std::wstring, 16> DeathlordClassNamesJapan{
+	std::wstring(L"Senshi"),
+	std::wstring(L"Kishi"),
+	std::wstring(L"Ryoshi"),
+	std::wstring(L"Yabanjin"),
+	std::wstring(L"Kichigai"),
+	std::wstring(L"Samurai"),
+	std::wstring(L"Ronin"),
+	std::wstring(L"Yakuza"),
+	std::wstring(L"Ansatusha"),
+	std::wstring(L"Ninja"),
+	std::wstring(L"Shukenja"),
+	std::wstring(L"Shisai"),
+	std::wstring(L"Shizen"),
+	std::wstring(L"Mahotsukai"),
+	std::wstring(L"Genkai"),
+	std::wstring(L"Kosaku")
 };
 
-static std::array<std::string, 8> DeathlordRaceNames{
-	std::string("Human"),
-	std::string("Elf"),
-	std::string("Half-Elf"),
-	std::string("Dwarf"),
-	std::string("Gnome"),
-	std::string("Dark Elf"),
-	std::string("Orc"),
-	std::string("Half-Orc")
+static std::array<std::wstring, 8> DeathlordRaceNames{
+	std::wstring(L"Human"),
+	std::wstring(L"Elf"),
+	std::wstring(L"Half-Elf"),
+	std::wstring(L"Dwarf"),
+	std::wstring(L"Gnome"),
+	std::wstring(L"Dark Elf"),
+	std::wstring(L"Orc"),
+	std::wstring(L"Half-Orc")
 };
 
-static std::array<std::string, 8> DeathlordRaceNamesJapan{
-	std::string("Human"),
-	std::string("Toshi"),
-	std::string("Nintoshi"),
-	std::string("Kobito"),
-	std::string("Gnome"),
-	std::string("Obake"),
-	std::string("Troll"),
-	std::string("Ogre")
+static std::array<std::wstring, 8> DeathlordRaceNamesJapan{
+	std::wstring(L"Human"),
+	std::wstring(L"Toshi"),
+	std::wstring(L"Nintoshi"),
+	std::wstring(L"Kobito"),
+	std::wstring(L"Gnome"),
+	std::wstring(L"Obake"),
+	std::wstring(L"Troll"),
+	std::wstring(L"Ogre")
 };
 
 #pragma region Static Methods
@@ -312,7 +312,7 @@ bool PartyHasRace(DeathlordRaces aRace)
 	return false;
 }
 
-std::string NameOfClass(DeathlordClasses aClass, bool inJapan)
+std::wstring NameOfClass(DeathlordClasses aClass, bool inJapan)
 {
 	if (inJapan)
 		return DeathlordClassNamesJapan[(UINT8)aClass];
@@ -320,7 +320,7 @@ std::string NameOfClass(DeathlordClasses aClass, bool inJapan)
 		return DeathlordClassNames[(UINT8)aClass];
 }
 
-std::string NameOfRace(DeathlordRaces aRace, bool inJapan)
+std::wstring NameOfRace(DeathlordRaces aRace, bool inJapan)
 {
 	if (inJapan)
 		return DeathlordRaceNamesJapan[(UINT8)aRace];
@@ -328,9 +328,9 @@ std::string NameOfRace(DeathlordRaces aRace, bool inJapan)
 		return DeathlordRaceNames[(UINT8)aRace];
 }
 
-std::string StringFromMemory(UINT16 startMem, UINT8 maxLength)
+std::wstring StringFromMemory(UINT16 startMem, UINT8 maxLength)
 {
-	std::string s;
+	std::wstring s;
 	UINT8 i = 0;
 	UINT8 c = MemGetMainPtr(startMem)[i];
 	while (i < maxLength)
@@ -344,14 +344,14 @@ std::string StringFromMemory(UINT16 startMem, UINT8 maxLength)
 	return rtrim(s);
 }
 
-std::string& ltrim(std::string& str)
+std::wstring& ltrim(std::wstring& str)
 {
 	auto it2 = std::find_if(str.begin(), str.end(), [](char ch) { return !std::isspace<char>(ch, std::locale::classic()); });
 	str.erase(str.begin(), it2);
 	return str;
 }
 
-std::string& rtrim(std::string& str)
+std::wstring& rtrim(std::wstring& str)
 {
 	auto it1 = std::find_if(str.rbegin(), str.rend(), [](char ch) { return !std::isspace<char>(ch, std::locale::classic()); });
 	str.erase(it1.base(), str.end());

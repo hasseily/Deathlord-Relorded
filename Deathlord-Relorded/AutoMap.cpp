@@ -4,6 +4,7 @@
 #include "MemoryTriggers.h"
 #include "resource.h"
 #include "DeathlordHacks.h"
+#include "TilesetCreator.h"
 
 using namespace DirectX;
 
@@ -429,7 +430,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 	spriteBatch->SetViewport(mapViewport);
 	spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
 	SimpleMath::Rectangle mapScissorRect(*mapRect);
-	mapScissorRect.width = 1920;
+	mapScissorRect.width = MAIN_WINDOW_WIDTH;
 	float _scale = (g_nonVolatile.mapQuadrant == AutoMapQuandrant::All ? 1.f : 2.f);
 	Vector2 _mapCenter = mapScissorRect.Center();
 	switch (g_nonVolatile.mapQuadrant)

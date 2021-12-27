@@ -144,6 +144,9 @@
     <ClCompile Include="InvItem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TextOutput.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATGColors.h">
@@ -312,6 +315,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="InvItem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextOutput.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

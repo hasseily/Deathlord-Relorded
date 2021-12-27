@@ -12,7 +12,10 @@
 #include "Emulator/AppleWin.h"
 #include "Emulator/Video.h"
 #include "MemoryTriggers.h"
+#include "LogWindow.h"
+#include "SpellWindow.h"
 #include "TilesetCreator.h"
+#include "AutoMap.h"
 #include "InvOverlay.h"
 #include <vector>
 #include <string>
@@ -35,6 +38,12 @@ static SidebarManager m_sbM;
 static SidebarContent m_sbC;
 Mouse::ButtonStateTracker moTracker;
 Keyboard::KeyboardStateTracker kbTracker;
+
+static std::shared_ptr<LogWindow>m_logWindow;
+static std::shared_ptr<SpellWindow>m_spellWindow;
+static std::shared_ptr<DeathlordHacks>m_dlHacks;
+static InvOverlay* m_invOverlay;
+static AutoMap* m_autoMap;
 
 AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
 
@@ -209,9 +218,13 @@ void Game::SetWindowSizeOnChangedProfile()
 
 #pragma region Others
 
-// Base size is the size of the monitor.
 void Game::GetBaseSize(__out int& width, __out int& height) noexcept
 {
+    width = MAIN_WINDOW_WIDTH;
+    height = MAIN_WINDOW_HEIGHT;
+    return;
+	// The below would return the size of the monitor
+    /*
 	HMONITOR monitor = MonitorFromWindow(m_window, MONITOR_DEFAULTTONEAREST);
 	MONITORINFO info;
 	info.cbSize = sizeof(MONITORINFO);
@@ -219,6 +232,7 @@ void Game::GetBaseSize(__out int& width, __out int& height) noexcept
     width = info.rcMonitor.right - info.rcMonitor.left;
     height = info.rcMonitor.bottom - info.rcMonitor.top;
 	return;
+    */
 }
 
 DirectX::SpriteFont* Game::GetSpriteFontAtIndex(FontDescriptors fontIndex)
@@ -381,13 +395,7 @@ void Game::Render()
         commandList->IASetIndexBuffer(&m_indexBufferView);
 
         // Draw quad
-        // If not in game, draw it at a small size for readability
-        auto vp = m_deviceResources->GetScreenViewport();
-        if (!g_isInGameMap)
-        {
-            vp = m_deviceResources->GetGamelinkViewport();
-        }
-        D3D12_VIEWPORT viewports[1] = { vp };
+        D3D12_VIEWPORT viewports[1] = { GetCurrentViewport() };
         commandList->RSSetViewports(1, viewports);
         commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
@@ -398,8 +406,6 @@ void Game::Render()
         GetClientRect(m_window, &clientRect);
         int origW, origH;
         GetBaseSize(origW, origH);      // TODO: Cache this?
-        clientRect.right = 1920;
-        clientRect.bottom = 1080;
 
         // Now time to draw the text and lines
 		m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
@@ -467,30 +473,13 @@ void Game::Render()
 			{ 11.f, 11.f }, Colors::Black, 0.f, m_vector2Zero, 1.f);
 		m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
 			{ 10.f, 10.f }, Colors::OrangeRed, 0.f, m_vector2Zero, 1.f);
-		UINT32 fbBorderLeft = GetFrameBufferBorderWidth();	// these are additional shifts to make the tiles align
-		UINT32 fbBorderTop = GetFrameBufferBorderHeight() + 16;	// these are additional shifts to make the tiles align
-		const UINT8 visTileSide = 9;	// 9 tiles per side visible
-        for (UINT8 ir = 0; ir <= visTileSide; ir++)		// rows
-        {
-            m_primitiveBatchLines->DrawLine(
-				VertexPositionColor(XMFLOAT3(fbBorderLeft, fbBorderTop + ir * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red)),
-				VertexPositionColor(XMFLOAT3(fbBorderLeft + visTileSide * FBTW, fbBorderTop + ir * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red))
-			);
-        }
-		for (UINT8 jc = 0; jc <= visTileSide; jc++)	// columns
-		{
-            m_primitiveBatchLines->DrawLine(
-				VertexPositionColor(XMFLOAT3(fbBorderLeft + jc * FBTW, fbBorderTop, 0), static_cast<XMFLOAT4>(Colors::Red)),
-				VertexPositionColor(XMFLOAT3(fbBorderLeft + jc * FBTW, fbBorderTop + visTileSide * FBTH, 0), static_cast<XMFLOAT4>(Colors::Red))
-			);
-		}
 #endif // _DEBUG
         m_primitiveBatchLines->End();
 		m_spriteBatch->End();
 
         if (g_nonVolatile.showMap)
         {
-			// Now draw automap
+			// Now draw autoMap
 			auto mmOrigin = Vector2(clientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
 			RECT mapRectInViewport = {
 				mmOrigin.x,
@@ -498,19 +487,19 @@ void Game::Render()
 				mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
 				mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
 			};
-			m_automap->DrawAutoMap(m_spriteBatch, m_states.get(), &mapRectInViewport);
-			// End drawing automap
+            m_autoMap->DrawAutoMap(m_spriteBatch, m_states.get(), &mapRectInViewport);
+			// End drawing autoMap
             
             // now draw the hidden layer around the player if he's allowed to see it
             // inside the original Deathlord viewport
-            m_automap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
+            m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
         }
 
         // TODO: Let m_invOverlay create its own effect, spritebatch and primitivebatch?
         if (m_invOverlay->IsInvOverlayDisplayed())
         {
-			m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
-				clientRect.bottom - clientRect.top, 0, 0, 1));
+            D3D12_VIEWPORT vp = GetCurrentViewport();
+			m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, 0, 0, 1));
             m_dxtEffectTriangles->Apply(commandList);
 			m_primitiveBatchTriangles->Begin(commandList);
 			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
@@ -602,7 +591,7 @@ void Game::OnWindowSizeChanged(LONG width, LONG height)
     {
         _scale = (float)height / (float)bh;
     }
-    _scale = 1;
+    _scale = 1; // TODO: Figure out if we want scale or not. Here we force it to 1
     newBWidth = GetFrameBufferWidth() * _scale;
     newBHeight = GetFrameBufferHeight() * _scale;
 
@@ -704,8 +693,8 @@ void Game::CreateDeviceDependentResources()
     }
 
     // Now initialize the automap and invOverlay, and create the resources
-    m_automap = AutoMap::GetInstance(m_deviceResources, m_resourceDescriptors);
-    m_automap->CreateDeviceDependentResources(&resourceUpload);
+    m_autoMap = AutoMap::GetInstance(m_deviceResources, m_resourceDescriptors);
+    m_autoMap->CreateDeviceDependentResources(&resourceUpload);
 	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_invOverlay->CreateDeviceDependentResources(&resourceUpload);
 
@@ -960,8 +949,7 @@ void Game::CreateDeviceDependentResources()
 // Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
-    D3D12_VIEWPORT viewport = m_deviceResources->GetScreenViewport();
-    m_spriteBatch->SetViewport(viewport);
+    m_spriteBatch->SetViewport(GetCurrentViewport());
 }
 
 void Game::SetVertexData(Vertex* v, float wRatio, float hRatio, EmulatorLayout layout)
@@ -1063,7 +1051,7 @@ void Game::OnDeviceLost()
     m_vertexBuffer.Reset();
     m_pipelineState.Reset();
     m_rootSignature.Reset();
-    m_automap->OnDeviceLost();
+    m_autoMap->OnDeviceLost();
     m_states.reset();
     m_spriteBatch.reset();
     m_graphicsMemory.reset();

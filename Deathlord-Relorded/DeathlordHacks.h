@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Emulator/Memory.h"
 #include <string>
@@ -73,22 +73,22 @@ constexpr UINT8 PRINT_CHAR_X_ORIGIN_RIGHT		= 21;	// Value of X_ORIGIN to check t
 constexpr UINT8 PRINT_CHAR_Y_CENTER				= 13;	// Value of Y to check for right center line print (area, # of enemies)
 constexpr UINT8 PRINT_CHAR_Y_BOTTOM				= 23;	// Value of Y to check for right bottom line print ("SPACE") ...
 
-constexpr unsigned char ARRAY_DEATHLORD_CHARSET[128]{
+constexpr wchar_t ARRAY_DEATHLORD_CHARSET[128]{
 	'.','.','.','.','.','.','.','.','.','.','.','.','.','\n','.','.',
 	'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',
 	' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/',
 	'0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?',
 	'@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O',
-	'P','Q','R','S','T','U','V','W','X','Y','Z',0xAD,' ',' ',' ',' ',	// 0xAD is wide dash that spans the whole glyph, to draw full lines
+	'P','Q','R','S','T','U','V','W','X','Y','Z','―',' ',' ',' ',' ',	// 0x5B is wide dash that spans the whole glyph, to draw full lines
 	'`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o',
-	'p','q','r','s','t','u','v','w','x','y','z',0x7F,' ',' ','[',']'	// 0x7F is the cursor
+	'p','q','r','s','t','u','v','w','x','y','z','◆',' ',' ','[',']'	// 0x7B is the cursor
 };
 
-constexpr unsigned char ARRAY_DEATHLORD_CHARSET_EOR[128]{	// The array EOR'd with 0xE5, which Deathlord uses to obfuscate strings in RAM
+constexpr wchar_t ARRAY_DEATHLORD_CHARSET_EOR[128]{	// The array EOR'd with 0xE5, which Deathlord uses to obfuscate strings in RAM
 	'e','d','g','f','a','`','c','b','m','l','o','n','i','h','k','j',
-	'u','t','w','v','q','p','s','r',' ',' ',']','[','y','x',0x7F,'z',	// 0x7F is the cursor
+	'u','t','w','v','q','p','s','r',' ',' ',']','[','y','x','◆','z',	// 0x1E is the cursor
 	'E','D','G','F','A','@','C','B','M','L','O','N','I','H','K','J',
-	'U','T','W','V','Q','P','S','R',' ',' ',' ',' ','Y','X',0xAD,'Z',	// 0xAD is wide dash��
+	'U','T','W','V','Q','P','S','R',' ',' ',' ',' ','Y','X','―','Z',	// 0x3E is wide dash­­
 	'%','$','\'','&','!',' ','#','"','-',',','/','.',')','(','+','*',
 	'5','4','7','6','1','0','3','2','=','<','?','>','9','8',';',':',
 	'.','.','.','.','.','.','.','.','\n','.','.','.','.','.','.','.',	// mistly unused
@@ -150,12 +150,12 @@ extern bool PartyLeaderIsOfRace(DeathlordRaces aRace);
 extern bool PartyHasClass(DeathlordClasses aClass);
 extern bool PartyHasClass(DeathlordClasses aClass1, DeathlordClasses aClass2);
 extern bool PartyHasRace(DeathlordRaces aRace);
-extern std::string NameOfClass(DeathlordClasses aClass, bool inJapan);
-extern std::string NameOfRace(DeathlordRaces aRace, bool inJapan);
-extern std::string StringFromMemory(UINT16 startMem, UINT8 maxLength);
+extern std::wstring NameOfClass(DeathlordClasses aClass, bool inJapan);
+extern std::wstring NameOfRace(DeathlordRaces aRace, bool inJapan);
+extern std::wstring StringFromMemory(UINT16 startMem, UINT8 maxLength);
 
-extern std::string& ltrim(std::string& str);
-extern std::string& rtrim(std::string& str);
+extern std::wstring& ltrim(std::wstring& str);
+extern std::wstring& rtrim(std::wstring& str);
 
 class DeathlordHacks
 {

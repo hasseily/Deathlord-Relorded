@@ -256,46 +256,6 @@ static __forceinline void DoIrqProfiling(DWORD uCycles)
 
 //===========================================================================
 
-//#define DBG_HDD_ENTRYPOINT
-#if defined(_DEBUG) && defined(DBG_HDD_ENTRYPOINT)
-// Output a debug msg whenever the HDD f/w is called or jump to.
-static void DebugHddEntrypoint(const USHORT PC, BYTE& iOpcode, ULONG uExecutedCycles)
-{
-	static bool bOldPCAtC7xx = false;
-	static bool hasHeader = false;
-	static bool shouldLog = false;
-	static int maxLines = 100;
-	static int currLines = 0;
-	wchar_t tempw[200];
-	if (!hasHeader)
-	{
-		m_logWindow->AppendLog(L"NOX COMPANION\nCycles   A: X: Y: SP:  Addr:Opcode\n");
-		hasHeader = true;
-	}
-	if ((PC >> 8) == 0xC7)
-	{
-		if (!bOldPCAtC7xx /*&& PC != 0xc70a*/)
-		{
-			shouldLog = true;
-			//wchar_t szDebug[100];
-			//wsprintf(szDebug, L"HDD Entrypoint: $%04X\n", PC);
-			//OutputDebugString(szDebug);
-		}
-
-		bOldPCAtC7xx = true;
-	}
-	else
-	{
-		bOldPCAtC7xx = false;
-	}
-	if (shouldLog && (currLines < maxLines))
-	{
-		wsprintf(tempw, L"%.8X %.2X %.2X %.2X %.4X %.4X:%.2X\n", g_nCumulativeCycles + uExecutedCycles, regs.a, regs.x, regs.y, regs.sp, PC, iOpcode);
-		m_logWindow->AppendLog(std::wstring(tempw));
-		currLines++;
-	}
-}
-#endif
 
 static __forceinline void Fetch(BYTE& iOpcode, ULONG uExecutedCycles)
 {
@@ -525,7 +485,6 @@ void CpuInitialize ()
 	g_bCritSectionValid = true;
 	CpuIrqReset();
 	CpuNmiReset();
-	m_logWindow = GetLogWindow();
 }
 
 //===========================================================================

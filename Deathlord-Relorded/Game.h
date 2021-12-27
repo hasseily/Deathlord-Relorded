@@ -6,13 +6,6 @@
 
 #include "DeviceResources.h"
 #include "StepTimer.h"
-#include "LogWindow.h"
-#include "SpellWindow.h"
-#include "Sidebar.h"
-#include "DeathlordHacks.h"
-#include "TilesetCreator.h"
-#include "AutoMap.h"
-#include "InvOverlay.h"
 #include "HAUtils.h"
 #include "NonVolatile.h"
 #include <Keyboard.h>
@@ -25,6 +18,7 @@ constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 10;  // In debug, the emulator is
 constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 30;  // Only render so many frames. Give the emulator all the rest of the time
 #endif
 
+using namespace DirectX;
 using namespace DirectX::SimpleMath;
 constexpr Color COLOR_APPLE2_BLUE   ( (0x07/255.f), (0xA8/255.f), (0xE0/255.f) );
 constexpr Color COLOR_APPLE2_ORANGE ( (0xF9/255.f), (0x56/255.f), (0x1D/255.f) );
@@ -46,9 +40,6 @@ enum class EmulatorLayout
 extern bool g_isInGameMap;          // is the player in-game or on the loading/utilities screens?
 extern bool g_wantsToSave;          // only TRUE when the player is asking to save
 extern NonVolatile g_nonVolatile;
-static std::shared_ptr<LogWindow>m_logWindow;
-static std::shared_ptr<SpellWindow>m_spellWindow;
-static std::shared_ptr<DeathlordHacks>m_dlHacks;
 
 // A game implementation that creates a D3D12 device and
 // provides a game loop.
@@ -116,6 +107,16 @@ private:
     void Update(DX::StepTimer const& timer);
     void Render();
 
+    D3D12_VIEWPORT GetCurrentViewport()
+    {
+        auto vp = m_deviceResources->GetScreenViewport();
+        if (!g_isInGameMap)
+        {
+            vp = m_deviceResources->GetGamelinkViewport();  // draw the original game until we are in the game map
+        }
+        return vp;
+    }
+
     void Clear();
 
     void CreateDeviceDependentResources();
@@ -130,8 +131,6 @@ private:
     void UpdateGamelinkVertexData(int width, int height, float wRatio, float hRatio);
 
 	static float m_clientFrameScale;    // TODO: unused
-    AutoMap* m_automap;
-    InvOverlay* m_invOverlay;
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;

@@ -19,6 +19,7 @@
 #include "Emulator/Keyboard.h"
 #include "Emulator/RGBMonitor.h"
 #include "DeathlordHacks.h"
+#include "AutoMap.h"
 #include "TilesetCreator.h"
 #include "InvOverlay.h"
 // For WinPixGpuCapture
@@ -47,8 +48,8 @@ int m_extraWindowWidth = 0;
 int m_extraWindowHeight = 0;
 // Initial window width and height, so we can't reduce the size further, and
 // user can always go back to "original" size
-int m_initialWindowWidth = 0;
-int m_initialWindowHeight = 0;
+int m_initialWindowWidth = MAIN_WINDOW_WIDTH;
+int m_initialWindowHeight = MAIN_WINDOW_HEIGHT;
 
 bool shouldSendKeystrokesToAppleWin = true;
 
@@ -247,13 +248,14 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 			RECT rc = { 0, 0, static_cast<LONG>(w), static_cast<LONG>(h) };
 
-			AdjustWindowRect(&rc, WS_POPUP, TRUE);
+			AdjustWindowRect(&rc, WS_OVERLAPPED | WS_SYSMENU, TRUE);
 			m_initialWindowWidth = rc.right - rc.left;
 			m_initialWindowHeight = rc.bottom - rc.top;
 
 			// TODO: enable resizing the window by using WS_OVERLAPPEDWINDOW
 			//       disable resizing the window by using WS_OVERLAPPED | WS_SYSMENU
-			hwnd = CreateWindowExW(0, L"DeathlordRelordedWindowClass", L"Deathlord Relorded", WS_POPUP,
+			//		 make it fullscreen with WS_POPUP
+			hwnd = CreateWindowExW(0, L"DeathlordRelordedWindowClass", L"Deathlord Relorded", WS_OVERLAPPED | WS_SYSMENU,
 				CW_USEDEFAULT, CW_USEDEFAULT, m_initialWindowWidth, m_initialWindowHeight, nullptr, nullptr, hInstance, nullptr);
 
 			if (!hwnd)
@@ -262,8 +264,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			// Set up the accelerators
 			haccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_ACCELERATOR1));
 
-			SetWindowLongPtr(hwnd, GWL_STYLE, 0);
-			SetWindowLongPtr(hwnd, GWL_EXSTYLE, WS_EX_TOPMOST);
+			SetWindowLongPtr(hwnd, GWL_EXSTYLE, 0);	// set it to WS_EX_TOPMOST for fullscreen
 			WINDOWINFO wi;
 			wi.cbSize = sizeof(WINDOWINFO);
 			GetWindowInfo(hwnd, &wi);
@@ -380,14 +381,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				game->OnResuming();
 			s_in_suspend = false;
 		}
-		else if (game)
-		{
-			// char buf[500];
-			// sprintf_s(buf, "In Main WM_SIZE Width %d, Height %d\n", LOWORD(lParam), HIWORD(lParam));
-			// OutputDebugStringA(buf);
-			game->OnWindowSizeChanged(LOWORD(lParam), HIWORD(lParam));
-		}
-
 		break;
 
 	case WM_SIZING:
@@ -505,15 +498,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		KeybQueueKeypress(wParam, ASCII);
 		break;
+	case WM_KEYUP:
+		Keyboard::ProcessMessage(message, wParam, lParam);
+		break;
 	case WM_KEYDOWN:		// Send to the applewin emulator
-#ifdef _DEBUG
-		OutputDebugStringA("WM_KEYDOWN\n");
-#endif
+		Keyboard::ProcessMessage(message, wParam, lParam);
 		if (shouldSendKeystrokesToAppleWin)
 			KeybQueueKeypress(wParam, NOT_ASCII);
-		else
-			Keyboard::ProcessMessage(message, wParam, lParam);
-
 		break;
 
 	case WM_SYSKEYUP:
@@ -523,7 +514,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (wParam == VK_RETURN && (lParam & 0x60000000) == 0x20000000)
 		{
 			// Implements the classic ALT+ENTER fullscreen toggle
-			// TODO: remove it as the game is fullscreen
+			// TODO: remove it, and try later to make the game ONLY fullscreen
 			if (s_fullscreen)
 			{
 				SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
@@ -531,7 +522,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 				int width = 0;
 				int height = 0;
-				SidebarManager::GetBaseSize(width, height);
+				g_game->GetBaseSize(width, height);
 
 				ShowWindow(hWnd, SW_SHOWNORMAL);
 
