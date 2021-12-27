@@ -424,13 +424,16 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 	// In this way the map is always centered when scaled, within the mapRect requested
 	// Also the center of the mapRect is shifted to one of the quadrants if a zoomed-in map is asked for
 
-
+	auto gamePtr = GetGamePtr();
 	auto commandList = m_deviceResources->GetCommandList();
 	SimpleMath::Viewport mapViewport(m_deviceResources->GetScreenViewport());
 	spriteBatch->SetViewport(mapViewport);
 	spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
 	SimpleMath::Rectangle mapScissorRect(*mapRect);
-	mapScissorRect.width = MAIN_WINDOW_WIDTH;
+	int _clientWidth, _clientHeight;
+	(*gamePtr)->GetBaseSize(_clientWidth, _clientHeight);
+	mapScissorRect.width = _clientWidth;
+	mapScissorRect.height = _clientHeight;
 	float _scale = (g_nonVolatile.mapQuadrant == AutoMapQuandrant::All ? 1.f : 2.f);
 	Vector2 _mapCenter = mapScissorRect.Center();
 	switch (g_nonVolatile.mapQuadrant)
@@ -618,7 +621,6 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 					char _tileHexVal[5];
 					sprintf_s(_tileHexVal, 4, "%02x", mapMemPtr[mapPos]);
 					// Display the tile ID to see the difference between regular and hidden walls, chutes, etc...
-					auto gamePtr = GetGamePtr();
 					(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileHexVal,
 						tilePosInMap + XMFLOAT2(.5f, .5f), Colors::Black, 0.f, spriteOrigin, .5f);
 					(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileHexVal,
@@ -681,7 +683,6 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 		Vector2 awaitTextPos(
 			m_currentMapRect.left + (mapRect->right - mapRect->left) / 2 - 240.f,
 			m_currentMapRect.top + (mapRect->bottom - mapRect->top) / 2 - 20.f);
-		auto gamePtr = GetGamePtr();
 		(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "THE LANDS OF LORN AWAIT",
 			awaitTextPos - Vector2(3.f, -2.f), Colors::White, 0.f, Vector2(0.f, 0.f), 3.f);
 		(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), "THE LANDS OF LORN AWAIT",

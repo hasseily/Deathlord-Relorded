@@ -48,8 +48,8 @@ int m_extraWindowWidth = 0;
 int m_extraWindowHeight = 0;
 // Initial window width and height, so we can't reduce the size further, and
 // user can always go back to "original" size
-int m_initialWindowWidth = MAIN_WINDOW_WIDTH;
-int m_initialWindowHeight = MAIN_WINDOW_HEIGHT;
+int m_initialWindowWidth = 1920;
+int m_initialWindowHeight = 1080;
 
 bool shouldSendKeystrokesToAppleWin = true;
 
@@ -243,11 +243,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			g_hInstance = hInstance; // Store instance handle in our global variable
 
 			// Create window
-			int w, h;
-			g_game->GetBaseSize(w,h);
 
-			RECT rc = { 0, 0, static_cast<LONG>(w), static_cast<LONG>(h) };
+			RECT rc = { 0, 0, m_initialWindowWidth, m_initialWindowHeight };		// Static game window size
 
+			// Now need to set the size to the actual usable size
 			AdjustWindowRect(&rc, WS_OVERLAPPED | WS_SYSMENU, TRUE);
 			m_initialWindowWidth = rc.right - rc.left;
 			m_initialWindowHeight = rc.bottom - rc.top;

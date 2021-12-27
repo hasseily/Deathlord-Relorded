@@ -4,8 +4,6 @@
 
 #pragma once
 
-constexpr UINT16 MAIN_WINDOW_WIDTH = 1920;
-constexpr UINT16 MAIN_WINDOW_HEIGHT = 1080;
 
 
 namespace DX

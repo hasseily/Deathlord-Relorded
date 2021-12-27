@@ -36,6 +36,8 @@ ComPtr<ID3D12Resource> g_textureUploadHeap;
 HWND m_window;
 static SidebarManager m_sbM;
 static SidebarContent m_sbC;
+static int m_baseWidth = 0;
+static int m_baseHeight = 0;
 Mouse::ButtonStateTracker moTracker;
 Keyboard::KeyboardStateTracker kbTracker;
 
@@ -93,6 +95,8 @@ Game::~Game()
 void Game::Initialize(HWND window, int width, int height)
 {
     m_window = window;
+	m_baseWidth = width;
+	m_baseHeight = height;
 
 	// Use a variable timestep to give as much time to the emulator as possible
 // Then we control how often we render later in the Render() method
@@ -218,10 +222,11 @@ void Game::SetWindowSizeOnChangedProfile()
 
 #pragma region Others
 
+// This returns the useful size inside the window
 void Game::GetBaseSize(__out int& width, __out int& height) noexcept
 {
-    width = MAIN_WINDOW_WIDTH;
-    height = MAIN_WINDOW_HEIGHT;
+    width = m_baseWidth;
+    height = m_baseHeight;
     return;
 	// The below would return the size of the monitor
     /*
@@ -233,6 +238,13 @@ void Game::GetBaseSize(__out int& width, __out int& height) noexcept
     height = info.rcMonitor.bottom - info.rcMonitor.top;
 	return;
     */
+}
+
+// set the useful size inside the window
+void Game::SetBaseSize(int width, int height)
+{
+    m_baseWidth = width;
+    m_baseHeight = height;
 }
 
 DirectX::SpriteFont* Game::GetSpriteFontAtIndex(FontDescriptors fontIndex)

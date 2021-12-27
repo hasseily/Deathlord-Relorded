@@ -415,8 +415,8 @@ void DeviceResources::CreateWindowSizeDependentResources()
     // Set the 3D rendering viewport and scissor rectangle to target a 1920x1080 area in the center of the screen.
     // Set up the gamelink viewport to only target the gamelink area. This helps properly
 
-	m_screenViewport.Width = MAIN_WINDOW_WIDTH;
-	m_screenViewport.Height = MAIN_WINDOW_HEIGHT;
+    m_screenViewport.Width = m_outputSize.right - m_outputSize.left;
+	m_screenViewport.Height = m_outputSize.bottom - m_outputSize.top;
     m_screenViewport.TopLeftX = 0;
     m_screenViewport.TopLeftY = 0;
     m_screenViewport.MinDepth = D3D12_MIN_DEPTH;

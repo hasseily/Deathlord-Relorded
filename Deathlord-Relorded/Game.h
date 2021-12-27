@@ -91,6 +91,7 @@ public:
 
     // Accessors
     void GetBaseSize(__out int& width, __out int& height) noexcept;
+    void SetBaseSize(int width, int height);
     float GetFrameScale() { return m_clientFrameScale; };
     SpriteFont* GetSpriteFontAtIndex(FontDescriptors fontIndex);
     // TODO: Either don't allow these accessors, or change them to return the underlying pointer
