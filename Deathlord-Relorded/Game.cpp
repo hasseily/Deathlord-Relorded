@@ -139,7 +139,7 @@ void Game::Initialize(HWND window, int width, int height)
 
 #pragma region Window texture and size
 
-// Select which texture to show: The default background or the gamelink data
+// Just a utility method to set up the gamelink texture (original applewin video buffer)
 D3D12_RESOURCE_DESC Game::ChooseTexture()
 {
     D3D12_RESOURCE_DESC txtDesc = {};
@@ -147,59 +147,15 @@ D3D12_RESOURCE_DESC Game::ChooseTexture()
     txtDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
     txtDesc.SampleDesc.Count = 1;
     txtDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-
-	switch (g_nAppMode)
-	{
-	case AppMode_e::MODE_LOGO:  // obsolete
-	{
-		txtDesc.Width = m_bgImageWidth;
-		txtDesc.Height = m_bgImageHeight;
-		g_textureData.pData = m_bgImage.data();
-		g_textureData.SlicePitch = m_bgImage.size();
-		SetVideoLayout(EmulatorLayout::NORMAL);
-		break;
-	}
-	
-#ifdef _DEBUG
-	// In debug mode when pause we display the current tilemap
-	// Enable to debug the tilemap
-	// TODO: Write a PAUSE overlay text in render() when paused. This is a hack that overwrites g+pFramebufferbits
-	case AppMode_e::MODE_PAUSED:
-	{
-		auto tileset = TilesetCreator::GetInstance();
-		UINT64 pngW = PNGBUFFERWIDTHB / sizeof(UINT32);
-		UINT64 pngH = PNGBUFFERHEIGHT;
-		LPBYTE tsB = tileset->GetCurrentTilesetBuffer();
-		auto fbI = g_pFramebufferinfo->bmiHeader;
-		UINT64 lineByteWidth = MIN(pngW, fbI.biWidth) * sizeof(UINT32);
-		for (size_t h = 0; h < MIN(pngH, fbI.biHeight) ; h++)
-		{
-			memcpy_s(g_pFramebufferbits + (h * fbI.biWidth * sizeof(UINT32)), lineByteWidth,
-				tsB + (h * PNGBUFFERWIDTHB), lineByteWidth);
-		}
-		SetVideoLayout(EmulatorLayout::NORMAL);
-	}
-#endif
-	
-	default:
-	{
-		auto fbI = g_pFramebufferinfo->bmiHeader;
-		txtDesc.Width = fbI.biWidth;
-		txtDesc.Height = fbI.biHeight;
-		g_textureData.pData = g_pFramebufferbits;
-		g_textureData.SlicePitch = ((long long)GetFrameBufferWidth()) * ((long long)GetFrameBufferHeight()) * sizeof(bgra_t);
-		SetVideoLayout(EmulatorLayout::NORMAL);
-		break;
-	}
-	}
+	auto fbI = g_pFramebufferinfo->bmiHeader;
+	txtDesc.Width = fbI.biWidth;
+	txtDesc.Height = fbI.biHeight;
+	g_textureData.pData = g_pFramebufferbits;
+	g_textureData.SlicePitch = ((long long)GetFrameBufferWidth()) * ((long long)GetFrameBufferHeight()) * sizeof(bgra_t);
     g_textureData.RowPitch = static_cast<LONG_PTR>(txtDesc.Width * sizeof(uint32_t));
+	m_previousLayout = m_currentLayout;
+	m_currentLayout = EmulatorLayout::NORMAL;
     return txtDesc;
-}
-
-void Game::SetVideoLayout(EmulatorLayout layout)
-{
-    m_previousLayout = m_currentLayout;
-    m_currentLayout = layout;
 }
 
 void Game::SetWindowSizeOnChangedProfile()
@@ -529,6 +485,23 @@ void Game::Render()
 			// End drawing text
 
         }   // end if !g_isInGameMap
+
+        // Now check if the game is paused and display an overlay
+        if (g_nAppMode == AppMode_e::MODE_PAUSED)
+        {
+            std::wstring pauseWStr = L"GAME PAUSED";
+            float pauseScale = 5.f;
+            auto pauseOrigin = Vector2((clientRect.right - clientRect.left)/2, (clientRect.bottom - clientRect.top)/2); // start with dead center
+            pauseOrigin.x -= (pauseWStr.length() * pauseScale * 5)/2;
+            pauseOrigin.y -= pauseScale * 14 / 2;
+			m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
+			m_spriteBatch->Begin(commandList, m_states->LinearClamp(), SpriteSortMode_Deferred);
+			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pauseWStr.c_str(),
+                pauseOrigin - Vector2(pauseScale/2, pauseScale/2), Colors::Black, 0.f, m_vector2Zero, pauseScale);
+			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pauseWStr.c_str(),
+                pauseOrigin, Colors::OrangeRed, 0.f, m_vector2Zero, pauseScale);
+            m_spriteBatch->End();
+        }
 
 		PIXEndEvent(commandList);
 

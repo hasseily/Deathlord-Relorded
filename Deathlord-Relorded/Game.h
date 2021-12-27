@@ -86,7 +86,6 @@ public:
 
     // Other methods
     D3D12_RESOURCE_DESC ChooseTexture();
-    void SetVideoLayout(EmulatorLayout layout);
     void SetWindowSizeOnChangedProfile();
 
     // Accessors
