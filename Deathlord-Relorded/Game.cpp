@@ -370,6 +370,11 @@ void Game::Render()
         }
         else    // g_isInGameMap
         {
+            // First get the window size
+            // We'll need it for the effects projection matrix
+			RECT clientRect;
+			GetClientRect(m_window, &clientRect);
+
 			m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
 			m_spriteBatch->Begin(commandList, m_states->LinearClamp(), SpriteSortMode_Deferred);
 
@@ -380,7 +385,7 @@ void Game::Render()
 			// End drawing the game background
 
 			// Now time to draw the text and lines
-			m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(r.x, r.x + r.width, r.y + r.height, r.y, 0, 1));
+			m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(clientRect.left, clientRect.right, clientRect.bottom, clientRect.top, 0, 1));
 			m_dxtEffectLines->Apply(commandList);
 			m_primitiveBatchLines->Begin(commandList);
 			for each (auto sb in m_sbM.sidebars)
@@ -466,7 +471,7 @@ void Game::Render()
 			if (m_invOverlay->IsInvOverlayDisplayed())
 			{
 				D3D12_VIEWPORT vp = GetCurrentViewport();
-				m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(r.x, r.x + r.width, r.y + r.height, r.y, 0, 1));
+				m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(clientRect.left, clientRect.right, clientRect.bottom, clientRect.top, 0, 1));
 				m_dxtEffectTriangles->Apply(commandList);
 				m_primitiveBatchTriangles->Begin(commandList);
 				m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
