@@ -57,7 +57,7 @@ public:
     Game& operator= (Game const&) = delete;
 
     // Initialization and management
-    void Initialize(HWND window, int width, int height);
+    void Initialize(HWND window);
 
     // Basic game loop
     void Tick();
@@ -90,7 +90,6 @@ public:
 
     // Accessors
     SimpleMath::Rectangle GetDrawRectangle();
-    void GetBaseSize(__out int& width, __out int& height) noexcept;
     float GetFrameScale() { return m_clientFrameScale; };
     SpriteFont* GetSpriteFontAtIndex(FontDescriptors fontIndex);
     // TODO: Either don't allow these accessors, or change them to return the underlying pointer

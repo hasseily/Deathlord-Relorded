@@ -42,10 +42,6 @@ HINSTANCE g_hInstance;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
-// extra window area compared to client area
-// necessary to properly scale using the right aspect ratio
-int m_extraWindowWidth = 0;
-int m_extraWindowHeight = 0;
 // Initial window width and height, so we can't reduce the size further, and
 // user can always go back to "original" size
 int m_initialWindowWidth = 1920;
@@ -201,13 +197,8 @@ void ToggleFullScreen(HWND hWnd)
 		SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
 		SetWindowLongPtr(hWnd, GWL_EXSTYLE, 0);
 
-		int width = 0;
-		int height = 0;
-		g_game->GetBaseSize(width, height);
-
 		ShowWindow(hWnd, SW_SHOWNORMAL);
-
-		SetWindowPos(hWnd, HWND_TOP, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
+		SetWindowPos(hWnd, HWND_TOP, 0, 0, m_initialWindowWidth, m_initialWindowHeight, SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
 	}
 	else
 	{
@@ -215,7 +206,6 @@ void ToggleFullScreen(HWND hWnd)
 		SetWindowLongPtr(hWnd, GWL_EXSTYLE, WS_EX_TOPMOST);
 
 		SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-
 		ShowWindow(hWnd, SW_SHOWMAXIMIZED);
 	}
 
@@ -297,11 +287,9 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			WINDOWINFO wi;
 			wi.cbSize = sizeof(WINDOWINFO);
 			GetWindowInfo(hwnd, &wi);
-			m_extraWindowWidth = (wi.rcWindow.right - wi.rcClient.right) + (wi.rcClient.left - wi.rcWindow.left);
-			m_extraWindowHeight = (wi.rcWindow.bottom - wi.rcClient.bottom) + (wi.rcClient.top - wi.rcWindow.top);
 
 			SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(g_game.get()));
-			g_game->Initialize(hwnd, wi.rcClient.right - wi.rcClient.left, wi.rcClient.bottom - wi.rcClient.top);
+			g_game->Initialize(hwnd);
 
 			// create the instances of important blocks at the start
 			g_logW = std::make_unique<LogWindow>(g_hInstance, hwnd);
@@ -409,6 +397,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				game->OnResuming();
 			s_in_suspend = false;
 		}
+		else if (game)
+		{
+			// char buf[500];
+			// sprintf_s(buf, "In Main WM_SIZE Width %d, Height %d\n", LOWORD(lParam), HIWORD(lParam));
+			// OutputDebugStringA(buf);
+			game->OnWindowSizeChanged(LOWORD(lParam), HIWORD(lParam));
+		}
 		break;
 
 	case WM_SIZING:
@@ -444,9 +439,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			// Set the minimum size to be the initial window width
 			auto info = reinterpret_cast<MINMAXINFO*>(lParam);
-			g_game->GetBaseSize(m_initialWindowWidth, m_initialWindowHeight);
-			m_initialWindowWidth += m_extraWindowWidth;
-			m_initialWindowHeight += m_extraWindowHeight;
 			info->ptMinTrackSize.x = m_initialWindowWidth;
 			info->ptMinTrackSize.y = m_initialWindowHeight;
 		}

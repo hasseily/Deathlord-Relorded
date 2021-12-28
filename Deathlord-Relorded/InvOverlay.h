@@ -21,7 +21,7 @@ struct EquipInteractableRect
 class InvOverlay	// Singleton
 {
 public:
-	void DrawInvOverlay(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, std::shared_ptr<DirectX::PrimitiveBatch<VertexPositionColor>>& primitiveBatch, RECT* overlayRect);
+	void DrawInvOverlay(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, std::shared_ptr<DirectX::PrimitiveBatch<VertexPositionColor>>& primitiveBatch, SimpleMath::Rectangle* overlayRect);
 	void ShowInvOverlay();
 	void HideInvOverlay();
 	bool IsInvOverlayDisplayed();

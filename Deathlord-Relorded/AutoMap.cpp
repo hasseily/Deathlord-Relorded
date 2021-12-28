@@ -429,11 +429,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 	SimpleMath::Viewport mapViewport(m_deviceResources->GetScreenViewport());
 	spriteBatch->SetViewport(mapViewport);
 	spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
-	SimpleMath::Rectangle mapScissorRect(*mapRect);
-	int _clientWidth, _clientHeight;
-	(*gamePtr)->GetBaseSize(_clientWidth, _clientHeight);
-	mapScissorRect.width = _clientWidth;
-	mapScissorRect.height = _clientHeight;
+	SimpleMath::Rectangle mapScissorRect = (*gamePtr)->GetDrawRectangle();
 	float _scale = (g_nonVolatile.mapQuadrant == AutoMapQuandrant::All ? 1.f : 2.f);
 	Vector2 _mapCenter = mapScissorRect.Center();
 	switch (g_nonVolatile.mapQuadrant)

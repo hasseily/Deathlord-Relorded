@@ -226,7 +226,7 @@ void InvOverlay::OnDeviceLost()
 void InvOverlay::DrawInvOverlay(	// TODO: Fix the layout!!!
 	std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, 
 	std::shared_ptr<DirectX::PrimitiveBatch<VertexPositionColor>>& primitiveBatch, 
-	RECT* overlayRect)
+	SimpleMath::Rectangle* overlayRect)
 {
 	auto mmBGTexSize = DirectX::XMUINT2(1150, 600);
 	auto mmSSTextureSize = GetTextureSize(m_invOverlaySpriteSheet.Get());

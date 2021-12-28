@@ -36,8 +36,6 @@ ComPtr<ID3D12Resource> g_textureUploadHeap;
 HWND m_window;
 static SidebarManager m_sbM;
 static SidebarContent m_sbC;
-static int m_baseWidth = 0;
-static int m_baseHeight = 0;
 Mouse::ButtonStateTracker moTracker;
 Keyboard::KeyboardStateTracker kbTracker;
 
@@ -92,11 +90,9 @@ Game::~Game()
 }
 
 // Initialize the resources required to run.
-void Game::Initialize(HWND window, int width, int height)
+void Game::Initialize(HWND window)
 {
     m_window = window;
-	m_baseWidth = width;
-	m_baseHeight = height;
 
 	// Use a variable timestep to give as much time to the emulator as possible
 // Then we control how often we render later in the Render() method
@@ -118,14 +114,14 @@ void Game::Initialize(HWND window, int width, int height)
 	m_sbC.Initialize();
 
     shouldRender = true;
-
     m_clientFrameScale = 1.f;
-    m_deviceResources->SetWindow(window, width, height);
 
     m_deviceResources->CreateDeviceResources();
     CreateDeviceDependentResources();
     // m_automap is initialized when creating device dependent resources
 
+	SimpleMath::Rectangle winrct = GetDrawRectangle();
+	m_deviceResources->SetWindow(window, winrct.width, winrct.height);
     m_deviceResources->CreateWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
 
@@ -156,19 +152,8 @@ D3D12_RESOURCE_DESC Game::ChooseTexture()
 
 void Game::SetWindowSizeOnChangedProfile()
 {
-    WINDOWPLACEMENT wp;
-    wp.length = sizeof(WINDOWPLACEMENT);
-    GetWindowPlacement(m_window, &wp);
-    // Update the window position to display the sidebars
-    int w, h;
-    m_clientFrameScale = 1.f;
-    GetBaseSize(w, h);
-    RECT wR = { 0,0,w,h };
-    SendMessage(m_window, WM_SIZING, WMSZ_BOTTOMRIGHT, (LPARAM)&wR);
-    wp.rcNormalPosition.right = wp.rcNormalPosition.left + wR.right;
-    wp.rcNormalPosition.bottom = wp.rcNormalPosition.top + wR.bottom;
-    SetWindowPlacement(m_window, &wp);
-    SendMessage(m_window, WM_SIZE, SIZE_RESTORED, w & 0x0000FFFF | h << 16);
+    // TODO: Remove this function
+
 }
 #pragma endregion
 
@@ -180,40 +165,39 @@ void Game::SetWindowSizeOnChangedProfile()
 // and it is centered in the window
 SimpleMath::Rectangle Game::GetDrawRectangle()
 {
+    // The below would get the size of the monitor
+/*
+HMONITOR monitor = MonitorFromWindow(m_window, MONITOR_DEFAULTTONEAREST);
+MONITORINFO info;
+info.cbSize = sizeof(MONITORINFO);
+GetMonitorInfo(monitor, &info);
+width = info.rcMonitor.right - info.rcMonitor.left;
+height = info.rcMonitor.bottom - info.rcMonitor.top;
+*/
     if (!m_gameTextureBG)
         return SimpleMath::Rectangle::Rectangle();
     auto texSize = GetTextureSize(m_gameTextureBG.Get());
 	RECT clientRect;
-	GetClientRect(m_window, &clientRect);
+	bool res = GetClientRect(m_window, &clientRect);
+    if (!res)
+    {
+        AlertIfError(m_window);
+    }
+    // GetClientRect always has its rect origin at 0,0.
+    // Hence the right and bottom are the width and height
     int leftMargin, topMargin;
-    leftMargin = ((clientRect.right - clientRect.left) - texSize.x) / 2;
-    topMargin = ((clientRect.bottom - clientRect.top) - texSize.y) / 2;
-    if (leftMargin < 0)
+    if (clientRect.right > texSize.x)
+        leftMargin = (clientRect.right - texSize.x) / 2;
+    else
         leftMargin = 0;
-    if (topMargin < 0)
+    if (clientRect.bottom > texSize.y)
+        topMargin = (clientRect.bottom - texSize.y) / 2;
+    else
         topMargin = 0;
     SimpleMath::Rectangle r = SimpleMath::Rectangle(leftMargin, topMargin, texSize.x, texSize.y);
     return r;
 }
 
-
-// This returns the useful size inside the window
-void Game::GetBaseSize(__out int& width, __out int& height) noexcept
-{
-    width = m_baseWidth;
-    height = m_baseHeight;
-    return;
-	// The below would return the size of the monitor
-    /*
-	HMONITOR monitor = MonitorFromWindow(m_window, MONITOR_DEFAULTTONEAREST);
-	MONITORINFO info;
-	info.cbSize = sizeof(MONITORINFO);
-	GetMonitorInfo(monitor, &info);
-    width = info.rcMonitor.right - info.rcMonitor.left;
-    height = info.rcMonitor.bottom - info.rcMonitor.top;
-	return;
-    */
-}
 
 DirectX::SpriteFont* Game::GetSpriteFontAtIndex(FontDescriptors fontIndex)
 {
@@ -341,10 +325,7 @@ void Game::Render()
     if (ticksSinceLastRender > m_timer.TicksPerSecond / MAX_RENDERED_FRAMES_PER_SECOND)
     {
         tickOfLastRender = m_timer.GetTotalTicks();
-		RECT clientRect;
-		GetClientRect(m_window, &clientRect);
-		int origW, origH;
-		GetBaseSize(origW, origH);      // TODO: Cache this?
+        SimpleMath::Rectangle r = GetDrawRectangle();   // TODO: Cache this?
 
         // First update the sidebar, it doesn't need to be updated until right before the render
         // Only allow x microseconds for updates of sidebar every render
@@ -395,12 +376,11 @@ void Game::Render()
 			// Draw the game background
 			auto mmBGTexSize = GetTextureSize(m_gameTextureBG.Get());
 			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::MainBackground), mmBGTexSize,
-				clientRect, nullptr, Colors::White, 0.f, XMFLOAT2());
+				r, nullptr, Colors::White, 0.f, XMFLOAT2());
 			// End drawing the game background
 
 			// Now time to draw the text and lines
-			m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left,
-				clientRect.bottom - clientRect.top, 0, 0, 1));
+			m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(r.x, r.x + r.width, r.y + r.height, r.y, 0, 1));
 			m_dxtEffectLines->Apply(commandList);
 			m_primitiveBatchLines->Begin(commandList);
 			for each (auto sb in m_sbM.sidebars)
@@ -411,10 +391,10 @@ void Game::Render()
 				switch (sb.type)
 				{
 				case SidebarTypes::Right:
-					shiftedPosition.x += clientRect.right - clientRect.left - origW;
+					shiftedPosition.x += r.x;
 					break;
 				case SidebarTypes::Bottom:
-					shiftedPosition.y += clientRect.bottom - clientRect.top - origH;
+					shiftedPosition.y += r.x;
 					break;
 				default:
 					break;
@@ -439,7 +419,7 @@ void Game::Render()
 				switch (sb.type)
 				{
 				case SidebarTypes::Right:
-					lend.y = lstart.y + clientRect.bottom - clientRect.top;
+					lend.y = lstart.y + r.height;
 					break;
 				case SidebarTypes::Bottom:
 					lend.x = lstart.x + GetFrameBufferWidth();
@@ -467,7 +447,7 @@ void Game::Render()
 			if (g_nonVolatile.showMap)
 			{
 				// Now draw autoMap
-				auto mmOrigin = Vector2(clientRect.right - MAP_WIDTH_IN_VIEWPORT, 0.f);
+				auto mmOrigin = Vector2(r.x + r.width - MAP_WIDTH_IN_VIEWPORT, 0.f);
 				RECT mapRectInViewport = {
 					mmOrigin.x,
 					mmOrigin.y,
@@ -486,11 +466,11 @@ void Game::Render()
 			if (m_invOverlay->IsInvOverlayDisplayed())
 			{
 				D3D12_VIEWPORT vp = GetCurrentViewport();
-				m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, 0, 0, 1));
+				m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(r.x, r.x + r.width, r.y + r.height, r.y, 0, 1));
 				m_dxtEffectTriangles->Apply(commandList);
 				m_primitiveBatchTriangles->Begin(commandList);
 				m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
-				m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatchTriangles, &clientRect);
+				m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatchTriangles, &r);
 				m_primitiveBatchTriangles->End();
 				m_spriteBatch->End();
 			}
@@ -503,7 +483,7 @@ void Game::Render()
         {
             std::wstring pauseWStr = L"GAME PAUSED";
             float pauseScale = 5.f;
-            auto pauseOrigin = Vector2((clientRect.right - clientRect.left)/2, (clientRect.bottom - clientRect.top)/2); // start with dead center
+            auto pauseOrigin = r.Center(); // start with dead center
             pauseOrigin.x -= (pauseWStr.length() * pauseScale * 5)/2;
             pauseOrigin.y -= pauseScale * 14 / 2;
 			m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
@@ -580,22 +560,23 @@ void Game::OnResuming()
 
 void Game::OnWindowMoved()
 {
+	// TODO: Get rid of this method?
 	auto r = m_deviceResources->GetOutputSize();
 	m_deviceResources->WindowSizeChanged(r.right, r.bottom);
 }
 
 void Game::OnWindowSizeChanged(LONG width, LONG height)
 {
+    // TODO: Get rid of this method?
 	if (!m_deviceResources->WindowSizeChanged(width, height))
 		return;
 
-    int bw, bh;
-    GetBaseSize(bw, bh);
+    auto r = GetDrawRectangle();
     int newBWidth, newBHeight;
-    float _scale = (float)width / (float)bw;
-    if (((float)bw / (float)bh) < ((float)width / (float)height))
+    float _scale = (float)width / (float)r.width;
+    if (((float)r.width / (float)r.height) < ((float)width / (float)height))
     {
-        _scale = (float)height / (float)bh;
+        _scale = (float)height / (float)r.height;
     }
     _scale = 1; // TODO: Figure out if we want scale or not. Here we force it to 1
     newBWidth = GetFrameBufferWidth() * _scale;
