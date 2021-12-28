@@ -28,10 +28,12 @@ static EquipInteractableRect nohighlightsRect;	// When there are no highlights, 
 static UINT8 partySize = 6;			// Also defined in InvManager.cpp
 
 // Drawing layout
+static RECT innerRect;
 static UINT8 glyphWidth = 7;			// Width of each glyph in pixels, including spacing
 static UINT8 glyphHeight = 16;
 static UINT8 invRowSpacing = 14;		// Spacing between rows of the inventory
-static int widthTabsArea = 720;			// Width the left tabs area
+static UINT8 verticalBarWidth = 8;		// Added width of vertical bar between members and stash
+static int widthTabsArea = 515;			// Width the left tabs area
 
 // InvOverlay sprite sheet rectangles
 // It is split into 4 rows of 8 columns of 28x32 pixels
@@ -246,7 +248,7 @@ void InvOverlay::DrawInvOverlay(	// TODO: Fix the layout!!!
 	UINT16 memberColWidth = maxGlyphs * glyphWidth;	// Column width for party members
 	std::wstring _bufStr;
 
-	RECT innerRect = {		// The inner rect after padding has been applied
+	innerRect = {		// The inner rect after padding has been applied
 		m_currentRect.left + borderPadding,
 		m_currentRect.top + borderPadding,
 		m_currentRect.right - borderPadding,
@@ -381,8 +383,8 @@ void InvOverlay::DrawInvOverlay(	// TODO: Fix the layout!!!
 	///// End Draw Inventory Headers
 
 	///// Begin Draw Column Headers (party members)
-	int xCol = widthTabsArea;		// x value at start of column drawing
-	int yCol = innerRect.top;		// y value of the start of drawing
+	int xCol = innerRect.left + widthTabsArea;		// x value at start of column drawing
+	int yCol = innerRect.top;						// y value of the start of drawing
 	for (size_t iMember = 0; iMember < partySize; iMember++)
 	{
 		yCol = innerRect.top;
@@ -495,7 +497,7 @@ void InvOverlay::DrawInvOverlay(	// TODO: Fix the layout!!!
 	if (_fromRect.eItemId == EMPTY_ITEM_ID)
 		goto ENDSWAPHELPERS;
 	// _xPos0 is the x pos of the rects of the first party member
-	int _xPos0 = widthTabsArea + (memberColWidth / 2) - (spRectInvEmpty.right - spRectInvEmpty.left) / 2;
+	int _xPos0 = innerRect.left + widthTabsArea + (memberColWidth / 2) - (spRectInvEmpty.right - spRectInvEmpty.left) / 2;
 	// And the stash x pos is
 	int _xPosStash = _xPos0 + memberColWidth * DEATHLORD_PARTY_SIZE + 20;
 	if (highlightedRect.eMember < DEATHLORD_PARTY_SIZE)	// give to a person
@@ -645,7 +647,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 	// Finished drawing the item info. Now draw the equipped status
 	// Calculate the xpos of the first equipment status sprite. It is centered in the column
 	// The next ones will just be shifted by memberColWidth
-	int _xPos = widthTabsArea + (memberColWidth / 2) - (spRectInvEmpty.right - spRectInvEmpty.left) / 2;
+	int _xPos = innerRect.left + widthTabsArea + (memberColWidth / 2) - (spRectInvEmpty.right - spRectInvEmpty.left) / 2;
 	auto mmSSTextureSize = GetTextureSize(m_invOverlaySpriteSheet.Get());
 	for (UINT8 i = 0; i < DEATHLORD_PARTY_SIZE; i++)
 	{
@@ -692,7 +694,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 		_xPos += memberColWidth;
 	}
 	// Now the stash
-	_xPos += 16;	// the width of the vertical bar
+	_xPos += verticalBarWidth;	// the width of the vertical bar
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 		mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvEmpty, Colors::White, 0.f, XMFLOAT2());
 
