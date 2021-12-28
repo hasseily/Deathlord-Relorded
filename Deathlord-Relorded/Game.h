@@ -89,8 +89,8 @@ public:
     void SetWindowSizeOnChangedProfile();
 
     // Accessors
+    SimpleMath::Rectangle GetDrawRectangle();
     void GetBaseSize(__out int& width, __out int& height) noexcept;
-    void SetBaseSize(int width, int height);
     float GetFrameScale() { return m_clientFrameScale; };
     SpriteFont* GetSpriteFontAtIndex(FontDescriptors fontIndex);
     // TODO: Either don't allow these accessors, or change them to return the underlying pointer
@@ -134,11 +134,6 @@ private:
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
-
-    // Background image when in LOGO mode
-    std::vector<uint8_t> m_bgImage;
-    uint32_t m_bgImageWidth;
-    uint32_t m_bgImageHeight;
 
     // video texture layout may change
     // TODO: Unused, get rid of it

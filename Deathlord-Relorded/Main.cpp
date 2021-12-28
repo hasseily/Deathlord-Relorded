@@ -192,6 +192,36 @@ void UpdateMenuBarStatus(HWND hwnd)
 	ApplyNonVolatileConfig();
 }
 
+void ToggleFullScreen(HWND hWnd)
+{
+	static bool s_fullscreen = false;
+	// TODO: Set s_fullscreen to true if defaulting to fullscreen.
+	if (s_fullscreen)
+	{
+		SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
+		SetWindowLongPtr(hWnd, GWL_EXSTYLE, 0);
+
+		int width = 0;
+		int height = 0;
+		g_game->GetBaseSize(width, height);
+
+		ShowWindow(hWnd, SW_SHOWNORMAL);
+
+		SetWindowPos(hWnd, HWND_TOP, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	}
+	else
+	{
+		SetWindowLongPtr(hWnd, GWL_STYLE, 0);
+		SetWindowLongPtr(hWnd, GWL_EXSTYLE, WS_EX_TOPMOST);
+
+		SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+
+		ShowWindow(hWnd, SW_SHOWMAXIMIZED);
+	}
+
+	s_fullscreen = !s_fullscreen;
+}
+
 // Entry point
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
@@ -288,7 +318,8 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			// Game has now loaded the saved/default settings
 			// Update the menu bar with the settings
 			UpdateMenuBarStatus(hwnd);
-			ShowWindow(hwnd, nCmdShow);
+			//ShowWindow(hwnd, nCmdShow);
+			ToggleFullScreen(hwnd);
 
 		}
 
@@ -334,8 +365,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static bool s_in_sizemove = false;
 	static bool s_in_suspend = false;
 	static bool s_minimized = false;
-	static bool s_fullscreen = false;
-	// TODO: Set s_fullscreen to true if defaulting to fullscreen.
 
 	auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
@@ -513,31 +542,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (wParam == VK_RETURN && (lParam & 0x60000000) == 0x20000000)
 		{
 			// Implements the classic ALT+ENTER fullscreen toggle
-			// TODO: remove it, and try later to make the game ONLY fullscreen
-			if (s_fullscreen)
-			{
-				SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
-				SetWindowLongPtr(hWnd, GWL_EXSTYLE, 0);
-
-				int width = 0;
-				int height = 0;
-				g_game->GetBaseSize(width, height);
-
-				ShowWindow(hWnd, SW_SHOWNORMAL);
-
-				SetWindowPos(hWnd, HWND_TOP, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
-			}
-			else
-			{
-				SetWindowLongPtr(hWnd, GWL_STYLE, 0);
-				SetWindowLongPtr(hWnd, GWL_EXSTYLE, WS_EX_TOPMOST);
-
-				SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-
-				ShowWindow(hWnd, SW_SHOWMAXIMIZED);
-			}
-
-			s_fullscreen = !s_fullscreen;
+			ToggleFullScreen(hWnd);
 		}
 		Keyboard::ProcessMessage(message, wParam, lParam);
 		break;

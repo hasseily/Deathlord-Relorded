@@ -115,10 +115,6 @@ void Game::Initialize(HWND window, int width, int height)
 	EmulatorOneTimeInitialization(window);
 	EmulatorRepeatInitialization();
 
-    wchar_t buff[MAX_PATH];
-    DX::FindMediaFile(buff, MAX_PATH, L"Background.jpg");
-    m_bgImage = HA::LoadBGRAImage(buff, m_bgImageWidth, m_bgImageHeight);
-
 	m_sbC.Initialize();
 
     shouldRender = true;
@@ -178,6 +174,29 @@ void Game::SetWindowSizeOnChangedProfile()
 
 #pragma region Others
 
+// Returns the rectangle in which to draw in the window.
+// We never want to draw outside of it
+// We use the main game texture as the size of the rectangle
+// and it is centered in the window
+SimpleMath::Rectangle Game::GetDrawRectangle()
+{
+    if (!m_gameTextureBG)
+        return SimpleMath::Rectangle::Rectangle();
+    auto texSize = GetTextureSize(m_gameTextureBG.Get());
+	RECT clientRect;
+	GetClientRect(m_window, &clientRect);
+    int leftMargin, topMargin;
+    leftMargin = ((clientRect.right - clientRect.left) - texSize.x) / 2;
+    topMargin = ((clientRect.bottom - clientRect.top) - texSize.y) / 2;
+    if (leftMargin < 0)
+        leftMargin = 0;
+    if (topMargin < 0)
+        topMargin = 0;
+    SimpleMath::Rectangle r = SimpleMath::Rectangle(leftMargin, topMargin, texSize.x, texSize.y);
+    return r;
+}
+
+
 // This returns the useful size inside the window
 void Game::GetBaseSize(__out int& width, __out int& height) noexcept
 {
@@ -194,13 +213,6 @@ void Game::GetBaseSize(__out int& width, __out int& height) noexcept
     height = info.rcMonitor.bottom - info.rcMonitor.top;
 	return;
     */
-}
-
-// set the useful size inside the window
-void Game::SetBaseSize(int width, int height)
-{
-    m_baseWidth = width;
-    m_baseHeight = height;
 }
 
 DirectX::SpriteFont* Game::GetSpriteFontAtIndex(FontDescriptors fontIndex)
