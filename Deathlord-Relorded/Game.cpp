@@ -567,23 +567,8 @@ void Game::OnWindowMoved()
 
 void Game::OnWindowSizeChanged(LONG width, LONG height)
 {
-    // TODO: Get rid of this method?
 	if (!m_deviceResources->WindowSizeChanged(width, height))
 		return;
-
-    auto r = GetDrawRectangle();
-    int newBWidth, newBHeight;
-    float _scale = (float)width / (float)r.width;
-    if (((float)r.width / (float)r.height) < ((float)width / (float)height))
-    {
-        _scale = (float)height / (float)r.height;
-    }
-    _scale = 1; // TODO: Figure out if we want scale or not. Here we force it to 1
-    newBWidth = GetFrameBufferWidth() * _scale;
-    newBHeight = GetFrameBufferHeight() * _scale;
-
-	UpdateGamelinkVertexData(width, height,
-        (float)newBWidth / (float)width, (float)newBHeight / (float)height);
 
 	CreateWindowSizeDependentResources();
 }
@@ -979,58 +964,6 @@ void Game::SetVertexData(Vertex* v, float wRatio, float hRatio, EmulatorLayout l
 	default:
 		break;
 	}
-}
-
-// This method must be called when sidebars are added or deleted
-// so the relative vertex boundaries can be updated to stay within
-// the aspect ratio of the gamelink texture. Pass in width and height ratios
-// (i.e. how much of the width|height the vertex should fill, 1.f being full width|height)
-void Game::UpdateGamelinkVertexData(int width, int height, float wRatio, float hRatio)
-{
-    {
-        Vertex s_vertexData[4];
-        SetVertexData(s_vertexData, wRatio, hRatio, m_currentLayout);
-
-        // Copy the quad data to the vertex buffer.
-        UINT8* pVertexDataBegin;
-        CD3DX12_RANGE readRange(0, 0);		// We do not intend to read from this resource on the CPU.
-        DX::ThrowIfFailed(
-            m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-        memcpy(pVertexDataBegin, s_vertexData, sizeof(s_vertexData));
-        m_vertexBuffer->Unmap(0, nullptr);
-
-        // Initialize the vertex buffer view.
-        m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-        m_vertexBufferView.StrideInBytes = sizeof(Vertex);
-        m_vertexBufferView.SizeInBytes = sizeof(s_vertexData);
-    }
-
-    // Update index buffer.
-    {
-        static const uint16_t s_indexData[6] =
-        {
-            3,1,0,
-            2,1,3,
-        };
-
-        // Copy the data to the index buffer.
-        UINT8* pVertexDataBegin;
-        CD3DX12_RANGE readRange(0, 0);		// We do not intend to read from this resource on the CPU.
-        DX::ThrowIfFailed(
-            m_indexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-        memcpy(pVertexDataBegin, s_indexData, sizeof(s_indexData));
-        m_indexBuffer->Unmap(0, nullptr);
-
-        // Initialize the index buffer view.
-        m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
-        m_indexBufferView.Format = DXGI_FORMAT_R16_UINT;
-        m_indexBufferView.SizeInBytes = sizeof(s_indexData);
-    }
-
-    // And update the projection for line drawing
-    m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
-	m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, (float)width, (float)height, 0, 0, 1));
-
 }
 
 void Game::OnDeviceLost()

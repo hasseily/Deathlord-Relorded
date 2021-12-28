@@ -123,12 +123,6 @@ private:
 
     void SetVertexData(HA::Vertex* v, float wRatio, float hRatio, EmulatorLayout layout);
 
-    // This method must be called when sidebars are added or deleted
-    // so the relative vertex boundaries can be updated to stay within
-    // the aspect ratio of the gamelink texture. Pass in width and height ratios
-    // (i.e. how much of the total width|height the vertex should fill, 1.f being full width|height)
-    void UpdateGamelinkVertexData(int width, int height, float wRatio, float hRatio);
-
 	static float m_clientFrameScale;    // TODO: unused
 
     // Device resources.
