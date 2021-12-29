@@ -5,6 +5,9 @@
 
 extern std::unique_ptr<Game>* GetGamePtr();	// TODO: Same for this
 
+// below because "The declaration of a static data member in its class definition is not a definition"
+TextOutput* TextOutput::s_instance;
+
 static UINT8 m_previousX = 0;
 static UINT8 m_previousY = 0;
 
