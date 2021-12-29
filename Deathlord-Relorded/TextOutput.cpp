@@ -20,12 +20,15 @@ void TextOutput::Initialize()
 	fontsAvailable[FontDescriptors::FontDLRegular] = L"pr3_dlcharset_12pt.spritefont";
 	fontsAvailable[FontDescriptors::FontDLInverse] = L"pr3_dlcharset_12pt_inverse.spritefont";
 	// create all the lines for the billboard
+	// and a single line for the log, and initialize the rest
 	UINT8 billboardLineCt = PRINT_CHAR_Y_BOTTOM - PRINT_CHAR_Y_BILLBOARD_BEGIN;
 	for (UINT8 i = 0; i < billboardLineCt; i++)
 	{
 		m_vBillboard.push_back(pair(wstring(), FontDescriptors::FontDLRegular));
 	}
+	m_vLog.push_back(pair(wstring(), FontDescriptors::FontDLRegular));
 	m_strModule = wstring();
+	m_strModule.append(PRINT_CHAR_X_MODULE_LENGTH, ' ');	// Intialize to a specific length
 	m_strKeypress = wstring();
 	v_linesToPrint = vector<pair<wstring, XMFLOAT2>>();
 }
@@ -69,7 +72,7 @@ void TextOutput::PrintCharRaw(unsigned char ch, UINT8 X_Origin, UINT8 Y_Origin, 
 		PrintCharToLog(ch, X, bInverse);
 	else if (X_Origin == PRINT_CHAR_X_ORIGIN_RIGHT)
 	{
-		if (Y == PRINT_CHAR_Y_CENTER)
+		if (Y == PRINT_CHAR_Y_MODULE)
 			PrintCharToModule(ch, X, bInverse);
 		else if (Y == PRINT_CHAR_Y_BOTTOM)
 			PrintCharToKeypress(ch, X, bInverse);
@@ -86,9 +89,9 @@ void TextOutput::PrintCharRaw(unsigned char ch, UINT8 X_Origin, UINT8 Y_Origin, 
 
 void TextOutput::PrintCharToModule(unsigned char ch, UINT8 X, bool bInverse)
 {
-	if (X < m_XModule)	// reset
-		m_strModule.clear();
-	m_strModule.append(1, ConvertChar(ch));
+	// The module string is updated on a char by char basis
+	// Replace a single character at a time
+	m_strModule.replace(X - PRINT_CHAR_X_MODULE_BEGIN, 1, 1, ConvertChar(ch));
 	m_XModule = X;
 }
 

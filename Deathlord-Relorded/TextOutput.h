@@ -15,10 +15,13 @@ using namespace std;
 constexpr UINT8	PRINT_Y_MIN = 12;	// Value of PRINT_Y below which we don't print (it's the char list)
 constexpr UINT8 PRINT_CHAR_X_ORIGIN_LEFT = 1;	// Value of X_ORIGIN to check to see if printing on the left bottom area
 constexpr UINT8 PRINT_CHAR_X_ORIGIN_RIGHT = 21;	// Value of X_ORIGIN to check to see if printing on any of the right areas
-constexpr UINT8 PRINT_CHAR_Y_CENTER = 13;	// Value of Y to check for right center line print (area, # of enemies)
+
+constexpr UINT8 PRINT_CHAR_Y_MODULE = 13;	// Value of Y to check for right center line print (area, # of enemies)
+constexpr UINT8 PRINT_CHAR_X_MODULE_BEGIN = 22;		// Value of X that starts the module area
+constexpr UINT8 PRINT_CHAR_X_MODULE_LENGTH = 10;	// Length of module string
+
 constexpr UINT8 PRINT_CHAR_Y_BILLBOARD_BEGIN = 15;	// First line of the billboard
 constexpr UINT8 PRINT_CHAR_Y_BOTTOM = 23;	// Value of Y to check for right bottom line print ("SPACE") ...
-
 constexpr UINT8 PRINT_MAX_LOG_LINES = 20;	// Maximum log lines to display
 
 class TextOutput	// Singleton

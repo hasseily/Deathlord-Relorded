@@ -37,6 +37,7 @@ static std::string interactiveTextOutput = "";
 static int interactiveTextOutputLineCt = 0;
 static std::shared_ptr<LogWindow> __logWindow;
 extern std::shared_ptr<LogWindow> GetLogWindow();
+static TextOutput* __textOutput;
 
 static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 {
@@ -158,8 +159,15 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			*/
 			case PC_PRINT_CHAR:
 			{
+				if (!__textOutput)
+					__textOutput = TextOutput::GetInstance();
+				unsigned int _glyph = regs.a;
+				__textOutput->PrintCharRaw(_glyph, 
+					MemGetMainPtr(MEM_PRINT_X_ORIGIN)[0], MemGetMainPtr(MEM_PRINT_Y_ORIGIN)[0],
+					MemGetMainPtr(MEM_PRINT_X)[0], MemGetMainPtr(MEM_PRINT_Y)[0],
+					MemGetMainPtr(MEM_PRINT_INVERSE)[0]);
 				// TODO: Use TextOutput.h and remove all of the below
-				
+
 				// First check if it's the topright area. If so, do nothing. We don't need to display changes
 				// in the list of characters
 				if (MemGetMainPtr(MEM_PRINT_Y)[0] < PRINT_Y_MIN)
@@ -174,7 +182,6 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				if (!g_nonVolatile.logCombat && (MemGetMainPtr(MEM_MODULE_STATE)[0] == (int)ModuleStates::Combat))
 					break;
 
-				unsigned int _glyph = regs.a;
 				if (_glyph > 0x7F)	// regular non-end-of-string
 				{
 					__logWindow->AppendLog((wchar_t)ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F], false);
