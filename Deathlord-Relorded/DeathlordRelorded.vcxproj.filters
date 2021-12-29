@@ -368,6 +368,12 @@
     <None Include="Assets\InventoryList.csv">
       <Filter>Assets</Filter>
     </None>
+    <None Include="Assets\pr3-dlcharset-12pt.spritefont">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Assets\pr3-dlcharset-12pt-inverse.spritefont">
+      <Filter>Assets</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc">

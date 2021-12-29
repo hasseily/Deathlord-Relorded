@@ -17,6 +17,7 @@
 #include "TilesetCreator.h"
 #include "AutoMap.h"
 #include "InvOverlay.h"
+#include "TextOutput.h"
 #include <vector>
 #include <string>
 #include <map>
@@ -43,6 +44,7 @@ static std::shared_ptr<LogWindow>m_logWindow;
 static std::shared_ptr<SpellWindow>m_spellWindow;
 static std::shared_ptr<DeathlordHacks>m_dlHacks;
 static InvOverlay* m_invOverlay;
+static TextOutput* m_textOutput;
 static AutoMap* m_autoMap;
 
 AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
@@ -350,25 +352,25 @@ void Game::Render()
 		commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
 		commandList->IASetIndexBuffer(&m_indexBufferView);
 
-        if (!g_isInGameMap)
-        {
+
+	    if (!g_isInGameMap)
+		{
 			// Load the AppleWin video texture if we're not inside the game map
             // Drawing video texture which updates every frame, so it needs to be sent to the GPU every frame
-
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 			commandList->ResourceBarrier(1, &barrier);
 			UpdateSubresources(commandList, m_texture.Get(), g_textureUploadHeap.Get(), 0, 0, 1, &g_textureData);
 			barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 			commandList->ResourceBarrier(1, &barrier);
 			// It's sent to the GPU
-
+            
 			// Draw AppleWin textured quad
 			D3D12_VIEWPORT viewports[1] = { GetCurrentViewport() };
 			commandList->RSSetViewports(1, viewports);
 			commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 			// End drawing video texture
         }
-        else    // g_isInGameMap
+        else
         {
             // First get the window size
             // We'll need it for the effects projection matrix
@@ -384,6 +386,23 @@ void Game::Render()
 				r, nullptr, Colors::White, 0.f, XMFLOAT2());
 			// End drawing the game background
 
+            ////////////////////////////////////////////////////////////////////////////////
+            // TODO: REMOVE THIS
+            // Draw the applewin video for DEBUGGING
+            
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+			commandList->ResourceBarrier(1, &barrier);
+			UpdateSubresources(commandList, m_texture.Get(), g_textureUploadHeap.Get(), 0, 0, 1, &g_textureData);
+			barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			commandList->ResourceBarrier(1, &barrier);
+            SimpleMath::Rectangle vidR(r);
+            vidR.width /= 3;
+            vidR.height /= 3;
+			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video), GetTextureSize(m_texture.Get()),
+				vidR, nullptr, Colors::White, 0.f);
+            // End Draw
+            ////////////////////////////////////////////////////////////////////////////////
+            
 			// Now time to draw the text and lines
 			m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(clientRect.left, clientRect.right, clientRect.bottom, clientRect.top, 0, 1));
 			m_dxtEffectLines->Apply(commandList);
@@ -467,6 +486,11 @@ void Game::Render()
 				m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
 			}
 
+			// TODO: Let TextOutput handle all the text?
+			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
+            m_textOutput->Render(m_spriteBatch.get());
+			m_spriteBatch->End();
+
 			// TODO: Let m_invOverlay create its own effect, spritebatch and primitivebatch?
 			if (m_invOverlay->IsInvOverlayDisplayed())
 			{
@@ -479,6 +503,7 @@ void Game::Render()
 				m_primitiveBatchTriangles->End();
 				m_spriteBatch->End();
 			}
+
 			// End drawing text
 
         }   // end if !g_isInGameMap
@@ -676,9 +701,10 @@ void Game::CreateDeviceDependentResources()
 		m_spriteFonts.at(aFont.first)->SetDefaultCharacter('.');
     }
 
-    // Now initialize the automap and invOverlay, and create the resources
+    // Now initialize the pieces of the UI, and create the resources
     m_autoMap = AutoMap::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_autoMap->CreateDeviceDependentResources(&resourceUpload);
+    m_textOutput = TextOutput::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_invOverlay->CreateDeviceDependentResources(&resourceUpload);
 
@@ -686,7 +712,9 @@ void Game::CreateDeviceDependentResources()
 	m_states = std::make_unique<CommonStates>(device);
 	auto sampler = m_states->LinearWrap();
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
-	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
+    // TODO: Either switch back to NonPreMultiplied or optimize the spritesheets
+    // Right now it's AlphaBlend to overlay the applewin video for debugging
+	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::AlphaBlend, nullptr, nullptr, &sampler);
 	m_spriteBatch = std::make_unique<SpriteBatch>(device, resourceUpload, spd);
 
 

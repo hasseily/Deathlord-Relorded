@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "LogWindow.h"
 #include "MemoryTriggers.h"	// trigger the memory polling upon passing time because we know the state is safe
 #include "DeathlordHacks.h"
+#include "TextOutput.h"
 #include "AutoMap.h"
 #include <string>
 //===========================================================================
@@ -157,6 +158,8 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			*/
 			case PC_PRINT_CHAR:
 			{
+				// TODO: Use TextOutput.h and remove all of the below
+				
 				// First check if it's the topright area. If so, do nothing. We don't need to display changes
 				// in the list of characters
 				if (MemGetMainPtr(MEM_PRINT_Y)[0] < PRINT_Y_MIN)

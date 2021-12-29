@@ -34,6 +34,8 @@ SidebarManager::SidebarManager()
 	fontsAvailable[FontDescriptors::FontA2Bold]         = L"a2-12pt-bold.spritefont";
 	fontsAvailable[FontDescriptors::FontA2Italic]       = L"a2-12pt-italic.spritefont";
 	fontsAvailable[FontDescriptors::FontA2BoldItalic]   = L"a2-12pt-bolditalic.spritefont";
+	fontsAvailable[FontDescriptors::FontDLRegular]      = L"pr3-dlcharset-12pt.spritefont";
+	fontsAvailable[FontDescriptors::FontDLInverse]      = L"pr3-dlcharset-12pt-inverse.spritefont";
     sidebars = {};
     SetBaseSize(GetFrameBufferWidth(), GetFrameBufferHeight());
 }

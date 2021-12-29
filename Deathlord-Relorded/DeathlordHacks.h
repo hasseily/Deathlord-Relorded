@@ -64,15 +64,6 @@ constexpr UINT16 MEM_PRINT_Y = 0x00AF;					// Current Y when printing a string o
 constexpr UINT16 MEM_PRINT_WIDTH = 0x00AB;				// Area width for printing current string
 constexpr UINT16 MEM_PRINT_HEIGHT = 0x00AC;				// Area height for printing current string
 
-// The below is to determine where the char is being printed on the screen
-// If X_ORIGIN changes, then we're guaranteed the string is finished (it's swapping between left and right areas)
-// If Y changes, then we're also guaranteed the string is finished
-constexpr UINT8	PRINT_Y_MIN						= 12;	// Value of PRINT_Y below which we don't print (it's the char list)
-constexpr UINT8 PRINT_CHAR_X_ORIGIN_LEFT		= 1;	// Value of X_ORIGIN to check to see if printing on the left bottom area
-constexpr UINT8 PRINT_CHAR_X_ORIGIN_RIGHT		= 21;	// Value of X_ORIGIN to check to see if printing on any of the right areas
-constexpr UINT8 PRINT_CHAR_Y_CENTER				= 13;	// Value of Y to check for right center line print (area, # of enemies)
-constexpr UINT8 PRINT_CHAR_Y_BOTTOM				= 23;	// Value of Y to check for right bottom line print ("SPACE") ...
-
 constexpr wchar_t ARRAY_DEATHLORD_CHARSET[128]{
 	'.','.','.','.','.','.','.','.','.','.','.','.','.','\n','.','.',
 	'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',
@@ -91,7 +82,7 @@ constexpr wchar_t ARRAY_DEATHLORD_CHARSET_EOR[128]{	// The array EOR'd with 0xE5
 	'U','T','W','V','Q','P','S','R',' ',' ',' ',' ','Y','X','―','Z',	// 0x3E is wide dash­­
 	'%','$','\'','&','!',' ','#','"','-',',','/','.',')','(','+','*',
 	'5','4','7','6','1','0','3','2','=','<','?','>','9','8',';',':',
-	'.','.','.','.','.','.','.','.','\n','.','.','.','.','.','.','.',	// mistly unused
+	'.','.','.','.','.','.','.','.','\n','.','.','.','.','.','.','.',	// mostly unused
 	'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.'		// unused
 };
 
