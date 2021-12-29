@@ -60,6 +60,7 @@ UINT64	g_debug_video_data = 0;
 NonVolatile g_nonVolatile;
 
 bool g_isInGameMap = false;
+bool g_isInBattle = false;
 bool g_wantsToSave = true;  // DISABLED. It can corrupt saved games
 float Game::m_clientFrameScale = 1.f;
 
@@ -225,7 +226,8 @@ void Game::Update(DX::StepTimer const& timer)
     PIXBeginEvent(PIX_COLOR_DEFAULT, L"Update");
 
 	UINT8* memPtr = MemGetMainPtr(0);
-	g_isInGameMap = (memPtr[0xFCE0] == 0xE5);	// when not in game map, that area is all zeros
+	g_isInGameMap = (memPtr[MAP_IS_IN_GAME_MAP] == 0xE5);	// when not in game map, that area is all zeros
+    g_isInBattle = (memPtr[MEM_MODULE_STATE] == (int)ModuleStates::Combat);
     if (g_isInGameMap)
     {    // Always set speed to SPEED_NORMAL when playing, otherwise things are too fast
 		if (EmulatorGetSpeed() != 1)

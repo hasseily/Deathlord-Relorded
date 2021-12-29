@@ -21,7 +21,7 @@ void TextOutput::Initialize()
 	fontsAvailable[FontDescriptors::FontDLInverse] = L"pr3_dlcharset_12pt_inverse.spritefont";
 	// create all the lines for the billboard
 	// and a single line for the log, and initialize the rest
-	UINT8 billboardLineCt = PRINT_CHAR_Y_BOTTOM - PRINT_CHAR_Y_BILLBOARD_BEGIN;
+	UINT8 billboardLineCt = PRINT_CHAR_Y_KEYPRESS - PRINT_CHAR_Y_BILLBOARD_BEGIN;
 	for (UINT8 i = 0; i < billboardLineCt; i++)
 	{
 		m_vBillboard.push_back(pair(wstring(), FontDescriptors::FontDLRegular));
@@ -35,13 +35,33 @@ void TextOutput::Initialize()
 
 void TextOutput::Render(DirectX::SpriteBatch* spriteBatch)
 {
+	// TODO: Should not rely on the gamePtr for fonts?
+	// TODO: Render v_linesToPrint, Billboard and Log
 	auto gamePtr = GetGamePtr();
 	auto fontsRegular = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular);
-	(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch, m_strModule.c_str(),
-		{ 1100.f, 800.f }, Colors::White, 0.f, Vector2(), 1.f);
 
-	// TODO
-	// Render v_linesToPrint, Module, Keypress, Billboard and Log
+	// Render Module string
+	(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular)->DrawString(spriteBatch, m_strModule.c_str(),
+		{ 930.f, 200.f }, Colors::White, 0.f, Vector2(), 1.f);
+	// Render Keypress string
+	(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular)->DrawString(spriteBatch, m_strKeypress.c_str(),
+		{ 930.f, 100.f }, Colors::White, 0.f, Vector2(), 1.f);
+	// Render Billboard
+	int yInc = 0;
+	for each (auto bbLine in m_vBillboard)
+	{
+		(*gamePtr)->GetSpriteFontAtIndex(bbLine.second)->DrawString(spriteBatch, bbLine.first.c_str(),
+			{ 930.f, 400.f + yInc }, Colors::White, 0.f, Vector2(), 1.f);
+		yInc -= 16;
+	}
+	yInc = 0;
+	for each (auto logLine in m_vLog)
+	{
+		(*gamePtr)->GetSpriteFontAtIndex(logLine.second)->DrawString(spriteBatch, logLine.first.c_str(),
+			{ 1100.f, 450.f + yInc }, Colors::White, 0.f, Vector2(), 1.f);
+		yInc -= 16;
+	}
+
 }
 
 #pragma region utilities
@@ -57,7 +77,11 @@ void TextOutput::PrintWStringAtOrigin(std::wstring wstr, XMFLOAT2 origin)
 
 wchar_t TextOutput::ConvertChar(unsigned char ch)
 {
-	return ARRAY_DEATHLORD_CHARSET[ch & 0x7F];
+	// To use a regular charset, we need to convert it:
+	// return ARRAY_DEATHLORD_CHARSET[ch & 0x7F];
+	// But when using the Deathlord charset in a spritefont, no need
+	// Just remove the 'end of string' marker
+	return (ch & 0x7F);
 }
 
 void TextOutput::PrintCharRaw(unsigned char ch, UINT8 X_Origin, UINT8 Y_Origin, UINT8 X, UINT8 Y, bool bInverse)
@@ -74,7 +98,7 @@ void TextOutput::PrintCharRaw(unsigned char ch, UINT8 X_Origin, UINT8 Y_Origin, 
 	{
 		if (Y == PRINT_CHAR_Y_MODULE)
 			PrintCharToModule(ch, X, bInverse);
-		else if (Y == PRINT_CHAR_Y_BOTTOM)
+		else if (Y == PRINT_CHAR_Y_KEYPRESS)
 			PrintCharToKeypress(ch, X, bInverse);
 		else
 		{
@@ -97,31 +121,54 @@ void TextOutput::PrintCharToModule(unsigned char ch, UINT8 X, bool bInverse)
 
 void TextOutput::PrintCharToKeypress(unsigned char ch, UINT8 X, bool bInverse)
 {
-	if (X < m_XKeypress)
-		m_strKeypress.clear();
-	m_strKeypress.append(1, ConvertChar(ch));
+	// The module string is updated on a char by char basis
+	// Replace a single character at a time
+	m_strKeypress.replace(X - PRINT_CHAR_X_KEYPRESS_BEGIN, 1, 1, ConvertChar(ch));
 	m_XKeypress = X;
 }
 
 void TextOutput::PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool bInverse)
 {
 	// The billboard uses multiple lines
+	// It behaves differently if in combat than not
+	// If in combat, it behaves like the log.
+	// If not in combat, it draws to each line directly
 	// If the code wants to write a previous line, it means it is redrawing the billboard
+	UINT8 billboardLineCt = PRINT_CHAR_Y_BILLBOARD_END - PRINT_CHAR_Y_BILLBOARD_BEGIN + 1;
 	if (Y < m_YBillboard)
 	{
 		// Clear the billboard
-		UINT8 billboardLineCt = PRINT_CHAR_Y_BOTTOM - PRINT_CHAR_Y_BILLBOARD_BEGIN;
 		for (UINT8 i = 0; i < billboardLineCt; i++)
 		{
 			m_vBillboard.at(i).first.clear();
 			m_vBillboard.at(i).second = FontDescriptors::FontDLRegular;
 		}
 	}
-	m_vBillboard.at(Y - PRINT_CHAR_Y_BILLBOARD_BEGIN).first.append(1, ConvertChar(ch));
-	if (bInverse)
-		m_vBillboard.at(Y - PRINT_CHAR_Y_BILLBOARD_BEGIN).second = FontDescriptors::FontDLInverse;
+	if ((Y == m_YBillboard)
+		&& (Y == PRINT_CHAR_Y_BILLBOARD_END)
+		&& (X < m_XBillboard))
+	{
+		// The billboard is behaving like a log, always updating the bottom row
+		// This happens when in battle. Behave like a log
+		// Remove the top line and insert a new line at the bottom
+		m_vBillboard.pop_back();
+		if (bInverse)
+			m_vBillboard.insert(m_vBillboard.begin(), pair(wstring(), FontDescriptors::FontDLRegular));
+		else
+			m_vBillboard.insert(m_vBillboard.begin(), pair(wstring(), FontDescriptors::FontDLInverse));
+		m_vBillboard.at(0).first.append(1, ConvertChar(ch));
+	}
 	else
-		m_vBillboard.at(Y - PRINT_CHAR_Y_BILLBOARD_BEGIN).second = FontDescriptors::FontDLRegular;
+	{
+		// Behave like a billboard where the code modifies every line
+		m_vBillboard.at(PRINT_CHAR_Y_BILLBOARD_END - Y).first.append(1, ConvertChar(ch));
+		if (bInverse)
+			m_vBillboard.at(PRINT_CHAR_Y_BILLBOARD_END - Y).second = FontDescriptors::FontDLInverse;
+		else
+			m_vBillboard.at(PRINT_CHAR_Y_BILLBOARD_END - Y).second = FontDescriptors::FontDLRegular;
+	}
+
+	m_XBillboard = X;
 	m_YBillboard = Y;
 }
 
@@ -133,11 +180,11 @@ void TextOutput::PrintCharToLog(unsigned char ch, UINT8 X, bool bInverse)
 		{
 			// log is full, erase the last line
 			m_vLog.pop_back();
-			if (bInverse)
-				m_vLog.insert(m_vLog.begin(), pair(wstring(), FontDescriptors::FontDLInverse));
-			else
-				m_vLog.insert(m_vLog.begin(), pair(wstring(), FontDescriptors::FontDLRegular));
 		}
+		if (bInverse)
+			m_vLog.insert(m_vLog.begin(), pair(wstring(), FontDescriptors::FontDLInverse));
+		else
+			m_vLog.insert(m_vLog.begin(), pair(wstring(), FontDescriptors::FontDLRegular));
 	}
 	m_vLog.at(0).first.append(1, ConvertChar(ch));
 	m_XLog = X;
