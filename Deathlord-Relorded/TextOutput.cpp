@@ -141,7 +141,7 @@ void TextOutput::PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool b
 		// Clear the billboard
 		for (UINT8 i = 0; i < billboardLineCt; i++)
 		{
-			m_vBillboard.at(i).first.clear();
+			m_vBillboard.at(i).first = wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' ');
 			m_vBillboard.at(i).second = FontDescriptors::FontDLRegular;
 		}
 	}
