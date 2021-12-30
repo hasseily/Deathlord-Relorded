@@ -22,12 +22,16 @@ constexpr UINT8 PRINT_CHAR_X_MODULE_LENGTH = 10;	// Length of module string
 
 constexpr UINT8 PRINT_CHAR_Y_BILLBOARD_BEGIN = 15;	// First line of the billboard
 constexpr UINT8 PRINT_CHAR_Y_BILLBOARD_END = 22;	// Last line of the billboard
+constexpr UINT8 PRINT_CHAR_X_BILLBOARD_BEGIN = 21;	// Value of X that starts the billboard area
+constexpr UINT8 PRINT_CHAR_X_BILLBOARD_LENGTH = 18;	// Length of a billboard string
 
 constexpr UINT8 PRINT_CHAR_Y_KEYPRESS = 23;			// Value of Y to check for right bottom keypress print ("SPACE") ...
 constexpr UINT8 PRINT_CHAR_X_KEYPRESS_BEGIN = 26;	// Value of X that starts the keypress area
 constexpr UINT8 PRINT_CHAR_X_KEYPRESS_LENGTH = 7;	// Length of keypress area string
 
-constexpr UINT8 PRINT_MAX_LOG_LINES = 20;	// Maximum log lines to display
+constexpr UINT8 PRINT_MAX_LOG_LINES = 20;		// Maximum log lines to display
+constexpr UINT8 PRINT_CHAR_X_LOG_BEGIN = 1;	// Value of X that starts the log area
+constexpr UINT8 PRINT_CHAR_X_LOG_LENGTH = 18;	// Length of a log string
 
 class TextOutput	// Singleton
 {

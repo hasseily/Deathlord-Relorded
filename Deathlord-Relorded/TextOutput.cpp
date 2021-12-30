@@ -36,7 +36,7 @@ void TextOutput::Initialize()
 void TextOutput::Render(DirectX::SpriteBatch* spriteBatch)
 {
 	// TODO: Should not rely on the gamePtr for fonts?
-	// TODO: Render v_linesToPrint, Billboard and Log
+	// TODO: Render v_linesToPrint
 	auto gamePtr = GetGamePtr();
 	auto fontsRegular = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular);
 
@@ -133,10 +133,11 @@ void TextOutput::PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool b
 	// It behaves differently if in combat than not
 	// If in combat, it behaves like the log.
 	// If not in combat, it draws to each line directly
-	// If the code wants to write a previous line, it means it is redrawing the billboard
 	UINT8 billboardLineCt = PRINT_CHAR_Y_BILLBOARD_END - PRINT_CHAR_Y_BILLBOARD_BEGIN + 1;
 	if (Y < m_YBillboard)
 	{
+		// If the code wants to write a previous line, it means it is redrawing the billboard
+		// TODO: NOT ALWAYS!!! Can't rely on this, need to find where the code clears it
 		// Clear the billboard
 		for (UINT8 i = 0; i < billboardLineCt; i++)
 		{
@@ -153,15 +154,15 @@ void TextOutput::PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool b
 		// Remove the top line and insert a new line at the bottom
 		m_vBillboard.pop_back();
 		if (bInverse)
-			m_vBillboard.insert(m_vBillboard.begin(), pair(wstring(), FontDescriptors::FontDLRegular));
+			m_vBillboard.insert(m_vBillboard.begin(), pair(wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '), FontDescriptors::FontDLRegular));
 		else
-			m_vBillboard.insert(m_vBillboard.begin(), pair(wstring(), FontDescriptors::FontDLInverse));
-		m_vBillboard.at(0).first.append(1, ConvertChar(ch));
+			m_vBillboard.insert(m_vBillboard.begin(), pair(wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '), FontDescriptors::FontDLInverse));
+		m_vBillboard.at(0).first.replace(X - PRINT_CHAR_X_BILLBOARD_BEGIN, 1, 1, ConvertChar(ch));
 	}
 	else
 	{
 		// Behave like a billboard where the code modifies every line
-		m_vBillboard.at(PRINT_CHAR_Y_BILLBOARD_END - Y).first.append(1, ConvertChar(ch));
+		m_vBillboard.at(PRINT_CHAR_Y_BILLBOARD_END - Y).first.replace(X - PRINT_CHAR_X_BILLBOARD_BEGIN, 1, 1, ConvertChar(ch));
 		if (bInverse)
 			m_vBillboard.at(PRINT_CHAR_Y_BILLBOARD_END - Y).second = FontDescriptors::FontDLInverse;
 		else
@@ -174,6 +175,8 @@ void TextOutput::PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool b
 
 void TextOutput::PrintCharToLog(unsigned char ch, UINT8 X, bool bInverse)
 {
+	// TODO: This newline logic where X goes back FAILS when user deletes a char as they type
+	// Need to figure out the code where the log goes up for a newline
 	if (X < m_XLog)		// it's a new line
 	{
 		if (m_vLog.size() > PRINT_MAX_LOG_LINES)
@@ -182,11 +185,11 @@ void TextOutput::PrintCharToLog(unsigned char ch, UINT8 X, bool bInverse)
 			m_vLog.pop_back();
 		}
 		if (bInverse)
-			m_vLog.insert(m_vLog.begin(), pair(wstring(), FontDescriptors::FontDLInverse));
+			m_vLog.insert(m_vLog.begin(), pair(wstring(PRINT_CHAR_X_LOG_LENGTH, ' '), FontDescriptors::FontDLInverse));
 		else
-			m_vLog.insert(m_vLog.begin(), pair(wstring(), FontDescriptors::FontDLRegular));
+			m_vLog.insert(m_vLog.begin(), pair(wstring(PRINT_CHAR_X_LOG_LENGTH, ' '), FontDescriptors::FontDLRegular));
 	}
-	m_vLog.at(0).first.append(1, ConvertChar(ch));
+	m_vLog.at(0).first.replace(X - PRINT_CHAR_X_LOG_BEGIN, 1, 1, ConvertChar(ch));
 	m_XLog = X;
 }
 
