@@ -84,6 +84,53 @@ wchar_t TextOutput::ConvertChar(unsigned char ch)
 	return (ch & 0x7F);
 }
 
+void TextOutput::ScrollWindow(TextWindows tw)
+{
+	switch (tw)
+	{
+	case TextWindows::Log:
+		[[passthrough]];
+	case TextWindows::LogBottom:
+		if (m_vLog.size() > PRINT_MAX_LOG_LINES)	// log is full, erase the last line
+			m_vLog.pop_back();
+		m_vLog.insert(m_vLog.begin(), pair(wstring(PRINT_CHAR_X_LOG_LENGTH, ' '), FontDescriptors::FontDLRegular));
+		break;
+	case TextWindows::Billboard:
+	{
+		m_vBillboard.pop_back();
+		m_vBillboard.insert(m_vBillboard.begin(), pair(wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '), FontDescriptors::FontDLRegular));
+		break;
+	}
+	default:
+#ifdef _DEBUG
+		char _buf[300];
+		sprintf_s(_buf, 300, "Scrolling default, nothing done: %02X\n", (int)tw);
+		OutputDebugStringA(_buf);
+#endif
+		break;
+	}
+}
+
+void TextOutput::ClearLog()
+{
+	// This is generally called when starting a battle
+	// For now let's just scroll a bit to give some space
+	ScrollWindow(TextWindows::Log);
+	ScrollWindow(TextWindows::Log);
+	ScrollWindow(TextWindows::Log);
+}
+
+void TextOutput::ClearBillboard()
+{
+	UINT8 billboardLineCt = PRINT_CHAR_Y_BILLBOARD_BEGIN;
+	while (billboardLineCt <= PRINT_CHAR_Y_BILLBOARD_END)
+	{
+		m_vBillboard.at(billboardLineCt - PRINT_CHAR_Y_BILLBOARD_BEGIN).first = wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' ');
+		m_vBillboard.at(billboardLineCt - PRINT_CHAR_Y_BILLBOARD_BEGIN).second = FontDescriptors::FontDLRegular;
+		++billboardLineCt;
+	}
+}
+
 void TextOutput::PrintCharRaw(unsigned char ch, UINT8 X_Origin, UINT8 Y_Origin, UINT8 X, UINT8 Y, bool bInverse)
 {
 	// Disregard anything in the upper area of the screen
@@ -134,32 +181,6 @@ void TextOutput::PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool b
 	// If in combat, it behaves like the log.
 	// If not in combat, it draws to each line directly
 	UINT8 billboardLineCt = PRINT_CHAR_Y_BILLBOARD_END - PRINT_CHAR_Y_BILLBOARD_BEGIN + 1;
-	if (Y < m_YBillboard)
-	{
-		// If the code wants to write a previous line, it means it is redrawing the billboard
-		// TODO: NOT ALWAYS!!! Can't rely on this, need to find where the code clears it
-		// Clear the billboard
-		for (UINT8 i = 0; i < billboardLineCt; i++)
-		{
-			m_vBillboard.at(i).first = wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' ');
-			m_vBillboard.at(i).second = FontDescriptors::FontDLRegular;
-		}
-	}
-	if ((Y == m_YBillboard)
-		&& (Y == PRINT_CHAR_Y_BILLBOARD_END)
-		&& (X < m_XBillboard))
-	{
-		// The billboard is behaving like a log, always updating the bottom row
-		// This happens when in battle. Behave like a log
-		// Remove the top line and insert a new line at the bottom
-		m_vBillboard.pop_back();
-		if (bInverse)
-			m_vBillboard.insert(m_vBillboard.begin(), pair(wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '), FontDescriptors::FontDLRegular));
-		else
-			m_vBillboard.insert(m_vBillboard.begin(), pair(wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '), FontDescriptors::FontDLInverse));
-		m_vBillboard.at(0).first.replace(X - PRINT_CHAR_X_BILLBOARD_BEGIN, 1, 1, ConvertChar(ch));
-	}
-	else
 	{
 		// Behave like a billboard where the code modifies every line
 		m_vBillboard.at(PRINT_CHAR_Y_BILLBOARD_END - Y).first.replace(X - PRINT_CHAR_X_BILLBOARD_BEGIN, 1, 1, ConvertChar(ch));
@@ -175,21 +196,11 @@ void TextOutput::PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool b
 
 void TextOutput::PrintCharToLog(unsigned char ch, UINT8 X, bool bInverse)
 {
-	// TODO: This newline logic where X goes back FAILS when user deletes a char as they type
-	// Need to figure out the code where the log goes up for a newline
-	if (X < m_XLog)		// it's a new line
-	{
-		if (m_vLog.size() > PRINT_MAX_LOG_LINES)
-		{
-			// log is full, erase the last line
-			m_vLog.pop_back();
-		}
-		if (bInverse)
-			m_vLog.insert(m_vLog.begin(), pair(wstring(PRINT_CHAR_X_LOG_LENGTH, ' '), FontDescriptors::FontDLInverse));
-		else
-			m_vLog.insert(m_vLog.begin(), pair(wstring(PRINT_CHAR_X_LOG_LENGTH, ' '), FontDescriptors::FontDLRegular));
-	}
 	m_vLog.at(0).first.replace(X - PRINT_CHAR_X_LOG_BEGIN, 1, 1, ConvertChar(ch));
+	if (bInverse)
+		m_vLog.at(0).second = FontDescriptors::FontDLInverse;
+	else
+		m_vLog.at(0).second = FontDescriptors::FontDLRegular;
 	m_XLog = X;
 }
 

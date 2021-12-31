@@ -40,6 +40,7 @@ enum class EmulatorLayout
 extern bool g_isInGameMap;          // is the player in-game or on the loading/utilities screens?
 extern bool g_isInBattle;           // is the player in the battle module?
 extern bool g_wantsToSave;          // only TRUE when the player is asking to save
+extern int g_debugLogInstructions;  // Tapping "End" key logs the next g_debugLogInstructions instructions
 extern NonVolatile g_nonVolatile;
 
 // A game implementation that creates a D3D12 device and

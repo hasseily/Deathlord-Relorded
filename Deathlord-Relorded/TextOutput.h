@@ -33,6 +33,20 @@ constexpr UINT8 PRINT_MAX_LOG_LINES = 20;		// Maximum log lines to display
 constexpr UINT8 PRINT_CHAR_X_LOG_BEGIN = 1;	// Value of X that starts the log area
 constexpr UINT8 PRINT_CHAR_X_LOG_LENGTH = 18;	// Length of a log string
 
+enum class TextWindows
+{
+	Log = 0xF01,
+	Player1 = 0x06,
+	Player2 = 0x07,
+	Player3 = 0x08,
+	Player4 = 0x09,
+	Player5 = 0x0A,
+	Player6 = 0x0B,
+	Billboard = 0x15,
+	LogBottom = 0x16,
+	count
+};
+
 class TextOutput	// Singleton
 {
 public:
@@ -44,6 +58,15 @@ public:
 	// The buffers are persistent across frames
 	// If ch < 0x80 it's an end-of-string character
 	void PrintCharRaw(unsigned char ch, UINT8 X_Origin, UINT8 Y_Origin, UINT8 X, UINT8 Y, bool bInverse);
+
+	// Call it to scroll a specific window
+	void ScrollWindow(TextWindows tw);
+
+	// Clears the log area (generally for a fight)
+	void ClearLog();
+
+	// Clears the billboard area
+	void ClearBillboard();
 
 	// Utility method to print any string on screen. Must be called for every frame
 	void PrintWStringAtOrigin(wstring wstr, XMFLOAT2 origin);

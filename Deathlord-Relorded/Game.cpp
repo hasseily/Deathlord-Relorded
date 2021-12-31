@@ -62,6 +62,7 @@ NonVolatile g_nonVolatile;
 bool g_isInGameMap = false;
 bool g_isInBattle = false;
 bool g_wantsToSave = true;  // DISABLED. It can corrupt saved games
+int g_debugLogInstructions = 0;    // Tapping "End" key logs the next 100,000 instructions
 float Game::m_clientFrameScale = 1.f;
 
 Game::Game() noexcept(false)
@@ -264,6 +265,12 @@ void Game::Update(DX::StepTimer const& timer)
 		else
 			m_invOverlay->ShowInvOverlay();
 	}
+#ifdef _DEBUG
+    if (kbTracker.pressed.End)
+    {
+        g_debugLogInstructions = 100000;
+    }
+#endif
 
     // Modern mouse handling
 	using ButtonState = Mouse::ButtonStateTracker::ButtonState;

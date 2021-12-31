@@ -32,7 +32,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 static int __posXOrigin = 0xff;
 static int __posY = 0xff;
-static bool __setNewLine = false;
 static std::string interactiveTextOutput = "";
 static int interactiveTextOutputLineCt = 0;
 static std::shared_ptr<LogWindow> __logWindow;
@@ -103,65 +102,36 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				aM->AnalyzeVisibleTiles();
 				break;
 			}
-			case PC_FLAG_NEWLINE:
-			{
-				__setNewLine = true;
-				break;
-			}
-			/*
-			* This is obsoleted by PC_PRINT_CHAR
-			* 
-			case PC_PRINT_STATIC_TEXT:
-			{
-				if (__setNewLine)
-				{
-					// Need to add a new line before anything
-					// And delete an old one if the buffer has gotten too big
-					if (interactiveTextOutputLineCt > 15)
-					{
-						size_t _nlpos = interactiveTextOutput.find_first_of("\n");
-						if (_nlpos != std::string::npos)
-						{
-							interactiveTextOutput.erase(0, _nlpos + 1);
-							--interactiveTextOutputLineCt;
-						}
-					}
-					interactiveTextOutput.append("\n");
-					__setNewLine = false;
-				}
-				int memPosString = 1 + MemGetMainPtr(regs.sp)[1]
-					+ ((UINT16)MemGetMainPtr(regs.sp)[2] << 8);
-				char aString[256];
-				BYTE aChar;
-				for (size_t i = 0; i < 255; i++)
-				{
-					aChar = MemGetMainPtr(memPosString)[i];
-					if (aChar >= sizeof(ARRAY_DEATHLORD_CHARSET_EOR) + 0x80)	// shouldn't happen!
-					{
-						aString[i] = '.';
-						continue;
-					}
-					if (aChar < 0x80)	// Not end of string
-					{
-						aString[i] = ARRAY_DEATHLORD_CHARSET_EOR[aChar];
-					}
-					else // We're done, it's the end of the string
-					{
-						aString[i] = ARRAY_DEATHLORD_CHARSET_EOR[aChar - 0x80];
-						interactiveTextOutput.append(aString, i+1);
-						__setNewLine = true;
-						OutputDebugStringA((interactiveTextOutput + "\n").c_str());
-						break;
-					}
-				}
-				break;
-			}
-			*/
-			case PC_PRINT_CHAR:
+			case PC_SCROLL_WINDOW:
 			{
 				if (!__textOutput)
 					__textOutput = TextOutput::GetInstance();
+				if (MemGetRealMainPtr(MEM_PRINT_AREA_X_START)[0] < PRINT_CHAR_X_BILLBOARD_BEGIN)
+					__textOutput->ScrollWindow(TextWindows::Log);
+				else if(MemGetRealMainPtr(MEM_PRINT_AREA_Y_START)[0] >= PRINT_CHAR_Y_BILLBOARD_BEGIN)
+					__textOutput->ScrollWindow(TextWindows::Billboard);
+				else
+				{
+#ifdef _DEBUG
+					OutputDebugStringA("Scrolling window unknown\n");
+					char _buf[300];
+					sprintf_s(_buf, 300, "%04X: %02X%02X - %02X %02X %02X - %02d %02d %02d %02d\n", _origPC,
+						MemGetRealMainPtr(_origPC + 2)[0], MemGetRealMainPtr(_origPC + 1)[0],
+						regs.a, regs.x, regs.y,
+						MemGetRealMainPtr(MEM_PRINT_AREA_X_START)[0],
+						MemGetRealMainPtr(MEM_PRINT_AREA_X_END)[0],
+						MemGetRealMainPtr(MEM_PRINT_AREA_Y_START)[0],
+						MemGetRealMainPtr(MEM_PRINT_AREA_Y_END)[0]);
+					OutputDebugStringA(_buf);
+#endif
+				}
+				break;
+			}
+			case PC_PRINT_CHAR:
+			{
 				unsigned int _glyph = regs.a;
+				if (!__textOutput)
+					__textOutput = TextOutput::GetInstance();
 				__textOutput->PrintCharRaw(_glyph, 
 					MemGetMainPtr(MEM_PRINT_X_ORIGIN)[0], MemGetMainPtr(MEM_PRINT_Y_ORIGIN)[0],
 					MemGetMainPtr(MEM_PRINT_X)[0], MemGetMainPtr(MEM_PRINT_Y)[0],
@@ -197,7 +167,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				{
 					// TODO: Print Bold/Colored Glyph
 				}
-#ifdef _DEBUG
+#ifdef _DEBUG_XXX
 				char _bufPrint[200];
 				sprintf_s(_bufPrint, 200, "%c/%2X (%2X) == XOrig: %2d, YOrig: %2d, X:%2d, Y:%2d, Width: %2d, Height %2d\n",
 					ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F], regs.a, MemGetMainPtr(MEM_PRINT_INVERSE)[0], 
@@ -207,6 +177,27 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				OutputDebugStringA(_bufPrint);
 #endif
 				break;
+			}
+			case PC_PRINT_CLEAR_AREA:
+			{
+				if (!__textOutput)
+					__textOutput = TextOutput::GetInstance();
+				if (regs.a == 0x03)
+					__textOutput->ClearLog();
+				else
+					__textOutput->ClearBillboard();
+#ifdef _DEBUG
+				OutputDebugStringA("Clearing Print Area\n");
+				char _buf[300];
+				sprintf_s(_buf, 300, "%04X: %02X%02X - %02X %02X %02X - %02d %02d %02d %02d\n", _origPC,
+					MemGetRealMainPtr(_origPC + 2)[0], MemGetRealMainPtr(_origPC + 1)[0],
+					regs.a, regs.x, regs.y,
+					MemGetRealMainPtr(MEM_PRINT_AREA_X_START)[0],
+					MemGetRealMainPtr(MEM_PRINT_AREA_X_END)[0],
+					MemGetRealMainPtr(MEM_PRINT_AREA_Y_START)[0],
+					MemGetRealMainPtr(MEM_PRINT_AREA_Y_END)[0]);
+				OutputDebugStringA(_buf);
+#endif
 			}
 			case PC_CHECK_REAR_ATTACK:
 			{
@@ -353,15 +344,11 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 		HEATMAP_X(regs.pc);
 		Fetch(iOpcode, uExecutedCycles);
 
-#ifdef _DEBUG_INSTRUCTIONS
+#ifdef _DEBUG
 
-		if ((_origPC == 0xA9A4))
-			numInstructions = 1000;
-
-		if (numInstructions > 0)
+		if (g_debugLogInstructions > 0)
 		{
-			--numInstructions;
-			WORD addr = *(LPWORD)(mem + _origPC);
+			--g_debugLogInstructions;
 			std::string _opStr;
 			switch (iOpcode)
 			{
@@ -624,8 +611,8 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			}
 
 			char _buf[300];
-			sprintf_s(_buf, 300, "%04X: %s  %02X %02X%02X - %02X %02X %02X\n", _origPC, _opStr.c_str(), 
-				MemGetRealMainPtr(_origPC), MemGetRealMainPtr(_origPC + 1)[0], MemGetRealMainPtr(_origPC + 2)[0],
+			sprintf_s(_buf, 300, "%04X: %s  %02X%02X - %02X %02X %02X\n", _origPC, _opStr.c_str(), 
+				MemGetRealMainPtr(_origPC + 1)[0], MemGetRealMainPtr(_origPC + 2)[0],
 				regs.a, regs.x, regs.y);
 			OutputDebugStringA(_buf);
 		}

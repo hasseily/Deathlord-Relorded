@@ -20,11 +20,17 @@
 #define PC_CHAR_TILE_DAMAGE			0x6038		// JSR to the tile damage subroutine at 0x6063. Bypass it to avoid tile damage to char at index in X.
 #define PC_SAVE_AFTER_DEATH			0x5BC5		// BNE should not branch in order to stop saving after a char dies in combat
 #define PC_NINJA_MONK_AC_RESET		0xA952		// AND with 0F that resets the Ninja and Monk A/C to 0 every 32 levels. Bypass this bug.
-#define PC_PRINT_STATIC_TEXT		0x540E		// This routine prints static text in the bottom areas, including "Talk" and "Info" static text, but not "Chat".
-												// The top of the stack contain the LO and HI bytes of the address right before the string to print
-#define PC_FLAG_NEWLINE				0x540B		// If we reach here, it's a flag to start a newline before getting to PC_PRINT_STATIC_TEXT, but only on the bottom right area
-#define PC_PRINT_CHAR				0x532D		// Prints a char on screen using: AF is active Y, AE is active X, AB is width, AC is height, AD is original X (for line-feed), AA is original Y
 
+#define PC_SCROLL_WINDOW			0x5395		// This scrolls the active window
+												// if A is $01, it's the log window
+												// if A is $0B, it's the last line of the billboard that scrolls (in battle)
+												// It scrolls many times on the billboard, probably for each line
+#define PC_PRINT_CHAR				0x532D		// Prints a char on screen using: AF is active Y, AE is active X, AB is width, AC is height, AD is original X (for line-feed), AA is original Y
+#define PC_PRINT_CLEAR_AREA			0x52BC		// Clears a print area. Coordinates are in 0xAA-0xAD
+#define MEM_PRINT_AREA_X_START		0x00AD		// Coordinates with the print area
+#define MEM_PRINT_AREA_X_END		0x00AB		// Coordinates with the print area
+#define MEM_PRINT_AREA_Y_START		0x00AA		// Coordinates with the print area
+#define MEM_PRINT_AREA_Y_END		0x00AC		// Coordinates with the print area
 
 struct regsrec
 {
