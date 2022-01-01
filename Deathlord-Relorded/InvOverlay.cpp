@@ -225,7 +225,7 @@ void InvOverlay::OnDeviceLost()
 
 #pragma region Drawing
 
-void InvOverlay::DrawInvOverlay(	// TODO: Fix the layout!!!
+void InvOverlay::DrawInvOverlay(
 	std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, 
 	std::shared_ptr<DirectX::PrimitiveBatch<VertexPositionColor>>& primitiveBatch, 
 	SimpleMath::Rectangle* overlayRect)

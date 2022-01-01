@@ -394,23 +394,6 @@ void Game::Render()
 			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::MainBackground), mmBGTexSize,
 				r, nullptr, Colors::White, 0.f, XMFLOAT2());
 			// End drawing the game background
-
-            ////////////////////////////////////////////////////////////////////////////////
-            // TODO: REMOVE THIS
-            // Draw the applewin video for DEBUGGING
-            
-			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-			commandList->ResourceBarrier(1, &barrier);
-			UpdateSubresources(commandList, m_texture.Get(), g_textureUploadHeap.Get(), 0, 0, 1, &g_textureData);
-			barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-			commandList->ResourceBarrier(1, &barrier);
-            SimpleMath::Rectangle vidR(r);
-            vidR.width /= 3;
-            vidR.height /= 3;
-			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video), GetTextureSize(m_texture.Get()),
-				vidR, nullptr, Colors::White, 0.f);
-            // End Draw
-            ////////////////////////////////////////////////////////////////////////////////
             
 			// Now time to draw the text and lines
 			m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(clientRect.left, clientRect.right, clientRect.bottom, clientRect.top, 0, 1));
@@ -480,7 +463,7 @@ void Game::Render()
 			if (g_nonVolatile.showMap)
 			{
 				// Now draw autoMap
-				auto mmOrigin = Vector2(r.x + r.width - MAP_WIDTH_IN_VIEWPORT, 0.f);
+				auto mmOrigin = Vector2(r.x + 361.f, r.y + 10.f);
 				RECT mapRectInViewport = {
 					mmOrigin.x,
 					mmOrigin.y,
@@ -515,6 +498,23 @@ void Game::Render()
 
 			// End drawing text
 
+			////////////////////////////////////////////////////////////////////////////////
+			// TODO: REMOVE THIS
+			// Draw the applewin video for DEBUGGING
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+			commandList->ResourceBarrier(1, &barrier);
+			UpdateSubresources(commandList, m_texture.Get(), g_textureUploadHeap.Get(), 0, 0, 1, &g_textureData);
+			barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			commandList->ResourceBarrier(1, &barrier);
+			SimpleMath::Rectangle vidR(r);
+			vidR.width /= 3;
+			vidR.height /= 3;
+            m_spriteBatch->Begin(commandList, m_states->LinearClamp(), SpriteSortMode_Deferred);
+			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video), GetTextureSize(m_texture.Get()),
+				vidR, nullptr, Colors::White, 0.f);
+            m_spriteBatch->End();
+			// End Draw
+			////////////////////////////////////////////////////////////////////////////////
         }   // end if !g_isInGameMap
 
         // Now check if the game is paused and display an overlay
@@ -721,7 +721,7 @@ void Game::CreateDeviceDependentResources()
 	m_states = std::make_unique<CommonStates>(device);
 	auto sampler = m_states->LinearWrap();
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
-    // TODO: Either switch back to NonPreMultiplied or optimize the spritesheets
+    // TODO: Either switch back to NonPremultiplied or optimize the spritesheets
     // Right now it's AlphaBlend to overlay the applewin video for debugging
 	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::AlphaBlend, nullptr, nullptr, &sampler);
 	m_spriteBatch = std::make_unique<SpriteBatch>(device, resourceUpload, spd);

@@ -166,7 +166,10 @@ void UpdateMenuBarStatus(HWND hwnd)
 		HA::AlertIfError(hwnd);
 	CheckMenuRadioItem(videoMenu, 0, 3, g_nonVolatile.video, MF_BYPOSITION);
 	CheckMenuRadioItem(volumeMenu, 0, 4, g_nonVolatile.volumeSpeaker, MF_BYPOSITION);
+	// For All and quadrants
 	CheckMenuRadioItem(autoMapMenu, 5, 9, (int)g_nonVolatile.mapQuadrant+5, MF_BYPOSITION);
+	// For FollowPlayer which is the same as All
+	CheckMenuRadioItem(autoMapMenu, 5, 5, 5, MF_BYPOSITION);
 
 	CheckMenuItem(emuMenu, ID_EMULATOR_GAMELINK,
 		MF_BYCOMMAND | (g_nonVolatile.useGameLink ? MF_CHECKED : MF_UNCHECKED));
@@ -828,23 +831,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_DISPLAYFULL:
-			g_nonVolatile.mapQuadrant = AutoMapQuandrant::All;
+			if (g_nonVolatile.mapQuadrant == AutoMapQuadrant::All)
+				g_nonVolatile.mapQuadrant = AutoMapQuadrant::FollowPlayer;
+			else if (g_nonVolatile.mapQuadrant == AutoMapQuadrant::FollowPlayer)
+				g_nonVolatile.mapQuadrant = AutoMapQuadrant::All;
+			else
+				g_nonVolatile.mapQuadrant = AutoMapQuadrant::All;
 			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_DISPLAYTOPLEFTQUADRANT:
-			g_nonVolatile.mapQuadrant = AutoMapQuandrant::TopLeft;
+			g_nonVolatile.mapQuadrant = AutoMapQuadrant::TopLeft;
 			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_DISPLAYTOPRIGHTQUADRANT:
-			g_nonVolatile.mapQuadrant = AutoMapQuandrant::TopRight;
+			g_nonVolatile.mapQuadrant = AutoMapQuadrant::TopRight;
 			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_DISPLAYBOTTOMLEFTQUADRANT:
-			g_nonVolatile.mapQuadrant = AutoMapQuandrant::BottomLeft;
+			g_nonVolatile.mapQuadrant = AutoMapQuadrant::BottomLeft;
 			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_DISPLAYBOTTOMRIGHTQUADRANT:
-			g_nonVolatile.mapQuadrant = AutoMapQuandrant::BottomRight;
+			g_nonVolatile.mapQuadrant = AutoMapQuadrant::BottomRight;
 			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_ERASE:

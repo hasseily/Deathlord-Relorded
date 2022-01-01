@@ -169,37 +169,41 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 	OutputDebugStringA(_buf);
 	*/
 
+	/*
+	Disable the below
+	TODO: This is to be removed now that we have AutoMapQuadrant::FollowPlayer
+
 	// Automatically switch the visible quadrant if the map isn't visible in full
-	AutoMapQuandrant _newQuadrant = AutoMapQuandrant::All;
-	if (g_nonVolatile.mapQuadrant != AutoMapQuandrant::All)
+	AutoMapQuadrant _newQuadrant = AutoMapQuadrant::All;
+	if (g_nonVolatile.mapQuadrant != AutoMapQuadrant::All)
 	{
 		if (m_avatarPosition.x < 0x20)
 		{
 			if (m_avatarPosition.y < 0x20)
-				_newQuadrant = AutoMapQuandrant::TopLeft;
+				_newQuadrant = AutoMapQuadrant::TopLeft;
 			else
-				_newQuadrant = AutoMapQuandrant::BottomLeft;
+				_newQuadrant = AutoMapQuadrant::BottomLeft;
 		}
 		else
 		{
 			if (m_avatarPosition.y < 0x20)
-				_newQuadrant = AutoMapQuandrant::TopRight;
+				_newQuadrant = AutoMapQuadrant::TopRight;
 			else
-				_newQuadrant = AutoMapQuandrant::BottomRight;
+				_newQuadrant = AutoMapQuadrant::BottomRight;
 		}
 		if (g_nonVolatile.mapQuadrant != _newQuadrant) {
 			switch (_newQuadrant)
 			{
-			case AutoMapQuandrant::TopLeft:
+			case AutoMapQuadrant::TopLeft:
 				PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_AUTOMAP_DISPLAYTOPLEFTQUADRANT, 1);
 				break;
-			case AutoMapQuandrant::BottomLeft:
+			case AutoMapQuadrant::BottomLeft:
 				PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_AUTOMAP_DISPLAYBOTTOMLEFTQUADRANT, 1);
 				break;
-			case AutoMapQuandrant::TopRight:
+			case AutoMapQuadrant::TopRight:
 				PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_AUTOMAP_DISPLAYTOPRIGHTQUADRANT, 1);
 				break;
-			case AutoMapQuandrant::BottomRight:
+			case AutoMapQuadrant::BottomRight:
 				PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_AUTOMAP_DISPLAYBOTTOMRIGHTQUADRANT, 1);
 				break;
 			default:
@@ -207,6 +211,7 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 			}
 		}
 	}
+	 */
 }
 
 void AutoMap::AnalyzeVisibleTiles()
@@ -429,24 +434,28 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 	SimpleMath::Viewport mapViewport(m_deviceResources->GetScreenViewport());
 	spriteBatch->SetViewport(mapViewport);
 	spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
-	SimpleMath::Rectangle mapScissorRect = (*gamePtr)->GetDrawRectangle();
-	float _scale = (g_nonVolatile.mapQuadrant == AutoMapQuandrant::All ? 1.f : 2.f);
+	SimpleMath::Rectangle mapScissorRect = SimpleMath::Rectangle (*mapRect);
+	float _scale = (g_nonVolatile.mapQuadrant == AutoMapQuadrant::All ? 1.f : 2.f);
 	Vector2 _mapCenter = mapScissorRect.Center();
 	switch (g_nonVolatile.mapQuadrant)
 	{
-	case AutoMapQuandrant::TopLeft:
+	case AutoMapQuadrant::FollowPlayer:
+		_mapCenter.x = mapScissorRect.x + m_avatarPosition.x * PNGTW - mapScissorRect.width / 2.f;
+		_mapCenter.y = mapScissorRect.y + m_avatarPosition.y * PNGTH - mapScissorRect.height / 2.f;
+		break;
+	case AutoMapQuadrant::TopLeft:
 		_mapCenter.x -= mapScissorRect.width / 2.f;
 		_mapCenter.y -= mapScissorRect.height / 2.f;
 		break;
-	case AutoMapQuandrant::TopRight:
+	case AutoMapQuadrant::TopRight:
 		_mapCenter.x += mapScissorRect.width / 2.f;
 		_mapCenter.y -= mapScissorRect.height / 2.f;
 		break;
-	case AutoMapQuandrant::BottomLeft:
+	case AutoMapQuadrant::BottomLeft:
 		_mapCenter.x -= mapScissorRect.width / 2.f;
 		_mapCenter.y += mapScissorRect.height / 2.f;
 		break;
-	case AutoMapQuandrant::BottomRight:
+	case AutoMapQuadrant::BottomRight:
 		_mapCenter.x += mapScissorRect.width / 2.f;
 		_mapCenter.y += mapScissorRect.height / 2.f;
 		break;
