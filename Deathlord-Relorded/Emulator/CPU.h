@@ -21,7 +21,7 @@
 #define PC_SAVE_AFTER_DEATH			0x5BC5		// BNE should not branch in order to stop saving after a char dies in combat
 #define PC_NINJA_MONK_AC_RESET		0xA952		// AND with 0F that resets the Ninja and Monk A/C to 0 every 32 levels. Bypass this bug.
 
-#define PC_SCROLL_WINDOW			0x538D		// This scrolls the active window
+#define PC_SCROLL_WINDOW			0x5395		// This scrolls the active window
 												// if A is $01, it's the log window
 												// if A is $0B, it's the last line of the billboard that scrolls (in battle)
 												// It scrolls many times on the billboard, probably for each line
