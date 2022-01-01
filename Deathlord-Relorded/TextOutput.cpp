@@ -33,7 +33,7 @@ void TextOutput::Initialize()
 	v_linesToPrint = vector<pair<wstring, XMFLOAT2>>();
 }
 
-void TextOutput::Render(DirectX::SpriteBatch* spriteBatch)
+void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 {
 	// TODO: Should not rely on the gamePtr for fonts?
 	// TODO: Render v_linesToPrint
@@ -41,25 +41,27 @@ void TextOutput::Render(DirectX::SpriteBatch* spriteBatch)
 	auto fontsRegular = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular);
 
 	// Render Module string
+	// TODO: Get the length of the string and align it to the center of the map
 	(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular)->DrawString(spriteBatch, m_strModule.c_str(),
-		{ 930.f, 200.f }, Colors::White, 0.f, Vector2(), 1.f);
+		{ r.x + 775.f, r.y + 65.f }, Colors::White, 0.f, Vector2(), 3.f);
 	// Render Keypress string
+	// TODO: Get the length of the string and align it to the center of the area
 	(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular)->DrawString(spriteBatch, m_strKeypress.c_str(),
-		{ 930.f, 100.f }, Colors::White, 0.f, Vector2(), 1.f);
+		{ r.x + 1370.f, r.y + 310.f }, Colors::White, 0.f, Vector2(), 2.2f);
 	// Render Billboard
-	int yInc = 0;
+	float yInc = 0.f;
 	for each (auto bbLine in m_vBillboard)
 	{
 		(*gamePtr)->GetSpriteFontAtIndex(bbLine.second)->DrawString(spriteBatch, bbLine.first.c_str(),
-			{ 930.f, 400.f + yInc }, Colors::White, 0.f, Vector2(), 1.f);
-		yInc -= 16;
+			{ r.x + 1290.f, r.y + 260.f + yInc }, Colors::White, 0.f, Vector2(), 2.f);
+		yInc -= 16 * 2.f;
 	}
-	yInc = 0;
+	yInc = 0.f;
 	for each (auto logLine in m_vLog)
 	{
 		(*gamePtr)->GetSpriteFontAtIndex(logLine.second)->DrawString(spriteBatch, logLine.first.c_str(),
-			{ 1100.f, 450.f + yInc }, Colors::White, 0.f, Vector2(), 1.f);
-		yInc -= 16;
+			{ r.x + 1290.f, r.y + 1000.f + yInc }, Colors::White, 0.f, Vector2(), 2.f);
+		yInc -= 16 * 2.f;
 	}
 
 }
@@ -69,6 +71,53 @@ void TextOutput::Render(DirectX::SpriteBatch* spriteBatch)
 void TextOutput::PrintWStringAtOrigin(std::wstring wstr, XMFLOAT2 origin)
 {
 	v_linesToPrint.push_back(std::pair(wstr, origin));
+}
+
+
+TextWindows TextOutput::AreaForCoordinates(UINT8 xStart, UINT8 xEnd, UINT8 yStart, UINT8 yEnd)
+{
+	/*
+	char _bufPrint[200];
+	sprintf_s(_bufPrint, 200, "AreaForCoordinates: %2d, %2d, %2d, %2d\n",
+		xStart, xEnd, yStart, yEnd);
+	OutputDebugStringA(_bufPrint);
+	*/
+
+	if (yStart < PRINT_CHAR_Y_MODULE)
+	{
+		if (xStart >= PRINT_CHAR_X_BILLBOARD_BEGIN)
+		{
+			switch (yStart)
+			{
+			case 0x06: return TextWindows::Player1;
+			case 0x07: return TextWindows::Player2;
+			case 0x08: return TextWindows::Player3;
+			case 0x09: return TextWindows::Player4;
+			case 0x0A: return TextWindows::Player5;
+			case 0x0B: return TextWindows::Player6;
+			case PRINT_CHAR_Y_PARTYNAME: return TextWindows::PartyName;
+			default: return TextWindows::Unknown;
+			}
+		}
+		// This is the area of the map!
+		return TextWindows::Unknown;
+	}
+	else
+	{
+		if (xStart == PRINT_CHAR_X_ORIGIN_LEFT)
+			return TextWindows::Log;
+		if (xStart >= PRINT_CHAR_X_BILLBOARD_BEGIN)
+		{
+			// Unfortunately the game pools together the everything below the party area
+			// with the billboard. Generally we can't tell the difference
+			if (yStart == PRINT_CHAR_Y_KEYPRESS)
+				return TextWindows::Keypress;
+			if (yStart == PRINT_CHAR_Y_MODULE)
+				return TextWindows::Module;
+			return TextWindows::ModuleBillboardKeypress;
+		}
+	}
+	return TextWindows::Unknown;
 }
 
 #pragma endregion
@@ -89,8 +138,6 @@ void TextOutput::ScrollWindow(TextWindows tw)
 	switch (tw)
 	{
 	case TextWindows::Log:
-		[[passthrough]];
-	case TextWindows::LogBottom:
 		if (m_vLog.size() > PRINT_MAX_LOG_LINES)	// log is full, erase the last line
 			m_vLog.pop_back();
 		m_vLog.insert(m_vLog.begin(), pair(wstring(PRINT_CHAR_X_LOG_LENGTH, ' '), FontDescriptors::FontDLRegular));
@@ -131,30 +178,53 @@ void TextOutput::ClearBillboard()
 	}
 }
 
-void TextOutput::PrintCharRaw(unsigned char ch, UINT8 X_Origin, UINT8 Y_Origin, UINT8 X, UINT8 Y, bool bInverse)
+void TextOutput::PrintCharRaw(unsigned char ch, TextWindows tw, UINT8 X, UINT8 Y, bool bInverse)
 {
-	// Disregard anything in the upper area of the screen
-	// We don't print the party list
-	if (Y < PRINT_Y_MIN)
-		return;
-
-	// Print to the specified area on screen
-	if (X_Origin == PRINT_CHAR_X_ORIGIN_LEFT)
-		PrintCharToLog(ch, X, bInverse);
-	else if (X_Origin == PRINT_CHAR_X_ORIGIN_RIGHT)
+	switch (tw)
 	{
+	case TextWindows::Unknown:
+	{
+		// Disregard anything in the upper area of the screen
+		// We don't print the party list
+#ifdef _DEBUG
+		char _bufPrint[200];
+		sprintf_s(_bufPrint, 200, "TRYING TO PRINT TO UNKNOWN AREA: %c, %2d, %2d, %2d\n",
+			ARRAY_DEATHLORD_CHARSET[ch & 0x7F], tw, X, Y);
+		OutputDebugStringA(_bufPrint);
+#endif
+		return;
+		break;
+	}
+	case TextWindows::PartyName:
+		break;
+	case TextWindows::Module:
+		PrintCharToModule(ch, X, bInverse);
+		break;
+	case TextWindows::Log:
+		PrintCharToLog(ch, X, bInverse);
+		break;
+	case TextWindows::ModuleBillboardKeypress:
 		if (Y == PRINT_CHAR_Y_MODULE)
 			PrintCharToModule(ch, X, bInverse);
 		else if (Y == PRINT_CHAR_Y_KEYPRESS)
 			PrintCharToKeypress(ch, X, bInverse);
 		else
-		{
-			// Here Deathlord prints to the billboard area
-			// But during battle it uses it as a bigger log print area
-			// Unless the user wants to choose a spell. In which case
-			// it uses it as a list selection area
 			PrintCharToBillboard(ch, X, Y, bInverse);
-		}
+		break;
+	case TextWindows::Billboard:
+		// Here Deathlord prints to the billboard area
+		// But during battle it uses it as a bigger log print area
+		// Unless the user wants to choose a spell. In which case
+		// it uses it as a list selection area
+		PrintCharToBillboard(ch, X, Y, bInverse);
+		break;
+	case TextWindows::Keypress:
+		PrintCharToKeypress(ch, X, bInverse);
+		break;
+	default:
+		// This is the list of party members
+		// TODO: here we could trigger an update of the characters module
+		break;
 	}
 }
 

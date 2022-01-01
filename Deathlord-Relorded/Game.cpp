@@ -497,7 +497,7 @@ void Game::Render()
 
 			// TODO: Let TextOutput handle all the text?
 			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
-            m_textOutput->Render(m_spriteBatch.get());
+            m_textOutput->Render(r, m_spriteBatch.get());
 			m_spriteBatch->End();
 
 			// TODO: Let m_invOverlay create its own effect, spritebatch and primitivebatch?

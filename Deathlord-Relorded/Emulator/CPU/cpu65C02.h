@@ -106,11 +106,23 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			{
 				if (!__textOutput)
 					__textOutput = TextOutput::GetInstance();
-				if (MemGetRealMainPtr(MEM_PRINT_AREA_X_START)[0] < PRINT_CHAR_X_BILLBOARD_BEGIN)
+				TextWindows tw = __textOutput->AreaForCoordinates(
+					MemGetMainPtr(MEM_PRINT_AREA_X_START)[0], MemGetMainPtr(MEM_PRINT_AREA_X_END)[0],
+					MemGetMainPtr(MEM_PRINT_AREA_Y_START)[0], MemGetMainPtr(MEM_PRINT_AREA_Y_END)[0]
+				);
+				switch (tw)
+				{
+				case TextWindows::Log:
 					__textOutput->ScrollWindow(TextWindows::Log);
-				else if(MemGetRealMainPtr(MEM_PRINT_AREA_Y_START)[0] >= PRINT_CHAR_Y_BILLBOARD_BEGIN)
+					break;
+				case TextWindows::Billboard:
+					[[passthrough]];
+				case TextWindows::Keypress:
+					[[passthrough]];
+				case TextWindows::ModuleBillboardKeypress:
 					__textOutput->ScrollWindow(TextWindows::Billboard);
-				else
+					break;
+				default:
 				{
 #ifdef _DEBUG
 					OutputDebugStringA("Scrolling window unknown\n");
@@ -125,57 +137,40 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 					OutputDebugStringA(_buf);
 #endif
 				}
+				}
 				break;
 			}
 			case PC_PRINT_CHAR:
 			{
-				unsigned int _glyph = regs.a;
-				if (!__textOutput)
-					__textOutput = TextOutput::GetInstance();
-				__textOutput->PrintCharRaw(_glyph, 
-					MemGetMainPtr(MEM_PRINT_X_ORIGIN)[0], MemGetMainPtr(MEM_PRINT_Y_ORIGIN)[0],
-					MemGetMainPtr(MEM_PRINT_X)[0], MemGetMainPtr(MEM_PRINT_Y)[0],
-					MemGetMainPtr(MEM_PRINT_INVERSE)[0]);
-				// TODO: Use TextOutput.h and remove all of the below
-
 				// First check if it's the topright area. If so, do nothing. We don't need to display changes
 				// in the list of characters
 				if (MemGetMainPtr(MEM_PRINT_Y)[0] < PRINT_Y_MIN)
 					break;
 
-				__logWindow = GetLogWindow();
-				// Also don't log if the log window isn't visible
-				if (!__logWindow->IsLogWindowDisplayed())
-					break;
+				// Use the below code to check for combat mode
+				// if (!g_nonVolatile.logCombat && (MemGetMainPtr(MEM_MODULE_STATE)[0] == (int)ModuleStates::Combat))
+				//	break;
 
-				// And don't log if we're in combat and we don't want to log combat
-				if (!g_nonVolatile.logCombat && (MemGetMainPtr(MEM_MODULE_STATE)[0] == (int)ModuleStates::Combat))
-					break;
-
-				if (_glyph > 0x7F)	// regular non-end-of-string
-				{
-					__logWindow->AppendLog((wchar_t)ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F], false);
-				}
-				else
-				{
-					// End of String unless the glyph is a punctuation for some reason
-					// TODO: Instead of \n at end of string, just consider it a buffer flush.
-					// Only do carriage return when X_ORIGIN or Y change
-					__logWindow->AppendLog((wchar_t)ARRAY_DEATHLORD_CHARSET[_glyph], true);
-				}
-				if (MemGetMainPtr(MEM_PRINT_INVERSE)[0] == 0x7F)	// Inverse glyph
-				{
-					// TODO: Print Bold/Colored Glyph
-				}
+				unsigned int _glyph = regs.a;
 #ifdef _DEBUG_XXX
 				char _bufPrint[200];
 				sprintf_s(_bufPrint, 200, "%c/%2X (%2X) == XOrig: %2d, YOrig: %2d, X:%2d, Y:%2d, Width: %2d, Height %2d\n",
-					ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F], regs.a, MemGetMainPtr(MEM_PRINT_INVERSE)[0], 
+					ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F], regs.a, MemGetMainPtr(MEM_PRINT_INVERSE)[0],
 					MemGetMainPtr(MEM_PRINT_X_ORIGIN)[0], MemGetMainPtr(MEM_PRINT_Y_ORIGIN)[0],
 					MemGetMainPtr(MEM_PRINT_X)[0], MemGetMainPtr(MEM_PRINT_Y)[0],
 					MemGetMainPtr(MEM_PRINT_WIDTH)[0], MemGetMainPtr(MEM_PRINT_HEIGHT)[0]);
 				OutputDebugStringA(_bufPrint);
 #endif
+				if (!__textOutput)
+					__textOutput = TextOutput::GetInstance();
+				TextWindows tw = __textOutput->AreaForCoordinates(
+					MemGetMainPtr(MEM_PRINT_AREA_X_START)[0], MemGetMainPtr(MEM_PRINT_AREA_X_END)[0],
+					MemGetMainPtr(MEM_PRINT_AREA_Y_START)[0], MemGetMainPtr(MEM_PRINT_AREA_Y_END)[0]
+				);
+				__textOutput->PrintCharRaw(_glyph, tw,
+					MemGetMainPtr(MEM_PRINT_X)[0], MemGetMainPtr(MEM_PRINT_Y)[0],
+					MemGetMainPtr(MEM_PRINT_INVERSE)[0]);
+
 				break;
 			}
 			case PC_PRINT_CLEAR_AREA:

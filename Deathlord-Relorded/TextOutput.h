@@ -16,6 +16,10 @@ constexpr UINT8	PRINT_Y_MIN = 12;	// Value of PRINT_Y below which we don't print
 constexpr UINT8 PRINT_CHAR_X_ORIGIN_LEFT = 1;	// Value of X_ORIGIN to check to see if printing on the left bottom area
 constexpr UINT8 PRINT_CHAR_X_ORIGIN_RIGHT = 21;	// Value of X_ORIGIN to check to see if printing on any of the right areas
 
+constexpr UINT8 PRINT_CHAR_Y_PARTYNAME = 4;			// Value of Y to check for party name
+constexpr UINT8 PRINT_CHAR_X_PARTYNAME_BEGIN = 22;	// Value of X that starts the party name area
+constexpr UINT8 PRINT_CHAR_X_PARTYNAME_LENGTH = 16;	// Length of party name string
+
 constexpr UINT8 PRINT_CHAR_Y_MODULE = 13;	// Value of Y to check for right center line print (area, # of enemies)
 constexpr UINT8 PRINT_CHAR_X_MODULE_BEGIN = 22;		// Value of X that starts the module area
 constexpr UINT8 PRINT_CHAR_X_MODULE_LENGTH = 10;	// Length of module string
@@ -35,15 +39,19 @@ constexpr UINT8 PRINT_CHAR_X_LOG_LENGTH = 18;	// Length of a log string
 
 enum class TextWindows
 {
-	Log = 0xF01,
-	Player1 = 0x06,
-	Player2 = 0x07,
-	Player3 = 0x08,
-	Player4 = 0x09,
-	Player5 = 0x0A,
-	Player6 = 0x0B,
-	Billboard = 0x15,
-	LogBottom = 0x16,
+	Log = 0,
+	PartyName,
+	Player1,
+	Player2,
+	Player3,
+	Player4,
+	Player5,
+	Player6,
+	Module,
+	Billboard,
+	Keypress,
+	ModuleBillboardKeypress,
+	Unknown,
 	count
 };
 
@@ -57,7 +65,7 @@ public:
 	// It also automatically adds \n and clears buffers as necessary
 	// The buffers are persistent across frames
 	// If ch < 0x80 it's an end-of-string character
-	void PrintCharRaw(unsigned char ch, UINT8 X_Origin, UINT8 Y_Origin, UINT8 X, UINT8 Y, bool bInverse);
+	void PrintCharRaw(unsigned char ch, TextWindows tw, UINT8 X, UINT8 Y, bool bInverse);
 
 	// Call it to scroll a specific window
 	void ScrollWindow(TextWindows tw);
@@ -68,11 +76,15 @@ public:
 	// Clears the billboard area
 	void ClearBillboard();
 
+	// Determines which area we're in
+	TextWindows AreaForCoordinates(UINT8 xStart, UINT8 xEnd, UINT8 yStart, UINT8 yEnd);
+
 	// Utility method to print any string on screen. Must be called for every frame
 	void PrintWStringAtOrigin(wstring wstr, XMFLOAT2 origin);
 
 	// Call Render() at the end of the rendering stage to draw all the strings of the frame
-	void Render(DirectX::SpriteBatch* spriteBatch);
+	// r is the rectangle of the game itself
+	void Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch);
 
 	// Properties
 	map<FontDescriptors, wstring> fontsAvailable;
