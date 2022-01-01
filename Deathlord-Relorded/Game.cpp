@@ -18,6 +18,7 @@
 #include "AutoMap.h"
 #include "InvOverlay.h"
 #include "TextOutput.h"
+#include "Daytime.h"
 #include <vector>
 #include <string>
 #include <map>
@@ -46,6 +47,7 @@ static std::shared_ptr<DeathlordHacks>m_dlHacks;
 static InvOverlay* m_invOverlay;
 static TextOutput* m_textOutput;
 static AutoMap* m_autoMap;
+static Daytime* m_daytime;
 
 AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
 
@@ -478,8 +480,9 @@ void Game::Render()
 				m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
 			}
 
-			// TODO: Let TextOutput handle all the text?
 			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
+            m_daytime->Render(r, m_spriteBatch.get());
+			// TODO: Let TextOutput handle all the text?
             m_textOutput->Render(r, m_spriteBatch.get());
 			m_spriteBatch->End();
 
@@ -501,6 +504,7 @@ void Game::Render()
 			////////////////////////////////////////////////////////////////////////////////
 			// TODO: REMOVE THIS
 			// Draw the applewin video for DEBUGGING
+            /*
 			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
 			commandList->ResourceBarrier(1, &barrier);
 			UpdateSubresources(commandList, m_texture.Get(), g_textureUploadHeap.Get(), 0, 0, 1, &g_textureData);
@@ -513,6 +517,7 @@ void Game::Render()
 			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video), GetTextureSize(m_texture.Get()),
 				vidR, nullptr, Colors::White, 0.f);
             m_spriteBatch->End();
+            */
 			// End Draw
 			////////////////////////////////////////////////////////////////////////////////
         }   // end if !g_isInGameMap
@@ -716,6 +721,8 @@ void Game::CreateDeviceDependentResources()
     m_textOutput = TextOutput::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_invOverlay->CreateDeviceDependentResources(&resourceUpload);
+	m_daytime = Daytime::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_daytime->CreateDeviceDependentResources(&resourceUpload);
 
     // Do the sprite batches.
 	m_states = std::make_unique<CommonStates>(device);

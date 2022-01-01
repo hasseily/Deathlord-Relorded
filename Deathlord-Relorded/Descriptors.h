@@ -10,6 +10,7 @@ enum class TextureDescriptors
 	AutoMapAvatar,
 	AutoMapTileHidden,
 	InvOverlaySpriteSheet,
+	DayTimeSpriteSheet,
 	FontA2Regular,
 	FontA2Bold,
 	FontA2Italic,

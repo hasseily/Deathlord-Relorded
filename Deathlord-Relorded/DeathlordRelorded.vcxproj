@@ -175,6 +175,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AutoMap.cpp" />
+    <ClCompile Include="Daytime.cpp" />
     <ClCompile Include="DeathlordHacks.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="emulator\AppleWin.cpp" />
@@ -222,6 +223,7 @@
     <ClInclude Include="ATGColors.h" />
     <ClInclude Include="AutoMap.h" />
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="Daytime.h" />
     <ClInclude Include="DeathlordHacks.h" />
     <ClInclude Include="Descriptors.h" />
     <ClInclude Include="DeviceResources.h" />
