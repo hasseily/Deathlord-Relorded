@@ -125,7 +125,6 @@ private:
 	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBG;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBGGrass;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTexture;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapAvatar;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapSpriteSheet;

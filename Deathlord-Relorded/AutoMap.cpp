@@ -442,25 +442,10 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 		// Whatever happens we must show the transition right now
 		spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
 		auto mmBGTexSize = GetTextureSize(m_autoMapTextureBG.Get());
-		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackground), mmBGTexSize,
+		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackgroundTransition), mmBGTexSize,
 			*mapRect, nullptr, Colors::White, 0.f, XMFLOAT2());
 		spriteBatch->End();
 		return;
-	}
-	else
-	{
-		// For towns, draw a grass background just like in the original game
-		// Dungeons have walls blocking their map borders, and overland is handled in a special way below
-		if (MemGetMainPtr(MAP_TYPE)[0] == (UINT8)MapType::Town)
-		{
-			// Needs a spriteBatch begin/end because the next phase plays with the scissorrects
-			spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
-			auto mmBGGrassTexSize = GetTextureSize(m_autoMapTextureBGGrass.Get());
-			// nullptr here is the source rectangle. We're drawing the full background
-			spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackgroundGrass), mmBGGrassTexSize,
-				*mapRect, nullptr, Colors::White, 0.f, XMFLOAT2());
-			spriteBatch->End();
-		}
 	}
 
 	spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
@@ -723,7 +708,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 	{
 		auto mmBGTexSize = GetTextureSize(m_autoMapTextureBG.Get());
 		// nullptr here is the source rectangle. We're drawing the full background
-		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackground), mmBGTexSize,
+		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackgroundTransition), mmBGTexSize,
 			m_currentMapRect, nullptr, Colors::White, 0.f, XMFLOAT2());
 		// write text on top of automap area
 		Vector2 awaitTextPos(
@@ -753,12 +738,7 @@ void AutoMap::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/Background_NoMap.png",
 			m_autoMapTextureBG.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_autoMapTextureBG.Get(),
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapBackground));
-	DX::ThrowIfFailed(
-		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/Background_Grass_32x32.png",
-			m_autoMapTextureBGGrass.ReleaseAndGetAddressOf()));
-	CreateShaderResourceView(device, m_autoMapTextureBGGrass.Get(),
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapBackgroundGrass));
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapBackgroundTransition));
 	DX::ThrowIfFailed(
 		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/PlayerSprite.png",
 			m_autoMapAvatar.ReleaseAndGetAddressOf()));
@@ -775,7 +755,6 @@ void AutoMap::OnDeviceLost()
 {
 	m_autoMapTexture.Reset();
 	m_autoMapTextureBG.Reset();
-	m_autoMapTextureBGGrass.Reset();
 	m_autoMapAvatar.Reset();
 	m_autoMapSpriteSheet.Reset();
 }
