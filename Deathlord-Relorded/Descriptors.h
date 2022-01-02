@@ -6,6 +6,7 @@ enum class TextureDescriptors
 	MainBackground,
     Apple2Video,
 	AutoMapBackground,
+	AutoMapBackgroundGrass,
 	AutoMapTileSheet,
 	AutoMapAvatar,
 	AutoMapTileHidden,

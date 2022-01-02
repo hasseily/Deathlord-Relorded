@@ -29,6 +29,14 @@ enum class FogOfWarMarkers
 	Bit8
 };
 
+enum class MapType	// Based on MAP_TYPE memory address at 0xFC04
+{
+	Town = 0,
+	Overland = 1,
+	Dungeon = 2,
+	count
+};
+
 
 /// Summary:
 /// This class handles the management of the automapper.
@@ -117,6 +125,7 @@ private:
 	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBG;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBGGrass;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTexture;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapAvatar;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapSpriteSheet;

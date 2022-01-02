@@ -429,19 +429,74 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 	// In this way the map is always centered when scaled, within the mapRect requested
 	// Also the center of the mapRect is shifted to one of the quadrants if a zoomed-in map is asked for
 
+	UINT currentBackBufferIdx = m_deviceResources->GetSwapChain()->GetCurrentBackBufferIndex();
+	CopyRect(&m_currentMapRect, mapRect);
+	auto tileset = TilesetCreator::GetInstance();
 	auto gamePtr = GetGamePtr();
 	auto commandList = m_deviceResources->GetCommandList();
 	SimpleMath::Viewport mapViewport(m_deviceResources->GetScreenViewport());
 	spriteBatch->SetViewport(mapViewport);
+
+	if (bShowTransition)
+	{
+		// Whatever happens we must show the transition right now
+		spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
+		auto mmBGTexSize = GetTextureSize(m_autoMapTextureBG.Get());
+		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackground), mmBGTexSize,
+			*mapRect, nullptr, Colors::White, 0.f, XMFLOAT2());
+		spriteBatch->End();
+		return;
+	}
+	else
+	{
+		// For towns, draw a grass background just like in the original game
+		// Dungeons have walls blocking their map borders, and overland is handled in a special way below
+		if (MemGetMainPtr(MAP_TYPE)[0] == (UINT8)MapType::Town)
+		{
+			// Needs a spriteBatch begin/end because the next phase plays with the scissorrects
+			spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
+			auto mmBGGrassTexSize = GetTextureSize(m_autoMapTextureBGGrass.Get());
+			// nullptr here is the source rectangle. We're drawing the full background
+			spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackgroundGrass), mmBGGrassTexSize,
+				*mapRect, nullptr, Colors::White, 0.f, XMFLOAT2());
+			spriteBatch->End();
+		}
+	}
+
 	spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
 	SimpleMath::Rectangle mapScissorRect = SimpleMath::Rectangle (*mapRect);
 	float _scale = (g_nonVolatile.mapQuadrant == AutoMapQuadrant::All ? 1.f : 2.f);
 	Vector2 _mapCenter = mapScissorRect.Center();
+
 	switch (g_nonVolatile.mapQuadrant)
 	{
 	case AutoMapQuadrant::FollowPlayer:
-		_mapCenter.x = mapScissorRect.x + m_avatarPosition.x * PNGTW - mapScissorRect.width / 2.f;
-		_mapCenter.y = mapScissorRect.y + m_avatarPosition.y * PNGTH - mapScissorRect.height / 2.f;
+		// OPTION 1: Avatar is only centered until the map reaches the edge
+		//			 Then the avatar moves towards the edge
+		// Use it for overland only, so that the edges of maps aren't empty
+		if (MemGetMainPtr(MAP_TYPE)[0] == (UINT8)MapType::Overland)
+		{
+			if (m_avatarPosition.x < 16)
+				_mapCenter.x = mapScissorRect.x + 16 * PNGTW - mapScissorRect.width / 2.f;
+			else if (m_avatarPosition.x > 48)
+				_mapCenter.x = mapScissorRect.x + 48 * PNGTW - mapScissorRect.width / 2.f;
+			else
+				_mapCenter.x = mapScissorRect.x + m_avatarPosition.x * PNGTW - mapScissorRect.width / 2.f;
+			if (m_avatarPosition.y < 16)
+				_mapCenter.y = mapScissorRect.y + 16 * PNGTH - mapScissorRect.height / 2.f;
+			else if (m_avatarPosition.y > 48)
+				_mapCenter.y = mapScissorRect.y + 48 * PNGTH - mapScissorRect.height / 2.f;
+			else
+				_mapCenter.y = mapScissorRect.y + m_avatarPosition.y * PNGTH - mapScissorRect.height / 2.f;
+		}
+		else
+		{ 		
+			// OPTION 2: Avatar is always centered
+			// Use it for dungeons (there's always a wall at the edge)
+			// and for towns (where we always draw a grass background beyond the edge)
+			_mapCenter.x = mapScissorRect.x + m_avatarPosition.x * PNGTW - mapScissorRect.width / 2.f;
+			_mapCenter.y = mapScissorRect.y + m_avatarPosition.y * PNGTH - mapScissorRect.height / 2.f;
+		}
 		break;
 	case AutoMapQuadrant::TopLeft:
 		_mapCenter.x -= mapScissorRect.width / 2.f;
@@ -469,20 +524,6 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 	commandList->RSSetViewports(1, mapViewport.Get12());
 	RECT mSRect = { mapScissorRect.x, mapScissorRect.y, mapScissorRect.x + mapScissorRect.width, mapScissorRect.y + mapScissorRect.height };
 	commandList->RSSetScissorRects(1, &mSRect);
-
-	if (bShowTransition)
-	{
-		// Whatever happens we must show the transition right now
-		auto mmBGTexSize = GetTextureSize(m_autoMapTextureBG.Get());
-		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackground), mmBGTexSize,
-			m_currentMapRect, nullptr, Colors::White, 0.f, XMFLOAT2());
-		spriteBatch->End();
-		return;
-	}
-	// Drawing automap
-	UINT currentBackBufferIdx = m_deviceResources->GetSwapChain()->GetCurrentBackBufferIndex();
-	CopyRect(&m_currentMapRect, mapRect);
-	auto tileset = TilesetCreator::GetInstance();
 
 	// Now draw the automap tiles
 	if (g_isInGameMap && m_autoMapTexture != NULL)
@@ -714,6 +755,11 @@ void AutoMap::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 	CreateShaderResourceView(device, m_autoMapTextureBG.Get(),
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapBackground));
 	DX::ThrowIfFailed(
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/Background_Grass_32x32.png",
+			m_autoMapTextureBGGrass.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_autoMapTextureBGGrass.Get(),
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapBackgroundGrass));
+	DX::ThrowIfFailed(
 		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/PlayerSprite.png",
 			m_autoMapAvatar.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_autoMapAvatar.Get(),
@@ -729,6 +775,7 @@ void AutoMap::OnDeviceLost()
 {
 	m_autoMapTexture.Reset();
 	m_autoMapTextureBG.Reset();
+	m_autoMapTextureBGGrass.Reset();
 	m_autoMapAvatar.Reset();
 	m_autoMapSpriteSheet.Reset();
 }

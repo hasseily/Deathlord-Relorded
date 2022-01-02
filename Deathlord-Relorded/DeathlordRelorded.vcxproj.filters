@@ -423,6 +423,9 @@
     <Image Include="Assets\Background_Relorded.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\Background_Grass_32x32.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\PixelShader.hlsl">
