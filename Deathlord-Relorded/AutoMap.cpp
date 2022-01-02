@@ -517,6 +517,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 		if (m_currentMapUniqueName != GetCurrentMapUniqueName())
 			InitializeCurrentMapInfo();
 
+		auto _playerSpritestexSize = GetTextureSize(m_autoMapAvatar.Get());
 		float mapScale = (float)MAP_WIDTH_IN_VIEWPORT / (float)(MAP_WIDTH * PNGTW);
 		// Use the tilemap texture
 		commandList->SetGraphicsRootDescriptorTable(0, m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet));
@@ -662,9 +663,8 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 			m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] = (UINT8)mapMemPtr[mapPos];
 
 			// now draw the avatar and footsteps
-			auto _texSize = GetTextureSize(m_autoMapAvatar.Get());
-			XMFLOAT2 _origin = { _texSize.x / 2.f, _texSize.y / 2.f };
-			RECT avatarRect = { 0, 0, _texSize.x, _texSize.y };
+			XMFLOAT2 _origin = { PNGTW / 2.f, PNGTH / 2.f };
+			RECT avatarRect = { 0, 0, PNGTW, PNGTH };
 
 			XMFLOAT2 overlayPosInMap(	// Display the avatar/footsteps in the center of the tile
 				tilePosInMap.x + mapScale * FBTW / 2,
@@ -674,7 +674,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 			if (posX == m_avatarPosition.x && posY == m_avatarPosition.y)
 			{
 
-				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapAvatar), _texSize, 
+				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapAvatar), _playerSpritestexSize,
 					overlayPosInMap, &avatarRect, Colors::White, 0.f, _origin, mapScale * AVATARSTROBE[m_avatarStrobeIdx / STROBESLOWAVATAR]);
 				++m_avatarStrobeIdx;
 				if (m_avatarStrobeIdx >= (AVATARSTROBECT * STROBESLOWAVATAR))
@@ -686,7 +686,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 				{
 					if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (1 << (UINT8)FogOfWarMarkers::Footstep)) > 0)
 					{
-						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapAvatar), _texSize,
+						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapAvatar), _playerSpritestexSize,
 							overlayPosInMap, &avatarRect, COLORTRANSLUCENTWHITE, 0.f, _origin, mapScale * 0.3f);
 					}
 				}
@@ -695,7 +695,6 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 		++m_spriteAnimationIdx;
 		if (m_spriteAnimationIdx >= (HIDDENSPRITECT * STROBESLOWHIDDEN))
 			m_spriteAnimationIdx = 0;
-
 
 		// Uncomment to debug and display the tilesheet
 #ifdef _DEBUGXXX

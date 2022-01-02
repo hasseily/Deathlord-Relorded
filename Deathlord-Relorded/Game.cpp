@@ -18,6 +18,7 @@
 #include "AutoMap.h"
 #include "InvOverlay.h"
 #include "TextOutput.h"
+#include "MiniMap.h"
 #include "Daytime.h"
 #include <vector>
 #include <string>
@@ -48,6 +49,7 @@ static InvOverlay* m_invOverlay;
 static TextOutput* m_textOutput;
 static AutoMap* m_autoMap;
 static Daytime* m_daytime;
+static MiniMap* m_minimap;
 
 AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
 
@@ -481,6 +483,7 @@ void Game::Render()
 			}
 
 			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
+            m_minimap->Render(r, m_spriteBatch.get());
             m_daytime->Render(r, m_spriteBatch.get());
 			// TODO: Let TextOutput handle all the text?
             m_textOutput->Render(r, m_spriteBatch.get());
@@ -721,6 +724,8 @@ void Game::CreateDeviceDependentResources()
     m_textOutput = TextOutput::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_invOverlay->CreateDeviceDependentResources(&resourceUpload);
+	m_minimap = MiniMap::GetInstance(m_deviceResources, m_resourceDescriptors);
+    m_minimap->CreateDeviceDependentResources(&resourceUpload);
 	m_daytime = Daytime::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_daytime->CreateDeviceDependentResources(&resourceUpload);
 

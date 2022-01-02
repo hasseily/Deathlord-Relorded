@@ -150,6 +150,9 @@
     <ClCompile Include="Daytime.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MiniMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATGColors.h">
@@ -326,6 +329,9 @@
     <ClInclude Include="Daytime.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MiniMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="emulator\cpu\cpu_general.inl">
@@ -424,6 +430,9 @@
       <Filter>Assets</Filter>
     </Image>
     <Image Include="Assets\Background_Grass_32x32.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Sprite_Pushpin.png">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
