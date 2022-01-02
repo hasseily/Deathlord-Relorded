@@ -728,9 +728,9 @@ void Game::CreateDeviceDependentResources()
 	m_states = std::make_unique<CommonStates>(device);
 	auto sampler = m_states->LinearWrap();
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
-    // TODO: Either switch back to NonPremultiplied or optimize the spritesheets
-    // Right now it's AlphaBlend to overlay the applewin video for debugging
-	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::AlphaBlend, nullptr, nullptr, &sampler);
+    // TODO: Right now spritesheets are NonPremultiplied
+    // Optimize to AlphaBlend? Overlaying the applewin video for debugging needs AlphaBlend (or another spritebatch)
+	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
 	m_spriteBatch = std::make_unique<SpriteBatch>(device, resourceUpload, spd);
 
 
