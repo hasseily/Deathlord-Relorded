@@ -10,8 +10,8 @@ constexpr UINT16 MEM_DAY_HOUR = 0xFC00;
 constexpr UINT16 MEM_DAY_MINUTE = 0xFC01;
 constexpr UINT16 MEM_DAY_OF_MONTH = 0xFC02;
 constexpr UINT8 DAYTIME_DAYS_PER_MOONPHASE = 4;
-constexpr UINT8 DAYTIME_SPRITE_WIDTH = 14;
-constexpr UINT8 DAYTIME_SPRITE_HEIGHT = 16;
+constexpr UINT8 DAYTIME_SPRITE_WIDTH = 28;
+constexpr UINT8 DAYTIME_SPRITE_HEIGHT = 32;
 
 
 enum class MoonPhases	// based on day of month

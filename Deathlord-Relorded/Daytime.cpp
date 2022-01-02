@@ -14,7 +14,7 @@ void Daytime::Initialize()
 void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 {
 	auto mmTexSize = GetTextureSize(m_daytimeSpriteSheet.Get());
-	float _daytimeScale = 2.0f;
+	float _daytimeScale = 1.0f;
 
 	// Draw the time
 	bool _isAM = true;
@@ -32,7 +32,7 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 	UINT8 _minTen = _minute >> 4;
 	UINT8 _minuteDigit = _minute & 0b1111;
 	RECT digitRect = RECT();
-	digitRect.top = DAYTIME_SPRITE_HEIGHT;	// digits are the second line
+	digitRect.top = DAYTIME_SPRITE_HEIGHT;	// digits are the second line (except for separator)
 	digitRect.bottom = digitRect.top + DAYTIME_SPRITE_HEIGHT;
 	RECT digitDestRect = RECT();
 	digitDestRect.top = r.y + 155;
@@ -63,7 +63,22 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 	else
 		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DayTimeSpriteSheet), mmTexSize,
 			digitDestRect, &digitRect, Colors::Blue, 0.f, XMFLOAT2());
+	// hour/minute colon separator
+	digitRect.top = 0;
+	digitRect.bottom = digitRect.top + DAYTIME_SPRITE_HEIGHT;
+	digitRect.left = 9 * DAYTIME_SPRITE_WIDTH;
+	digitRect.right = digitRect.left + DAYTIME_SPRITE_WIDTH;
+	digitDestRect.left += 4 + DAYTIME_SPRITE_WIDTH * _daytimeScale;
+	digitDestRect.right = digitDestRect.left + DAYTIME_SPRITE_WIDTH * _daytimeScale;
+	if ((_hour >= 6) && (_hour < 18))
+		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DayTimeSpriteSheet), mmTexSize,
+			digitDestRect, &digitRect, Colors::Orange, 0.f, XMFLOAT2());
+	else
+		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DayTimeSpriteSheet), mmTexSize,
+			digitDestRect, &digitRect, Colors::Blue, 0.f, XMFLOAT2());
 	// digit minute ten
+	digitRect.top = DAYTIME_SPRITE_HEIGHT;
+	digitRect.bottom = digitRect.top + DAYTIME_SPRITE_HEIGHT;
 	digitRect.left = _minTen * DAYTIME_SPRITE_WIDTH;
 	digitRect.right = digitRect.left + DAYTIME_SPRITE_WIDTH;
 	digitDestRect.left += 4 + DAYTIME_SPRITE_WIDTH * _daytimeScale;
@@ -89,24 +104,20 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 
 	// Draw the sun position
 	// First calculate the height of the sun, 12:00 being zenith
-	int _timeInMinutes = _hour * 60 + _minTen + 10 + _minuteDigit;
-	float _sunriseRatio = 0.f;
+	UINT8 _visibleSunHeight = 0;	// Height in pixels of the visible sun
 	// Calculate the sun visibility. It only shows between 6 and 12 (and 6 PM)
 	// 7 AM is like 5 PM
-	if ((_timeInMinutes >= 6 * 60) && _isAM)
-		_sunriseRatio = (_timeInMinutes - (6.f * 60.f)) / (6.f * 60.f);
-	else if ((_timeInMinutes <= 18 * 60) && (!_isAM))
-		_sunriseRatio = ((18.f * 60.f) - _timeInMinutes) / (6.f * 60.f);
+	if (_isAM && _hour >= 6)
+		_visibleSunHeight = DAYTIME_SPRITE_HEIGHT * (_hour - 6) / 6;
+	else if ((!_isAM) && _hour <= 18)
+		_visibleSunHeight = DAYTIME_SPRITE_HEIGHT * (18 - _hour) / 6;
 	RECT sunSpriteRect = RECT();
 	sunSpriteRect.left = (int)MoonPhases::count * DAYTIME_SPRITE_WIDTH;
 	sunSpriteRect.right = sunSpriteRect.left + DAYTIME_SPRITE_WIDTH;
 	sunSpriteRect.top = 0;
-	sunSpriteRect.bottom = sunSpriteRect.top + DAYTIME_SPRITE_HEIGHT * abs(_sunriseRatio);
+	sunSpriteRect.bottom = sunSpriteRect.top + _visibleSunHeight;
 	RECT sunDestRect = RECT();
-	if (_isAM)
-		sunDestRect.left = digitDestRect.left + 4 + DAYTIME_SPRITE_WIDTH * _daytimeScale + _sunriseRatio * 15;
-	else
-		sunDestRect.left = digitDestRect.left + 4 + DAYTIME_SPRITE_WIDTH * _daytimeScale + 15 + (1 - _sunriseRatio) * 15;
+	sunDestRect.left = digitDestRect.left + 4 + DAYTIME_SPRITE_WIDTH * _daytimeScale + _hour * 5;
 	sunDestRect.right = sunDestRect.left + DAYTIME_SPRITE_WIDTH * _daytimeScale;
 	sunDestRect.bottom = digitDestRect.top + DAYTIME_SPRITE_HEIGHT * _daytimeScale;
 	sunDestRect.top = sunDestRect.bottom - (sunSpriteRect.bottom - sunSpriteRect.top) * _daytimeScale;
@@ -122,7 +133,7 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 	moonSpriteRect.top = 0;
 	moonSpriteRect.bottom = moonSpriteRect.top + DAYTIME_SPRITE_HEIGHT;
 	RECT moonDestRect = RECT();
-	moonDestRect.left = r.x + 300;
+	moonDestRect.left = r.x + 320;
 	moonDestRect.right = moonDestRect.left + DAYTIME_SPRITE_WIDTH * _daytimeScale;
 	moonDestRect.top = r.y + 155;
 	moonDestRect.bottom = moonDestRect.top + DAYTIME_SPRITE_HEIGHT * _daytimeScale;
