@@ -29,6 +29,7 @@ constexpr UINT16 PARTY_ARMORCLASS_START = 0xFD3C;		// Start of Armor Class. When
 constexpr UINT16 PARTY_CHAR_LEADER = 0xFC19;			// Leader of the party (0-based)
 constexpr UINT16 PARTY_CURRENT_CHAR_POS = 0xFC21;		// Char we're getting info on (0-based)
 constexpr UINT16 PARTY_CURRENT_CHAR_CLASS = 0xFC22;		// Class of the party leader or active char in battle (determines icon)
+constexpr UINT16 PARTY_ICON_TYPE = 0xFC1D;				// 0: leader icon, 1: boat
 
 constexpr UINT16 TILEVIEW_CURRENT_START = 0x0300;		// Start of the current tiles in the viewport. Ends at 0x0350. There are 9x9 tiles
 constexpr UINT16 TILEVIEW_NEW_START = 0x0351;			// Start of the new tileset. Ends 0x03A1.
