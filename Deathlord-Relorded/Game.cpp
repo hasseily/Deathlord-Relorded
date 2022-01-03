@@ -482,27 +482,25 @@ void Game::Render()
 				m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
 			}
 
+
+            // Now draw everything else that's in the main viewport
+            // We use the same vp, primitivebatch and spriteBatch for all.
+            // Only the main automap area was different due to its special handling of vp and scissors
+			D3D12_VIEWPORT vp = GetCurrentViewport();
+			m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(clientRect.left, clientRect.right, clientRect.bottom, clientRect.top, 0, 1));
+			m_dxtEffectTriangles->Apply(commandList);
+			m_primitiveBatchTriangles->Begin(commandList);
 			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
+
             m_minimap->Render(r, m_spriteBatch.get());
             m_daytime->Render(r, m_spriteBatch.get());
-			// TODO: Let TextOutput handle all the text?
-            m_textOutput->Render(r, m_spriteBatch.get());
-			m_spriteBatch->End();
-
-			// TODO: Let m_invOverlay create its own effect, spritebatch and primitivebatch?
+			m_textOutput->Render(r, m_spriteBatch.get());			// TODO: Let TextOutput handle all the text?
 			if (m_invOverlay->IsInvOverlayDisplayed())
-			{
-				D3D12_VIEWPORT vp = GetCurrentViewport();
-				m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(clientRect.left, clientRect.right, clientRect.bottom, clientRect.top, 0, 1));
-				m_dxtEffectTriangles->Apply(commandList);
-				m_primitiveBatchTriangles->Begin(commandList);
-				m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
 				m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatchTriangles, &r);
-				m_primitiveBatchTriangles->End();
-				m_spriteBatch->End();
-			}
 
-			// End drawing text
+			m_primitiveBatchTriangles->End();
+			m_spriteBatch->End();
+			// End drawing everything else that's in the main viewport
 
 			////////////////////////////////////////////////////////////////////////////////
 			// TODO: REMOVE THIS
