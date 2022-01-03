@@ -24,6 +24,7 @@ public:
 	void DrawInvOverlay(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, std::shared_ptr<DirectX::PrimitiveBatch<VertexPositionColor>>& primitiveBatch, SimpleMath::Rectangle* overlayRect);
 	void ShowInvOverlay();
 	void HideInvOverlay();
+	void ToggleInvOverlay();
 	bool IsInvOverlayDisplayed();
 	void UpdateState();
 	void LeftMouseButtonClicked(int x, int y);
@@ -31,11 +32,6 @@ public:
 
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();
-
-	XMFLOAT4 ColorAmber = { 0.5f, 0.2f, 0.f, 1.000000000f };
-	XMVECTORF32 VColorAmber = { { { 0.5f, 0.2f, 0.f, 1.000000000f } } };
-	XMFLOAT4 ColorAmberDark = { 0.25f, 0.1f, 0.f, 1.000000000f };
-	XMVECTORF32 VColorAmberDark = { { { 0.25f, 0.1f, 0.f, 1.000000000f } } };
 
 	// public singleton code
 	static InvOverlay* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,

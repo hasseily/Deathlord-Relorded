@@ -153,6 +153,9 @@
     <ClCompile Include="MiniMap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AppleWinDXVideo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATGColors.h">
@@ -330,6 +333,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MiniMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AppleWinDXVideo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

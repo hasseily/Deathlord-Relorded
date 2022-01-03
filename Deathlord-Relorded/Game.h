@@ -151,6 +151,7 @@ private:
 	std::unique_ptr<BasicEffect> m_dxtEffectTriangles;
 	std::shared_ptr<DirectX::SpriteBatch> m_spriteBatch;
 	std::unique_ptr<DirectX::CommonStates> m_states;
+    std::shared_ptr<DirectX::ResourceUploadBatch> m_uploadBatch;
     DirectX::SimpleMath::Vector2 m_fontPos;
 
     // Direct3D 12 objects for AppleWin video texture

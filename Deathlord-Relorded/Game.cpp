@@ -18,6 +18,7 @@
 #include "AutoMap.h"
 #include "InvOverlay.h"
 #include "TextOutput.h"
+#include "AppleWinDXVideo.h"
 #include "MiniMap.h"
 #include "Daytime.h"
 #include <vector>
@@ -48,6 +49,7 @@ static std::shared_ptr<DeathlordHacks>m_dlHacks;
 static InvOverlay* m_invOverlay;
 static TextOutput* m_textOutput;
 static AutoMap* m_autoMap;
+static AppleWinDXVideo* m_a2Video;
 static Daytime* m_daytime;
 static MiniMap* m_minimap;
 
@@ -261,13 +263,12 @@ void Game::Update(DX::StepTimer const& timer)
     // we know don't do anything under the emulated Deathlord
 	auto kb = m_keyboard->GetState();
 	kbTracker.Update(kb);
-	if (g_isInGameMap && kbTracker.pressed.Insert)
+	if (g_isInGameMap)
 	{
-		// Do something when escape or other keys pressed
-		if (m_invOverlay->IsInvOverlayDisplayed())
-			m_invOverlay->HideInvOverlay();
-		else
-			m_invOverlay->ShowInvOverlay();
+        if (kbTracker.pressed.Insert)
+            m_invOverlay->ToggleInvOverlay();
+        if (kbTracker.pressed.F11)
+            m_a2Video->ToggleApple2Video();
 	}
 #ifdef _DEBUG
     if (kbTracker.pressed.End)
@@ -502,6 +503,11 @@ void Game::Render()
 			m_spriteBatch->End();
 			// End drawing everything else that's in the main viewport
 
+            // The apple2 video is unique and independent
+            // It should be displayed at the top if requested
+			if (m_a2Video->IsApple2VideoDisplayed())
+				m_a2Video->Render(r, m_uploadBatch.get());
+
 			////////////////////////////////////////////////////////////////////////////////
 			// TODO: REMOVE THIS
 			// Draw the applewin video for DEBUGGING
@@ -688,18 +694,18 @@ void Game::CreateDeviceDependentResources()
     auto device = m_deviceResources->GetD3DDevice();
     auto command_queue = m_deviceResources->GetCommandQueue();
     m_graphicsMemory = std::make_unique<GraphicsMemory>(device);
+    m_uploadBatch = std::make_shared<ResourceUploadBatch>(device);
 
     /// <summary>
     /// Start of resource uploading to GPU
     /// </summary>
 	m_resourceDescriptors = std::make_unique<DescriptorHeap>(device, (int)TextureDescriptors::Count);
 
-    ResourceUploadBatch resourceUpload(device);
-    resourceUpload.Begin();
+    m_uploadBatch->Begin();
 
     // Upload the background of the main window
 	DX::ThrowIfFailed(
-		CreateWICTextureFromFile(device, resourceUpload, L"Assets/Background_Relorded.png",
+		CreateWICTextureFromFile(device, *m_uploadBatch, L"Assets/Background_Relorded.png",
             m_gameTextureBG.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_gameTextureBG.Get(),
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::MainBackground));
@@ -710,7 +716,7 @@ void Game::CreateDeviceDependentResources()
     for each (auto aFont in m_sbM.fontsAvailable)
     {
         DX::FindMediaFile(buff, MAX_PATH, aFont.second.c_str());
-		m_spriteFonts[aFont.first] = std::make_unique<SpriteFont>(device, resourceUpload, buff,
+		m_spriteFonts[aFont.first] = std::make_unique<SpriteFont>(device, *m_uploadBatch, buff,
 				m_resourceDescriptors->GetCpuHandle((int)aFont.first),
 				m_resourceDescriptors->GetGpuHandle((int)aFont.first));
 		m_spriteFonts.at(aFont.first)->SetDefaultCharacter('.');
@@ -718,14 +724,16 @@ void Game::CreateDeviceDependentResources()
 
     // Now initialize the pieces of the UI, and create the resources
     m_autoMap = AutoMap::GetInstance(m_deviceResources, m_resourceDescriptors);
-    m_autoMap->CreateDeviceDependentResources(&resourceUpload);
+    m_autoMap->CreateDeviceDependentResources(m_uploadBatch.get());
     m_textOutput = TextOutput::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
-    m_invOverlay->CreateDeviceDependentResources(&resourceUpload);
-	m_minimap = MiniMap::GetInstance(m_deviceResources, m_resourceDescriptors);
-    m_minimap->CreateDeviceDependentResources(&resourceUpload);
+    m_invOverlay->CreateDeviceDependentResources(m_uploadBatch.get());
+	m_a2Video = AppleWinDXVideo::GetInstance(m_deviceResources, m_resourceDescriptors);
+    m_a2Video->CreateDeviceDependentResources(m_uploadBatch.get());
+    m_minimap = MiniMap::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_minimap->CreateDeviceDependentResources(m_uploadBatch.get());
 	m_daytime = Daytime::GetInstance(m_deviceResources, m_resourceDescriptors);
-	m_daytime->CreateDeviceDependentResources(&resourceUpload);
+	m_daytime->CreateDeviceDependentResources(m_uploadBatch.get());
 
     // Do the sprite batches.
 	m_states = std::make_unique<CommonStates>(device);
@@ -734,10 +742,10 @@ void Game::CreateDeviceDependentResources()
     // TODO: Right now spritesheets are NonPremultiplied
     // Optimize to AlphaBlend? Overlaying the applewin video for debugging needs AlphaBlend (or another spritebatch)
 	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
-	m_spriteBatch = std::make_unique<SpriteBatch>(device, resourceUpload, spd);
+	m_spriteBatch = std::make_unique<SpriteBatch>(device, *m_uploadBatch.get(), spd);
 
 
-    auto uploadResourcesFinished = resourceUpload.End(command_queue);
+    auto uploadResourcesFinished = m_uploadBatch->End(command_queue);
     uploadResourcesFinished.wait();
 
     //////////////////////////////////////////////////

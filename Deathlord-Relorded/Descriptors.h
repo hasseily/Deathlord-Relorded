@@ -1,10 +1,19 @@
 #pragma once
 
+using namespace DirectX;
+
+constexpr XMFLOAT4 ColorAmber = { 0.5f, 0.2f, 0.f, 1.000000000f };
+constexpr XMVECTORF32 VColorAmber = { { { 0.5f, 0.2f, 0.f, 1.000000000f } } };
+constexpr XMFLOAT4 ColorAmberDark = { 0.25f, 0.1f, 0.f, 1.000000000f };
+constexpr XMVECTORF32 VColorAmberDark = { { { 0.25f, 0.1f, 0.f, 1.000000000f } } };
+constexpr XMFLOAT4 ColorBlack = { 0.f, 0.f, 0.f, 1.000000000f };
+constexpr XMVECTORF32 VColorBlack = { { { 0.f, 0.f, 0.f, 1.000000000f } } };
 
 enum class TextureDescriptors
 {
 	MainBackground,
     Apple2Video,
+	Apple2Video2,
 	AutoMapBackgroundTransition,
 	AutoMapTileSheet,
 	AutoMapAvatar,

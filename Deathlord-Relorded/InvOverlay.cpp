@@ -2,8 +2,8 @@
 #include "InvOverlay.h"
 #include "resource.h"
 #include "Game.h"
-#include "resource.h"
 #include "DeathlordHacks.h"
+#include "Descriptors.h"
 #include <SimpleMath.h>
 #include <vector>
 #include "InvManager.h"
@@ -82,6 +82,11 @@ void InvOverlay::HideInvOverlay()
 {
 	SetSendKeystrokesToAppleWin(true);
 	bIsDisplayed = false;
+}
+
+void InvOverlay::ToggleInvOverlay()
+{
+	IsInvOverlayDisplayed() ? HideInvOverlay() : ShowInvOverlay();
 }
 
 bool InvOverlay::IsInvOverlayDisplayed()
