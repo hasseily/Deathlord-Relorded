@@ -14,8 +14,7 @@ constexpr XMVECTORF32 VColorCurtain = { { { 0.f, 0.f, 0.f, 0.8f } } };
 enum class TextureDescriptors
 {
 	MainBackground,
-    Apple2Video,
-	Apple2Video2,
+	Apple2Video,
 	AutoMapBackgroundTransition,
 	AutoMapTileSheet,
 	AutoMapAvatar,

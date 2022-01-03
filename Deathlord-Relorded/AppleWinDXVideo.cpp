@@ -51,6 +51,7 @@ void AppleWinDXVideo::Render(SimpleMath::Rectangle r,
 	ResourceUploadBatch* uploadBatch)
 {
 	// First, update the GPU texture with the latest AppleWin video frame
+	m_AppleWinTextureData.pData = g_pFramebufferbits;	// AppleWin might have rebooted
 	auto command_queue = m_deviceResources->GetCommandQueue();
 	uploadBatch->Begin();
 	uploadBatch->Upload(m_AppleWinDXVideoSpriteSheet.Get(), 0, &m_AppleWinTextureData, 1);
@@ -94,7 +95,7 @@ void AppleWinDXVideo::Render(SimpleMath::Rectangle r,
 		VertexPositionColor(XMFLOAT3(texRect.right, texRect.bottom, 0), ColorBlack),
 		VertexPositionColor(XMFLOAT3(texRect.left, texRect.bottom, 0), ColorBlack)
 	);
-	m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video2), mmTexSize,
+	m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video), mmTexSize,
 		r.Center(), NULL, Colors::White, 0.f, _texCenter);
 	m_primitiveBatch->End();
 	m_spriteBatch->End();
@@ -166,7 +167,7 @@ void AppleWinDXVideo::CreateDeviceDependentResources(ResourceUploadBatch* resour
 	// Describe and create a SRV for the texture.
 	// Using CreateShaderResourceView removes a ton of boilerplate
 	CreateShaderResourceView(device, m_AppleWinDXVideoSpriteSheet.Get(),
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::Apple2Video2));
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::Apple2Video));
 
 	// finish up
 	DX::ThrowIfFailed(commandList->Close());

@@ -141,25 +141,6 @@ void Game::Initialize(HWND window)
 
 #pragma region Window texture and size
 
-// Just a utility method to set up the gamelink texture (original applewin video buffer)
-D3D12_RESOURCE_DESC Game::ChooseTexture()
-{
-    D3D12_RESOURCE_DESC txtDesc = {};
-    txtDesc.MipLevels = txtDesc.DepthOrArraySize = 1;
-    txtDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    txtDesc.SampleDesc.Count = 1;
-    txtDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	auto fbI = g_pFramebufferinfo->bmiHeader;
-	txtDesc.Width = fbI.biWidth;
-	txtDesc.Height = fbI.biHeight;
-	g_textureData.pData = g_pFramebufferbits;
-	g_textureData.SlicePitch = ((long long)GetFrameBufferWidth()) * ((long long)GetFrameBufferHeight()) * sizeof(bgra_t);
-    g_textureData.RowPitch = static_cast<LONG_PTR>(txtDesc.Width * sizeof(uint32_t));
-	m_previousLayout = m_currentLayout;
-	m_currentLayout = EmulatorLayout::NORMAL;
-    return txtDesc;
-}
-
 void Game::SetWindowSizeOnChangedProfile()
 {
     // TODO: Remove this function
@@ -355,34 +336,13 @@ void Game::Render()
         PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"Render");
 
 		// Now set the command list data
-		commandList->SetGraphicsRootSignature(m_rootSignature.Get());
-		commandList->SetPipelineState(m_pipelineState.Get());
-		// The states heap is for the different tile samplers needed
 		ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap(), m_states->Heap() };
 		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
-		commandList->SetGraphicsRootDescriptorTable(0, m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video));
-		// Set necessary state.
-		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-		commandList->IASetIndexBuffer(&m_indexBufferView);
 
 
 	    if (!g_isInGameMap)
 		{
-			// Load the AppleWin video texture if we're not inside the game map
-            // Drawing video texture which updates every frame, so it needs to be sent to the GPU every frame
-			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-			commandList->ResourceBarrier(1, &barrier);
-			UpdateSubresources(commandList, m_texture.Get(), g_textureUploadHeap.Get(), 0, 0, 1, &g_textureData);
-			barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-			commandList->ResourceBarrier(1, &barrier);
-			// It's sent to the GPU
-            
-			// Draw AppleWin textured quad
-			D3D12_VIEWPORT viewports[1] = { GetCurrentViewport() };
-			commandList->RSSetViewports(1, viewports);
-			commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
-			// End drawing video texture
+			m_a2Video->Render(r, m_uploadBatch.get());
         }
         else
         {
@@ -508,25 +468,6 @@ void Game::Render()
 			if (m_a2Video->IsApple2VideoDisplayed())
 				m_a2Video->Render(r, m_uploadBatch.get());
 
-			////////////////////////////////////////////////////////////////////////////////
-			// TODO: REMOVE THIS
-			// Draw the applewin video for DEBUGGING
-            /*
-			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-			commandList->ResourceBarrier(1, &barrier);
-			UpdateSubresources(commandList, m_texture.Get(), g_textureUploadHeap.Get(), 0, 0, 1, &g_textureData);
-			barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-			commandList->ResourceBarrier(1, &barrier);
-			SimpleMath::Rectangle vidR(r);
-			vidR.width /= 3;
-			vidR.height /= 3;
-            m_spriteBatch->Begin(commandList, m_states->LinearClamp(), SpriteSortMode_Deferred);
-			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video), GetTextureSize(m_texture.Get()),
-				vidR, nullptr, Colors::White, 0.f);
-            m_spriteBatch->End();
-            */
-			// End Draw
-			////////////////////////////////////////////////////////////////////////////////
         }   // end if !g_isInGameMap
 
         // Now check if the game is paused and display an overlay
@@ -740,7 +681,7 @@ void Game::CreateDeviceDependentResources()
 	auto sampler = m_states->LinearWrap();
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
     // TODO: Right now spritesheets are NonPremultiplied
-    // Optimize to AlphaBlend? Overlaying the applewin video for debugging needs AlphaBlend (or another spritebatch)
+    // Optimize to AlphaBlend?
 	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
 	m_spriteBatch = std::make_unique<SpriteBatch>(device, *m_uploadBatch.get(), spd);
 
@@ -748,204 +689,6 @@ void Game::CreateDeviceDependentResources()
     auto uploadResourcesFinished = m_uploadBatch->End(command_queue);
     uploadResourcesFinished.wait();
 
-    //////////////////////////////////////////////////
-
-    /// <summary>
-    /// Start of AppleWin texture info uploading to GPU
-    /// </summary>
-
-    // Create a root signature with one sampler and one texture
-    {
-        CD3DX12_DESCRIPTOR_RANGE descRange = {};
-        descRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-        CD3DX12_ROOT_PARAMETER rp = {};
-        rp.InitAsDescriptorTable(1, &descRange, D3D12_SHADER_VISIBILITY_PIXEL);
-
-        // Use a static sampler that matches the defaults
-        // https://msdn.microsoft.com/en-us/library/windows/desktop/dn913202(v=vs.85).aspx#static_sampler
-        D3D12_STATIC_SAMPLER_DESC samplerDesc = {};
-        samplerDesc.Filter = D3D12_FILTER_ANISOTROPIC;
-        samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-        samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-        samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-        samplerDesc.MaxAnisotropy = 16;
-        samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-        samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-        samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-        CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
-        rootSignatureDesc.Init(1, &rp, 1, &samplerDesc,
-            D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS);
-
-        ComPtr<ID3DBlob> signature;
-        ComPtr<ID3DBlob> error;
-        HRESULT hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
-        if (FAILED(hr))
-        {
-            if (error)
-            {
-                OutputDebugStringA(reinterpret_cast<const char*>(error->GetBufferPointer()));
-            }
-            throw DX::com_exception(hr);
-        }
-
-        DX::ThrowIfFailed(
-            device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(),
-                IID_PPV_ARGS(m_rootSignature.ReleaseAndGetAddressOf())));
-    }
-
-    // Create the pipeline state, which includes loading shaders.
-    auto vertexShaderBlob = DX::ReadData(L"VertexShader.cso");
-
-    auto pixelShaderBlob = DX::ReadData(L"PixelShader.cso");
-
-    static const D3D12_INPUT_ELEMENT_DESC s_inputElementDesc[2] =
-    {
-        { "SV_Position", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,  0 },
-        { "TEXCOORD",    0, DXGI_FORMAT_R32G32_FLOAT,       0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,  0 },
-    };
-
-    // Describe and create the graphics pipeline state object (PSO).
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-    psoDesc.InputLayout = { s_inputElementDesc, _countof(s_inputElementDesc) };
-    psoDesc.pRootSignature = m_rootSignature.Get();
-    psoDesc.VS = { vertexShaderBlob.data(), vertexShaderBlob.size() };
-    psoDesc.PS = { pixelShaderBlob.data(), pixelShaderBlob.size() };
-    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-    psoDesc.DepthStencilState.DepthEnable = FALSE;
-    psoDesc.DepthStencilState.StencilEnable = FALSE;
-    psoDesc.DSVFormat = m_deviceResources->GetDepthBufferFormat();
-    psoDesc.SampleMask = UINT_MAX;
-    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 1;
-    psoDesc.RTVFormats[0] = m_deviceResources->GetBackBufferFormat();
-    psoDesc.SampleDesc.Count = 1;
-    DX::ThrowIfFailed(
-        device->CreateGraphicsPipelineState(&psoDesc,
-            IID_PPV_ARGS(m_pipelineState.ReleaseAndGetAddressOf())));
-
-    CD3DX12_HEAP_PROPERTIES heapUpload(D3D12_HEAP_TYPE_UPLOAD);
-
-    // Create vertex buffer.
-
-    {
-        Vertex s_vertexData[4];
-        SetVertexData(s_vertexData, 1.f, 1.f, m_currentLayout);
-
-        // Note: using upload heaps to transfer static data like vert buffers is not 
-        // recommended. Every time the GPU needs it, the upload heap will be marshalled 
-        // over. Please read up on Default Heap usage. An upload heap is used here for 
-        // code simplicity and because there are very few verts to actually transfer.
-        auto resDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(s_vertexData));
-
-        DX::ThrowIfFailed(
-            device->CreateCommittedResource(&heapUpload,
-                D3D12_HEAP_FLAG_NONE,
-                &resDesc,
-                D3D12_RESOURCE_STATE_GENERIC_READ,
-                nullptr,
-                IID_PPV_ARGS(m_vertexBuffer.ReleaseAndGetAddressOf())));
-
-        // Copy the quad data to the vertex buffer.
-        UINT8* pVertexDataBegin;
-        CD3DX12_RANGE readRange(0, 0);		// We do not intend to read from this resource on the CPU.
-        DX::ThrowIfFailed(
-            m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-        memcpy(pVertexDataBegin, s_vertexData, sizeof(s_vertexData));
-        m_vertexBuffer->Unmap(0, nullptr);
-
-        // Initialize the vertex buffer view.
-        m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-        m_vertexBufferView.StrideInBytes = sizeof(Vertex);
-        m_vertexBufferView.SizeInBytes = sizeof(s_vertexData);
-    }
-
-    // Create index buffer.
-    {
-        static const uint16_t s_indexData[6] =
-        {
-            3,1,0,
-            2,1,3,
-        };
-
-        // See note above
-        auto resDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(s_indexData));
-
-        DX::ThrowIfFailed(
-            device->CreateCommittedResource(&heapUpload,
-                D3D12_HEAP_FLAG_NONE,
-                &resDesc,
-                D3D12_RESOURCE_STATE_GENERIC_READ,
-                nullptr,
-                IID_PPV_ARGS(m_indexBuffer.ReleaseAndGetAddressOf())));
-
-        // Copy the data to the index buffer.
-        UINT8* pVertexDataBegin;
-        CD3DX12_RANGE readRange(0, 0);		// We do not intend to read from this resource on the CPU.
-        DX::ThrowIfFailed(
-            m_indexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-        memcpy(pVertexDataBegin, s_indexData, sizeof(s_indexData));
-        m_indexBuffer->Unmap(0, nullptr);
-
-        // Initialize the index buffer view.
-        m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
-        m_indexBufferView.Format = DXGI_FORMAT_R16_UINT;
-        m_indexBufferView.SizeInBytes = sizeof(s_indexData);
-    }
-
-    // Create texture.
-    auto commandList = m_deviceResources->GetCommandList();
-    commandList->Reset(m_deviceResources->GetCommandAllocator(), nullptr);
-
-    {
-        D3D12_RESOURCE_DESC txtDesc = ChooseTexture();
-
-        CD3DX12_HEAP_PROPERTIES heapDefault(D3D12_HEAP_TYPE_DEFAULT);
-
-        DX::ThrowIfFailed(
-            device->CreateCommittedResource(
-                &heapDefault,
-                D3D12_HEAP_FLAG_NONE,
-                &txtDesc,
-                D3D12_RESOURCE_STATE_COPY_DEST,
-                nullptr,
-                IID_PPV_ARGS(m_texture.ReleaseAndGetAddressOf())));
-
-        const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
-
-        // Create the GPU upload buffer.
-        auto resDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
-
-        DX::ThrowIfFailed(
-            device->CreateCommittedResource(
-                &heapUpload,
-                D3D12_HEAP_FLAG_NONE,
-                &resDesc,
-                D3D12_RESOURCE_STATE_GENERIC_READ,
-                nullptr,
-                IID_PPV_ARGS(g_textureUploadHeap.GetAddressOf())));
-
-        UpdateSubresources(commandList, m_texture.Get(), g_textureUploadHeap.Get(), 0, 0, 1, &g_textureData);
-
-        auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        commandList->ResourceBarrier(1, &barrier);
-
-        // Describe and create a SRV for the texture.
-        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        srvDesc.Format = txtDesc.Format;
-        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-        srvDesc.Texture2D.MipLevels = 1;
-        device->CreateShaderResourceView(m_texture.Get(), &srvDesc, 
-            m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::Apple2Video));
-    }
 
     /// <summary>
     /// Set up PrimitiveBatch to draw the lines and triangles for sidebars and inventory
@@ -977,9 +720,6 @@ void Game::CreateDeviceDependentResources()
     /// Finish
     /// </summary>
 
-    DX::ThrowIfFailed(commandList->Close());
-    m_deviceResources->GetCommandQueue()->ExecuteCommandLists(1, CommandListCast(&commandList));
-
     // Wait until assets have been uploaded to the GPU.
     m_deviceResources->WaitForGpu();
 
@@ -991,41 +731,6 @@ void Game::CreateWindowSizeDependentResources()
     m_spriteBatch->SetViewport(GetCurrentViewport());
 }
 
-void Game::SetVertexData(Vertex* v, float wRatio, float hRatio, EmulatorLayout layout)
-{
-	float wR = 1.f - (1.f - wRatio) * 2.f;
-	float hR = -1.f + (1.f - hRatio) * 2.f;
-
-    v[0] = { { -1.0f, hR, 0.5f, 1.0f },    { 0.f, 1.f } };
-    v[1] = { { wR, hR, 0.5f, 1.0f },       { 1.f, 1.f } };
-    v[2] = { { wR,  1.0f, 0.5f, 1.0f },    { 1.f, 0.f } };
-    v[3] = { { -1.0f,  1.0f, 0.5f, 1.0f }, { 0.f, 0.f } };
-
-	switch (layout)
-	{
-	case EmulatorLayout::FLIPPED_X:
-        v[0].texcoord = { 1.f, 0.f };
-        v[1].texcoord = { 0.f, 0.f };
-        v[2].texcoord = { 0.f, 1.f };
-        v[3].texcoord = { 1.f, 1.f };
-		break;
-	case EmulatorLayout::FLIPPED_Y:
-        v[0].texcoord = { 0.f, 0.f };
-        v[1].texcoord = { 1.f, 0.f };
-        v[2].texcoord = { 1.f, 1.f };
-        v[3].texcoord = { 0.f, 1.f };
-		break;
-	case EmulatorLayout::FLIPPED_XY:
-        v[0].texcoord = { 1.f, 1.f };
-        v[1].texcoord = { 0.f, 1.f };
-        v[2].texcoord = { 0.f, 0.f };
-        v[3].texcoord = { 1.f, 0.f };
-		break;
-	default:
-		break;
-	}
-}
-
 void Game::OnDeviceLost()
 {
     // Reset fonts
@@ -1034,11 +739,6 @@ void Game::OnDeviceLost()
         it->second.reset();
     }
     m_gameTextureBG.Reset();
-	m_texture.Reset();
-    m_indexBuffer.Reset();
-    m_vertexBuffer.Reset();
-    m_pipelineState.Reset();
-    m_rootSignature.Reset();
     m_autoMap->OnDeviceLost();
     m_states.reset();
     m_spriteBatch.reset();

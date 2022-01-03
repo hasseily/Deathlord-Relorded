@@ -86,7 +86,6 @@ public:
 	void MenuToggleHacksWindow();
 
     // Other methods
-    D3D12_RESOURCE_DESC ChooseTexture();
     void SetWindowSizeOnChangedProfile();
 
     // Accessors
@@ -95,7 +94,6 @@ public:
     SpriteFont* GetSpriteFontAtIndex(FontDescriptors fontIndex);
     // TODO: Either don't allow these accessors, or change them to return the underlying pointer
     std::shared_ptr<DirectX::SpriteBatch> GetSpriteBatch() { return m_spriteBatch; };
-    Microsoft::WRL::ComPtr<ID3D12Resource>GetGamelinkTexture() { return m_texture; };
 
     // Properties
 	bool shouldRender;
@@ -153,15 +151,6 @@ private:
 	std::unique_ptr<DirectX::CommonStates> m_states;
     std::shared_ptr<DirectX::ResourceUploadBatch> m_uploadBatch;
     DirectX::SimpleMath::Vector2 m_fontPos;
-
-    // Direct3D 12 objects for AppleWin video texture
-    Microsoft::WRL::ComPtr<ID3D12RootSignature>     m_rootSignature;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState>     m_pipelineState;
-    Microsoft::WRL::ComPtr<ID3D12Resource>          m_vertexBuffer;
-    Microsoft::WRL::ComPtr<ID3D12Resource>          m_indexBuffer;
-    Microsoft::WRL::ComPtr<ID3D12Resource>          m_texture;
-    D3D12_VERTEX_BUFFER_VIEW                        m_vertexBufferView;
-    D3D12_INDEX_BUFFER_VIEW                         m_indexBufferView;
 
     // The main game texture background
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_gameTextureBG;
