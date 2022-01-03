@@ -9,7 +9,7 @@ using namespace std;
 
 // Where to put the pin on the minimap.
 constexpr UINT16 MINIMAP_ORIGIN_X = 1297;
-constexpr UINT16 MINIMAP_ORIGIN_Y = 44;
+constexpr UINT16 MINIMAP_ORIGIN_Y = 42;
 constexpr float MINIMAP_X_INCREMENT = 17.5f;
 constexpr float MINIMAP_Y_INCREMENT = 20.f;
 
