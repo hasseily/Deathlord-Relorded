@@ -77,6 +77,12 @@ void AppleWinDXVideo::Render(SimpleMath::Rectangle r,
 	};
 	UINT8 borderSize = 5;
 	m_primitiveBatch->DrawQuad(
+		VertexPositionColor(XMFLOAT3(r.x, r.y, 0), ColorCurtain),
+		VertexPositionColor(XMFLOAT3(r.x + r.width, r.y, 0), ColorCurtain),
+		VertexPositionColor(XMFLOAT3(r.x + r.width, r.y + r.height, 0), ColorCurtain),
+		VertexPositionColor(XMFLOAT3(r.x, r.y + r.height, 0), ColorCurtain)
+	);
+	m_primitiveBatch->DrawQuad(
 		VertexPositionColor(XMFLOAT3(texRect.left - borderSize, texRect.top - borderSize, 0), ColorAmber),
 		VertexPositionColor(XMFLOAT3(texRect.right + borderSize, texRect.top - borderSize, 0), ColorAmber),
 		VertexPositionColor(XMFLOAT3(texRect.right + borderSize, texRect.bottom + borderSize, 0), ColorAmber),
@@ -179,7 +185,7 @@ void AppleWinDXVideo::CreateDeviceDependentResources(ResourceUploadBatch* resour
 
 	EffectPipelineStateDescription epdTriangles(
 		&VertexPositionColor::InputLayout,
-		CommonStates::Opaque,
+		CommonStates::AlphaBlend,
 		CommonStates::DepthDefault,
 		CommonStates::CullNone,
 		rtState,

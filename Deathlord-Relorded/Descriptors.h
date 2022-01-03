@@ -8,6 +8,8 @@ constexpr XMFLOAT4 ColorAmberDark = { 0.25f, 0.1f, 0.f, 1.000000000f };
 constexpr XMVECTORF32 VColorAmberDark = { { { 0.25f, 0.1f, 0.f, 1.000000000f } } };
 constexpr XMFLOAT4 ColorBlack = { 0.f, 0.f, 0.f, 1.000000000f };
 constexpr XMVECTORF32 VColorBlack = { { { 0.f, 0.f, 0.f, 1.000000000f } } };
+constexpr XMFLOAT4 ColorCurtain = { 0.f, 0.f, 0.f, 0.8f };
+constexpr XMVECTORF32 VColorCurtain = { { { 0.f, 0.f, 0.f, 0.8f } } };
 
 enum class TextureDescriptors
 {
