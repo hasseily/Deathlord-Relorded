@@ -339,19 +339,19 @@ void Game::Render()
 		ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap(), m_states->Heap() };
 		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
 
+		// Get the window size
+        // We'll need it for the effects projection matrix
+		RECT clientRect;
+		GetClientRect(m_window, &clientRect);
 
+        // Now render
 	    if (!g_isInGameMap)
 		{
             // Only run the original game if not in the game map already
-			m_a2Video->Render(r, m_uploadBatch.get());
+			m_a2Video->Render(SimpleMath::Rectangle(clientRect), m_uploadBatch.get());
         }
         else
         {
-            // First get the window size
-            // We'll need it for the effects projection matrix
-			RECT clientRect;
-			GetClientRect(m_window, &clientRect);
-
 			m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
 			m_spriteBatch->Begin(commandList, m_states->LinearClamp(), SpriteSortMode_Deferred);
 
@@ -456,17 +456,20 @@ void Game::Render()
 
             m_minimap->Render(r, m_spriteBatch.get());
             m_daytime->Render(r, m_spriteBatch.get());
-			m_textOutput->Render(r, m_spriteBatch.get());			// TODO: Let TextOutput handle all the text?
-			if (m_invOverlay->IsInvOverlayDisplayed())
-				m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatchTriangles, &r);
+			m_textOutput->Render(r, m_spriteBatch.get());
 			m_primitiveBatchTriangles->End();
 			m_spriteBatch->End();
 			// End drawing everything else that's in the main viewport
 
+            // Draw now the overlays, each is independent
+            // The inventory overlay
+			if (m_invOverlay->IsInvOverlayDisplayed())
+				m_invOverlay->Render(SimpleMath::Rectangle(clientRect));
+
             // The apple2 video is unique and independent
             // It should be displayed at the top if requested
 			if (m_a2Video->IsApple2VideoDisplayed())
-				m_a2Video->Render(r, m_uploadBatch.get());
+				m_a2Video->Render(SimpleMath::Rectangle(clientRect), m_uploadBatch.get());
 
         }   // end if !g_isInGameMap
 
@@ -670,7 +673,7 @@ void Game::CreateDeviceDependentResources()
     m_autoMap->CreateDeviceDependentResources(m_uploadBatch.get());
     m_textOutput = TextOutput::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
-    m_invOverlay->CreateDeviceDependentResources(m_uploadBatch.get());
+    m_invOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
 	m_a2Video = AppleWinDXVideo::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_a2Video->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
     m_minimap = MiniMap::GetInstance(m_deviceResources, m_resourceDescriptors);

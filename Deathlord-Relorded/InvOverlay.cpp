@@ -211,7 +211,7 @@ ENDLEFTCLICK:
 #pragma endregion
 
 #pragma region D3D stuff
-void InvOverlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload)
+void InvOverlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states)
 {
 	auto device = m_deviceResources->GetD3DDevice();
 	DX::ThrowIfFailed(
@@ -219,26 +219,47 @@ void InvOverlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpl
 			m_invOverlaySpriteSheet.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_invOverlaySpriteSheet.Get(),
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet));
+
+	// Create the DTX pieces
+
+	auto sampler = states->LinearWrap();
+	RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
+
+	EffectPipelineStateDescription epdTriangles(
+		&VertexPositionColor::InputLayout,
+		CommonStates::Opaque,
+		CommonStates::DepthDefault,
+		CommonStates::CullNone,		// Note: don't cull because some quadlines are drawn clockwise
+									// Specifically the swaplines if the recipient person is to the left of the sender
+		rtState,
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+	m_dxtEffect = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdTriangles);
+	m_primitiveBatch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
+
+	// The applewin texture is AlphaBlend
+	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
+	m_spriteBatch = std::make_unique<SpriteBatch>(device, *resourceUpload, spd);
+	m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
 }
 
 void InvOverlay::OnDeviceLost()
 {
 	m_invOverlaySpriteSheet.Reset();
+	m_spriteBatch.reset();
+	m_primitiveBatch.reset();
+	m_dxtEffect.reset();
 }
 
 #pragma endregion
 
 #pragma region Drawing
 
-void InvOverlay::DrawInvOverlay(
-	std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, 
-	std::shared_ptr<DirectX::PrimitiveBatch<VertexPositionColor>>& primitiveBatch, 
-	SimpleMath::Rectangle* overlayRect)
+void InvOverlay::Render(SimpleMath::Rectangle r)
 {
+
 	auto mmBGTexSize = DirectX::XMUINT2(1150, 600);
 	auto mmSSTextureSize = GetTextureSize(m_invOverlaySpriteSheet.Get());
-	auto commandList = m_deviceResources->GetCommandList();
-	SimpleMath::Rectangle overlayScissorRect(*overlayRect);
+	SimpleMath::Rectangle overlayScissorRect(r);
 	Vector2 _overlayCenter = overlayScissorRect.Center();
 	m_currentRect.left = _overlayCenter.x - mmBGTexSize.x / 2;
 	m_currentRect.top = _overlayCenter.y - mmBGTexSize.y / 2;
@@ -262,14 +283,24 @@ void InvOverlay::DrawInvOverlay(
 	float invSlotsOriginX = innerRect.left;			// beginning of inventory slots
 	float invSlotsOriginY = innerRect.top + 90.f;
 
+	// Now draw
+	auto commandList = m_deviceResources->GetCommandList();
+	m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(
+		r.x, r.x + r.width,
+		r.y + r.height, r.y, 0, 1));
+	m_dxtEffect->Apply(commandList);
+	m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
+	m_primitiveBatch->Begin(commandList);
+	m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
+
 	///// Begin Draw Border (2 quads, the black one 10px smaller per side for a 5px thickness
-	primitiveBatch->DrawQuad(
+	m_primitiveBatch->DrawQuad(
 		VertexPositionColor(XMFLOAT3(m_currentRect.left, m_currentRect.top, 0), ColorAmber),
 		VertexPositionColor(XMFLOAT3(m_currentRect.right, m_currentRect.top, 0), ColorAmber),
 		VertexPositionColor(XMFLOAT3(m_currentRect.right, m_currentRect.bottom, 0), ColorAmber),
 		VertexPositionColor(XMFLOAT3(m_currentRect.left, m_currentRect.bottom, 0), ColorAmber)
 	);
-	primitiveBatch->DrawQuad(
+	m_primitiveBatch->DrawQuad(
 		VertexPositionColor(XMFLOAT3(m_currentRect.left+5, m_currentRect.top+5, 0), static_cast<XMFLOAT4>(Colors::Black)),
 		VertexPositionColor(XMFLOAT3(m_currentRect.right-5, m_currentRect.top+5, 0), static_cast<XMFLOAT4>(Colors::Black)),
 		VertexPositionColor(XMFLOAT3(m_currentRect.right-5, m_currentRect.bottom-5, 0), static_cast<XMFLOAT4>(Colors::Black)),
@@ -278,13 +309,13 @@ void InvOverlay::DrawInvOverlay(
 	///// End Draw Border
 
 		///// Begin Draw crossed lines
-	primitiveBatch->DrawQuad(
+	m_primitiveBatch->DrawQuad(
 		VertexPositionColor(XMFLOAT3(innerRect.left,	invSlotsOriginY + 60, 0),					ColorAmber),
 		VertexPositionColor(XMFLOAT3(innerRect.right,	invSlotsOriginY + 60, 0),					ColorAmber),
 		VertexPositionColor(XMFLOAT3(innerRect.right,	invSlotsOriginY + 60 + lineThickness, 0),	ColorAmber),
 		VertexPositionColor(XMFLOAT3(innerRect.left,	invSlotsOriginY + 60 + lineThickness, 0),	ColorAmber)
 	);
-	primitiveBatch->DrawQuad(
+	m_primitiveBatch->DrawQuad(
 		VertexPositionColor(XMFLOAT3(innerRect.right - memberColWidth,					innerRect.top, 0),		ColorAmber),
 		VertexPositionColor(XMFLOAT3(innerRect.right - memberColWidth + lineThickness,	innerRect.top, 0),		ColorAmber),
 		VertexPositionColor(XMFLOAT3(innerRect.right - memberColWidth + lineThickness,	innerRect.bottom, 0),	ColorAmber),
@@ -307,24 +338,24 @@ void InvOverlay::DrawInvOverlay(
 		// Draw tab graphics (border around the tab)
 		if (((InventorySlots)iSlot == highlightedSlot) && (selectedSlot != highlightedSlot))	// Highlighted
 		{
-			primitiveBatch->DrawQuad(
+			m_primitiveBatch->DrawQuad(
 				VertexPositionColor(XMFLOAT3(invSlotBegin, invSlotsOriginY - 10.f, 0), ColorAmberDark),
 				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), ColorAmberDark),
 				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY + lineThickness + 20.f, 0), ColorAmberDark),
 				VertexPositionColor(XMFLOAT3(invSlotBegin, invSlotsOriginY + lineThickness + 20.f, 0), ColorAmberDark)
 			);
-			primitiveBatch->DrawQuad(
+			m_primitiveBatch->DrawQuad(
 				VertexPositionColor(XMFLOAT3(invSlotBegin + lineThickness, invSlotsOriginY - 10.f + lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black)),
 				VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY - 10.f + lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black)),
 				VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
 				VertexPositionColor(XMFLOAT3(invSlotBegin + lineThickness, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black))
 			);
-			primitiveBatch->DrawTriangle(
+			m_primitiveBatch->DrawTriangle(
 				VertexPositionColor(XMFLOAT3(invSlotEnd - 11.f, invSlotsOriginY - 10.f, 0), ColorAmberDark),
 				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), ColorAmberDark),
 				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY + 1, 0), ColorAmberDark)
 			);
-			primitiveBatch->DrawTriangle(
+			m_primitiveBatch->DrawTriangle(
 				VertexPositionColor(XMFLOAT3(invSlotEnd - 10.f + lineThickness, invSlotsOriginY - 10.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
 				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
 				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black))
@@ -332,38 +363,38 @@ void InvOverlay::DrawInvOverlay(
 		}
 		if ((InventorySlots)iSlot == selectedSlot)	// Selected
 		{
-			primitiveBatch->DrawQuad(
+			m_primitiveBatch->DrawQuad(
 				VertexPositionColor(XMFLOAT3(invSlotBegin, invSlotsOriginY - 10.f, 0), ColorAmber),
 				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), ColorAmber),
 				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY + lineThickness + 20.f, 0), ColorAmber),
 				VertexPositionColor(XMFLOAT3(invSlotBegin, invSlotsOriginY + lineThickness + 20.f, 0), ColorAmber)
 			);
-			primitiveBatch->DrawQuad(
+			m_primitiveBatch->DrawQuad(
 				VertexPositionColor(XMFLOAT3(invSlotBegin + lineThickness, invSlotsOriginY - 10.f + lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black)),
 				VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY - 10.f + lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black)),
 				VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
 				VertexPositionColor(XMFLOAT3(invSlotBegin + lineThickness, invSlotsOriginY + 20.f, 0), static_cast<XMFLOAT4>(Colors::Black))
 			);
-			primitiveBatch->DrawTriangle(
+			m_primitiveBatch->DrawTriangle(
 				VertexPositionColor(XMFLOAT3(invSlotEnd -11.f, invSlotsOriginY - 10.f, 0), ColorAmber),
 				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), ColorAmber),
 				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY + 1, 0), ColorAmber)
 			);
-			primitiveBatch->DrawTriangle(
+			m_primitiveBatch->DrawTriangle(
 				VertexPositionColor(XMFLOAT3(invSlotEnd - 10.f + lineThickness, invSlotsOriginY - 10.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
 				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - 10.f, 0), static_cast<XMFLOAT4>(Colors::Black)),
 				VertexPositionColor(XMFLOAT3(invSlotEnd + lineThickness, invSlotsOriginY - lineThickness, 0), static_cast<XMFLOAT4>(Colors::Black))
 			);
 		}
 		// Draw tab string
-		font->DrawString(spriteBatch.get(), _str.c_str(),
+		font->DrawString(m_spriteBatch.get(), _str.c_str(),
 			Vector2(invSlotBegin + stringHalfSpacing, invSlotsOriginY),
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		invSlotBegin = invSlotEnd;
 		iSlot++;
 	}
 	// Draw line below tabs
-	primitiveBatch->DrawQuad(
+	m_primitiveBatch->DrawQuad(
 		VertexPositionColor(XMFLOAT3(invSlotsOriginX, invSlotsOriginY + 20.f, 0), ColorAmber),
 		VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY + 20.f, 0), ColorAmber),
 		VertexPositionColor(XMFLOAT3(invSlotEnd, invSlotsOriginY + 20.f + lineThickness, 0), ColorAmber),
@@ -382,7 +413,7 @@ void InvOverlay::DrawInvOverlay(
 		sprintf_s(_invhBuf, 200, "%-20s   %s", "Name", "TH0   AC   Special");
 
 	}
-	font->DrawString(spriteBatch.get(), _invhBuf,
+	font->DrawString(m_spriteBatch.get(), _invhBuf,
 		Vector2(invSlotsOriginX, invSlotsOriginY + 40),
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 	///// End Draw Inventory Headers
@@ -398,35 +429,35 @@ void InvOverlay::DrawInvOverlay(
 		int memberLeft = 28 *(memberClass % 8);
 		int memberTop = 32 *(memberClass / 8);
 		RECT memberSpriteRect = { memberLeft, memberTop, memberLeft + 28, memberTop + 32 };
-		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 			mmSSTextureSize, XMFLOAT2(xCol + (memberColWidth - 28)/2, yCol), &memberSpriteRect, Colors::White, 0.f, XMFLOAT2());
 		// Then draw the member name, class, race and AC
 		yCol += 32 + 5;
 		_bufStr = StringFromMemory(PARTY_NAME_START + (iMember * 0x09), maxGlyphs);
-		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
 		_bufStr = NameOfClass((DeathlordClasses)memberClass, false);
-		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
 		UINT8 memberRace = MemGetMainPtr(PARTY_RACE_START)[iMember];
 		_bufStr = NameOfRace((DeathlordRaces)memberRace, false);
-		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
 		UINT8 memberArmor = MemGetMainPtr(PARTY_ARMORCLASS_START)[iMember];
 		_bufStr = L"AC " + std::to_wstring((int)10 - memberArmor);
-		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 
 		// Now draw hands/melee/ranged readied status background, and then the text
 		yCol += glyphHeight + 10;
-		primitiveBatch->DrawQuad(
+		m_primitiveBatch->DrawQuad(
 			VertexPositionColor(XMFLOAT3(xCol + 2,				yCol, 0), ColorAmber),
 			VertexPositionColor(XMFLOAT3(xCol + memberColWidth - 2,	yCol, 0), ColorAmber),
 			VertexPositionColor(XMFLOAT3(xCol + memberColWidth - 2,	yCol + glyphHeight + 4, 0), ColorAmber),
@@ -445,7 +476,7 @@ void InvOverlay::DrawInvOverlay(
 		default:
 			_bufStr = L"FISTS";
 		}
-		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 
@@ -462,23 +493,23 @@ void InvOverlay::DrawInvOverlay(
 	if (_currentItems == _maxStashItems)
 	{
 		_bufStr = L"FULL";
-		font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			VColorAmber, 0.f, Vector2(0.f, 0.f), 1.f);
 	}
 	yCol -= glyphHeight + 10 + 2;
 	_bufStr = std::to_wstring(_currentItems) + L" / " + std::to_wstring(_maxStashItems);
-	font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+	font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 		Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 	yCol -= glyphHeight + 2;
 	_bufStr = L"STASH";
-	font->DrawString(spriteBatch.get(), _bufStr.c_str(),
+	font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 		Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 	// Finally draw the icon
 	yCol -= spRectStash.bottom - spRectStash.top + 5;
-	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+	m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 		mmSSTextureSize, XMFLOAT2(xCol + (memberColWidth - 28*2) / 2, yCol), &spRectStash, Colors::White, 0.f, XMFLOAT2());
 	///// End Draw Column Headers (stash)
 
@@ -523,7 +554,7 @@ void InvOverlay::DrawInvOverlay(
 		{
 			// From a person to a person (_invI->owner to highlighted and vice versa, 2 lines)
 			// First the item we clicked on
-			primitiveBatch->DrawQuad(
+			m_primitiveBatch->DrawQuad(
 				VertexPositionColor(XMFLOAT3(_fromRect.eRect.Center().x,		_fromRect.eRect.Center().y - 2, 0), ColorAmber),
 				VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x,	_fromRect.eRect.Center().y - 2, 0), ColorAmber),
 				VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x,	_fromRect.eRect.Center().y + 2, 0), ColorAmber),
@@ -532,7 +563,7 @@ void InvOverlay::DrawInvOverlay(
 			// And then the item that'll be swapped
 			if (!noOtherItem)
 			{
-				primitiveBatch->DrawQuad(
+				m_primitiveBatch->DrawQuad(
 					VertexPositionColor(XMFLOAT3(_fromRect.eRect.Center().x, _otherFromRect.eRect.Center().y - 2, 0), ColorAmber),
 					VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x, _otherFromRect.eRect.Center().y - 2, 0), ColorAmber),
 					VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x, _otherFromRect.eRect.Center().y + 2, 0), ColorAmber),
@@ -544,14 +575,14 @@ void InvOverlay::DrawInvOverlay(
 		{
 			// exchange stash->person (stash _invI->owner to highlighted, potentially 2 lines)
 			// First the person we clicked on
-			primitiveBatch->DrawQuad(
+			m_primitiveBatch->DrawQuad(
 				VertexPositionColor(XMFLOAT3(_xPosStash,						_fromRect.eRect.Center().y - 2, 0), ColorAmber),
 				VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x,	_fromRect.eRect.Center().y - 2, 0), ColorAmber),
 				VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x,	_fromRect.eRect.Center().y + 2, 0), ColorAmber),
 				VertexPositionColor(XMFLOAT3(_xPosStash,						_fromRect.eRect.Center().y + 2, 0), ColorAmber)
 			);
 			// And then the person who is going to lose the item
-			primitiveBatch->DrawQuad(
+			m_primitiveBatch->DrawQuad(
 				VertexPositionColor(XMFLOAT3(_xPosStash,						_otherFromRect.eRect.Center().y - 2, 0), ColorAmber),
 				VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x,	_otherFromRect.eRect.Center().y - 2, 0), ColorAmber),
 				VertexPositionColor(XMFLOAT3(_otherFromRect.eRect.Center().x,	_otherFromRect.eRect.Center().y + 2, 0), ColorAmber),
@@ -563,7 +594,7 @@ void InvOverlay::DrawInvOverlay(
 	{
 		// exchange person->stash (_invI->owner to stash, only one line)
 		// it won't be highlighted if the stash is full, so we're good
-		primitiveBatch->DrawQuad(
+		m_primitiveBatch->DrawQuad(
 			VertexPositionColor(XMFLOAT3(_fromRect.eRect.Center().x,	_fromRect.eRect.Center().y - 2, 0), ColorAmber),
 			VertexPositionColor(XMFLOAT3(_xPosStash,					_fromRect.eRect.Center().y - 2, 0), ColorAmber),
 			VertexPositionColor(XMFLOAT3(_xPosStash,					_fromRect.eRect.Center().y + 2, 0), ColorAmber),
@@ -584,12 +615,15 @@ ENDSWAPHELPERS:
 	yCol = invSlotsOriginY + 60 + invRowSpacing;
 	for each (auto _row in m_invRows)
 	{
-		DrawItem(&_row, spriteBatch, font, memberColWidth, xCol, yCol);
+		DrawItem(&_row, font, memberColWidth, xCol, yCol);
 		yCol += glyphHeight + invRowSpacing;
 		++m_currentItemInstance;
 	}
 	///// End Draw Inventory Rows
 
+	// Finish up
+	m_primitiveBatch->End();
+	m_spriteBatch->End();
 	bIsDisplayed = true;
 }
 
@@ -621,8 +655,7 @@ InvInstance InvOverlay::ItemInstanceOfOwner(UINT8 owner)
 	return InvInstance();
 }
 
-void InvOverlay::DrawItem(InvInstance* pItemInstance, 
-	std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::SpriteFont* font,
+void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 	int memberColWidth, int xPos, int yPos)
 {
 	char _spBuf[200];
@@ -646,7 +679,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 			sprintf_s(_spBuf, 200, "%-20s   %+d    %+d   %s",
 				item->name.c_str(), item->thaco, item->ac, item->special.c_str());
 	}
-	font->DrawString(spriteBatch.get(), _spBuf,
+	font->DrawString(m_spriteBatch.get(), _spBuf,
 		Vector2(xPos, yPos),
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 	// Finished drawing the item info. Now draw the equipped status
@@ -656,16 +689,16 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 	auto mmSSTextureSize = GetTextureSize(m_invOverlaySpriteSheet.Get());
 	for (UINT8 i = 0; i < DEATHLORD_PARTY_SIZE; i++)
 	{
-		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 			mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvEmpty, Colors::White, 0.f, XMFLOAT2());
 		RECT rectSprite = spRectInvEmpty;
 		if (pItemInstance->owner == i)
 		{
 			if (pItemInstance->equipped)
-				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 					mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvWorn, Colors::White, 0.f, XMFLOAT2());
 			else
-				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 					mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
 		}
 		else // set up highlighting to do something with the button when the item not equipped for this party member
@@ -680,10 +713,10 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 					(DeathlordClasses)MemGetMainPtr(PARTY_CLASS_START)[i],
 					(DeathlordRaces)MemGetMainPtr(PARTY_RACE_START)[i])
 					)
-					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+					m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 						mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvWorn, Colors::White, 0.f, XMFLOAT2());
 				else
-					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+					m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 						mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
 			}
 		}
@@ -700,7 +733,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 	}
 	// Now the stash
 	_xPos += verticalBarWidth;	// the width of the vertical bar
-	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+	m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 		mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvEmpty, Colors::White, 0.f, XMFLOAT2());
 
 	EquipInteractableRect _aEIR;
@@ -715,7 +748,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 	{
 		if (pItemInstance->owner == i)
 		{
-			spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 				mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
 			_xPos += 40;
 			// Here draw the open trash when highlighted, otherwise closed trash
@@ -725,10 +758,10 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 			isHighlighted = isHighlighted && (highlightedRect.eMember == i);
 			isHighlighted = isHighlighted && highlightedRect.isTrash;
 			if (isHighlighted)
-				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 					mmSSTextureSize, XMFLOAT2(_xPos, yPos - 5), &spRectTrashOpen, Colors::White, 0.f, XMFLOAT2());
 			else
-				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 					mmSSTextureSize, XMFLOAT2(_xPos, yPos - 5), &spRectTrashClosed, Colors::White, 0.f, XMFLOAT2());
 			// And tell the system we have a trash button
 			EquipInteractableRect _aTrashIR;
@@ -750,7 +783,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance,
 			isHighlighted = isHighlighted && (highlightedRect.eMember == DEATHLORD_PARTY_SIZE);
 			if (isHighlighted)
 			{
-				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 					mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
 			}
 		}

@@ -21,7 +21,7 @@ struct EquipInteractableRect
 class InvOverlay	// Singleton
 {
 public:
-	void DrawInvOverlay(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, std::shared_ptr<DirectX::PrimitiveBatch<VertexPositionColor>>& primitiveBatch, SimpleMath::Rectangle* overlayRect);
+	void InvOverlay::Render(SimpleMath::Rectangle r);
 	void ShowInvOverlay();
 	void HideInvOverlay();
 	void ToggleInvOverlay();
@@ -30,7 +30,7 @@ public:
 	void LeftMouseButtonClicked(int x, int y);
 	void MousePosInPixels(int x, int y);
 
-	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
+	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states);
 	void OnDeviceLost();
 
 	// public singleton code
@@ -54,7 +54,7 @@ public:
 	}
 private:
 	void Initialize();
-	void DrawItem(InvInstance* pItemInstance, std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::SpriteFont* font, int memberColWidth, int xPos, int yPos);
+	void DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font, int memberColWidth, int xPos, int yPos);
 	EquipInteractableRect RectOfOwnerOfItemInstance(InvInstance& pItemInstance);
 	InvInstance ItemInstanceOfOwner(UINT8 owner);
 
@@ -75,4 +75,8 @@ private:
 	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_invOverlaySpriteSheet;
+	// It's totally independent, and uses its own DTX pieces
+	std::unique_ptr<SpriteBatch>m_spriteBatch;
+	std::unique_ptr<PrimitiveBatch<VertexPositionColor>>m_primitiveBatch;
+	std::unique_ptr<BasicEffect> m_dxtEffect;
 };
