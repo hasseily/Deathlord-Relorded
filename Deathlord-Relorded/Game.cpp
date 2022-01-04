@@ -459,8 +459,8 @@ void Game::Render()
 			m_textOutput->Render(r, m_spriteBatch.get());			// TODO: Let TextOutput handle all the text?
 			if (m_invOverlay->IsInvOverlayDisplayed())
 				m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatchTriangles, &r);
-			m_spriteBatch->End();
 			m_primitiveBatchTriangles->End();
+			m_spriteBatch->End();
 			// End drawing everything else that's in the main viewport
 
             // The apple2 video is unique and independent
@@ -700,7 +700,7 @@ void Game::CreateDeviceDependentResources()
         &VertexPositionColor::InputLayout,
         CommonStates::Opaque,
         CommonStates::DepthDefault,
-        CommonStates::CullNone,
+        CommonStates::CullCounterClockwise,
         rtState,
         D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
     m_dxtEffectLines = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdLines);
@@ -710,7 +710,7 @@ void Game::CreateDeviceDependentResources()
 		&VertexPositionColor::InputLayout,
 		CommonStates::Opaque,
 		CommonStates::DepthDefault,
-		CommonStates::CullNone,
+		CommonStates::CullCounterClockwise,
 		rtState,
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 	m_dxtEffectTriangles = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdTriangles);
