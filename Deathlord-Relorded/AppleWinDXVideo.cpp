@@ -191,7 +191,6 @@ void AppleWinDXVideo::CreateDeviceDependentResources(ResourceUploadBatch* resour
 		rtState,
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 	m_dxtEffect = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdTriangles);
-	m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(0, fbI.biWidth, fbI.biHeight, 0, 0, 1));
 	m_primitiveBatch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
 
 	// The applewin texture is AlphaBlend
