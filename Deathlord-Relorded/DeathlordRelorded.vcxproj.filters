@@ -399,9 +399,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Assets\Background.jpg">
-      <Filter>Assets</Filter>
-    </Image>
     <Image Include="DeathlordCompanion.ico">
       <Filter>Assets</Filter>
     </Image>
@@ -420,25 +417,25 @@
     <Image Include="emulator\resources\icon1.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\Background_NoMap.png">
-      <Filter>Assets</Filter>
-    </Image>
     <Image Include="Assets\SpellList.bmp">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\PlayerSprite.png">
+    <Image Include="Assets\SpriteSheet.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\SpriteSheet.png">
+    <Image Include="Assets\PlayerSprite.png">
       <Filter>Assets</Filter>
     </Image>
     <Image Include="Assets\Background_Relorded.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\Background_NoMap.png">
+      <Filter>Assets</Filter>
+    </Image>
     <Image Include="Assets\Background_Grass_32x32.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\Sprite_Pushpin.png">
+    <Image Include="Assets\Background.jpg">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
@@ -454,5 +451,10 @@
     <Xml Include="Profiles\Grid Cartographer Profiles\Deathlord Companion.xml">
       <Filter>Assets</Filter>
     </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <ImageContentTask Include="Assets\MinimapSpriteSheet.png">
+      <Filter>Assets</Filter>
+    </ImageContentTask>
   </ItemGroup>
 </Project>

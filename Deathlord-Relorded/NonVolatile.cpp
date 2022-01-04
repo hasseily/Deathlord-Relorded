@@ -34,7 +34,8 @@ static nlohmann::json nv_json = R"(
 
 static nlohmann::json nvmarkers_json = R"(
 	{
-		"fogOfWarMarkers":	  {}
+		"fogOfWarMarkers":	  {},
+		"sectorsSeen":		  []
 	}
 )"_json;
 
@@ -71,8 +72,9 @@ int NonVolatile::SaveToDisk()
 	out << std::setw(4) << nv_json << std::endl;
 	out.close();
 
-	// save markers independently
+	// save markers and other map data independently
 	nvmarkers_json["fogOfWarMarkers"] = fogOfWarMarkers;
+	nvmarkers_json["sectorsSeen"] = sectorsSeen;
 	out.open(markersfilename);
 	out << std::setw(0) << nvmarkers_json << std::endl;
 	out.close();
@@ -128,6 +130,8 @@ int NonVolatile::LoadFromDisk()
 
 	// markers
 	fogOfWarMarkers = nvmarkers_json["fogOfWarMarkers"].get<std::map<std::string, std::vector<UINT8>>>();
+	// overland sectors seen
+	sectorsSeen = nvmarkers_json["sectorsSeen"].get<std::vector<UINT8>>();
 
 	return 0;
 }

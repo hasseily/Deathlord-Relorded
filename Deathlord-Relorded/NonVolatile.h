@@ -31,9 +31,11 @@ public:
 	bool logCombat = false;
 	AutoMapQuadrant mapQuadrant = AutoMapQuadrant::FollowPlayer;	// Not saved, always reverts to All upon restart
 
+	// Independent file containing map data:
 	// contains markers data (8 bits per tile) for all maps
-	// saved in an independent file
 	std::map<std::string, std::vector<UINT8>>fogOfWarMarkers;
+	// contains all sectors seen on the overland (XY coordinates, from 0x00 to 0xFF. X is the high nibble)
+	std::vector<UINT8>sectorsSeen;
 
 	// I/O
 	int SaveToDisk();

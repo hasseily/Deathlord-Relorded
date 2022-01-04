@@ -282,6 +282,7 @@ void Game::Update(DX::StepTimer const& timer)
     {
 		memTriggers->PollKeyMemoryLocations();  // But not the avatar XY
     }
+    m_minimap->Update(memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
 
     PIXEndEvent();
 }
