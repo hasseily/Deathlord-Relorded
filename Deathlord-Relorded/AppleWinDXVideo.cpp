@@ -102,7 +102,7 @@ void AppleWinDXVideo::Render(SimpleMath::Rectangle r,
 }
 
 #pragma region D3D stuff
-void AppleWinDXVideo::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload)
+void AppleWinDXVideo::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states)
 {
 	auto device = m_deviceResources->GetD3DDevice();
 
@@ -180,8 +180,7 @@ void AppleWinDXVideo::CreateDeviceDependentResources(ResourceUploadBatch* resour
 	// We'll use it in Render() to draw on screen.
 	// Much easier than dealing with vertices
 
-	m_states = std::make_unique<CommonStates>(device);
-	auto sampler = m_states->LinearWrap();
+	auto sampler = states->LinearWrap();
 	RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
 
 	EffectPipelineStateDescription epdTriangles(
@@ -204,6 +203,10 @@ void AppleWinDXVideo::CreateDeviceDependentResources(ResourceUploadBatch* resour
 void AppleWinDXVideo::OnDeviceLost()
 {
 	m_AppleWinDXVideoSpriteSheet.Reset();
+	m_textureUploadHeapMap.Reset();
+	m_spriteBatch.reset();
+	m_primitiveBatch.reset();
+	m_dxtEffect.reset();
 }
 
 #pragma endregion

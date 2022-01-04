@@ -342,6 +342,7 @@ void Game::Render()
 
 	    if (!g_isInGameMap)
 		{
+            // Only run the original game if not in the game map already
 			m_a2Video->Render(r, m_uploadBatch.get());
         }
         else
@@ -425,7 +426,7 @@ void Game::Render()
 			m_primitiveBatchLines->End();
 			m_spriteBatch->End();
 
-			if (g_nonVolatile.showMap)
+			if (g_nonVolatile.showMap)  // TODO: Always show the map
 			{
 				// Now draw autoMap
 				auto mmOrigin = Vector2(r.x + 361.f, r.y + 10.f);
@@ -458,9 +459,8 @@ void Game::Render()
 			m_textOutput->Render(r, m_spriteBatch.get());			// TODO: Let TextOutput handle all the text?
 			if (m_invOverlay->IsInvOverlayDisplayed())
 				m_invOverlay->DrawInvOverlay(m_spriteBatch, m_primitiveBatchTriangles, &r);
-
-			m_primitiveBatchTriangles->End();
 			m_spriteBatch->End();
+			m_primitiveBatchTriangles->End();
 			// End drawing everything else that's in the main viewport
 
             // The apple2 video is unique and independent
@@ -664,20 +664,21 @@ void Game::CreateDeviceDependentResources()
     }
 
     // Now initialize the pieces of the UI, and create the resources
+	m_states = std::make_unique<CommonStates>(device);
+
     m_autoMap = AutoMap::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_autoMap->CreateDeviceDependentResources(m_uploadBatch.get());
     m_textOutput = TextOutput::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_invOverlay->CreateDeviceDependentResources(m_uploadBatch.get());
 	m_a2Video = AppleWinDXVideo::GetInstance(m_deviceResources, m_resourceDescriptors);
-    m_a2Video->CreateDeviceDependentResources(m_uploadBatch.get());
+    m_a2Video->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
     m_minimap = MiniMap::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_minimap->CreateDeviceDependentResources(m_uploadBatch.get());
 	m_daytime = Daytime::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_daytime->CreateDeviceDependentResources(m_uploadBatch.get());
 
     // Do the sprite batches.
-	m_states = std::make_unique<CommonStates>(device);
 	auto sampler = m_states->LinearWrap();
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
     // TODO: Right now spritesheets are NonPremultiplied
@@ -743,6 +744,11 @@ void Game::OnDeviceLost()
     m_states.reset();
     m_spriteBatch.reset();
     m_graphicsMemory.reset();
+	m_primitiveBatchLines.reset();
+	m_primitiveBatchTriangles.reset();
+	m_dxtEffectLines.reset();
+	m_dxtEffectTriangles.reset();
+	m_uploadBatch.reset();
 }
 
 void Game::OnDeviceRestored()

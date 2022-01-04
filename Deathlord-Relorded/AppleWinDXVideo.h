@@ -29,7 +29,7 @@ public:
 	// Note: AppleWinDXVideo needs uploadBatch because on every frame it reuploads its texture
 	void Render(SimpleMath::Rectangle r,
 		DirectX::ResourceUploadBatch* uploadBatch);
-	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
+	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states);
 	void OnDeviceLost();
 
 	// Properties
@@ -73,7 +73,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_AppleWinDXVideoSpriteSheet;	// Same in GPU
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_textureUploadHeapMap;	// For uploading the texture
 	// It's totally independent, and uses its own DTX pieces
-	std::unique_ptr<CommonStates>m_states;
 	std::unique_ptr<SpriteBatch>m_spriteBatch;
 	std::unique_ptr<PrimitiveBatch<VertexPositionColor>>m_primitiveBatch;
 	std::unique_ptr<BasicEffect> m_dxtEffect;
