@@ -212,6 +212,7 @@
     <ClCompile Include="MemoryTriggers.cpp" />
     <ClCompile Include="MiniMap.cpp" />
     <ClCompile Include="NonVolatile.cpp" />
+    <ClCompile Include="PartyLayout.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="remotecontrol\Gamelink.cpp" />
     <ClCompile Include="remotecontrol\RemoteControlManager.cpp" />
@@ -270,6 +271,7 @@
     <ClInclude Include="MemoryTriggers.h" />
     <ClInclude Include="MiniMap.h" />
     <ClInclude Include="NonVolatile.h" />
+    <ClInclude Include="PartyLayout.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="ReadData.h" />
     <ClInclude Include="remotecontrol\Gamelink.h" />
@@ -383,6 +385,10 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
       <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GeneratePremultipliedAlpha>
       <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GeneratePremultipliedAlpha>
+    </Image>
+    <Image Include="Assets\Spritesheet_Portraits_Male.png">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </Image>
     <Image Include="DeathlordCompanion.ico">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>

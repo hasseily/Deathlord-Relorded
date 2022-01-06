@@ -156,6 +156,9 @@
     <ClCompile Include="AppleWinDXVideo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PartyLayout.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATGColors.h">
@@ -338,6 +341,9 @@
     <ClInclude Include="AppleWinDXVideo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PartyLayout.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="emulator\cpu\cpu_general.inl">
@@ -436,6 +442,9 @@
       <Filter>Assets</Filter>
     </Image>
     <Image Include="Assets\Background.jpg">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Spritesheet_Portraits_Male.png">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
