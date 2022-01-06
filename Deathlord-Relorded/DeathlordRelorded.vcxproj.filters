@@ -398,6 +398,12 @@
     <None Include="Assets\pr3-dlcharset-12pt-inverse.spritefont">
       <Filter>Assets</Filter>
     </None>
+    <None Include="Assets\dlfont_12pt_inverse.spritefont">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="Assets\dlfont_12pt.spritefont">
+      <Filter>Assets</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc">

@@ -17,16 +17,18 @@ void TextOutput::Initialize()
 	fontsAvailable[FontDescriptors::FontA2Bold] = L"a2-12pt-bold.spritefont";
 	fontsAvailable[FontDescriptors::FontA2Italic] = L"a2-12pt-italic.spritefont";
 	fontsAvailable[FontDescriptors::FontA2BoldItalic] = L"a2-12pt-bolditalic.spritefont";
-	fontsAvailable[FontDescriptors::FontDLRegular] = L"pr3_dlcharset_12pt.spritefont";
-	fontsAvailable[FontDescriptors::FontDLInverse] = L"pr3_dlcharset_12pt_inverse.spritefont";
+	fontsAvailable[FontDescriptors::FontPR3Regular] = L"pr3_dlcharset_12pt.spritefont";
+	fontsAvailable[FontDescriptors::FontPR3Inverse] = L"pr3_dlcharset_12pt_inverse.spritefont";
+	fontsAvailable[FontDescriptors::FontDLRegular] = L"dlfont_12pt.spritefont";
+	fontsAvailable[FontDescriptors::FontDLInverse] = L"dlfont_12pt_inverse.spritefont";
 	// create all the lines for the billboard
 	// and a single line for the log, and initialize the rest
 	UINT8 billboardLineCt = PRINT_CHAR_Y_KEYPRESS - PRINT_CHAR_Y_BILLBOARD_BEGIN;
 	for (UINT8 i = 0; i < billboardLineCt; i++)
 	{
-		m_vBillboard.push_back(pair(wstring(), FontDescriptors::FontDLRegular));
+		m_vBillboard.push_back(pair(wstring(), FontDescriptors::FontPR3Regular));
 	}
-	m_vLog.push_back(pair(wstring(), FontDescriptors::FontDLRegular));
+	m_vLog.push_back(pair(wstring(), FontDescriptors::FontPR3Regular));
 	m_strModule = wstring();
 	m_strModule.append(PRINT_CHAR_X_MODULE_LENGTH, ' ');	// Intialize to a specific length
 	m_strKeypress = wstring();
@@ -38,30 +40,31 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 	// TODO: Should not rely on the gamePtr for fonts?
 	// TODO: Render v_linesToPrint
 	auto gamePtr = GetGamePtr();
-	auto fontsRegular = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular);
+	auto fontsRegular = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontPR3Regular);
 
 	// Render Module string
-	// TODO: Get the length of the string and align it to the center of the map
+	// TODO: Get the length of the string and align it to the wood board on the right
 	(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular)->DrawString(spriteBatch, m_strModule.c_str(),
-		{ r.x + 775.f, r.y + 65.f }, Colors::White, 0.f, Vector2(), 3.f);
+		{ r.x + 1320.f, r.y + 305.f }, VColorText, 0.f, Vector2(), 1.0f);
 	// Render Keypress string
-	// TODO: Get the length of the string and align it to the center of the area
-	(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular)->DrawString(spriteBatch, m_strKeypress.c_str(),
-		{ r.x + 1370.f, r.y + 310.f }, Colors::White, 0.f, Vector2(), 2.2f);
+	// TODO: Get the length of the string and align it to the center bottom of the map
+	//		 with a popup window
+	(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontPR3Regular)->DrawString(spriteBatch, m_strKeypress.c_str(),
+		{ r.x + 850.f, r.y + 900.f }, Colors::White, 0.f, Vector2(), 2.f);
 	// Render Billboard
 	float yInc = 0.f;
 	for each (auto bbLine in m_vBillboard)
 	{
 		(*gamePtr)->GetSpriteFontAtIndex(bbLine.second)->DrawString(spriteBatch, bbLine.first.c_str(),
-			{ r.x + 1290.f, r.y + 260.f + yInc }, Colors::White, 0.f, Vector2(), 2.f);
-		yInc -= 16 * 2.f;
+			{ r.x + 1290.f, r.y + 160.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
+		yInc -= 18;
 	}
 	yInc = 0.f;
 	for each (auto logLine in m_vLog)
 	{
 		(*gamePtr)->GetSpriteFontAtIndex(logLine.second)->DrawString(spriteBatch, logLine.first.c_str(),
-			{ r.x + 1290.f, r.y + 1000.f + yInc }, Colors::White, 0.f, Vector2(), 2.f);
-		yInc -= 16 * 2.f;
+			{ r.x + 1294.f, r.y + 985.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
+		yInc -= 18;
 	}
 
 }
@@ -140,12 +143,12 @@ void TextOutput::ScrollWindow(TextWindows tw)
 	case TextWindows::Log:
 		if (m_vLog.size() > PRINT_MAX_LOG_LINES)	// log is full, erase the last line
 			m_vLog.pop_back();
-		m_vLog.insert(m_vLog.begin(), pair(wstring(PRINT_CHAR_X_LOG_LENGTH, ' '), FontDescriptors::FontDLRegular));
+		m_vLog.insert(m_vLog.begin(), pair(wstring(PRINT_CHAR_X_LOG_LENGTH, ' '), FontDescriptors::FontPR3Regular));
 		break;
 	case TextWindows::Billboard:
 	{
 		m_vBillboard.pop_back();
-		m_vBillboard.insert(m_vBillboard.begin(), pair(wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '), FontDescriptors::FontDLRegular));
+		m_vBillboard.insert(m_vBillboard.begin(), pair(wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '), FontDescriptors::FontPR3Regular));
 		break;
 	}
 	default:
@@ -173,7 +176,7 @@ void TextOutput::ClearBillboard()
 	while (billboardLineCt <= PRINT_CHAR_Y_BILLBOARD_END)
 	{
 		m_vBillboard.at(billboardLineCt - PRINT_CHAR_Y_BILLBOARD_BEGIN).first = wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' ');
-		m_vBillboard.at(billboardLineCt - PRINT_CHAR_Y_BILLBOARD_BEGIN).second = FontDescriptors::FontDLRegular;
+		m_vBillboard.at(billboardLineCt - PRINT_CHAR_Y_BILLBOARD_BEGIN).second = FontDescriptors::FontPR3Regular;
 		++billboardLineCt;
 	}
 }
