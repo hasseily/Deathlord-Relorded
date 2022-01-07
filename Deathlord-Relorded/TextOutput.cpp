@@ -56,7 +56,7 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 	for each (auto bbLine in m_vBillboard)
 	{
 		(*gamePtr)->GetSpriteFontAtIndex(bbLine.second)->DrawString(spriteBatch, bbLine.first.c_str(),
-			{ r.x + 1290.f, r.y + 160.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
+			{ r.x + 1286.f, r.y + 200.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
 		yInc -= 18;
 	}
 	yInc = 0.f;

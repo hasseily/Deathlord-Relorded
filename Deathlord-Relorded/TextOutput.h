@@ -33,7 +33,7 @@ constexpr UINT8 PRINT_CHAR_Y_KEYPRESS = 23;			// Value of Y to check for right b
 constexpr UINT8 PRINT_CHAR_X_KEYPRESS_BEGIN = 26;	// Value of X that starts the keypress area
 constexpr UINT8 PRINT_CHAR_X_KEYPRESS_LENGTH = 7;	// Length of keypress area string
 
-constexpr UINT8 PRINT_MAX_LOG_LINES = 20;		// Maximum log lines to display
+constexpr UINT8 PRINT_MAX_LOG_LINES = 30;		// Maximum log lines to display
 constexpr UINT8 PRINT_CHAR_X_LOG_BEGIN = 1;	// Value of X that starts the log area
 constexpr UINT8 PRINT_CHAR_X_LOG_LENGTH = 18;	// Length of a log string
 
