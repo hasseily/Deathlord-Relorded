@@ -453,6 +453,9 @@
     <Image Include="Assets\Spritesheet_Portraits_Male.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\MinimapSpriteSheet.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\PixelShader.hlsl">
@@ -466,10 +469,5 @@
     <Xml Include="Profiles\Grid Cartographer Profiles\Deathlord Companion.xml">
       <Filter>Assets</Filter>
     </Xml>
-  </ItemGroup>
-  <ItemGroup>
-    <ImageContentTask Include="Assets\MinimapSpriteSheet.png">
-      <Filter>Assets</Filter>
-    </ImageContentTask>
   </ItemGroup>
 </Project>

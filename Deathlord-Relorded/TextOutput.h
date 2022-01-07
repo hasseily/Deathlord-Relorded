@@ -79,9 +79,6 @@ public:
 	// Determines which area we're in
 	TextWindows AreaForCoordinates(UINT8 xStart, UINT8 xEnd, UINT8 yStart, UINT8 yEnd);
 
-	// Utility method to print any string on screen. Must be called for every frame
-	void PrintWStringAtOrigin(wstring wstr, XMFLOAT2 origin);
-
 	// Call Render() at the end of the rendering stage to draw all the strings of the frame
 	// r is the rectangle of the game itself
 	void Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch);
@@ -128,6 +125,7 @@ private:
 	void PrintCharToKeypress(unsigned char ch, UINT8 X, bool bInverse);
 	void PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool bInverse);
 	void PrintCharToLog(unsigned char ch, UINT8 X, bool bInverse);
+	void PrintWStringToLog(std::wstring ws, bool bInverse);
 
 	TextOutput(std::unique_ptr<DX::DeviceResources>& deviceResources,
 		std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)

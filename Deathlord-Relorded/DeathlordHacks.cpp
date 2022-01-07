@@ -341,7 +341,7 @@ std::wstring StringFromMemory(UINT16 startMem, UINT8 maxLength)
 		++i;
 		c = MemGetMainPtr(startMem)[i];
 	}
-	return rtrim(s);
+	return s;
 }
 
 std::wstring& ltrim(std::wstring& str)

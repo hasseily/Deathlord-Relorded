@@ -181,7 +181,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 					__textOutput->ClearLog();
 				else
 					__textOutput->ClearBillboard();
-#ifdef _DEBUG
+#ifdef _DEBUGXXX
 				OutputDebugStringA("Clearing Print Area\n");
 				char _buf[300];
 				sprintf_s(_buf, 300, "%04X: %02X%02X - %02X %02X %02X - %02d %02d %02d %02d\n", _origPC,

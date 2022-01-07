@@ -19,6 +19,7 @@ constexpr UINT16 MAP_YPOS = 0xFC07;						// Y position of the player on a map
 constexpr UINT16 MAP_OVERLAND_X = 0xFC4B;				// X position of the overland submap
 constexpr UINT16 MAP_OVERLAND_Y = 0xFC4C;				// Y position of the overland submap
 
+constexpr UINT16 PARTY_PARTYNAME = 0xFCF0;				// Name of the party! Fixed length 16, centered with space padding
 constexpr UINT16 PARTY_NAME_START = 0xFD00;				// Names of the party members, fixed length of 9
 constexpr UINT16 PARTY_CLASS_START = 0xFD60;			// Start of the array of party classes
 constexpr UINT16 PARTY_RACE_START = 0xFD5A;				// Start of the array of party races

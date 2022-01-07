@@ -26,30 +26,44 @@ void TextOutput::Initialize()
 	UINT8 billboardLineCt = PRINT_CHAR_Y_KEYPRESS - PRINT_CHAR_Y_BILLBOARD_BEGIN;
 	for (UINT8 i = 0; i < billboardLineCt; i++)
 	{
-		m_vBillboard.push_back(pair(wstring(), FontDescriptors::FontPR3Regular));
+		m_vBillboard.push_back(pair(wstring(), FontDescriptors::FontDLRegular));
 	}
-	m_vLog.push_back(pair(wstring(), FontDescriptors::FontPR3Regular));
+	m_vLog.push_back(pair(wstring(), FontDescriptors::FontDLRegular));
 	m_strModule = wstring();
 	m_strModule.append(PRINT_CHAR_X_MODULE_LENGTH, ' ');	// Intialize to a specific length
 	m_strKeypress = wstring();
-	v_linesToPrint = vector<pair<wstring, XMFLOAT2>>();
 }
 
 void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 {
 	// TODO: Should not rely on the gamePtr for fonts?
-	// TODO: Render v_linesToPrint
 	auto gamePtr = GetGamePtr();
-	auto fontsRegular = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontPR3Regular);
+	auto fontsRegular = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular);
 
-	// Render Module string
-	// TODO: Get the length of the string and align it to the wood board on the right
-	(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular)->DrawString(spriteBatch, m_strModule.c_str(),
-		{ r.x + 1320.f, r.y + 305.f }, VColorText, 0.f, Vector2(), 1.0f);
+	// Render everything on the wood plank: Party name, Module string...
+	// All centered in the plank.
+	float _plankCenterX = 1415.f;
+	float _plankMinY = 305.f;
+	XMVECTOR _sSize;
+	XMFLOAT2 _origin;
+	std::wstring _partyName = StringFromMemory(PARTY_PARTYNAME, 16);
+	_partyName = ltrim(rtrim(_partyName));
+	_sSize = fontsRegular->MeasureString(_partyName.c_str(), false);
+	_origin = { r.x + _plankCenterX - (XMVectorGetX(_sSize) / 2.f),
+				r.y + _plankMinY - (XMVectorGetY(_sSize) / 2.f) };
+	fontsRegular->DrawString(spriteBatch, _partyName.c_str(), _origin, VColorText, 0.f, Vector2(), 1.0f);
+	_plankMinY += 20;
+	std::wstring _smod(ltrim(rtrim(m_strModule)));
+	_sSize = fontsRegular->MeasureString(_smod.c_str(), false);
+	_origin = {	r.x + _plankCenterX - (XMVectorGetX(_sSize) / 2.f),
+				r.y + _plankMinY - (XMVectorGetY(_sSize) / 2.f)};
+	fontsRegular->DrawString(spriteBatch, _smod.c_str(), _origin, VColorText, 0.f, Vector2(), 1.0f);
+	_plankMinY += 20;
+
 	// Render Keypress string
 	// TODO: Get the length of the string and align it to the center bottom of the map
 	//		 with a popup window
-	(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontPR3Regular)->DrawString(spriteBatch, m_strKeypress.c_str(),
+	fontsRegular->DrawString(spriteBatch, m_strKeypress.c_str(),
 		{ r.x + 850.f, r.y + 900.f }, Colors::White, 0.f, Vector2(), 2.f);
 	// Render Billboard
 	float yInc = 0.f;
@@ -70,12 +84,6 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 }
 
 #pragma region utilities
-
-void TextOutput::PrintWStringAtOrigin(std::wstring wstr, XMFLOAT2 origin)
-{
-	v_linesToPrint.push_back(std::pair(wstr, origin));
-}
-
 
 TextWindows TextOutput::AreaForCoordinates(UINT8 xStart, UINT8 xEnd, UINT8 yStart, UINT8 yEnd)
 {
@@ -212,7 +220,14 @@ void TextOutput::PrintCharRaw(unsigned char ch, TextWindows tw, UINT8 X, UINT8 Y
 		else if (Y == PRINT_CHAR_Y_KEYPRESS)
 			PrintCharToKeypress(ch, X, bInverse);
 		else
+		{
 			PrintCharToBillboard(ch, X, Y, bInverse);
+			/*  poor man's debugging
+			wchar_t _buf[200];
+			wsprintf(_buf, L"Printing char: %c - %03d,%03d", ARRAY_DEATHLORD_CHARSET[ch & 0x7F], X, Y);
+			PrintWStringToLog(std::wstring(_buf), bInverse);
+			*/
+		}
 		break;
 	case TextWindows::Billboard:
 		// Here Deathlord prints to the billboard area
@@ -275,6 +290,22 @@ void TextOutput::PrintCharToLog(unsigned char ch, UINT8 X, bool bInverse)
 	else
 		m_vLog.at(0).second = FontDescriptors::FontDLRegular;
 	m_XLog = X;
+}
+
+void TextOutput::PrintWStringToLog(std::wstring ws, bool bInverse)
+{
+	// purely for debugging!
+#ifdef _DEBUG
+	OutputDebugString(ws.c_str());
+	OutputDebugString(L"\n");
+	m_vLog.at(0).first = ws;
+	if (bInverse)
+		m_vLog.at(0).second = FontDescriptors::FontDLInverse;
+	else
+		m_vLog.at(0).second = FontDescriptors::FontDLRegular;
+	m_XLog = 0;
+	ScrollWindow(TextWindows::Log);
+#endif
 }
 
 #pragma endregion

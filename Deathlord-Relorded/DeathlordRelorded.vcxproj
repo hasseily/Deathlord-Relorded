@@ -375,12 +375,12 @@
       <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GeneratePremultipliedAlpha>
       <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GeneratePremultipliedAlpha>
     </Image>
-    <ImageContentTask Include="Assets\MinimapSpriteSheet.png">
+    <Image Include="Assets\MinimapSpriteSheet.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
       <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GeneratePremultipliedAlpha>
       <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GeneratePremultipliedAlpha>
-    </ImageContentTask>
+    </Image>
     <Image Include="Assets\PlayerSprite.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
