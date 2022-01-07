@@ -30,7 +30,12 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 	}
 	UINT8 _minute = MemGetMainPtr(MEM_DAY_MINUTE)[0];	// In BCD format!!!
 	UINT8 _minTen = _minute >> 4;
-	UINT8 _minuteDigit = _minute & 0b1111;
+	UINT8 _minDigit = _minute & 0b1111;
+
+	// The whole chunk below is to display the time digits
+	// This is now obsoleted by the 24-hour clock
+#if 0
+
 	RECT digitRect = RECT();
 	digitRect.top = DAYTIME_SPRITE_HEIGHT;	// digits are the second line (except for separator)
 	digitRect.bottom = digitRect.top + DAYTIME_SPRITE_HEIGHT;
@@ -123,6 +128,7 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 	sunDestRect.top = sunDestRect.bottom - (sunSpriteRect.bottom - sunSpriteRect.top) * _daytimeScale;
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DayTimeSpriteSheet), mmTexSize,
 		sunDestRect, &sunSpriteRect, Colors::White, 0.f, XMFLOAT2());
+#endif
 
 	// Draw phase of moon
 	// There are 7 phases, each spanning 4 days from 0x00 to 0x1B
@@ -133,12 +139,28 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 	moonSpriteRect.top = 0;
 	moonSpriteRect.bottom = moonSpriteRect.top + DAYTIME_SPRITE_HEIGHT;
 	RECT moonDestRect = RECT();
-	moonDestRect.left = r.x + 320;
+	moonDestRect.left = r.x + 162;
 	moonDestRect.right = moonDestRect.left + DAYTIME_SPRITE_WIDTH * _daytimeScale;
-	moonDestRect.top = r.y + 155;
+	moonDestRect.top = r.y + 260;
 	moonDestRect.bottom = moonDestRect.top + DAYTIME_SPRITE_HEIGHT * _daytimeScale;
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DayTimeSpriteSheet), mmTexSize,
 		moonDestRect, &moonSpriteRect, Colors::White, 0.f, XMFLOAT2());
+
+	// Draw the clock hand. It is originally pointing at 0:00 (down)
+	UINT16 dayMinutes = (_hour * 60) + (_minTen * 10) + _minDigit;
+	OutputDebugString(to_wstring(dayMinutes).c_str());
+	OutputDebugString(L"\n");
+	RECT handsSourceRect = RECT();
+	handsSourceRect.left = DAYTIME_HAND_TOP_X;
+	handsSourceRect.top = DAYTIME_HAND_TOP_Y;
+	handsSourceRect.right = DAYTIME_HAND_TOP_X + DAYTIME_HAND_WIDTH;
+	handsSourceRect.bottom = DAYTIME_HAND_TOP_Y + DAYTIME_HAND_HEIGHT;
+	XMFLOAT2 clockCenter = XMFLOAT2(r.x + 177, r.y + 244);
+	// Rotation is in radians so it's 2*pi*ratio
+	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DayTimeSpriteSheet), mmTexSize,
+		clockCenter, &handsSourceRect, Colors::White, 3.141593 * 2 * dayMinutes / 1440,
+		XMFLOAT2(DAYTIME_HAND_ORIGIN_X, DAYTIME_HAND_ORIGIN_Y));
+
 }
 
 #pragma region D3D stuff

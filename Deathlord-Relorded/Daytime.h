@@ -12,7 +12,12 @@ constexpr UINT16 MEM_DAY_OF_MONTH = 0xFC02;
 constexpr UINT8 DAYTIME_DAYS_PER_MOONPHASE = 4;
 constexpr UINT8 DAYTIME_SPRITE_WIDTH = 28;
 constexpr UINT8 DAYTIME_SPRITE_HEIGHT = 32;
-
+constexpr UINT8 DAYTIME_HAND_TOP_X = 0;
+constexpr UINT8 DAYTIME_HAND_TOP_Y = 64;
+constexpr UINT8 DAYTIME_HAND_WIDTH = 28;
+constexpr UINT8 DAYTIME_HAND_HEIGHT = 75;
+constexpr UINT8 DAYTIME_HAND_ORIGIN_X = 14;	// Relative origin to rotate the hand around
+constexpr UINT8 DAYTIME_HAND_ORIGIN_Y = 16;
 
 enum class MoonPhases	// based on day of month
 {
