@@ -138,9 +138,9 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 	moonSpriteRect.bottom = moonSpriteRect.top + DAYTIME_SPRITE_HEIGHT;
 	RECT moonDestRect = RECT();
 	moonDestRect.left = r.x + 162;
-	moonDestRect.right = moonDestRect.left + DAYTIME_SPRITE_WIDTH * _daytimeScale;
+	moonDestRect.right = moonDestRect.left + DAYTIME_SPRITE_WIDTH;
 	moonDestRect.top = r.y + 260;
-	moonDestRect.bottom = moonDestRect.top + DAYTIME_SPRITE_HEIGHT * _daytimeScale;
+	moonDestRect.bottom = moonDestRect.top + DAYTIME_SPRITE_HEIGHT;
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DayTimeSpriteSheet), mmTexSize,
 		moonDestRect, &moonSpriteRect, Colors::White, 0.f, XMFLOAT2());
 
