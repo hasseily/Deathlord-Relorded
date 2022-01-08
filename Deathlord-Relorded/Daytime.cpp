@@ -146,8 +146,6 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 
 	// Draw the clock hand. It is originally pointing at 0:00 (down)
 	UINT16 dayMinutes = (_hour * 60) + (_minTen * 10) + _minDigit;
-	OutputDebugString(to_wstring(dayMinutes).c_str());
-	OutputDebugString(L"\n");
 	RECT handsSourceRect = RECT();
 	handsSourceRect.left = DAYTIME_HAND_TOP_X;
 	handsSourceRect.top = DAYTIME_HAND_TOP_Y;
