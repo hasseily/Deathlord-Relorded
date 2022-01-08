@@ -14,7 +14,7 @@ void Daytime::Initialize()
 void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 {
 	auto mmTexSize = GetTextureSize(m_daytimeSpriteSheet.Get());
-	float _daytimeScale = 1.0f;
+	float _daytimeScale = 0.25f;
 
 	// Draw the time
 	bool _isAM = true;
@@ -33,16 +33,13 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 	UINT8 _minDigit = _minute & 0b1111;
 
 	// The whole chunk below is to display the time digits
-	// This is now obsoleted by the 24-hour clock
-#if 0
-
 	RECT digitRect = RECT();
 	digitRect.top = DAYTIME_SPRITE_HEIGHT;	// digits are the second line (except for separator)
 	digitRect.bottom = digitRect.top + DAYTIME_SPRITE_HEIGHT;
 	RECT digitDestRect = RECT();
-	digitDestRect.top = r.y + 155;
+	digitDestRect.top = r.y + 210;
 	digitDestRect.bottom = digitDestRect.top + DAYTIME_SPRITE_HEIGHT * _daytimeScale;
-	digitDestRect.left = r.x + 10;	// starting point
+	digitDestRect.left = r.x + 151;	// starting point
 
 	// digit hour ten
 	if (_hourTen > 0)	// don't display 0
@@ -55,7 +52,7 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 				digitDestRect, &digitRect, Colors::Orange, 0.f, XMFLOAT2());
 		else
 			spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DayTimeSpriteSheet), mmTexSize,
-				digitDestRect, &digitRect, Colors::Blue, 0.f, XMFLOAT2());
+				digitDestRect, &digitRect, Colors::Black, 0.f, XMFLOAT2());
 	}
 	// digit hour
 	digitRect.left = _hourDigit * DAYTIME_SPRITE_WIDTH;
@@ -67,7 +64,7 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 			digitDestRect, &digitRect, Colors::Orange, 0.f, XMFLOAT2());
 	else
 		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DayTimeSpriteSheet), mmTexSize,
-			digitDestRect, &digitRect, Colors::Blue, 0.f, XMFLOAT2());
+			digitDestRect, &digitRect, Colors::Black, 0.f, XMFLOAT2());
 	// hour/minute colon separator
 	digitRect.top = 0;
 	digitRect.bottom = digitRect.top + DAYTIME_SPRITE_HEIGHT;
@@ -80,7 +77,7 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 			digitDestRect, &digitRect, Colors::Orange, 0.f, XMFLOAT2());
 	else
 		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DayTimeSpriteSheet), mmTexSize,
-			digitDestRect, &digitRect, Colors::Blue, 0.f, XMFLOAT2());
+			digitDestRect, &digitRect, Colors::Black, 0.f, XMFLOAT2());
 	// digit minute ten
 	digitRect.top = DAYTIME_SPRITE_HEIGHT;
 	digitRect.bottom = digitRect.top + DAYTIME_SPRITE_HEIGHT;
@@ -107,6 +104,7 @@ void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DayTimeSpriteSheet), mmTexSize,
 			digitDestRect, &digitRect, Colors::Blue, 0.f, XMFLOAT2());
 
+#if 0
 	// Draw the sun position
 	// First calculate the height of the sun, 12:00 being zenith
 	UINT8 _visibleSunHeight = 0;	// Height in pixels of the visible sun
