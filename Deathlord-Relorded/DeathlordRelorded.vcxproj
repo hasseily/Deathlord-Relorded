@@ -398,6 +398,10 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </Image>
+    <Image Include="Assets\Tileset_Elements_Animated.png" />
+    <Image Include="Assets\Tileset_Relorded_Dungeon.png" />
+    <Image Include="Assets\Tileset_Relorded_Monsters.png" />
+    <Image Include="Assets\Tileset_Relorded_Overland.png" />
     <Image Include="DeathlordCompanion.ico">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>

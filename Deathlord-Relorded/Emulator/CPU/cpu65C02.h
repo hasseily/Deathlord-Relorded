@@ -77,10 +77,10 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				// OutputDebugStringA("STARTED TRANSITION\n");
 				auto aM = AutoMap::GetInstance();
 				aM->SetShowTransition(true);
-				// The PARSE_TILES trigger will only run after the game is back in the player wait loop
-				// It will itself insert a trigger to finish the transition, which will be run later
+				// The FINISH_TRANSITION trigger will only run after the game is back in the player wait loop
+				// There used to be instead a PARSE_TILES trigger but that's now obsolete
 				auto memT = MemoryTriggers::GetInstance();
-				memT->DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 0);
+				memT->DelayedTriggerInsert(DelayedTriggersFunction::FINISH_TRANSITION, 100);
 				break;
 			}
 			case PC_DECREMENT_TIMER:

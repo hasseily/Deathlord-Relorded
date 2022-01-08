@@ -82,7 +82,8 @@ void MemoryTriggers::PollChanged_InGameMap(UINT8 oldVal)
     if (MemGetMainPtr(MAP_IS_IN_GAME_MAP)[0] == 0xE5)     // User just got in game map
     {
 		//OutputDebugString((std::to_wstring(MemGetMainPtr(MAP_IS_IN_GAME_MAP)[0]) + L" In game map!\n").c_str());
-		DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 0);
+        // Obsolete:
+		// DelayedTriggerInsert(DelayedTriggersFunction::PARSE_TILES, 0);
     }
 }
 
@@ -185,6 +186,8 @@ void MemoryTriggers::DelayedTriggersProcess(bool force)
 // Every update there's a method that scans the map for functions whose timestamp
 // expired and it triggers them
 // Such functions should generally return true to be removed from the processing list
+
+// NOTE: DelayedTrigger_ParseTiles is now obsolete, the tiles are retrieved from pre-existing spritesheets
 bool MemoryTriggers::DelayedTrigger_ParseTiles()
 {
 	auto tileset = TilesetCreator::GetInstance();

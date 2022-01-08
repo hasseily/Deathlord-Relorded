@@ -20,19 +20,26 @@ constexpr XMVECTORF32 COLORTRANSLUCENTWHITE = { 1.f, 1.f, 1.f, .8f };
 
 // This is used for any animated sprite to accelerate or slow its framerate (so one doesn't have to build 30 frames!)
 #ifdef _DEBUG
-constexpr UINT STROBESLOWAVATAR = 1;
+constexpr UINT STROBESLOWAVATAR = 2;
+constexpr UINT STROBESLOWELEMENT = 8;
 constexpr UINT STROBESLOWHIDDEN = 2;
 #else
-constexpr UINT STROBESLOWAVATAR = 3;
+constexpr UINT STROBESLOWAVATAR = 10;
+constexpr UINT STROBESLOWELEMENT = 40;
 constexpr UINT STROBESLOWHIDDEN = 10;
 #endif
 
 UINT m_avatarStrobeIdx = 0;
-constexpr UINT AVATARSTROBECT = 14;
-constexpr float AVATARSTROBE[AVATARSTROBECT] = { .75f, .7f, .62f, .56f, .49f, .40f, .30f, .30f, .40f, .49f, .56f, .62f, .7f, .75f };
+constexpr UINT AVATARSTROBECT = 10;
+constexpr float AVATARSTROBE[AVATARSTROBECT] = { 1.15f, 1.1f, 1.05f, 1.0f, 1.0f, 1.0f, 1.0f, 1.05f, 1.10f, 1.15f };
 
-UINT m_spriteAnimationIdx = 0;
-constexpr UINT HIDDENSPRITECT = 4;	// number of sprite framess for hidden layer animations
+// number of sprite frames for element tiles animation
+UINT m_spriteAnimElementIdx = 0;
+constexpr UINT ELEMENTSPRITECT = 7;
+
+// number of sprite frames for hidden layer animations
+UINT m_spriteAnimHiddenIdx = 0;
+constexpr UINT HIDDENSPRITECT = 4;
 
 void AutoMap::Initialize()
 {
@@ -40,7 +47,7 @@ void AutoMap::Initialize()
 	m_avatarPosition = XMUINT2(0, 0);
 	m_currentMapRect = { 0,0,0,0 };
 	m_currentMapUniqueName = "";
-	CreateNewTileSpriteMap();
+	// CreateNewTileSpriteMap();
 	// Set up the arrays for all backbuffers
 	UINT bbCount = m_deviceResources->GetBackBufferCount();
 	m_bbufFogOfWarTiles = std::vector(bbCount, std::vector<UINT8>(MAP_LENGTH, 0x00));		// states (seen, etc...)
@@ -298,7 +305,7 @@ void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<Direct
 				bool _hasOverlay = false;
 
 				// all tiles are animated. Start the strobe for each tile independently, so that it looks a bit better on the map
-				_tileSheetPos.x = ((m_spriteAnimationIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
+				_tileSheetPos.x = ((m_spriteAnimHiddenIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
 				switch (tilesVisibleAroundAvatar[mapPos])
 				{
 				case 0x2a:	// weapon chest
@@ -390,7 +397,7 @@ void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<Direct
 						((UINT16)(_tileSheetPos.y + 1)) * FBTH
 					};
 					// draw it on the game's original viewport area
-					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileHidden), GetTextureSize(m_autoMapSpriteSheet.Get()),
+					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapHiddenSpriteSheet), GetTextureSize(m_autoMapSpriteSheet.Get()),
 						tilePosInMap, &_tileSheetRect, Colors::White, 0.f, spriteOrigin, mapScale);
 
 					// Now turn that on always for the automap, so we remember that the player has seen it
@@ -412,13 +419,19 @@ void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<Direct
 
 void AutoMap::CreateNewTileSpriteMap()
 {
+	// This is obsolete. It used to dynamically generate the original in-game tilemap
+
+#if 0
 	// The tile spritemap will automatically update from memory onto the GPU texture, just like the AppleWin video buffer
 	// Sprite sheet only exists when the player is in-game! Make sure this is called when player goes in game
 	// And make sure the map only renders when in game.
 	auto tileset = TilesetCreator::GetInstance();
+	TextureDescriptors _txd;
+	_txd = (IsOverland() ? TextureDescriptors::AutoMapOverlandTiles : TextureDescriptors::AutoMapDungeonTiles);
 	LoadTextureFromMemory((const unsigned char*)tileset->GetCurrentTilesetBuffer(),
-		&m_autoMapTexture, DXGI_FORMAT_R8G8B8A8_UNORM, PNGBUFFERWIDTH, PNGBUFFERHEIGHT);
+		&m_autoMapTexture, DXGI_FORMAT_R8G8B8A8_UNORM, _txd, PNGBUFFERWIDTH, PNGBUFFERHEIGHT);
 	//OutputDebugStringA("Loaded map into GPU\n");
+#endif
 }
 
 
@@ -459,7 +472,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 		// OPTION 1: Avatar is only centered until the map reaches the edge
 		//			 Then the avatar moves towards the edge
 		// Use it for overland only, so that the edges of maps aren't empty
-		if (MemGetMainPtr(MAP_TYPE)[0] == (UINT8)MapType::Overland)
+		if (PlayerIsOverland())
 		{
 			if (m_avatarPosition.x < 16)
 				_mapCenter.x = mapScissorRect.x + 16 * PNGTW - mapScissorRect.width / 2.f;
@@ -511,17 +524,19 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 	commandList->RSSetScissorRects(1, &mSRect);
 
 	// Now draw the automap tiles
-	if (g_isInGameMap && m_autoMapTexture != NULL)
+	if (g_isInGameMap)
 	{
 		// Set the new map info if necessary
 		if (m_currentMapUniqueName != GetCurrentMapUniqueName())
 			InitializeCurrentMapInfo();
 
-		auto _playerSpritestexSize = GetTextureSize(m_autoMapAvatar.Get());
 		float mapScale = (float)MAP_WIDTH_IN_VIEWPORT / (float)(MAP_WIDTH * PNGTW);
-		// Use the tilemap texture
-		commandList->SetGraphicsRootDescriptorTable(0, m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet));
-		auto mmTexSize = GetTextureSize(m_autoMapTexture.Get());
+
+		// These will be set to the correct sprite sheet and rect for each tile
+		TextureDescriptors curr_texDesc;
+		Microsoft::WRL::ComPtr<ID3D12Resource> curr_tileset;
+		RECT curr_spriteRect;
+
 		XMUINT2 tileTexSize(PNGTW, PNGTH);
 		// Loop through the in-memory map that has all the tile IDs for the current map
 		LPBYTE mapMemPtr = GetCurrentGameMap();
@@ -538,17 +553,86 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 			// Now check if the tile has been seen before. Otherwise set it to the black tile which is always
 			// the first tile in the tileset
 
-			RECT spriteRect;
+			UINT8 curr_tileId = mapMemPtr[mapPos];
 			bool shouldDraw = true;
 			if (((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
 				|| (g_nonVolatile.showFog == false))
 			{
-				spriteRect = tileset->tileSpritePositions.at(mapMemPtr[mapPos] % 0x50);
+				// TODO: Here decide which tiles to show!
+				if (curr_tileId < 0x40)	// environment tiles
+				{
+					if (PlayerIsOverland())
+					{
+						switch (curr_tileId)
+						{
+						case 0x2B:		// water tile
+							curr_spriteRect.top = TILESET_ANIMATIONS_WATER_Y_IDX * PNGTH;
+							goto element_tiles_general;
+						case 0x3C:		// fire tile
+							curr_spriteRect.top = TILESET_ANIMATIONS_FIRE_Y_IDX * PNGTH;
+							goto element_tiles_general;
+						default:
+							curr_texDesc = TextureDescriptors::AutoMapOverlandTiles;
+							curr_tileset = m_tilesOverland;
+							curr_spriteRect.left = PNGTW * (curr_tileId % DEFAULT_TILES_PER_ROW);
+							curr_spriteRect.top = PNGTH * (curr_tileId / DEFAULT_TILES_PER_ROW);
+							break;
+						};
+					}
+					else // Dungeon tileset
+					{
+						switch (curr_tileId)
+						{
+						case 0x26:		// water tile
+							curr_spriteRect.top = TILESET_ANIMATIONS_WATER_Y_IDX * PNGTH;
+							goto element_tiles_general;
+							break;
+						case 0x27:		// forcefield tile
+							curr_spriteRect.top = TILESET_ANIMATIONS_FORCE_Y_IDX * PNGTH;
+							goto element_tiles_general;
+							break;
+						case 0x2C:		// acid tile
+							curr_spriteRect.top = TILESET_ANIMATIONS_ACID_Y_IDX * PNGTH;
+							goto element_tiles_general;
+							break;
+						case 0x2D:		// fire tile
+							curr_spriteRect.top = TILESET_ANIMATIONS_FIRE_Y_IDX * PNGTH;
+							goto element_tiles_general;
+						case 0x38:		// magic tile
+							curr_spriteRect.top = TILESET_ANIMATIONS_MAGIC_Y_IDX * PNGTH;
+element_tiles_general:
+							curr_texDesc = TextureDescriptors::AutoMapElementsTiles;
+							curr_tileset = m_tilesAnimated;
+							curr_spriteRect.left = ((m_spriteAnimElementIdx / STROBESLOWELEMENT) % ELEMENTSPRITECT) * PNGTW;
+							break;
+						default:
+							curr_texDesc = TextureDescriptors::AutoMapDungeonTiles;
+							curr_tileset = m_tilesDungeon;
+							curr_spriteRect.left = PNGTW * (curr_tileId % DEFAULT_TILES_PER_ROW);
+							curr_spriteRect.top = PNGTH * (curr_tileId / DEFAULT_TILES_PER_ROW);
+							break;
+						};
+					}
+				} // environment tiles
+				else // monster tiles
+				{
+					curr_texDesc = TextureDescriptors::AutoMapMonsterSpriteSheet;
+					curr_tileset = m_monsterSpriteSheet;
+					// find the monster id for this tile id
+					UINT8 _monsterHGRTilePos = curr_tileId - 0x40;	// Monster's tile position relative to other monsters
+					UINT8 _monsterId = MemGetMainPtr(GAMEMAP_START_MONSTERS_IN_LEVEL_IDX)[_monsterHGRTilePos];
+					curr_spriteRect.left = PNGTW * (_monsterId % DEFAULT_TILES_PER_ROW);
+					curr_spriteRect.top = PNGTH * (_monsterId / DEFAULT_TILES_PER_ROW);
+				}
+				curr_spriteRect.right = curr_spriteRect.left + PNGTW;
+				curr_spriteRect.bottom = curr_spriteRect.top + PNGTH;
 			}
-			else
+			else // Tile we should not see
 			{
 				// TODO: Since we're clearing the whole viewport every frame, no need to draw the black tile
-				spriteRect = tileset->tileSpritePositions.at(0);
+				curr_texDesc = TextureDescriptors::AutoMapOverlandTiles;
+				curr_tileset = m_tilesOverland;
+				curr_spriteRect = tileset->tileSpritePositions.at(0);
 				shouldDraw = false;
 			}
 
@@ -561,12 +645,10 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 			);
 			if (shouldDraw)
 			{
-				//spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
-				//	tilePosInMap, &spriteRect, Colors::White, 0.f, spriteOrigin, mapScale);
 				RECT tilePosRectInMap = { tilePosInMap.x, tilePosInMap.y, 
 					tilePosInMap.x + PNGTW * mapScale, tilePosInMap.y + PNGTH * mapScale };
-				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize,
-					tilePosRectInMap, &spriteRect);
+				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)curr_texDesc),
+					GetTextureSize(curr_tileset.Get()), tilePosRectInMap, &curr_spriteRect);
 
 				// Show a marker for traps, hidden and unopened items
 				// Only when not on the overland map
@@ -588,22 +670,22 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 					bool _hasOverlay = true;	// some tiles will not have overlays (in the default: section)
 
 					// all tiles are animated. Start the strobe for each tile independently, so that it looks a bit better on the map
-					_tileSheetPos.x = ((m_spriteAnimationIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
-					switch (mapMemPtr[mapPos])
+					_tileSheetPos.x = ((m_spriteAnimHiddenIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
+					switch (curr_tileId)
 					{
-					case 0x2a:	// weapon chest
+					case 0x2A:	// weapon chest
 						_tileSheetPos.y = 1;
 						break;
-					case 0x2b:	// armor chest
+					case 0x2B:	// armor chest
 						_tileSheetPos.y = 2;
 						break;
-					case 0xc6:	// water poison
+					case 0xC6:	// water poison
 						_tileSheetPos.y = 3;
 						break;
-					case 0x7e:	// pit
+					case 0x7E:	// pit
 						_tileSheetPos.y = 4;
 						break;
-					case 0xce:	// chute / teleporter
+					case 0xCE:	// chute / teleporter
 						_tileSheetPos.y = 5;
 						break;
 					case 0x02:	// illusiory wall
@@ -627,9 +709,9 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 						[[fallthrough]];
 					case 0x39:	// coffin unopened	(could have a vampire or gold or nothing in it)
 						[[fallthrough]];
-					case 0x3b:	// chest unopened
+					case 0x3B:	// chest unopened
 						[[fallthrough]];
-					case 0x3d:	// coffer unopened
+					case 0x3D:	// coffer unopened
 						_tileSheetPos.y = 0;
 						break;
 					default:
@@ -645,7 +727,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 							((UINT16)(_tileSheetPos.x + 1)) * FBTW,
 							((UINT16)(_tileSheetPos.y + 1)) * FBTH
 						};
-						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileHidden), GetTextureSize(m_autoMapSpriteSheet.Get()),
+						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapHiddenSpriteSheet), GetTextureSize(m_autoMapSpriteSheet.Get()),
 							tilePosInMap, &_tileSheetRect, Colors::White, 0.f, spriteOrigin, mapScale);
 					}
 
@@ -663,6 +745,8 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 			m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] = (UINT8)mapMemPtr[mapPos];
 
 			// now draw the avatar and footsteps
+			// TODO: Use the correct monster tile for the avatar
+			// TODO: Use a font glyph for footsteps.
 			XMFLOAT2 _origin = { PNGTW / 2.f, PNGTH / 2.f };
 			RECT avatarRect = { 0, 0, PNGTW, PNGTH };
 
@@ -674,8 +758,10 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 			if (posX == m_avatarPosition.x && posY == m_avatarPosition.y)
 			{
 
-				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapAvatar), _playerSpritestexSize,
-					overlayPosInMap, &avatarRect, Colors::White, 0.f, _origin, mapScale * AVATARSTROBE[m_avatarStrobeIdx / STROBESLOWAVATAR]);
+				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
+					GetTextureSize(m_monsterSpriteSheet.Get()), overlayPosInMap, &avatarRect, 
+					Colors::White, 0.f, _origin,
+					mapScale * AVATARSTROBE[(m_avatarStrobeIdx / STROBESLOWAVATAR) % AVATARSTROBECT]);
 				++m_avatarStrobeIdx;
 				if (m_avatarStrobeIdx >= (AVATARSTROBECT * STROBESLOWAVATAR))
 					m_avatarStrobeIdx = 0;
@@ -686,22 +772,19 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 				{
 					if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (1 << (UINT8)FogOfWarMarkers::Footstep)) > 0)
 					{
-						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapAvatar), _playerSpritestexSize,
-							overlayPosInMap, &avatarRect, COLORTRANSLUCENTWHITE, 0.f, _origin, mapScale * 0.3f);
+						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
+							GetTextureSize(m_monsterSpriteSheet.Get()), overlayPosInMap, &avatarRect, 
+							COLORTRANSLUCENTWHITE, 0.f, _origin, mapScale * 0.3f);
 					}
 				}
 			}
 		}
-		++m_spriteAnimationIdx;
-		if (m_spriteAnimationIdx >= (HIDDENSPRITECT * STROBESLOWHIDDEN))
-			m_spriteAnimationIdx = 0;
-
-		// Uncomment to debug and display the tilesheet
-#ifdef _DEBUGXXX
-		XMFLOAT2 zeroOrigin(800, 200);
-		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapTileSheet), mmTexSize, zeroOrigin);
-#endif
-
+		++m_spriteAnimElementIdx;
+		if (m_spriteAnimElementIdx >= (ELEMENTSPRITECT * STROBESLOWELEMENT))
+			m_spriteAnimElementIdx = 0;
+		++m_spriteAnimHiddenIdx;
+		if (m_spriteAnimHiddenIdx >= (HIDDENSPRITECT * STROBESLOWHIDDEN))
+			m_spriteAnimHiddenIdx = 0;
 	}
 	else // draw the background if not in game
 	{
@@ -738,23 +821,43 @@ void AutoMap::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 			m_autoMapTextureBG.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_autoMapTextureBG.Get(),
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapBackgroundTransition));
-	DX::ThrowIfFailed(
-		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/PlayerSprite.png",
-			m_autoMapAvatar.ReleaseAndGetAddressOf()));
-	CreateShaderResourceView(device, m_autoMapAvatar.Get(),
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapAvatar));
+	// Overlay sprites
 	DX::ThrowIfFailed(
 		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/SpriteSheet.png",
 			m_autoMapSpriteSheet.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_autoMapSpriteSheet.Get(),
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapTileHidden));
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapHiddenSpriteSheet));
+	// Add overland, dungeon and monster tilesets
+	DX::ThrowIfFailed(
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/Tileset_Relorded_Dungeon.png",
+			m_tilesDungeon.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_tilesDungeon.Get(),
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapDungeonTiles));
+	DX::ThrowIfFailed(
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/Tileset_Relorded_Overland.png",
+			m_tilesOverland.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_tilesOverland.Get(),
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapOverlandTiles));
+	DX::ThrowIfFailed(
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/Tileset_Relorded_Monsters.png",
+			m_monsterSpriteSheet.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_monsterSpriteSheet.Get(),
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet));
+	// Add animated elements tilesets
+	DX::ThrowIfFailed(
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/Tileset_Elements_Animated.png",
+			m_tilesAnimated.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_tilesAnimated.Get(),
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapElementsTiles));
 }
 
 void AutoMap::OnDeviceLost()
 {
-	m_autoMapTexture.Reset();
 	m_autoMapTextureBG.Reset();
-	m_autoMapAvatar.Reset();
+	m_tilesOverland.Reset();
+	m_tilesDungeon.Reset();
+	m_tilesAnimated.Reset();
+	m_monsterSpriteSheet.Reset();
 	m_autoMapSpriteSheet.Reset();
 }
 #pragma endregion
@@ -766,7 +869,7 @@ void AutoMap::OnDeviceLost()
 // (srv_cpu_handle must be a handle in a valid descriptor heap)
 bool AutoMap::LoadTextureFromMemory(const unsigned char* image_data,
 	Microsoft::WRL::ComPtr <ID3D12Resource>* out_tex_resource,
-	DXGI_FORMAT tex_format, int width, int height)
+	DXGI_FORMAT tex_format, TextureDescriptors tex_desc, int width, int height)
 {
 	int image_width = width;
 	int image_height = height;
@@ -835,7 +938,7 @@ bool AutoMap::LoadTextureFromMemory(const unsigned char* image_data,
 	// Describe and create a SRV for the texture.
 	// Using CreateShaderResourceView removes a ton of boilerplate
 	CreateShaderResourceView(device, pTexture,
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::AutoMapTileSheet));
+		m_resourceDescriptors->GetCpuHandle((int)tex_desc));
 
 	// finish up
 	DX::ThrowIfFailed(commandList->Close());

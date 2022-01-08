@@ -4,6 +4,14 @@
 #include <array>
 #include <map>
 
+/// <summary>
+/// This class extracts tilesets from the memory of the game
+/// The game keeps in memory an overland and a dungeon tileset (64 tiles each)
+/// as well as a full monster spritesheet (128 sprites)
+/// When the game switches levels, it swaps the tilesets as necessary
+/// and picks up 16 monsters it needs for the level
+/// </summary>
+
 constexpr UINT8 PIXELDEPTH	= 4;	// RGBA
 
 // For the framebuffer

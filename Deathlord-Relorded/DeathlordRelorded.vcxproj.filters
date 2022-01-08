@@ -456,6 +456,18 @@
     <Image Include="Assets\MinimapSpriteSheet.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\Tileset_Relorded_Dungeon.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Tileset_Relorded_Monsters.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Tileset_Relorded_Overland.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Tileset_Elements_Animated.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\PixelShader.hlsl">

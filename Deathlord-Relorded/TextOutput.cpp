@@ -250,6 +250,7 @@ void TextOutput::PrintCharToModule(unsigned char ch, UINT8 X, bool bInverse)
 {
 	// The module string is updated on a char by char basis
 	// Replace a single character at a time
+	// TODO: Getting out of bounds error here sometimes!?
 	m_strModule.replace(X - PRINT_CHAR_X_MODULE_BEGIN, 1, 1, ConvertChar(ch));
 	m_XModule = X;
 }

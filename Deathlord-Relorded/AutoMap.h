@@ -2,14 +2,30 @@
 
 #include "DeviceResources.h"
 #include "Emulator/AppleWin.h"
+#include "Descriptors.h"
 #include <map>
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
+constexpr UINT8 DEFAULT_TILES_PER_ROW = 16;		// tileset tiles per row in general
+
 constexpr UINT32 GAMEMAP_START_MEM = 0xC00;					// Start of memory area of the in-game map
 constexpr UINT32 GAMEMAP_START_CURRENT_TILELIST = 0x300;	// Start of the current tilelist of the in-game map
 constexpr UINT32 GAMEMAP_START_NEW_TILELIST = 0x351;		// Start of the new tilelist of the in-game map which will be swapped with current on an update
+
+// This is the list of 16 monsters that are in the current level
+// Each id is the monster position in the monster spritesheet
+// The 16 monsters are put in the level tilemap starting at 0x4800
+// While the tilemap starts at 0x4000.
+constexpr UINT32 GAMEMAP_START_MONSTERS_IN_LEVEL_IDX = 0x8EF;
+
+// Animation tiles
+constexpr UINT16 TILESET_ANIMATIONS_ACID_Y_IDX= 0;
+constexpr UINT16 TILESET_ANIMATIONS_FIRE_Y_IDX= 1;
+constexpr UINT16 TILESET_ANIMATIONS_WATER_Y_IDX = 2;
+constexpr UINT16 TILESET_ANIMATIONS_MAGIC_Y_IDX = 3;
+constexpr UINT16 TILESET_ANIMATIONS_FORCE_Y_IDX = 4;
 
 constexpr UINT8 MAP_WIDTH = 64;
 constexpr UINT8 MAP_HEIGHT = 64;
@@ -74,7 +90,7 @@ public:
 	void ForceRedrawMapArea();
 	void AnalyzeVisibleTiles();
 	void ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states);
-	void CreateNewTileSpriteMap();
+	void CreateNewTileSpriteMap();	// Obsolete. Disabled
 	void SaveCurrentMapInfo();
 	void InitializeCurrentMapInfo();
 	std::string GetCurrentMapUniqueName();
@@ -83,11 +99,11 @@ public:
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();
 	bool LoadTextureFromMemory(const unsigned char* image_data, Microsoft::WRL::ComPtr <ID3D12Resource>* out_tex_resource,
-		DXGI_FORMAT tex_format, int width, int height);
+		DXGI_FORMAT tex_format, TextureDescriptors tex_desc, int width, int height);
 
 
 	void SetShowTransition(bool showTransition);
-	bool isInTransition() { return bShowTransition; };
+	bool IsInTransition() { return bShowTransition; };
 
 	// public singleton code
 	static AutoMap* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,
@@ -124,10 +140,13 @@ private:
 	void Initialize();
 	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBG;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTexture;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapAvatar;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapSpriteSheet;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBG;		// Transition image
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTexture;		// Obsolete: the original in-game tilemap
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_tilesOverland;			// The 64 overland tiles
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_tilesDungeon;			// The 64 town/dungeon tiles
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_tilesAnimated;			// The elements tiles that are animated
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_monsterSpriteSheet;	// The 64 town/dungeon tiles
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapSpriteSheet;	// Overlay sprites for hidden etc...
 	D3D12_SUBRESOURCE_DATA m_textureDataMap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_textureUploadHeapMap;
 
