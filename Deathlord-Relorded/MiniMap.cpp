@@ -32,6 +32,7 @@ bool MiniMap::Update(UINT8 overlandX, UINT8 overlandY)
 		return false;
 	// Update sector to seen
 	m_sectorsSeen.at(XY) = 1;
+	g_nonVolatile.sectorsSeen = m_sectorsSeen;
 	g_nonVolatile.SaveToDisk();
 	bShouldRenderNew = true;
 	return true;
