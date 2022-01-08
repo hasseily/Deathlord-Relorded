@@ -555,7 +555,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 			// Now check if the tile has been seen before. Otherwise set it to the black tile which is always
 			// the first tile in the tileset
 
-			UINT8 curr_tileId = mapMemPtr[mapPos];
+			UINT8 curr_tileId = mapMemPtr[mapPos] % 0x50;	// Right now don't consider the special bits
 			bool shouldDraw = true;
 			if (((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
 				|| (g_nonVolatile.showFog == false))
@@ -654,6 +654,9 @@ element_tiles_general:
 
 				// Show a marker for traps, hidden and unopened items
 				// Only when not on the overland map
+
+				// Reset the curr_tileID to have the special bits
+				curr_tileId = mapMemPtr[mapPos];
 
 				// First check if the player has already identified the hidden marker
 				bool hasSeenHidden = false;
