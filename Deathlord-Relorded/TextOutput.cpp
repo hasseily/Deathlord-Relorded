@@ -31,6 +31,7 @@ void TextOutput::Initialize()
 	m_vLog.push_back(pair(wstring(), FontDescriptors::FontDLRegular));
 	m_strModule = wstring();
 	m_strModule.append(PRINT_CHAR_X_MODULE_LENGTH, ' ');	// Intialize to a specific length
+	// WARNING: Never shorten m_strModule
 	m_strKeypress = wstring();
 }
 
@@ -53,7 +54,8 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 				r.y + _plankMinY - (XMVectorGetY(_sSize) / 2.f) };
 	fontsRegular->DrawString(spriteBatch, _partyName.c_str(), _origin, VColorText, 0.f, Vector2(), 1.0f);
 	_plankMinY += 20;
-	std::wstring _smod(ltrim(rtrim(m_strModule)));
+	std::wstring _smod(m_strModule);
+	_smod = (ltrim(rtrim(_smod)));
 	_sSize = fontsRegular->MeasureString(_smod.c_str(), false);
 	_origin = {	r.x + _plankCenterX - (XMVectorGetX(_sSize) / 2.f),
 				r.y + _plankMinY - (XMVectorGetY(_sSize) / 2.f)};
