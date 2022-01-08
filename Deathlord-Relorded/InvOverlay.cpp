@@ -434,6 +434,7 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 		// Then draw the member name, class, race and AC
 		yCol += 32 + 5;
 		_bufStr = StringFromMemory(PARTY_NAME_START + (iMember * 0x09), maxGlyphs);
+		_bufStr = ltrim(rtrim(_bufStr));
 		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
