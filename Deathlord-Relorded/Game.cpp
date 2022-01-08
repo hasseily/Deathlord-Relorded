@@ -362,6 +362,7 @@ void Game::Render()
 				r, nullptr, Colors::White, 0.f, XMFLOAT2());
 			// End drawing the game background
             
+#if 0   // No more sidebars
 			// Now time to draw the text and lines
 			m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(clientRect.left, clientRect.right, clientRect.bottom, clientRect.top, 0, 1));
 			m_dxtEffectLines->Apply(commandList);
@@ -415,6 +416,9 @@ void Game::Render()
 					VertexPositionColor(lend, static_cast<XMFLOAT4>(Colors::Black))
 				);
 			}
+			m_primitiveBatchLines->End();
+#endif
+
 #ifdef _DEBUG
 			char pcbuf[4000];
 			//    snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %I64x : %I64x", g_debug_video_field, g_debug_video_data);
@@ -424,7 +428,6 @@ void Game::Render()
 			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
 				{ 10.f, 10.f }, Colors::OrangeRed, 0.f, m_vector2Zero, 1.f);
 #endif // _DEBUG
-			m_primitiveBatchLines->End();
 			m_spriteBatch->End();
 
 			if (g_nonVolatile.showMap)  // TODO: Always show the map

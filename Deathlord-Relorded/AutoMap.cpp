@@ -24,14 +24,14 @@ constexpr UINT STROBESLOWAVATAR = 2;
 constexpr UINT STROBESLOWELEMENT = 8;
 constexpr UINT STROBESLOWHIDDEN = 2;
 #else
-constexpr UINT STROBESLOWAVATAR = 10;
-constexpr UINT STROBESLOWELEMENT = 40;
-constexpr UINT STROBESLOWHIDDEN = 10;
+constexpr UINT STROBESLOWAVATAR = 6;
+constexpr UINT STROBESLOWELEMENT = 24;
+constexpr UINT STROBESLOWHIDDEN = 6;
 #endif
 
 UINT m_avatarStrobeIdx = 0;
 constexpr UINT AVATARSTROBECT = 10;
-constexpr float AVATARSTROBE[AVATARSTROBECT] = { 1.15f, 1.1f, 1.05f, 1.0f, 1.0f, 1.0f, 1.0f, 1.05f, 1.10f, 1.15f };
+constexpr float AVATARSTROBE[AVATARSTROBECT] = { 1.13f, 1.1f, 1.05f, 1.0f, 1.0f, 1.0f, 1.0f, 1.05f, 1.10f, 1.13f };
 
 // number of sprite frames for element tiles animation
 UINT m_spriteAnimElementIdx = 0;
@@ -40,6 +40,8 @@ constexpr UINT ELEMENTSPRITECT = 7;
 // number of sprite frames for hidden layer animations
 UINT m_spriteAnimHiddenIdx = 0;
 constexpr UINT HIDDENSPRITECT = 4;
+
+std::string m_cursor(1, 0x7B);
 
 void AutoMap::Initialize()
 {
@@ -558,7 +560,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 			if (((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
 				|| (g_nonVolatile.showFog == false))
 			{
-				// TODO: Here decide which tiles to show!
+				// Here decide which tiles to show!
 				if (curr_tileId < 0x40)	// environment tiles
 				{
 					if (PlayerIsOverland())
@@ -745,23 +747,35 @@ element_tiles_general:
 			m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] = (UINT8)mapMemPtr[mapPos];
 
 			// now draw the avatar and footsteps
-			// TODO: Use the correct monster tile for the avatar
-			// TODO: Use a font glyph for footsteps.
+			// Use the correct monster tile for the avatar, based on the class of the current char
 			XMFLOAT2 _origin = { PNGTW / 2.f, PNGTH / 2.f };
 			RECT avatarRect = { 0, 0, PNGTW, PNGTH };
+			avatarRect.left = MemGetMainPtr(PARTY_CURRENT_CHAR_CLASS)[0] * PNGTW;
+			avatarRect.right = avatarRect.left + PNGTW;
 
 			XMFLOAT2 overlayPosInMap(	// Display the avatar/footsteps in the center of the tile
-				tilePosInMap.x + mapScale * FBTW / 2,
-				tilePosInMap.y + mapScale * FBTH / 2
+				tilePosInMap.x + mapScale * PNGTW / 2,
+				tilePosInMap.y + mapScale * PNGTW / 2
 			);
 
 			if (posX == m_avatarPosition.x && posY == m_avatarPosition.y)
 			{
-
-				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
-					GetTextureSize(m_monsterSpriteSheet.Get()), overlayPosInMap, &avatarRect, 
-					Colors::White, 0.f, _origin,
-					mapScale * AVATARSTROBE[(m_avatarStrobeIdx / STROBESLOWAVATAR) % AVATARSTROBECT]);
+				// Check if the player is on a boat or not
+				if (MemGetMainPtr(PARTY_ICON_TYPE)[0] == 1)
+				{
+					// We're on a boat! Boat is tile 0x12 of overland sheet
+					RECT boatRect = { 2 * PNGTW, 1 * PNGTH, 3 * PNGTW, 2 * PNGTH };
+					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapOverlandTiles),
+						GetTextureSize(m_tilesOverland.Get()), tilePosInMap, &boatRect, 
+						Colors::White, 0.f, XMFLOAT2(), mapScale);
+				}
+				else // On foot
+				{
+					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
+						GetTextureSize(m_monsterSpriteSheet.Get()), overlayPosInMap, &avatarRect,
+						Colors::White, 0.f, _origin,
+						mapScale* AVATARSTROBE[(m_avatarStrobeIdx / STROBESLOWAVATAR) % AVATARSTROBECT]);
+				}
 				++m_avatarStrobeIdx;
 				if (m_avatarStrobeIdx >= (AVATARSTROBECT * STROBESLOWAVATAR))
 					m_avatarStrobeIdx = 0;
@@ -772,9 +786,8 @@ element_tiles_general:
 				{
 					if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (1 << (UINT8)FogOfWarMarkers::Footstep)) > 0)
 					{
-						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
-							GetTextureSize(m_monsterSpriteSheet.Get()), overlayPosInMap, &avatarRect, 
-							COLORTRANSLUCENTWHITE, 0.f, _origin, mapScale * 0.3f);
+						(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular)->DrawString(spriteBatch.get(), m_cursor.c_str(),
+							overlayPosInMap, Colors::Yellow, 0.f, XMFLOAT2(4.f, 9.f), .4f);
 					}
 				}
 			}
@@ -787,7 +800,7 @@ element_tiles_general:
 			m_spriteAnimHiddenIdx = 0;
 	}
 	else // draw the background if not in game
-	{
+	{	// this shouldn't ever happen since when not in game it's using the original game's video
 		auto mmBGTexSize = GetTextureSize(m_autoMapTextureBG.Get());
 		// nullptr here is the source rectangle. We're drawing the full background
 		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapBackgroundTransition), mmBGTexSize,
