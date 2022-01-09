@@ -116,9 +116,9 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 					__textOutput->ScrollWindow(TextWindows::Log);
 					break;
 				case TextWindows::Billboard:
-					[[passthrough]];
+					[[fallthrough]];
 				case TextWindows::Keypress:
-					[[passthrough]];
+					[[fallthrough]];
 				case TextWindows::ModuleBillboardKeypress:
 					__textOutput->ScrollWindow(TextWindows::Billboard);
 					break;
