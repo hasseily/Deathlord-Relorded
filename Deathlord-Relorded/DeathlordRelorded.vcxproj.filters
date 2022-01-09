@@ -398,10 +398,10 @@
     <None Include="Assets\pr3-dlcharset-12pt-inverse.spritefont">
       <Filter>Assets</Filter>
     </None>
-    <None Include="Assets\dlfont_12pt_inverse.spritefont">
+    <None Include="Assets\dlfont-12pt-inverse.spritefont">
       <Filter>Assets</Filter>
     </None>
-    <None Include="Assets\dlfont_12pt.spritefont">
+    <None Include="Assets\dlfont-12pt.spritefont">
       <Filter>Assets</Filter>
     </None>
   </ItemGroup>
@@ -466,6 +466,9 @@
       <Filter>Assets</Filter>
     </Image>
     <Image Include="Assets\Tileset_Elements_Animated.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SpriteSheet_PartyLayout.png">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>

@@ -13,9 +13,9 @@
 #include "Descriptors.h"
 
 #ifdef _DEBUG
-constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 10;  // In debug, the emulator is slow needs a lot more time than the render
+constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 60;  // In debug, the emulator is slow needs a lot more time than the render
 #else
-constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 30;  // Only render so many frames. Give the emulator all the rest of the time
+constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 60;  // Only render so many frames. Give the emulator all the rest of the time
 #endif
 
 using namespace DirectX;
@@ -36,7 +36,8 @@ enum class EmulatorLayout
 	NONE = UINT8_MAX
 };
 
-extern bool g_isInGameMap;          // is the player in-game or on the loading/utilities screens?
+extern bool g_isInGameMap;          // is the player in-game?
+extern bool g_hasBeenIdleOnce;      // This becomes true once the game has once hit the idle loop
 extern bool g_isInBattle;           // is the player in the battle module?
 extern bool g_wantsToSave;          // only TRUE when the player is asking to save
 extern int g_debugLogInstructions;  // Tapping "End" key logs the next g_debugLogInstructions instructions
@@ -119,8 +120,6 @@ private:
 
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
-
-    void SetVertexData(HA::Vertex* v, float wRatio, float hRatio, EmulatorLayout layout);
 
 	static float m_clientFrameScale;    // TODO: unused
 

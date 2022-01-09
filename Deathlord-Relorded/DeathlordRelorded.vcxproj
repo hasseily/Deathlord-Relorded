@@ -304,11 +304,11 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </None>
-    <None Include="Assets\dlfont_12pt.spritefont">
+    <None Include="Assets\dlfont-12pt.spritefont">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </None>
-    <None Include="Assets\dlfont_12pt_inverse.spritefont">
+    <None Include="Assets\dlfont-12pt-inverse.spritefont">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </None>
@@ -394,6 +394,7 @@
       <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GeneratePremultipliedAlpha>
       <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GeneratePremultipliedAlpha>
     </Image>
+    <Image Include="Assets\SpriteSheet_PartyLayout.png" />
     <Image Include="Assets\Spritesheet_Portraits_Male.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>

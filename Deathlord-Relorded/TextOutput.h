@@ -83,9 +83,6 @@ public:
 	// r is the rectangle of the game itself
 	void Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch);
 
-	// Properties
-	map<FontDescriptors, wstring> fontsAvailable;
-
 	// public singleton code
 	static TextOutput* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,
 		std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)

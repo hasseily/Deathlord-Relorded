@@ -21,6 +21,7 @@
 #include "AppleWinDXVideo.h"
 #include "MiniMap.h"
 #include "Daytime.h"
+#include "PartyLayout.h"
 #include <vector>
 #include <string>
 #include <map>
@@ -52,6 +53,7 @@ static AutoMap* m_autoMap;
 static AppleWinDXVideo* m_a2Video;
 static Daytime* m_daytime;
 static MiniMap* m_minimap;
+static PartyLayout* m_partyLayout;
 
 AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
 
@@ -66,6 +68,7 @@ UINT64	g_debug_video_data = 0;
 NonVolatile g_nonVolatile;
 
 bool g_isInGameMap = false;
+bool g_hasBeenIdleOnce = false;
 bool g_isInBattle = false;
 bool g_wantsToSave = true;  // DISABLED. It can corrupt saved games
 int g_debugLogInstructions = 0;    // Tapping "End" key logs the next 100,000 instructions
@@ -128,7 +131,6 @@ void Game::Initialize(HWND window)
 
     m_deviceResources->CreateDeviceResources();
     CreateDeviceDependentResources();
-    // m_automap is initialized when creating device dependent resources
 
 	SimpleMath::Rectangle winrct = GetDrawRectangle();
 	m_deviceResources->SetWindow(window, winrct.width, winrct.height);
@@ -252,6 +254,8 @@ void Game::Update(DX::StepTimer const& timer)
             m_a2Video->ToggleApple2Video();
 	}
 #ifdef _DEBUG
+    // Poor man's 6502 instructions history
+    // Press the END key to log the next 100k instructions
     if (kbTracker.pressed.End)
     {
         g_debugLogInstructions = 100000;
@@ -283,6 +287,7 @@ void Game::Update(DX::StepTimer const& timer)
 		memTriggers->PollKeyMemoryLocations();  // But not the avatar XY
     }
     m_minimap->Update(memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
+    m_partyLayout->Update(MemGetMainPtr(PARTY_CHAR_LEADER)[0]);
 
     PIXEndEvent();
 }
@@ -419,10 +424,11 @@ void Game::Render()
 			m_primitiveBatchLines->End();
 #endif
 
-#ifdef _DEBUG
+#if 1
 			char pcbuf[4000];
 			//    snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %I64x : %I64x", g_debug_video_field, g_debug_video_data);
-			snprintf(pcbuf, sizeof(pcbuf), "%6.0f usec/frame - Time: %6.2f - Sidebar Time: %6lld\n", 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds(), sbTimeSpent);
+			snprintf(pcbuf, sizeof(pcbuf), "%.2d FPS , %6.0f usec/frame - Time: %6.2f - Sidebar Time: %6lld\n", 
+                m_timer.GetFramesPerSecond(), 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds(), sbTimeSpent);
 			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
 				{ 11.f, 11.f }, Colors::Black, 0.f, m_vector2Zero, 1.f);
 			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
@@ -458,6 +464,7 @@ void Game::Render()
 			m_primitiveBatchTriangles->Begin(commandList);
 			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
 
+			m_partyLayout->Render(r, m_spriteBatch.get());
             m_minimap->Render(r, m_spriteBatch.get());
             m_daytime->Render(r, m_spriteBatch.get());
 			m_textOutput->Render(r, m_spriteBatch.get());
@@ -661,7 +668,16 @@ void Game::CreateDeviceDependentResources()
     // Create the sprite fonts based on FontsAvailable
     m_spriteFonts.clear();
     wchar_t buff[MAX_PATH];
-    for each (auto aFont in m_sbM.fontsAvailable)
+	map<FontDescriptors, wstring> fontsAvailable;
+	fontsAvailable[FontDescriptors::FontA2Regular] = L"a2-12pt.spritefont";
+	fontsAvailable[FontDescriptors::FontA2Bold] = L"a2-12pt-bold.spritefont";
+	fontsAvailable[FontDescriptors::FontA2Italic] = L"a2-12pt-italic.spritefont";
+	fontsAvailable[FontDescriptors::FontA2BoldItalic] = L"a2-12pt-bolditalic.spritefont";
+	fontsAvailable[FontDescriptors::FontPR3Regular] = L"pr3-dlcharset-12pt.spritefont";
+	fontsAvailable[FontDescriptors::FontPR3Inverse] = L"pr3-dlcharset-12pt-inverse.spritefont";
+	fontsAvailable[FontDescriptors::FontDLRegular] = L"dlfont-12pt.spritefont";
+	fontsAvailable[FontDescriptors::FontDLInverse] = L"dlfont-12pt-inverse.spritefont";
+    for each (auto aFont in fontsAvailable)
     {
         DX::FindMediaFile(buff, MAX_PATH, aFont.second.c_str());
 		m_spriteFonts[aFont.first] = std::make_unique<SpriteFont>(device, *m_uploadBatch, buff,
@@ -684,6 +700,8 @@ void Game::CreateDeviceDependentResources()
 	m_minimap->CreateDeviceDependentResources(m_uploadBatch.get());
 	m_daytime = Daytime::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_daytime->CreateDeviceDependentResources(m_uploadBatch.get());
+	m_partyLayout = PartyLayout::GetInstance(m_deviceResources, m_resourceDescriptors);
+    m_partyLayout->CreateDeviceDependentResources(m_uploadBatch.get());
 
     // Do the sprite batches.
 	auto sampler = m_states->LinearWrap();
@@ -746,8 +764,14 @@ void Game::OnDeviceLost()
     {
         it->second.reset();
     }
-    m_gameTextureBG.Reset();
     m_autoMap->OnDeviceLost();
+	m_invOverlay->OnDeviceLost();
+	m_a2Video->OnDeviceLost();
+	m_minimap->OnDeviceLost();
+	m_daytime->OnDeviceLost();
+	m_partyLayout->OnDeviceLost();
+
+	m_gameTextureBG.Reset();
     m_states.reset();
     m_spriteBatch.reset();
     m_graphicsMemory.reset();

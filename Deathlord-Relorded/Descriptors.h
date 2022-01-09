@@ -2,8 +2,8 @@
 
 using namespace DirectX;
 
-constexpr XMFLOAT4 ColorText = { 1.f, 1.f, 1.f, 0.600000000f };
-constexpr XMVECTORF32 VColorText = { { { 1.f, 1.f, 1.f, 0.600000000f } } };
+constexpr XMFLOAT4 ColorText = { 1.f, 1.f, 1.f, 0.700000000f };
+constexpr XMVECTORF32 VColorText = { { { 1.f, 1.f, 1.f, 0.700000000f } } };
 constexpr XMFLOAT4 ColorAmber = { 0.5f, 0.2f, 0.f, 1.000000000f };
 constexpr XMVECTORF32 VColorAmber = { { { 0.5f, 0.2f, 0.f, 1.000000000f } } };
 constexpr XMFLOAT4 ColorAmberDark = { 0.25f, 0.1f, 0.f, 1.000000000f };

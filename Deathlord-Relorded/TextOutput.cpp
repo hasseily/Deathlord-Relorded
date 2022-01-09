@@ -13,14 +13,6 @@ static UINT8 m_previousY = 0;
 
 void TextOutput::Initialize()
 {
-	fontsAvailable[FontDescriptors::FontA2Regular] = L"a2-12pt.spritefont";
-	fontsAvailable[FontDescriptors::FontA2Bold] = L"a2-12pt-bold.spritefont";
-	fontsAvailable[FontDescriptors::FontA2Italic] = L"a2-12pt-italic.spritefont";
-	fontsAvailable[FontDescriptors::FontA2BoldItalic] = L"a2-12pt-bolditalic.spritefont";
-	fontsAvailable[FontDescriptors::FontPR3Regular] = L"pr3_dlcharset_12pt.spritefont";
-	fontsAvailable[FontDescriptors::FontPR3Inverse] = L"pr3_dlcharset_12pt_inverse.spritefont";
-	fontsAvailable[FontDescriptors::FontDLRegular] = L"dlfont_12pt.spritefont";
-	fontsAvailable[FontDescriptors::FontDLInverse] = L"dlfont_12pt_inverse.spritefont";
 	// create all the lines for the billboard
 	// and a single line for the log, and initialize the rest
 	UINT8 billboardLineCt = PRINT_CHAR_Y_KEYPRESS - PRINT_CHAR_Y_BILLBOARD_BEGIN;

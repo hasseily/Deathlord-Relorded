@@ -19,41 +19,41 @@ static HINSTANCE appInstance = nullptr;
 static HWND hwndMain = nullptr;				// handle to main window
 
 static std::array<std::wstring, 16> DeathlordClassNames{
-	std::wstring(L"Fighter"),
-	std::wstring(L"Paladin"),
-	std::wstring(L"Ranger"),
-	std::wstring(L"Barbarian"),
-	std::wstring(L"Berzerker"),
-	std::wstring(L"Samurai"),
-	std::wstring(L"Dark Knight"),
-	std::wstring(L"Thief"),
-	std::wstring(L"Assassin"),
-	std::wstring(L"Ninja"),
-	std::wstring(L"Monk"),
-	std::wstring(L"Priest"),
-	std::wstring(L"Druid"),
-	std::wstring(L"Wizard"),
-	std::wstring(L"Illusionist"),
-	std::wstring(L"Peasant")
+	std::wstring(L"FIGHTER"),
+	std::wstring(L"PALADIN"),
+	std::wstring(L"RANGER"),
+	std::wstring(L"BARBARIAN"),
+	std::wstring(L"BERZERKER"),
+	std::wstring(L"SAMURAI"),
+	std::wstring(L"DARK KNIGHT"),
+	std::wstring(L"THIEF"),
+	std::wstring(L"ASSASSIN"),
+	std::wstring(L"NINJA"),
+	std::wstring(L"MONK"),
+	std::wstring(L"PRIEST"),
+	std::wstring(L"DRUID"),
+	std::wstring(L"WIZARD"),
+	std::wstring(L"ILLUSIONIST"),
+	std::wstring(L"PEASANT")
 };
 
 static std::array<std::wstring, 16> DeathlordClassNamesJapan{
-	std::wstring(L"Senshi"),
-	std::wstring(L"Kishi"),
-	std::wstring(L"Ryoshi"),
-	std::wstring(L"Yabanjin"),
-	std::wstring(L"Kichigai"),
-	std::wstring(L"Samurai"),
-	std::wstring(L"Ronin"),
-	std::wstring(L"Yakuza"),
-	std::wstring(L"Ansatusha"),
-	std::wstring(L"Ninja"),
-	std::wstring(L"Shukenja"),
-	std::wstring(L"Shisai"),
-	std::wstring(L"Shizen"),
-	std::wstring(L"Mahotsukai"),
-	std::wstring(L"Genkai"),
-	std::wstring(L"Kosaku")
+	std::wstring(L"SENSHI"),
+	std::wstring(L"KISHI"),
+	std::wstring(L"RYOSHI"),
+	std::wstring(L"YABANJIN"),
+	std::wstring(L"KICHIGAI"),
+	std::wstring(L"SAMURAI"),
+	std::wstring(L"RONIN"),
+	std::wstring(L"YAKUZA"),
+	std::wstring(L"ANSATUSHA"),
+	std::wstring(L"NINJA"),
+	std::wstring(L"SHUKENJA"),
+	std::wstring(L"SHISAI"),
+	std::wstring(L"SHIZEN"),
+	std::wstring(L"MAHOTSUKAI"),
+	std::wstring(L"GENKAI"),
+	std::wstring(L"KOSAKU")
 };
 
 static std::array<std::wstring, 8> DeathlordRaceNames{

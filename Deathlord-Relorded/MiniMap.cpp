@@ -18,6 +18,8 @@ void MiniMap::Initialize()
 
 bool MiniMap::Update(UINT8 overlandX, UINT8 overlandY)
 {
+	if (!g_hasBeenIdleOnce)
+		return false;
 	if ((overlandX > 0xF) || (overlandY > 0xF))	// shouldn't happen
 		return false;
 	if ((overlandX == m_overlandX) && (overlandY == m_overlandY))	// nothing to do

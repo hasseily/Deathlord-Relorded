@@ -8,11 +8,11 @@ using namespace DirectX::SimpleMath;
 using namespace std;
 
 // Where to put the party on the main screen
-constexpr array<UINT16, 6> PARTY_LAYOUT_X = { 10, 10, 10, 450, 450, 450 };
-constexpr array<UINT16, 6> PARTY_LAYOUT_Y = { 550, 700, 850, 550, 700, 850 };
+constexpr array<UINT16, 6> PARTY_LAYOUT_X = { 17, 17, 17, 1570, 1570, 1570 };
+constexpr array<UINT16, 6> PARTY_LAYOUT_Y = { 386, 606, 826, 386, 606, 826 };
 // Portrait size
-constexpr UINT16 PARTY_PORTRAIT_WIDTH = 185;
-constexpr UINT16 PARTY_PORTRAIT_HEIGHT = 242;
+constexpr UINT16 PARTY_PORTRAIT_WIDTH = 92;
+constexpr UINT16 PARTY_PORTRAIT_HEIGHT = 121;
 
 class PartyLayout
 {
@@ -27,6 +27,7 @@ public:
 	void Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch);
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();
+	void setPartySize(UINT8 size);
 
 	// Properties
 
@@ -61,8 +62,9 @@ private:
 		Initialize();
 	}
 
-	void PartyLayout::RenderMember(UINT8 member, UINT16 originX, UINT16 originY);
+	void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, UINT16 originX, UINT16 originY);
 
+	UINT8 m_partySize;
 	UINT8 m_currentLeader;
 
 	DX::DeviceResources* m_deviceResources;

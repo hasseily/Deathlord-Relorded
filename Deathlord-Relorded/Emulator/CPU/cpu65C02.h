@@ -89,6 +89,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				// We know here that we're in a safe place to parse the video screen, etc...
 				// And furthermore we disable that timer because who in his right mind wants turns to pass when not doing anything?
 				auto memT = MemoryTriggers::GetInstance();
+				g_hasBeenIdleOnce = true;
 				if (memT != NULL)
 					memT->Process();
 				CYC(6);		// NOP 6 cycles. The DEC instruction takes 6 cycles
