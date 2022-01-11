@@ -156,9 +156,9 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	///// Draw name with black outline
 	std::wstring _mName = StringFromMemory(PARTY_NAME_START + (member*9), 9);
 	Vector2 _mNameOrigin(_mPortraitOrigin.x + PARTY_PORTRAIT_WIDTH + 6, _mPortraitOrigin.y + 2);
-	fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x - 1.f, _mNameOrigin.y - 1.f } , Colors::Black, 0.f, Vector2(), 1.0f);
-	fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x - 1.f, _mNameOrigin.y + 1.f }, Colors::Black, 0.f, Vector2(), 1.0f);
-	fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x + 1.f, _mNameOrigin.y - 1.f }, Colors::Black, 0.f, Vector2(), 1.0f);
+	//fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x - 1.f, _mNameOrigin.y - 1.f } , Colors::Black, 0.f, Vector2(), 1.0f);
+	//fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x - 1.f, _mNameOrigin.y + 1.f }, Colors::Black, 0.f, Vector2(), 1.0f);
+	//fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x + 1.f, _mNameOrigin.y - 1.f }, Colors::Black, 0.f, Vector2(), 1.0f);
 	fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x + 1.f, _mNameOrigin.y + 1.f }, Colors::Black, 0.f, Vector2(), 1.0f);
 	fontDL->DrawString(spriteBatch, _mName.c_str(), _mNameOrigin, VColorText, 0.f, Vector2(), 1.0f);
 
@@ -169,10 +169,14 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 			MemGetMainPtr(PARTY_LEVELPLUS_START)[member]);
 	//else
 	//	swprintf_s(_buf, _bufsize, L"%02d", MemGetMainPtr(PARTY_LEVEL_START)[member]);
+	auto _mLevelColor = VColorText;
 	if (MemGetMainPtr(PARTY_LEVELPLUS_START)[member] > 0)
-		fontDL->DrawString(spriteBatch, _buf, _mLevelOrigin, Colors::DarkOrange, 0.f, Vector2(), 1.f);
-	else
-		fontDL->DrawString(spriteBatch, _buf, _mLevelOrigin, VColorText, 0.f, Vector2(), 1.f);
+		_mLevelColor = Colors::DarkOrange;
+	//fontDL->DrawString(spriteBatch, _buf, { _mLevelOrigin.x - 1.f, _mLevelOrigin.y - 1.f }, Colors::Black, 0.f, Vector2(), 1.f);
+	//fontDL->DrawString(spriteBatch, _buf, { _mLevelOrigin.x - 1.f, _mLevelOrigin.y + 1.f }, Colors::Black, 0.f, Vector2(), 1.f);
+	//fontDL->DrawString(spriteBatch, _buf, { _mLevelOrigin.x + 1.f, _mLevelOrigin.y - 1.f }, Colors::Black, 0.f, Vector2(), 1.f);
+	fontDL->DrawString(spriteBatch, _buf, { _mLevelOrigin.x + 1.f, _mLevelOrigin.y + 1.f }, Colors::Black, 0.f, Vector2(), 1.f);
+	fontDL->DrawString(spriteBatch, _buf, _mLevelOrigin, _mLevelColor, 0.f, Vector2(), 1.f);
 	//
 	Vector2 _mHealthOrigin(_mNameOrigin.x, _mNameOrigin.y + 22);
 	UINT16 _mHealth = MemGetMainPtr(PARTY_HEALTH_LOBYTE_START)[member] + ((UINT16)MemGetMainPtr(PARTY_HEALTH_HIBYTE_START)[member] << 8);
@@ -230,7 +234,7 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	// Draw inventory
 	auto _inv = m_invMgr->AllInventoryForMember(member);
 	std::wstring _sItem;
-	Vector2 _mInvOrigin(_mNameOrigin.x + 40, _mClassOrigin.y - 8);
+	Vector2 _mInvOrigin(_mNameOrigin.x + 38, _mClassOrigin.y - 7);
 	for each (InvInstance _item in _inv)
 	{
 		_sItem = L"   .............";		// length of 13 prefixed by count
