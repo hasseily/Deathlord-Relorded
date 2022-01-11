@@ -19,14 +19,15 @@ constexpr UINT8 TILEID_REDRAW = 0xFF;			// when we see this nonexistent tile id 
 constexpr XMVECTORF32 COLORTRANSLUCENTWHITE = { 1.f, 1.f, 1.f, .8f };
 
 // This is used for any animated sprite to accelerate or slow its framerate (so one doesn't have to build 30 frames!)
+// TODO: Make it dynamically calculated based on frame rate
 #ifdef _DEBUG
 constexpr UINT STROBESLOWAVATAR = 2;
 constexpr UINT STROBESLOWELEMENT = 8;
-constexpr UINT STROBESLOWHIDDEN = 2;
+constexpr UINT STROBESLOWHIDDEN = 4;
 #else
 constexpr UINT STROBESLOWAVATAR = 6;
 constexpr UINT STROBESLOWELEMENT = 24;
-constexpr UINT STROBESLOWHIDDEN = 6;
+constexpr UINT STROBESLOWHIDDEN = 12;
 #endif
 
 UINT m_avatarStrobeIdx = 0;
@@ -756,9 +757,13 @@ element_tiles_general:
 			avatarRect.left = MemGetMainPtr(PARTY_CURRENT_CHAR_CLASS)[0] * PNGTW;
 			avatarRect.right = avatarRect.left + PNGTW;
 
-			XMFLOAT2 overlayPosInMap(	// Display the avatar/footsteps in the center of the tile
+			XMFLOAT2 overlayPosInMap(	// Display the avatar in the center of the tile
 				tilePosInMap.x + mapScale * PNGTW / 2,
 				tilePosInMap.y + mapScale * PNGTW / 2
+			);
+			XMFLOAT2 footstepsPosInMap(	// Footsteps as well, but we need a bit of realignment
+				overlayPosInMap.x - 1,
+				overlayPosInMap.y + 2
 			);
 
 			if (posX == m_avatarPosition.x && posY == m_avatarPosition.y)
@@ -790,7 +795,7 @@ element_tiles_general:
 					if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (1 << (UINT8)FogOfWarMarkers::Footstep)) > 0)
 					{
 						(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular)->DrawString(spriteBatch.get(), m_cursor.c_str(),
-							overlayPosInMap, Colors::Yellow, 0.f, XMFLOAT2(4.f, 9.f), .4f);
+							footstepsPosInMap, Colors::Yellow, 0.f, XMFLOAT2(4.f, 9.f), .4f);
 					}
 				}
 			}
