@@ -343,10 +343,10 @@ std::vector<InvInstance> InvManager::AllInventoryForMember(UINT8 member)
 		_inst.extraIdentifier = 0;
 		_inst.item = &itemList[MemGetMainPtr(idMemSlot)[0]];
 		_inst.charges = MemGetMainPtr(idMemSlot)[ITEM_CHARGES_OFFSET];
-		_inst.owner = i;
+		_inst.owner = member;
 		_inst.equipped = _inst.item->canEquip(
-			(DeathlordClasses)MemGetMainPtr(PARTY_CLASS_START)[i],
-			(DeathlordRaces)MemGetMainPtr(PARTY_RACE_START)[i]
+			(DeathlordClasses)MemGetMainPtr(PARTY_CLASS_START)[member],
+			(DeathlordRaces)MemGetMainPtr(PARTY_RACE_START)[member]
 		);
 		_currentInventory.push_back(_inst);
 	}
