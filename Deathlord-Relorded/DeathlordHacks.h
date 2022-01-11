@@ -146,13 +146,13 @@ enum class DeathlordRaces
 enum class DeathlordCharStatus
 {
 	OK  = 0x00,
-	STV = 0x02,
-	TOX = 0x04,
-	DIS = 0x08,
-	PAR = 0x10,
-	STN = 0x20,
-	RIP = 0x40,
-	STO = 0x80
+	STV = 0x02,		// starving
+	TOX = 0x04,		// toxified
+	ILL = 0x08,		// illness
+	PAR = 0x10,		// paralyzed
+	STN = 0x20,		// stone
+	RIP = 0x40,		// 6 feet under
+	RIP2 = 0x80		// 12 feet under
 };
 
 static bool PlayerIsOverland() { return MemGetMainPtr(MAP_IS_OVERLAND)[0] == 0x80; };

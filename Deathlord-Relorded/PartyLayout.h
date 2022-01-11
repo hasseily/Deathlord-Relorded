@@ -10,6 +10,9 @@ using namespace std;
 // Where to put the party on the main screen
 constexpr array<UINT16, 6> PARTY_LAYOUT_X = { 17, 17, 17, 1570, 1570, 1570 };
 constexpr array<UINT16, 6> PARTY_LAYOUT_Y = { 386, 606, 826, 386, 606, 826 };
+constexpr UINT16 PARTY_LAYOUT_WIDTH = 320;
+constexpr UINT16 PARTY_LAYOUT_HEIGHT = 198;
+
 // Portrait size
 constexpr UINT16 PARTY_PORTRAIT_WIDTH = 92;
 constexpr UINT16 PARTY_PORTRAIT_HEIGHT = 121;

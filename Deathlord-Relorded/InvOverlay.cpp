@@ -659,25 +659,25 @@ InvInstance InvOverlay::ItemInstanceOfOwner(UINT8 owner)
 void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 	int memberColWidth, int xPos, int yPos)
 {
-	char _spBuf[200];
+	wchar_t _spBuf[200];
 	// First draw the item info
 	InvItem* item = pItemInstance->item;
 	if (item->slot < InventorySlots::Chest)
 	{
 		if (pItemInstance->charges != EMPTY_CHARGES_COUNT)
-			sprintf_s(_spBuf, 200, "%-14s (%03d)  %+d    %dx %2d-%-2d   %+d   %s",
+			swprintf_s(_spBuf, 200, L"%-14s (%03d)  %+d    %dx %2d-%-2d   %+d   %s",
 				item->name.c_str(), pItemInstance->charges, item->thaco, item->numAttacks, item->damageMin, item->damageMax, -1 * item->ac, item->special.c_str());
 		else
-			sprintf_s(_spBuf, 200, "%-20s  %+d    %dx %2d-%-2d   %+d   %s", 
+			swprintf_s(_spBuf, 200, L"%-20s  %+d    %dx %2d-%-2d   %+d   %s",
 				item->name.c_str(), item->thaco, item->numAttacks, item->damageMin, item->damageMax, -1 * item->ac, item->special.c_str());
 	}
 	else
 	{
 		if (pItemInstance->charges != EMPTY_CHARGES_COUNT)
-			sprintf_s(_spBuf, 200, "%-14s (%03d)   %+d    %+d   %s",
+			swprintf_s(_spBuf, 200, L"%-14s (%03d)   %+d    %+d   %s",
 				item->name.c_str(), pItemInstance->charges, item->thaco, item->ac, item->special.c_str());
 		else
-			sprintf_s(_spBuf, 200, "%-20s   %+d    %+d   %s",
+			swprintf_s(_spBuf, 200, L"%-20s   %+d    %+d   %s",
 				item->name.c_str(), item->thaco, item->ac, item->special.c_str());
 	}
 	font->DrawString(m_spriteBatch.get(), _spBuf,

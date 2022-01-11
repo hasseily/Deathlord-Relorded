@@ -2,13 +2,15 @@
 #include "PartyLayout.h"
 #include "DeathlordHacks.h"
 #include "Game.h"
+#include "InvManager.h"
 #include <algorithm>
-#include "Game.h"	// TODO: This is for the spritefonts. These need to be put somewhere else
 
-extern std::unique_ptr<Game>* GetGamePtr();	// TODO: Same for this
+extern std::unique_ptr<Game>* GetGamePtr();
 
 // below because "The declaration of a static data member in its class definition is not a definition"
 PartyLayout* PartyLayout::s_instance;
+
+InvManager* m_invMgr;
 
 void PartyLayout::Initialize()
 {
@@ -37,7 +39,7 @@ void PartyLayout::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBa
 	if (!g_hasBeenIdleOnce)
 		return;
 	auto plTexSize = GetTextureSize(m_partyLayoutSpriteSheet.Get());
-
+	m_invMgr = InvManager::GetInstance();
 //	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::PartyLayoutSpriteSheet), mmTexSize,
 //		_overlayPinPosInMap, &_pinRect, Colors::White, 0.f, _originPin);
 	for (UINT8 i = 0; i < m_partySize; i++)
@@ -67,8 +69,12 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	auto gamePtr = GetGamePtr();
 	auto fontDL = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular);
 	auto fontDLInverse = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLInverse);
+	auto fontPR3Regular = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontPR3Regular);
 	const UINT8 _bufsize = 200;
 	wchar_t _buf[_bufsize];
+
+	// padding of 2 all around
+	UINT8 _pad = 2;
 
 	///// Draw portrait
 	RECT _portraitRect = {	MemGetMainPtr(PARTY_RACE_START)[member] * PARTY_PORTRAIT_WIDTH,
@@ -76,7 +82,7 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 							0, 0 };
 	_portraitRect.right = _portraitRect.left + PARTY_PORTRAIT_WIDTH;
 	_portraitRect.bottom = _portraitRect.top + PARTY_PORTRAIT_HEIGHT;
-	Vector2 _mPortraitOrigin(originX + 2, originY + 2);
+	Vector2 _mPortraitOrigin(originX + _pad, originY + _pad);
 	if (MemGetMainPtr(PARTY_GENDER_START)[member] == 0)	// male
 	{
 		auto pTexSize = GetTextureSize(m_portraitsMale.Get());
@@ -88,6 +94,21 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 		auto pTexSize = GetTextureSize(m_portraitsFemale.Get());
 		spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::PortraitsFemale), pTexSize,
 			_mPortraitOrigin, &_portraitRect, Colors::White, 0.f, XMFLOAT2(), 1.f);
+	}
+
+	///// Draw party position
+	swprintf_s(_buf, _bufsize, L"%d", member + 1);
+	if (MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0] == member)
+	{
+		fontDLInverse->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 4, _mPortraitOrigin.y + 4 },
+			Colors::Yellow, 0.f, Vector2(), 1.0f);
+		fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 4, _mPortraitOrigin.y + 4 },
+			VColorAmber, 0.f, Vector2(), 1.0f);
+	}
+	else
+	{
+		fontDLInverse->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 4, _mPortraitOrigin.y + 4 },
+			VColorText, 0.f, Vector2(), 1.0f);
 	}
 
 	///// Draw status with black outline
@@ -104,9 +125,9 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 		fontDLInverse->DrawString(spriteBatch, L"TOX", _mStatusOrigin, VColorText, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
-	if (_mStatus & (UINT8)DeathlordCharStatus::DIS)
+	if (_mStatus & (UINT8)DeathlordCharStatus::ILL)
 	{
-		fontDLInverse->DrawString(spriteBatch, L"DIS", _mStatusOrigin, VColorText, 0.f, Vector2(), 1.0f);
+		fontDLInverse->DrawString(spriteBatch, L"ILL", _mStatusOrigin, VColorText, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 	if (_mStatus & (UINT8)DeathlordCharStatus::PAR)
@@ -119,14 +140,16 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 		fontDLInverse->DrawString(spriteBatch, L"STN", _mStatusOrigin, VColorText, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
+	// the 2 RIP should be combined but it'd be fun to have someone get those 2 statuses (if possible)
+	// and complain the game has a bug
 	if (_mStatus & (UINT8)DeathlordCharStatus::RIP)
 	{
 		fontDLInverse->DrawString(spriteBatch, L"RIP", _mStatusOrigin, VColorText, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
-	if (_mStatus & (UINT8)DeathlordCharStatus::STO)
+	if (_mStatus & (UINT8)DeathlordCharStatus::RIP2)
 	{
-		fontDLInverse->DrawString(spriteBatch, L"STO", _mStatusOrigin, VColorText, 0.f, Vector2(), 1.0f);
+		fontDLInverse->DrawString(spriteBatch, L"RIP", _mStatusOrigin, Colors::Red, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 
@@ -140,27 +163,49 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	fontDL->DrawString(spriteBatch, _mName.c_str(), _mNameOrigin, VColorText, 0.f, Vector2(), 1.0f);
 
 	///// Draw stuff to the right of the portrait
-	Vector2 _mACOrigin(_mNameOrigin.x + 145, _mNameOrigin.y);
-	wsprintf(_buf, L"AC%3d", 10 - MemGetMainPtr(PARTY_ARMORCLASS_START)[member]);
-	fontDL->DrawString(spriteBatch, _buf, _mACOrigin, VColorText, 0.f, Vector2(), 1.f);
-	//
-	Vector2 _mLevelOrigin(_mNameOrigin.x, _mNameOrigin.y + 25);
-	if (MemGetMainPtr(PARTY_LEVELPLUS_START)[member] > 0)
-		wsprintf(_buf, L"LEVEL:%3d+%d", MemGetMainPtr(PARTY_LEVEL_START)[member],
+	Vector2 _mLevelOrigin(originX + PARTY_LAYOUT_WIDTH - 14*4 - _pad, _mNameOrigin.y);
+	//if (MemGetMainPtr(PARTY_LEVELPLUS_START)[member] > 0)
+		swprintf_s(_buf, _bufsize, L"%02d+%d", MemGetMainPtr(PARTY_LEVEL_START)[member],
 			MemGetMainPtr(PARTY_LEVELPLUS_START)[member]);
+	//else
+	//	swprintf_s(_buf, _bufsize, L"%02d", MemGetMainPtr(PARTY_LEVEL_START)[member]);
+	if (MemGetMainPtr(PARTY_LEVELPLUS_START)[member] > 0)
+		fontDL->DrawString(spriteBatch, _buf, _mLevelOrigin, Colors::DarkOrange, 0.f, Vector2(), 1.f);
 	else
-		wsprintf(_buf, L"LEVEL:%3d", MemGetMainPtr(PARTY_LEVEL_START)[member]);
-	fontDL->DrawString(spriteBatch, _buf, _mLevelOrigin, VColorText, 0.f, Vector2(), 1.f);
+		fontDL->DrawString(spriteBatch, _buf, _mLevelOrigin, VColorText, 0.f, Vector2(), 1.f);
 	//
-	Vector2 _mHealthOrigin(_mLevelOrigin.x, _mLevelOrigin.y + 25);
+	Vector2 _mHealthOrigin(_mNameOrigin.x, _mNameOrigin.y + 22);
 	UINT16 _mHealth = MemGetMainPtr(PARTY_HEALTH_LOBYTE_START)[member] + ((UINT16)MemGetMainPtr(PARTY_HEALTH_HIBYTE_START)[member] << 8);
 	UINT16 _mHealthMax = MemGetMainPtr(PARTY_HEALTH_MAX_LOBYTE_START)[member] + ((UINT16)MemGetMainPtr(PARTY_HEALTH_MAX_HIBYTE_START)[member] << 8);
-	wsprintf(_buf, L"HEALTH:%d/%d", _mHealth, _mHealthMax);
+	swprintf_s(_buf, _bufsize, L"H %04d/%04d", _mHealth, _mHealthMax);
 	fontDL->DrawString(spriteBatch, _buf, _mHealthOrigin, VColorText, 0.f, Vector2(), 1.f);
 	//
-	Vector2 _mPowerOrigin(_mHealthOrigin.x, _mHealthOrigin.y + 25);
-	wsprintf(_buf, L"POWER:%d/%d", MemGetMainPtr(PARTY_POWER_START)[member], MemGetMainPtr(PARTY_POWER_MAX_START)[member]);
+	Vector2 _mPowerOrigin(_mHealthOrigin.x, _mHealthOrigin.y + 22);
+	swprintf_s(_buf, _bufsize, L"P %03d/%03d", MemGetMainPtr(PARTY_POWER_START)[member], MemGetMainPtr(PARTY_POWER_MAX_START)[member]);
 	fontDL->DrawString(spriteBatch, _buf, _mPowerOrigin, VColorText, 0.f, Vector2(), 1.f);
+	//
+	Vector2 _mGoldOrigin(_mPowerOrigin.x, _mPowerOrigin.y + 22);
+	UINT16 _mGold = MemGetMainPtr(PARTY_GOLD_LOBYTE_START)[member] + ((UINT16)MemGetMainPtr(PARTY_GOLD_HIBYTE_START)[member] << 8);
+	swprintf_s(_buf, _bufsize, L"G %05d", _mGold);
+	fontDL->DrawString(spriteBatch, _buf, _mGoldOrigin, VColorText, 0.f, Vector2(), 1.f);
+	//
+	Vector2 _mACOrigin(originX + PARTY_LAYOUT_WIDTH - 14 * 5 - _pad, _mGoldOrigin.y);
+	swprintf_s(_buf, _bufsize, L"AC%+03d", 10 - MemGetMainPtr(PARTY_ARMORCLASS_START)[member]);
+	fontDL->DrawString(spriteBatch, _buf, _mACOrigin, VColorText, 0.f, Vector2(), 1.f);
+	//
+	Vector2 _mFoodOrigin(_mGoldOrigin.x, _mACOrigin.y + 22);
+	UINT8 _mFood = MemGetMainPtr(PARTY_FOOD_START)[member];
+	swprintf_s(_buf, _bufsize, L"F %03d", _mFood);
+	if (_mFood < 10)
+		fontDL->DrawString(spriteBatch, _buf, _mFoodOrigin, Colors::Red, 0.f, Vector2(), 1.f);
+	else if (_mFood < 20)
+		fontDL->DrawString(spriteBatch, _buf, _mFoodOrigin, Colors::DarkOrange, 0.f, Vector2(), 1.f);
+	else
+		fontDL->DrawString(spriteBatch, _buf, _mFoodOrigin, VColorText, 0.f, Vector2(), 1.f);
+	//
+	Vector2 _mTorchesOrigin(originX + PARTY_LAYOUT_WIDTH - 14 * 4 - _pad, _mFoodOrigin.y);
+	swprintf_s(_buf, _bufsize, L"T %02d", 10 - MemGetMainPtr(PARTY_TORCHES_START)[member]);
+	fontDL->DrawString(spriteBatch, _buf, _mTorchesOrigin, VColorText, 0.f, Vector2(), 1.f);
 
 	// Draw bottom stuff at smaller font size
 	float _fScale = 0.5f;
@@ -170,9 +215,9 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	auto _sSizeX = XMVectorGetX(fontDL->MeasureString(_mClass.c_str(), false)) * _fScale;		// Take half width because we'll scale the font by 0.5
 	fontDL->DrawString(spriteBatch, _mClass.c_str(), { _mClassOrigin.x + (PARTY_PORTRAIT_WIDTH - _sSizeX) / 2, _mClassOrigin.y }, 
 		VColorText, 0.f, Vector2(), _fScale);
-
+	//
 	Vector2 _mAttrOrigin(_mClassOrigin.x, _mClassOrigin.y + 20);
-	wsprintf(_buf, L"STR:%02d INT:%02d\n\nCON:%02d DEX:%02d\n\nSIZ:%02d CHA %02d",
+	swprintf_s(_buf, _bufsize, L"STR:%02d INT:%02d\n\nCON:%02d DEX:%02d\n\nSIZ:%02d CHA %02d",
 		MemGetMainPtr(PARTY_ATTR_STR_START)[member],
 		MemGetMainPtr(PARTY_ATTR_CON_START)[member],
 		MemGetMainPtr(PARTY_ATTR_SIZ_START)[member],
@@ -181,6 +226,42 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 		MemGetMainPtr(PARTY_ATTR_CHA_START)[member]
 		);
 	fontDL->DrawString(spriteBatch, _buf, _mAttrOrigin, VColorText, 0.f, Vector2(), _fScale);
+	//
+	// Draw inventory
+	auto _inv = m_invMgr->AllInventoryForMember(member);
+	std::wstring _sItem;
+	Vector2 _mInvOrigin(_mNameOrigin.x + 40, _mClassOrigin.y - 8);
+	for each (InvInstance _item in _inv)
+	{
+		_sItem = L"   .............";		// length of 13 prefixed by count
+		// First set the name, with dot padding to the right
+		_sItem.replace(3, _item.item->name.size(), _item.item->name);
+		if (_item.item->id != EMPTY_ITEM_ID)
+		{
+			if (_item.charges == 0)	// Infinite!
+				_sItem.replace(0, 2, L"**");
+			else if (_item.charges != EMPTY_CHARGES_COUNT)
+			{
+				_sItem.replace(0, 2, L"00");
+				if (_item.charges < 10)
+					_sItem.replace(1, 1, to_wstring(_item.charges));
+				else
+					_sItem.replace(0, 2, to_wstring(_item.charges));
+			}
+			if (MemGetMainPtr(PARTY_WEAP_READY_START)[member] == _item.row)	// readied
+				fontDLInverse->DrawString(spriteBatch, L"IN HANDS",
+					{ _mInvOrigin.x + 120, _mInvOrigin.y }, Colors::Yellow, 0.f, Vector2(), _fScale);
+			else if (_item.equipped)	// equipped
+				fontDLInverse->DrawString(spriteBatch, L"EQUIPPED",
+					{ _mInvOrigin.x + 120, _mInvOrigin.y }, Colors::Green, 0.f, Vector2(), _fScale);
+			else // not equipped
+				fontDLInverse->DrawString(spriteBatch, L"UNUSABLE",
+					{ _mInvOrigin.x + 120, _mInvOrigin.y }, VColorText, 0.f, Vector2(), _fScale);
+		}
+		fontDL->DrawString(spriteBatch, _sItem.c_str(), _mInvOrigin, VColorText, 0.f, Vector2(), _fScale);
+		_mInvOrigin.y += 9;
+	}
+	
 }
 
 #pragma region D3D stuff

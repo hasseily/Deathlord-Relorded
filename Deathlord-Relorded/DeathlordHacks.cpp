@@ -540,7 +540,7 @@ void DeathlordHacks::BackupScenarioImages()
 			}
 		}
 		backupImageFullPath = backupsDirPath + L"\\" + imageName;
-		wsprintf(formattedTime, L"_%04d%02d%02d-%02d%02d%02d.%s", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, imageExtension.c_str());
+		swprintf_s(formattedTime, 50, L"_%04d%02d%02d-%02d%02d%02d.%s", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, imageExtension.c_str());
 		backupImageFullPath.append(formattedTime);
 		res = CopyFile(pathname.c_str(), backupImageFullPath.c_str(), false);
 		if (res == 0)

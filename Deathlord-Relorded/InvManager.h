@@ -29,6 +29,7 @@ public:
 	UINT8 StashSlotCount(InventorySlots slot);
 	UINT8 MaxItemsPerSlot();
 	std::vector<InvInstance> AllInventoryInSlot(InventorySlots slot);
+	std::vector<InvInstance> AllInventoryForMember(UINT8 member);
 	void DeleteItem(InventorySlots slot, UINT8 stashPosition);
 	bool InvManager::PutInStash(UINT8 memberPosition, InventorySlots memberSlot);
 	void SwapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosition, InventorySlots memberSlot);

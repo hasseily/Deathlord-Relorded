@@ -26,18 +26,18 @@ public:
 	InventorySlots slot;
 	UINT16 classMask;
 	UINT16 raceMask;
-	std::string name;
+	std::wstring name;
 	INT8 thaco;
 	UINT8 numAttacks;
 	UINT8 damageMin;
 	UINT8 damageMax;
 	INT8 ac;
-	std::string special;
+	std::wstring special;
 
 	InvItem();
 	InvItem(UINT8 _id, InventorySlots _slot, UINT16 _classMask, UINT16 _raceMask,
-		std::string _name, INT8 _thaco, UINT8 _numAttacks,
-		UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::string _special);
+		std::wstring _name, INT8 _thaco, UINT8 _numAttacks,
+		UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::wstring _special);
 	void copyPropertiesFromItem(InvItem* item);
 	bool canEquip(DeathlordClasses dlClass, DeathlordRaces dlRace);
 
@@ -47,8 +47,8 @@ private:
 
 	void Initialize();
 	void Initialize(UINT8 _id, InventorySlots _slot, UINT16 _classMask, UINT16 _raceMask,
-		std::string _name, INT8 _thaco, UINT8 _numAttacks, 
-		UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::string _special);
+		std::wstring _name, INT8 _thaco, UINT8 _numAttacks, 
+		UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::wstring _special);
 };
 
 

@@ -62,21 +62,21 @@ void InvManager::Initialize()
 	// Import cvs file with all the item data
 	fs::path currentDir = fs::current_path();
 	currentDir += "\\Assets\\InventoryList.csv";
-	ifstream ifs(currentDir);
+	wifstream ifs(currentDir);
 	
-	vector<string> headerFields;
-	vector<string> fields;
-	string s;
+	vector<wstring> headerFields;
+	vector<wstring> fields;
+	wchar_t _buf[200];
 	int lineIdx = 0;
-	for (std::string line; std::getline(ifs, line); )
+	for (std::wstring line; std::getline(ifs, line); )
 	{
 		fields.clear();
-		stringstream ss(line);
-		while (getline(ss, s, ',')) {
+		wstringstream ss(line);
+		while (ss.getline(_buf, 30, ',')) {
 			if (lineIdx == 0)
-				headerFields.push_back(s);
+				headerFields.push_back(wstring(_buf));
 			else
-				fields.push_back(s);
+				fields.push_back(wstring(_buf));
 		}
 		if (lineIdx == 0)	// header, do nothing
 		{
@@ -162,11 +162,11 @@ void InvManager::Initialize()
 		}
 		if (hasError)
 		{
-			char _buf[100];
-			sprintf_s(_buf, 100, "Error loading line %.04d: %s\n", lineIdx, line.c_str());
-			MessageBoxA(HWND_TOP,
+			wchar_t _buf[100];
+			swprintf_s(_buf, 100, L"Error loading line %.04d: %s\n", lineIdx, line.c_str());
+			MessageBox(HWND_TOP,
 				_buf,
-				"Inventory Data Parser Error",
+				L"Inventory Data Parser Error",
 				MB_ICONEXCLAMATION | MB_SETFOREGROUND);
 		}
 		else {
@@ -321,6 +321,37 @@ std::vector<InvInstance> InvManager::AllInventoryInSlot(InventorySlots slot)
 	}
 	// Finally sort and set the row.
 	sort(_currentInventory.begin(), _currentInventory.end(), compareInvInstance);
+	for (size_t i = 0; i < _currentInventory.size(); i++)
+	{
+		_currentInventory.at(i).row = i;
+	}
+	return _currentInventory;
+}
+
+// This is used to just get the inventory for a single party member
+// PartyLayout.cpp uses it
+std::vector<InvInstance> InvManager::AllInventoryForMember(UINT8 member)
+{
+	std::vector<InvInstance> _currentInventory;
+	if (member >= DEATHLORD_PARTY_SIZE)
+		return _currentInventory;
+	for (UINT8 i = 0; i < (DEATHLORD_INVENTORY_SLOTS); i++)
+	{
+		UINT16 idMemSlot = PARTY_INVENTORY_START + member * 0x20 + i;
+		UINT8 itemId = MemGetMainPtr(idMemSlot)[0];
+		InvInstance _inst;
+		_inst.extraIdentifier = 0;
+		_inst.item = &itemList[MemGetMainPtr(idMemSlot)[0]];
+		_inst.charges = MemGetMainPtr(idMemSlot)[ITEM_CHARGES_OFFSET];
+		_inst.owner = i;
+		_inst.equipped = _inst.item->canEquip(
+			(DeathlordClasses)MemGetMainPtr(PARTY_CLASS_START)[i],
+			(DeathlordRaces)MemGetMainPtr(PARTY_RACE_START)[i]
+		);
+		_currentInventory.push_back(_inst);
+	}
+	// Finally set the row
+	// It's equal to the slot #
 	for (size_t i = 0; i < _currentInventory.size(); i++)
 	{
 		_currentInventory.at(i).row = i;

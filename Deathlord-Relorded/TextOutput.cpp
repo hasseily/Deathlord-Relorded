@@ -218,7 +218,7 @@ void TextOutput::PrintCharRaw(unsigned char ch, TextWindows tw, UINT8 X, UINT8 Y
 			PrintCharToBillboard(ch, X, Y, bInverse);
 			/*  poor man's debugging
 			wchar_t _buf[200];
-			wsprintf(_buf, L"Printing char: %c - %03d,%03d", ARRAY_DEATHLORD_CHARSET[ch & 0x7F], X, Y);
+			swprintf_s(_buf, 200, L"Printing char: %c - %03d,%03d", ARRAY_DEATHLORD_CHARSET[ch & 0x7F], X, Y);
 			PrintWStringToLog(std::wstring(_buf), bInverse);
 			*/
 		}

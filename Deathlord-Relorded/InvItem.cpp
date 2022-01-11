@@ -7,8 +7,8 @@ InvItem::InvItem()
 }
 
 InvItem::InvItem(UINT8 _id, InventorySlots _slot, UINT16 _classMask, UINT16 _raceMask,
-	std::string _name, INT8 _thaco, UINT8 _numAttacks,
-	UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::string _special)
+	std::wstring _name, INT8 _thaco, UINT8 _numAttacks,
+	UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::wstring _special)
 {
 	Initialize(_id, _slot, _classMask, _raceMask,
 		_name, _thaco, _numAttacks,
@@ -46,18 +46,18 @@ void InvItem::Initialize()
 	slot = InventorySlots::Melee;
 	classMask = 0;
 	raceMask = 0;
-	name = std::string();
+	name = std::wstring();
 	thaco = 0;
 	numAttacks = 0;
 	damageMin = 0;
 	damageMax = 0;
 	ac = 0;
-	special = std::string();
+	special = std::wstring();
 }
 
 void InvItem::Initialize(UINT8 _id, InventorySlots _slot, UINT16 _classMask, UINT16 _raceMask,
-	std::string _name, INT8 _thaco, UINT8 _numAttacks,
-	UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::string _special)
+	std::wstring _name, INT8 _thaco, UINT8 _numAttacks,
+	UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::wstring _special)
 {
 	id = _id;
 	slot = _slot;
