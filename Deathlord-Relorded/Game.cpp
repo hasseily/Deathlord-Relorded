@@ -268,6 +268,8 @@ void Game::Update(DX::StepTimer const& timer)
 	moTracker.Update(mo);
     if (m_invOverlay->IsInvOverlayDisplayed())
     {
+		if (kbTracker.pressed.Escape)       // Escape used to close the overlay
+			m_invOverlay->HideInvOverlay();
         m_invOverlay->UpdateState();
         m_invOverlay->MousePosInPixels(mo.x, mo.y);
 		if (moTracker.leftButton == ButtonState::PRESSED)
