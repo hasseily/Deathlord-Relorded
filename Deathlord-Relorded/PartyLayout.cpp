@@ -146,7 +146,7 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 
 	///// Draw name with black outline
 	std::wstring _mName = StringFromMemory(PARTY_NAME_START + (member*9), 9);
-	Vector2 _mNameOrigin(_mPortraitOrigin.x + PARTY_PORTRAIT_WIDTH + 6, _mPortraitOrigin.y + 2);
+	Vector2 _mNameOrigin(_mPortraitOrigin.x + PARTY_PORTRAIT_WIDTH + 6, _mPortraitOrigin.y + 3);
 	//fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x - 1.f, _mNameOrigin.y - 1.f } , Colors::Black, 0.f, Vector2(), 1.0f);
 	//fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x - 1.f, _mNameOrigin.y + 1.f }, Colors::Black, 0.f, Vector2(), 1.0f);
 	//fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x + 1.f, _mNameOrigin.y - 1.f }, Colors::Black, 0.f, Vector2(), 1.0f);
@@ -202,12 +202,12 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 		fontDL->DrawString(spriteBatch, _buf, _mFoodOrigin, VColorText, 0.f, Vector2(), 1.f);
 	//
 	Vector2 _mTorchesOrigin(originX + PARTY_LAYOUT_WIDTH - 14 * 4 - _pad, _mFoodOrigin.y);
-	swprintf_s(_buf, _bufsize, L"T %02d", 10 - MemGetMainPtr(PARTY_TORCHES_START)[member]);
+	swprintf_s(_buf, _bufsize, L"T %02d", MemGetMainPtr(PARTY_TORCHES_START)[member]);
 	fontDL->DrawString(spriteBatch, _buf, _mTorchesOrigin, VColorText, 0.f, Vector2(), 1.f);
 
 	// Draw bottom stuff at smaller font size
 	float _fScale = 0.5f;
-	Vector2 _mClassOrigin(_mPortraitOrigin.x, _mPortraitOrigin.y + PARTY_PORTRAIT_HEIGHT + 6);
+	Vector2 _mClassOrigin(_mPortraitOrigin.x, _mPortraitOrigin.y + PARTY_PORTRAIT_HEIGHT + 9);
 	UINT8 _mClassId = MemGetMainPtr(PARTY_CLASS_START)[member];
 	std::wstring _mClass = NameOfClass((DeathlordClasses)_mClassId, true);
 	auto _sSizeX = XMVectorGetX(fontDL->MeasureString(_mClass.c_str(), false)) * _fScale;		// Take half width because we'll scale the font by 0.5
@@ -228,7 +228,7 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	// Draw inventory
 	auto _inv = m_invMgr->AllInventoryForMember(member);
 	std::wstring _sItem;
-	Vector2 _mInvOrigin(_mNameOrigin.x + 38, _mClassOrigin.y - 7);
+	Vector2 _mInvOrigin(_mNameOrigin.x + 38, _mFoodOrigin.y + 27);
 	for each (InvInstance _item in _inv)
 	{
 		_sItem = L"   .............";		// length of 13 prefixed by count
@@ -279,16 +279,19 @@ void PartyLayout::RenderMemberTopLayer(UINT8 member, DirectX::SpriteBatch* sprit
 	Vector2 _mPortraitOrigin(originX + _pad, originY + _pad);
 	swprintf_s(_buf, _bufsize, L"%d", member + 1);
 	//Emboss down slightly
-	fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 3, _mPortraitOrigin.y + 3 },
-		VColorCurtain, 0.f, Vector2(), 1.0f);
+	fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x - 2, _mPortraitOrigin.y - 2 }, VColorShadow, 0.f, Vector2(), 1.0f);
+	fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x - 2, _mPortraitOrigin.y - 1 }, VColorShadow, 0.f, Vector2(), 1.0f);
+	//	fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x - 2, _mPortraitOrigin.y + 1 }, VColorCurtain, 0.f, Vector2(), 1.0f);
+//	fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 0, _mPortraitOrigin.y - 0 }, VColorCurtain, 0.f, Vector2(), 1.0f);
+//	fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 0, _mPortraitOrigin.y + 0 }, VColorCurtain, 0.f, Vector2(), 1.0f);
 	if (MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0] == member)
 	{
-		fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 4, _mPortraitOrigin.y + 4 },
+		fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x - 1, _mPortraitOrigin.y },
 			Colors::Yellow, 0.f, Vector2(), 1.0f);
 	}
 	else
 	{
-		fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 4, _mPortraitOrigin.y + 4 },
+		fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x - 1, _mPortraitOrigin.y },
 			VColorText, 0.f, Vector2(), 1.0f);
 	}
 }

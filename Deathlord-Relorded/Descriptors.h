@@ -12,6 +12,8 @@ constexpr XMFLOAT4 ColorBlack = { 0.f, 0.f, 0.f, 1.000000000f };
 constexpr XMVECTORF32 VColorBlack = { { { 0.f, 0.f, 0.f, 1.000000000f } } };
 constexpr XMFLOAT4 ColorCurtain = { 0.f, 0.f, 0.f, 0.9f };
 constexpr XMVECTORF32 VColorCurtain = { { { 0.f, 0.f, 0.f, 0.9f } } };
+constexpr XMFLOAT4 ColorShadow = { 0.f, 0.f, 0.f, 0.33333f };
+constexpr XMVECTORF32 VColorShadow = { { { 0.f, 0.f, 0.f, 0.33333f } } };
 
 enum class TextureDescriptors
 {
