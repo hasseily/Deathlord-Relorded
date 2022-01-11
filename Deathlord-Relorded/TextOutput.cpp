@@ -68,10 +68,15 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 		yInc -= 18;
 	}
 	yInc = 0.f;
+	size_t _lineIdx = 0;
 	for each (auto logLine in m_vLog)
 	{
+		if (_lineIdx == 0)	// Emboss the input line
+			(*gamePtr)->GetSpriteFontAtIndex(logLine.second)->DrawString(spriteBatch, logLine.first.c_str(),
+				{ r.x + 1295.f, r.y + 986.f + yInc }, Colors::DarkBlue, 0.f, Vector2(), 1.f);
 		(*gamePtr)->GetSpriteFontAtIndex(logLine.second)->DrawString(spriteBatch, logLine.first.c_str(),
 			{ r.x + 1294.f, r.y + 985.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
+		_lineIdx++;
 		yInc -= 18;
 	}
 
