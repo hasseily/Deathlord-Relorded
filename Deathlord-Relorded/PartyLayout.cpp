@@ -38,13 +38,19 @@ void PartyLayout::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBa
 {
 	if (!g_hasBeenIdleOnce)
 		return;
-	auto plTexSize = GetTextureSize(m_partyLayoutSpriteSheet.Get());
 	m_invMgr = InvManager::GetInstance();
-//	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::PartyLayoutSpriteSheet), mmTexSize,
-//		_overlayPinPosInMap, &_pinRect, Colors::White, 0.f, _originPin);
 	for (UINT8 i = 0; i < m_partySize; i++)
 	{
 		RenderMember(i, spriteBatch, r.x + PARTY_LAYOUT_X[i], r.y + PARTY_LAYOUT_Y[i]);
+	}
+	// Now render the top background layer
+	auto bgltTexSize = GetTextureSize(m_bgLayerTop.Get());
+	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::MainBackgroundLayerTop), bgltTexSize,
+		Vector2(r.x, r.y));
+	// And the final dynamic layer
+	for (UINT8 i = 0; i < m_partySize; i++)
+	{
+		RenderMemberTopLayer(i, spriteBatch, r.x + PARTY_LAYOUT_X[i], r.y + PARTY_LAYOUT_Y[i]);
 	}
 }
 
@@ -96,21 +102,6 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 			_mPortraitOrigin, &_portraitRect, Colors::White, 0.f, XMFLOAT2(), 1.f);
 	}
 
-	///// Draw party position
-	swprintf_s(_buf, _bufsize, L"%d", member + 1);
-	if (MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0] == member)
-	{
-		fontDLInverse->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 4, _mPortraitOrigin.y + 4 },
-			Colors::Yellow, 0.f, Vector2(), 1.0f);
-		fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 4, _mPortraitOrigin.y + 4 },
-			VColorAmber, 0.f, Vector2(), 1.0f);
-	}
-	else
-	{
-		fontDLInverse->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 4, _mPortraitOrigin.y + 4 },
-			VColorText, 0.f, Vector2(), 1.0f);
-	}
-
 	///// Draw status with black outline
 	UINT8 _mStatus = MemGetMainPtr(PARTY_STATUS_START)[member];
 	Vector2 _mStatusOrigin(_mPortraitOrigin.x + PARTY_PORTRAIT_WIDTH - 4 - 14*3, 
@@ -159,8 +150,11 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	//fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x - 1.f, _mNameOrigin.y - 1.f } , Colors::Black, 0.f, Vector2(), 1.0f);
 	//fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x - 1.f, _mNameOrigin.y + 1.f }, Colors::Black, 0.f, Vector2(), 1.0f);
 	//fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x + 1.f, _mNameOrigin.y - 1.f }, Colors::Black, 0.f, Vector2(), 1.0f);
-	fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x + 1.f, _mNameOrigin.y + 1.f }, Colors::Black, 0.f, Vector2(), 1.0f);
-	fontDL->DrawString(spriteBatch, _mName.c_str(), _mNameOrigin, VColorText, 0.f, Vector2(), 1.0f);
+	fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x + 1.f, _mNameOrigin.y + 1.f }, VColorCurtain, 0.f, Vector2(), 1.0f);
+	if (MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0] == member)
+		fontDL->DrawString(spriteBatch, _mName.c_str(), _mNameOrigin, Colors::Yellow, 0.f, Vector2(), 1.0f);
+	else
+		fontDL->DrawString(spriteBatch, _mName.c_str(), _mNameOrigin, VColorText, 0.f, Vector2(), 1.0f);
 
 	///// Draw stuff to the right of the portrait
 	Vector2 _mLevelOrigin(originX + PARTY_LAYOUT_WIDTH - 14*4 - _pad, _mNameOrigin.y);
@@ -213,14 +207,14 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 
 	// Draw bottom stuff at smaller font size
 	float _fScale = 0.5f;
-	Vector2 _mClassOrigin(_mPortraitOrigin.x, _mPortraitOrigin.y + PARTY_PORTRAIT_HEIGHT + 4);
+	Vector2 _mClassOrigin(_mPortraitOrigin.x, _mPortraitOrigin.y + PARTY_PORTRAIT_HEIGHT + 6);
 	UINT8 _mClassId = MemGetMainPtr(PARTY_CLASS_START)[member];
 	std::wstring _mClass = NameOfClass((DeathlordClasses)_mClassId, true);
 	auto _sSizeX = XMVectorGetX(fontDL->MeasureString(_mClass.c_str(), false)) * _fScale;		// Take half width because we'll scale the font by 0.5
 	fontDL->DrawString(spriteBatch, _mClass.c_str(), { _mClassOrigin.x + (PARTY_PORTRAIT_WIDTH - _sSizeX) / 2, _mClassOrigin.y }, 
 		VColorText, 0.f, Vector2(), _fScale);
 	//
-	Vector2 _mAttrOrigin(_mClassOrigin.x, _mClassOrigin.y + 20);
+	Vector2 _mAttrOrigin(_mClassOrigin.x, _mClassOrigin.y + 18);
 	swprintf_s(_buf, _bufsize, L"STR:%02d INT:%02d\n\nCON:%02d DEX:%02d\n\nSIZ:%02d CHA %02d",
 		MemGetMainPtr(PARTY_ATTR_STR_START)[member],
 		MemGetMainPtr(PARTY_ATTR_CON_START)[member],
@@ -268,10 +262,46 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	
 }
 
+void PartyLayout::RenderMemberTopLayer(UINT8 member, DirectX::SpriteBatch* spriteBatch, UINT16 originX, UINT16 originY)
+{
+	// Need to render the party #
+	// And some overlay to show the active member
+	auto gamePtr = GetGamePtr();
+	auto fontDL = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular);
+	auto fontDLInverse = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLInverse);
+	auto fontPR3Regular = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontPR3Regular);
+	const UINT8 _bufsize = 200;
+	wchar_t _buf[_bufsize];
+
+	// padding of 2 all around
+	UINT8 _pad = 2;
+	///// Draw party position
+	Vector2 _mPortraitOrigin(originX + _pad, originY + _pad);
+	swprintf_s(_buf, _bufsize, L"%d", member + 1);
+	//Emboss down slightly
+	fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 3, _mPortraitOrigin.y + 3 },
+		VColorCurtain, 0.f, Vector2(), 1.0f);
+	if (MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0] == member)
+	{
+		fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 4, _mPortraitOrigin.y + 4 },
+			Colors::Yellow, 0.f, Vector2(), 1.0f);
+	}
+	else
+	{
+		fontDL->DrawString(spriteBatch, _buf, { _mPortraitOrigin.x + 4, _mPortraitOrigin.y + 4 },
+			VColorText, 0.f, Vector2(), 1.0f);
+	}
+}
+
 #pragma region D3D stuff
 void PartyLayout::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload)
 {
 	auto device = m_deviceResources->GetD3DDevice();
+	DX::ThrowIfFailed(
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/Background_Relorded_LayerTop.png",
+			m_bgLayerTop.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_bgLayerTop.Get(),
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::MainBackgroundLayerTop));
 	DX::ThrowIfFailed(
 		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/SpriteSheet_PartyLayout.png",
 			m_partyLayoutSpriteSheet.ReleaseAndGetAddressOf()));
@@ -291,6 +321,7 @@ void PartyLayout::CreateDeviceDependentResources(ResourceUploadBatch* resourceUp
 
 void PartyLayout::OnDeviceLost()
 {
+	m_bgLayerTop.Reset();
 	m_partyLayoutSpriteSheet.Reset();
 	m_portraitsMale.Reset();
 	m_portraitsFemale.Reset();

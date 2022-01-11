@@ -375,6 +375,7 @@
       <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GeneratePremultipliedAlpha>
       <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GeneratePremultipliedAlpha>
     </Image>
+    <Image Include="Assets\Background_Relorded_LayerTop.png" />
     <Image Include="Assets\MinimapSpriteSheet.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>

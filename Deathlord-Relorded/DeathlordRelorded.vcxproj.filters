@@ -471,6 +471,9 @@
     <Image Include="Assets\SpriteSheet_PartyLayout.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\Background_Relorded_LayerTop.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\PixelShader.hlsl">

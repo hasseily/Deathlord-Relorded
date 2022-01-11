@@ -65,13 +65,15 @@ private:
 		Initialize();
 	}
 
-	void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, UINT16 originX, UINT16 originY);
+	void RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, UINT16 originX, UINT16 originY);
+	void RenderMemberTopLayer(UINT8 member, DirectX::SpriteBatch* spriteBatch, UINT16 originX, UINT16 originY);
 
 	UINT8 m_partySize;
 	UINT8 m_currentLeader;
 
 	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_bgLayerTop;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_partyLayoutSpriteSheet;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_portraitsMale;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_portraitsFemale;
