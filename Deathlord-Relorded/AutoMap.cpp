@@ -14,10 +14,6 @@ AutoMap* AutoMap::s_instance;
 // In main
 extern std::unique_ptr<Game>* GetGamePtr();
 
-constexpr UINT8 TILEID_REDRAW = 0xFF;			// when we see this nonexistent tile id we automatically redraw the tile
-
-constexpr XMVECTORF32 COLORTRANSLUCENTWHITE = { 1.f, 1.f, 1.f, .8f };
-
 // This is used for any animated sprite to accelerate or slow its framerate (so one doesn't have to build 30 frames!)
 // TODO: Make it dynamically calculated based on frame rate
 #ifdef _DEBUG
@@ -29,6 +25,23 @@ constexpr UINT STROBESLOWAVATAR = 6;
 constexpr UINT STROBESLOWELEMENT = 24;
 constexpr UINT STROBESLOWHIDDEN = 12;
 #endif
+
+constexpr UINT8 TILEID_REDRAW = 0xFF;			// when we see this nonexistent tile id we automatically redraw the tile
+
+constexpr XMVECTORF32 COLORTRANSLUCENTWHITE = { 1.f, 1.f, 1.f, .8f };
+
+// Tile IDs that block visibility
+constexpr UINT8 TILES_DUNGEON_BLOCKVIS[0x50] = { 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+												 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+												 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+												 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+												 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+constexpr UINT8 TILES_OVERLAND_BLOCKVIS[0x50] = { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+												  1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+											      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+												  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+												  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 UINT m_avatarStrobeIdx = 0;
 constexpr UINT AVATARSTROBECT = 10;
@@ -53,17 +66,17 @@ void AutoMap::Initialize()
 	// CreateNewTileSpriteMap();
 	// Set up the arrays for all backbuffers
 	UINT bbCount = m_deviceResources->GetBackBufferCount();
-	m_bbufFogOfWarTiles = std::vector(bbCount, std::vector<UINT8>(MAP_LENGTH, 0x00));		// states (seen, etc...)
-	m_bbufCurrentMapTiles = std::vector(bbCount, std::vector<UINT8>(MAP_LENGTH, 0x00));		// tile id
+	m_FogOfWarTiles = std::vector<UINT8>(MAP_LENGTH, 0x00);								// states (seen, etc...)
+	m_LOSVisibilityTiles = std::vector<float>(MAP_LENGTH, 0.f);							// visibility through line of sight
+	m_bbufCurrentMapTiles = std::vector(bbCount, std::vector<UINT8>(MAP_LENGTH, 0x00));	// tile id
 }
 
 void AutoMap::ClearMapArea()
 {
 	for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
-	{
 		std::fill(m_bbufCurrentMapTiles[i].begin(), m_bbufCurrentMapTiles[i].end(), 0x00);
-		std::fill(m_bbufFogOfWarTiles[i].begin(), m_bbufFogOfWarTiles[i].end(), 0x00);
-	}
+	std::fill(m_FogOfWarTiles.begin(), m_FogOfWarTiles.end(), 0x00);
+	std::fill(m_LOSVisibilityTiles.begin(), m_LOSVisibilityTiles.end(), 0.f);
 }
 
 void AutoMap::ForceRedrawMapArea()
@@ -82,7 +95,7 @@ void AutoMap::SaveCurrentMapInfo()
 {
 	if (m_currentMapUniqueName == "")
 		return;
-	g_nonVolatile.fogOfWarMarkers[m_currentMapUniqueName] = m_bbufFogOfWarTiles[0];
+	g_nonVolatile.fogOfWarMarkers[m_currentMapUniqueName] = m_FogOfWarTiles;
 	g_nonVolatile.SaveToDisk();
 }
 
@@ -118,8 +131,7 @@ void AutoMap::InitializeCurrentMapInfo()
 			// reset it
 			markers.resize(MAP_LENGTH, 0);
 		}
-		for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
-			m_bbufFogOfWarTiles[i] = markers;
+		m_FogOfWarTiles = markers;
 	}
 }
 
@@ -147,7 +159,7 @@ void AutoMap::SetShowTransition(bool showTransition)
 
 #pragma warning(push)
 #pragma warning(disable : 26451)
-void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
+bool AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 {
 	// Make sure we don't draw on the wrong map!
 	if (m_currentMapUniqueName != GetCurrentMapUniqueName())
@@ -156,7 +168,7 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 	UINT32 cleanX = (x < MAP_WIDTH  ? x : MAP_WIDTH - 1);
 	UINT32 cleanY = (y < MAP_HEIGHT ? y : MAP_HEIGHT - 1);
 	if ((m_avatarPosition.x == cleanX) && (m_avatarPosition.y == cleanY))
-		return;
+		return false;
 
 	/*
 	char _buf[400];
@@ -165,17 +177,15 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 	OutputDebugStringA(_buf);
 	*/
 
-	// We redraw all the tiles in the viewport later, so here just set the footsteps
+	// We redraw all the tiles in the viewport later, so here just set the footsteps and LOS
 	m_avatarPosition = { cleanX, cleanY };
-	for (size_t i = 0; i < m_deviceResources->GetBackBufferCount(); i++)
-	{
-		m_bbufFogOfWarTiles[i][m_avatarPosition.x + m_avatarPosition.y * MAP_WIDTH] |= (1 << (UINT8)FogOfWarMarkers::Footstep);
-	}
+	m_FogOfWarTiles[m_avatarPosition.x + m_avatarPosition.y * MAP_WIDTH] |= (1 << (UINT8)FogOfWarMarkers::Footstep);
+
 
 	/*
 	char _buf[500];
 	sprintf_s(_buf, 500, "Old Avatar Pos tileid has values %2d, %2d in vector\n",
-		m_bbufCurrentMapTiles[0][xx_x + xx_y * MAP_WIDTH], m_bbufCurrentMapTiles[1][xx_x + xx_y * MAP_WIDTH]);
+		m_bbufCurrentMapTiles[xx_x + xx_y * MAP_WIDTH], m_bbufCurrentMapTiles[xx_x + xx_y * MAP_WIDTH]);
 	OutputDebugStringA(_buf);
 	*/
 
@@ -222,40 +232,92 @@ void AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 		}
 	}
 	 */
+	return true;
+}
+
+void AutoMap::CalculateLOS()
+{
+	// Here we're just calculating pure LOS given the tiles that block the view
+	int range = 100;	// To guarantee filling the 64x64 square
+	int x, y;
+	for (double f = 0; f < 3.141592 * 2; f += 0.01) {
+		x = int(range * cos(f)) + (int)m_avatarPosition.x;
+		y = int(range * sin(f)) + (int)m_avatarPosition.y;
+		DrawLine((int)m_avatarPosition.x, (int)m_avatarPosition.y, x, y, range);
+		OutputDebugStringA("\n");
+	}
+}
+
+void AutoMap::DrawLine(int x0, int y0, int x1, int y1, int range) {
+	int dx = abs(x0 - x1);
+	int dy = abs(y0 - y1);
+	double s = 0.99 / (dx > dy ? double(dx) : double(dy));
+	double t = 0;
+	int mapPos;
+	UINT8 blockVal;
+	LPBYTE mapMemPtr = GetCurrentGameMap();
+	while (t < 1.0) {
+		dx = int((1.0 - t) * x0 + t * x1);
+		dy = int((1.0 - t) * y0 + t * y1);
+		if ((dx >= MAP_WIDTH) | (dy >= MAP_HEIGHT) | (dx < 0) | (dy < 0))
+			goto CONT;
+		if (dx == m_avatarPosition.x && dy == m_avatarPosition.y)
+			goto CONT;	// Don't handle the tile the avatar is on
+		mapPos = dx + dy * MAP_WIDTH;
+		if (PlayerIsOverland())
+			blockVal = TILES_OVERLAND_BLOCKVIS[mapMemPtr[mapPos] % 0x50];
+		else
+			blockVal = TILES_DUNGEON_BLOCKVIS[mapMemPtr[mapPos] % 0x50];
+		// Always show the tile, even if it's blocking
+		if ((range * t) < 9 )		// 8-tile really visible range. TODO: Change to the real stuff
+			m_LOSVisibilityTiles[mapPos] = 1.f;
+		else
+			m_LOSVisibilityTiles[mapPos] = 0.15f;
+		m_FogOfWarTiles[mapPos] |= (1 << (UINT8)FogOfWarMarkers::UnFogOfWar);
+		if (blockVal != 0) // It's a blocking tile. Don't show anything behind it. Exit.
+			return;
+CONT:
+		t += s;
+	}
 }
 
 void AutoMap::AnalyzeVisibleTiles()
 {
-	UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
-	// Now check the visible tiles around the avatar (tiles that aren't black)
-	// Those will have their fog-of-war bit unset
-	BYTE* tilesVisibleAroundAvatar = MemGetMainPtr(GAMEMAP_START_CURRENT_TILELIST);
-	UINT8 oldBufVal;
-	for (UINT8 j = 0; j < 9; j++)	// rows
+	if (UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]))
 	{
-		for (UINT8 i = 0; i < 9; i++)	// columns
+		CalculateLOS();
+		return;
+		// Now check the visible tiles around the avatar (tiles that aren't black)
+		// Those will have their fog-of-war bit unset
+		BYTE* tilesVisibleAroundAvatar = MemGetMainPtr(GAMEMAP_START_CURRENT_TILELIST);
+		UINT8 oldBufVal;
+		for (UINT8 j = 0; j < 9; j++)	// rows
 		{
-			// First calculate the position of the tile in the map
-			UINT32 tilePosX = m_avatarPosition.x - 4 + i;
-			UINT32 tilePosY = m_avatarPosition.y - 4 + j;
-			if ((tilePosX >= MAP_WIDTH) || (tilePosY >= MAP_HEIGHT)) // outside the map (no need to check < 0, it'll roll over as a UINT32)
-				continue;
-			for (size_t ibb = 0; ibb < m_deviceResources->GetBackBufferCount(); ibb++)
+			for (UINT8 i = 0; i < 9; i++)	// columns
 			{
+				// First calculate the position of the tile in the map
+				UINT32 tilePosX = m_avatarPosition.x - 4 + i;
+				UINT32 tilePosY = m_avatarPosition.y - 4 + j;
+				if ((tilePosX >= MAP_WIDTH) || (tilePosY >= MAP_HEIGHT)) // outside the map (no need to check < 0, it'll roll over as a UINT32)
+					continue;
+
 				// Move the visibility bit to the FogOfWar position, and OR it with the value in the vector.
 				// If the user ever sees the tile, it stays "seen"
-				oldBufVal = m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH];
+				oldBufVal = m_FogOfWarTiles[tilePosX + tilePosY * MAP_WIDTH];
 				if (tilesVisibleAroundAvatar[i + 9 * j] != 0)
 				{
-					m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] |=
+					m_FogOfWarTiles[tilePosX + tilePosY * MAP_WIDTH] |=
 						(1 << (UINT8)FogOfWarMarkers::UnFogOfWar);
 				}
-
-				// redraw all the tiles in the Deathlord viewport
-				m_bbufCurrentMapTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] = TILEID_REDRAW;
+				for (size_t ibb = 0; ibb < m_deviceResources->GetBackBufferCount(); ibb++)
+				{
+					// redraw all the tiles in the Deathlord viewport
+					m_bbufCurrentMapTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] = TILEID_REDRAW;
+				}
 			}
 		}
 	}
+
 }
 
 void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states)
@@ -286,13 +348,9 @@ void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<Direct
 
 			if ((i == 4) && (j == 4))	//player tile. Always enable the hidden layer there, but don't draw it over the player icon
 			{
-				for (size_t ibb = 0; ibb < m_deviceResources->GetBackBufferCount(); ibb++)
-				{
-					// Move the visibility bit to the hidden position, and OR it with the value in the vector.
-					// If the user ever sees the hidden info, it stays "seen"
-					m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] |=
-						(1 << (UINT8)FogOfWarMarkers::Hidden);
-				}
+				// Move the visibility bit to the hidden position, and OR it with the value in the vector.
+				// If the user ever sees the hidden info, it stays "seen"
+				m_FogOfWarTiles[tilePosX + tilePosY * MAP_WIDTH] |= (1 << (UINT8)FogOfWarMarkers::Hidden);
 				continue;
 			}
 
@@ -403,14 +461,9 @@ void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<Direct
 					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapHiddenSpriteSheet), GetTextureSize(m_autoMapSpriteSheet.Get()),
 						tilePosInMap, &_tileSheetRect, Colors::White, 0.f, spriteOrigin, mapScale);
 
-					// Now turn that on always for the automap, so we remember that the player has seen it
-					for (size_t ibb = 0; ibb < m_deviceResources->GetBackBufferCount(); ibb++)
-					{
-						// Move the visibility bit to the hidden position, and OR it with the value in the vector.
-						// If the user ever sees the hidden info, it stays "seen"
-						m_bbufFogOfWarTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] |=
-							(1 << (UINT8)FogOfWarMarkers::Hidden);
-					}
+					// Move the visibility bit to the hidden position, and OR it with the value in the vector.
+					// If the user ever sees the hidden info, it stays "seen"
+					m_FogOfWarTiles[tilePosX + tilePosY * MAP_WIDTH] |= (1 << (UINT8)FogOfWarMarkers::Hidden);
 				}
 			}
 		}
@@ -440,6 +493,8 @@ void AutoMap::CreateNewTileSpriteMap()
 
 void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states, RECT* mapRect)
 {
+	BYTE* tilesVisibleAroundAvatar = MemGetMainPtr(GAMEMAP_START_CURRENT_TILELIST);
+
 	// Scale the viewport, then translate it in reverse to how much
 	// the center of the mapRect was translated when scaled
 	// In this way the map is always centered when scaled, within the mapRect requested
@@ -558,7 +613,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 
 			UINT8 curr_tileId = mapMemPtr[mapPos] % 0x50;	// Right now don't consider the special bits
 			bool shouldDraw = true;
-			if (((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
+			if (((m_FogOfWarTiles[mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
 				|| (g_nonVolatile.showFog == false))
 			{
 				// Here decide which tiles to show!
@@ -650,8 +705,22 @@ element_tiles_general:
 			{
 				RECT tilePosRectInMap = { tilePosInMap.x, tilePosInMap.y, 
 					tilePosInMap.x + PNGTW * mapScale, tilePosInMap.y + PNGTH * mapScale };
+
+				// Decide whether to display
+				// TODO: Remake my own fog of war calculation
+				// Use 8 or more tile radius
+				// Reduce based on:
+				//		MAP_VISIBILITY_RADIUS when in dungeon
+				//		daylight when outdoors
+				//		In town keep full visibility
+
+
+				float _tileVisibilityLevel = m_LOSVisibilityTiles[mapPos];
+				if (g_nonVolatile.showFog == false)		// override if no fog
+					_tileVisibilityLevel = 1.0f;
+
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)curr_texDesc),
-					GetTextureSize(curr_tileset.Get()), tilePosRectInMap, &curr_spriteRect);
+					GetTextureSize(curr_tileset.Get()), tilePosRectInMap, &curr_spriteRect, XMVECTORF32({ { { 1.f, 1.f, 1.f, _tileVisibilityLevel } } }));
 
 				// Show a marker for traps, hidden and unopened items
 				// Only when not on the overland map
@@ -661,7 +730,7 @@ element_tiles_general:
 
 				// First check if the player has already identified the hidden marker
 				bool hasSeenHidden = false;
-				if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (1 << (UINT8)FogOfWarMarkers::Hidden)) > 0)
+				if ((m_FogOfWarTiles[mapPos] & (1 << (UINT8)FogOfWarMarkers::Hidden)) > 0)
 				{
 					hasSeenHidden = true;
 				}
@@ -779,10 +848,14 @@ element_tiles_general:
 				}
 				else // On foot
 				{
-					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
-						GetTextureSize(m_monsterSpriteSheet.Get()), overlayPosInMap, &avatarRect,
-						Colors::White, 0.f, _origin,
-						mapScale* AVATARSTROBE[(m_avatarStrobeIdx / STROBESLOWAVATAR) % AVATARSTROBECT]);
+					// If hidden, don't draw!
+					if (MemGetMainPtr(MAP_IS_HIDDEN)[0] == 0)
+					{
+						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
+							GetTextureSize(m_monsterSpriteSheet.Get()), overlayPosInMap, &avatarRect,
+							Colors::White, 0.f, _origin,
+							mapScale* AVATARSTROBE[(m_avatarStrobeIdx / STROBESLOWAVATAR) % AVATARSTROBECT]);
+					}
 				}
 				++m_avatarStrobeIdx;
 				if (m_avatarStrobeIdx >= (AVATARSTROBECT * STROBESLOWAVATAR))
@@ -792,7 +865,7 @@ element_tiles_general:
 			{
 				if (g_nonVolatile.showFootsteps)
 				{
-					if ((m_bbufFogOfWarTiles[currentBackBufferIdx][mapPos] & (1 << (UINT8)FogOfWarMarkers::Footstep)) > 0)
+					if ((m_FogOfWarTiles[mapPos] & (1 << (UINT8)FogOfWarMarkers::Footstep)) > 0)
 					{
 						(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular)->DrawString(spriteBatch.get(), m_cursor.c_str(),
 							footstepsPosInMap, Colors::Yellow, 0.f, XMFLOAT2(4.f, 9.f), .4f);

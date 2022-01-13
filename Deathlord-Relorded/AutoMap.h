@@ -85,7 +85,6 @@ public:
 	// Vector2 drawOrigin = Vector2();
 	void DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states, RECT* mapRect);
 
-	void UpdateAvatarPositionOnAutoMap(UINT x, UINT y);
 	void ClearMapArea();
 	void ForceRedrawMapArea();
 	void AnalyzeVisibleTiles();
@@ -138,6 +137,9 @@ private:
 	}
 
 	void Initialize();
+	bool UpdateAvatarPositionOnAutoMap(UINT x, UINT y);
+	void CalculateLOS();
+	void DrawLine(int x0, int y0, int x1, int y1, int range);
 	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBG;		// Transition image
@@ -156,8 +158,8 @@ private:
 															// to ensure we don't redraw what's already there
 															// The number of vectors will be equal to the backbuffer count
 
-	std::vector<std::vector<UINT8>> m_bbufFogOfWarTiles;	// Info about the user having seen map tiles, walked on them...
-															// The number of vectors will be equal to the backbuffer count
+	std::vector<UINT8> m_FogOfWarTiles;		// Info about the user having seen map tiles, walked on them...
+	std::vector<float> m_LOSVisibilityTiles;	// visibility level of all the tiles on the map given the line of sight
 
 	std::string m_currentMapUniqueName;
 };
