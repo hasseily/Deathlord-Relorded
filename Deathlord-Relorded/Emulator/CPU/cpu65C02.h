@@ -148,10 +148,6 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				if (MemGetMainPtr(MEM_PRINT_Y)[0] < PRINT_Y_MIN)
 					break;
 
-				// Use the below code to check for combat mode
-				// if (!g_nonVolatile.logCombat && (MemGetMainPtr(MEM_MODULE_STATE)[0] == (int)ModuleStates::Combat))
-				//	break;
-
 				unsigned int _glyph = regs.a;
 #ifdef _DEBUG_XXX
 				char _bufPrint[200];
@@ -194,6 +190,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 					MemGetRealMainPtr(MEM_PRINT_AREA_Y_END)[0]);
 				OutputDebugStringA(_buf);
 #endif
+				break;
 			}
 			case PC_CHECK_REAR_ATTACK:
 			{

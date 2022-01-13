@@ -5,6 +5,9 @@
 
 // Program Counter locations to hijack when processing the game
 // to change the behavior on the fly without patching the original code
+// Research by rikkles and qkumba
+#define PC_RNG						0x4AE0		// Random number generator
+#define PC_WAIT_FOR_KEYPRESS		0x540B		// Waits for a keypress
 #define PC_DECREMENT_TIMER			0x621F		// routine to decrement a timer before it makes the player "wait" and pass a turn
 #define PC_TRANSIT_OUT_OVERLAND		0xE8F4		// routine that gets the player into a dungeon or town
 #define PC_TRANSIT_IN_OVERLAND		0xEF0A		// routine that gets the player back in the overland
@@ -21,6 +24,8 @@
 #define PC_SAVE_AFTER_DEATH			0x5BC5		// BNE should not branch in order to stop saving after a char dies in combat
 #define PC_NINJA_MONK_AC_RESET		0xA952		// AND with 0F that resets the Ninja and Monk A/C to 0 every 32 levels. Bypass this bug.
 
+#define PC_RECALC_ARMORCLASS		0xA93F		// Jumping to this routine recalculates the armor classes of all characters
+
 #define PC_SCROLL_WINDOW			0x5395		// This scrolls the active window
 												// if A is $01, it's the log window
 												// if A is $0B, it's the last line of the billboard that scrolls (in battle)
@@ -31,6 +36,27 @@
 #define MEM_PRINT_AREA_X_END		0x00AB		// Coordinates with the print area
 #define MEM_PRINT_AREA_Y_START		0x00AA		// Coordinates with the print area
 #define MEM_PRINT_AREA_Y_END		0x00AC		// Coordinates with the print area
+
+// Battle module
+#define PC_BATTLE_AMBUSH			0xEB43		// Pre-entry point if ambushed
+#define PC_BATTLE_ENTER				0xEC30		// Entry point for battle module (also called after ambush)
+#define PC_BATTLE_EXIT				0xA37F		// Exits the battle module (before clearing the screen areas and handling loot)
+#define MEM_BATTLE_GOLD_LO			0x009A		// Gold at end of battle Low Byte
+#define MEM_BATTLE_GOLD_HI			0x009B		// Gold at end of battle High Byte
+#define PC_BATTLE_HAS_GOLD			0x8EAA		// The previous instruction at 0x8EA7 branches away if A > mem(0x8F55+X). It's a % chance of loot based on enemy type
+#define PC_BATTLE_DISPLAY_GOLD		0x8EDF		// Start of the gold display routine 0x8EDF prints the number, 0x8EE2-0x8EF1 prints " gold pieces!"
+#define PC_BATTLE_ENEMY_HAS_HIT		0xAAE1		// The enemy has hit the player (CMP at 0xAADD does the RNG comparison with: (30 - (AC-TH0+1)*5)*2.5. If RNG is below, it's a hit
+#define PC_BATTLE_ENEMY_END_HIT_ATTEMPT		0xAB49		// End of an enemy hit cycle (for example, 3 hit attempts will trigger 3 times)
+#define PC_BATTLE_TURN_END			0xAF00		// End of any turn for any player. 6 chars and 3 enemies will trigger at least 9 times per round
+
+
+/* the JSRs right after 0xA37F are:
+0xA382: JSR 0x51EB	Redraws center right area
+0xA385: JSR 0x5162	Clears enemy sprite from map
+0xA388: JSR 0x5212	Clears the billboard area top right
+0xA38B: JSR 0x5203	Sets co-ords of active window
+0xA38E: JSR 0x5194	Clear the log area bottom left
+*/
 
 struct regsrec
 {

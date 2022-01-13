@@ -71,14 +71,6 @@ constexpr UINT16 TILE_DUNGEON_FIRE_OFFSET = 0x2D;
 constexpr UINT16 TILE_DUNGEON_ACID_OFFSET = 0x2C;
 constexpr UINT16 TILE_DUNGEON_MAGIC_OFFSET = 0x38;		// Magic damage tile in dungeon tileset
 
-// Module State
-constexpr UINT16 MEM_MODULE_STATE = 0x0060;
-enum class ModuleStates	// in memory at MEM_MODULE_STATE
-	// TODO: Any others?
-{
-	Combat = 0,
-	Exploration = 2
-};
 
 // Printing characters on screen
 constexpr UINT16 MEM_PRINT_INVERSE	= 0x00B4;			// 00 for regular, 7F for inverse glyph

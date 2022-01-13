@@ -217,7 +217,6 @@ void Game::Update(DX::StepTimer const& timer)
 
 	UINT8* memPtr = MemGetMainPtr(0);
 	g_isInGameMap = (memPtr[MAP_IS_IN_GAME_MAP] == 0xE5);	// when not in game map, that area is all zeros
-    g_isInBattle = (memPtr[MEM_MODULE_STATE] == (int)ModuleStates::Combat);
     if (g_isInGameMap)
     {    // Always set speed to SPEED_NORMAL when playing, otherwise things are too fast
 		if (EmulatorGetSpeed() != 1)
