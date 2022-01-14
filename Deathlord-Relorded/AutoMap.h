@@ -10,7 +10,7 @@ using namespace DirectX::SimpleMath;
 
 constexpr UINT8 DEFAULT_TILES_PER_ROW = 16;		// tileset tiles per row in general
 
-constexpr UINT32 GAMEMAP_START_MEM = 0xC00;					// Start of memory area of the in-game map
+constexpr UINT32 GAMEMAP_START_MEM = 0xC00;					// Start of memory area of the in-game map (with monsters, see below)
 constexpr UINT32 GAMEMAP_START_CURRENT_TILELIST = 0x300;	// Start of the current tilelist of the in-game map
 constexpr UINT32 GAMEMAP_START_NEW_TILELIST = 0x351;		// Start of the new tilelist of the in-game map which will be swapped with current on an update
 
@@ -19,6 +19,16 @@ constexpr UINT32 GAMEMAP_START_NEW_TILELIST = 0x351;		// Start of the new tileli
 // The 16 monsters are put in the level tilemap starting at 0x4800
 // While the tilemap starts at 0x4000.
 constexpr UINT32 GAMEMAP_START_MONSTERS_IN_LEVEL_IDX = 0x8EF;
+
+// Everything the game uses to track monsters on the map
+// The map at GAMEMAP_START_MEM has monster IDs as tiles
+// Below is the info needed to swap back the original tile IDs as the monsters move
+constexpr UINT8 GAMEMAP_ARRAY_MONSTER_SIZE = 32;				// Max # of tracked monsters in the level
+constexpr UINT16 GAMEMAP_ARRAY_MONSTER_POSITION_X = 0x800;		// Empty slot when FF
+constexpr UINT16 GAMEMAP_ARRAY_MONSTER_POSITION_Y = 0x820;		// Empty slot when FF
+constexpr UINT16 GAMEMAP_ARRAY_MONSTER_ID = 0x840;
+constexpr UINT16 GAMEMAP_ARRAY_MONSTER_TILE_ID = 0x860;
+
 
 // Animation tiles
 constexpr UINT16 TILESET_ANIMATIONS_ACID_Y_IDX= 0;
@@ -96,6 +106,7 @@ public:
 	std::string GetCurrentMapUniqueName();
 	LPBYTE GetCurrentGameMap() { return MemGetMainPtr(GAMEMAP_START_MEM); };
 	bool UpdateLOSRadius();
+	UINT8 StaticTileIdAtMapPosition(UINT8 x, UINT8 y);	// (the tile that's hidden by the monster being on it)
 
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();

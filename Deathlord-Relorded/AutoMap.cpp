@@ -246,13 +246,16 @@ void AutoMap::CalculateLOS()
 	int range = m_LOSRadius;	// (in tiles)
 	int x, y;
 	std::fill(m_LOSVisibilityTiles.begin(), m_LOSVisibilityTiles.end(), 0.f);
+	// Always set the avatar tile to visible
+	m_LOSVisibilityTiles[m_avatarPosition.x + m_avatarPosition.y * MAP_WIDTH] = 1.f;
+	if (range == 0)
+		return;
 	int _centerX = (m_avatarPosition.x * FBTW) + FBTW / 2;
 	int _centerY = (m_avatarPosition.y * FBTH) + FBTH / 2;
 	for (double f = 0; f < 3.141592 * 2; f += 0.01) {
 		x = int(range * FBTW * cos(f)) + _centerX;
 		y = int(range * FBTH * sin(f)) + _centerY;
 		DrawLine(_centerX, _centerY, x, y);
-		OutputDebugStringA("\n");
 	}
 }
 
@@ -260,8 +263,6 @@ void AutoMap::DrawLine(int x0, int y0, int x1, int y1) {
 	int dx = abs(x0 - x1) * 2 / FBTW;
 	int dy = abs(y0 - y1) * 2 / FBTH;
 	double s = 0.99 / (dx > dy ? double(dx) : double(dy));
-	OutputDebugStringA(std::to_string(s).c_str());
-	OutputDebugStringA("\n");
 	double t = 0;
 	int mapPos;
 	UINT8 blockVal;	
@@ -323,8 +324,6 @@ bool AutoMap::UpdateLOSRadius()
 	return (_oldRadius != m_LOSRadius);
 }
 
-#pragma endregion LineOfSight
-
 void AutoMap::ShouldCalcTileVisibility()
 {
 	m_shouldCalcTileVisibility = true;
@@ -332,16 +331,30 @@ void AutoMap::ShouldCalcTileVisibility()
 
 void AutoMap::CalcTileVisibility(bool force)
 {
+	UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
+	UpdateLOSRadius();
 	if (force || m_shouldCalcTileVisibility)
+		CalculateLOS();
+	m_shouldCalcTileVisibility = false;
+}
+
+#pragma endregion LineOfSight
+
+UINT8 AutoMap::StaticTileIdAtMapPosition(UINT8 x, UINT8 y)
+{
+	UINT8* _xArray = MemGetMainPtr(GAMEMAP_ARRAY_MONSTER_POSITION_X);
+	UINT8* _yArray = MemGetMainPtr(GAMEMAP_ARRAY_MONSTER_POSITION_Y);
+
+	for (size_t i = 0; i < GAMEMAP_ARRAY_MONSTER_SIZE; i++)
 	{
-		// Only bother updating LOS if the player has moved or the radius has changed
-		if (UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0])
-			|| UpdateLOSRadius())
+		if (x == _xArray[i])
 		{
-			CalculateLOS();
+			if (y == _yArray[i])
+				return MemGetMainPtr(GAMEMAP_ARRAY_MONSTER_TILE_ID)[i];
 		}
-		m_shouldCalcTileVisibility = false;
 	}
+	// No monster is on this tile, return default
+	return MemGetMainPtr(GAMEMAP_START_MEM)[x + y * MAP_WIDTH];
 }
 
 void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states)
@@ -632,27 +645,38 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 			// if (m_bbufCurrentMapTiles[currentBackBufferIdx][mapPos] == (UINT8)mapMemPtr[mapPos])    // it's been drawn
 			//	continue;
 
+			// Decide how much visibility this tile has
+			float _tileVisibilityLevel = m_LOSVisibilityTiles[mapPos];
+			if (_tileVisibilityLevel < 1)
+			{
+				if ((m_FogOfWarTiles[mapPos] & (1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
+					_tileVisibilityLevel = .15f;
+			}
+			if (g_nonVolatile.showFog == false)		// override if no fog
+				_tileVisibilityLevel = 1.0f;
+
+
 			// Now check if the tile has been seen before. Otherwise set it to the black tile which is always
 			// the first tile in the tileset
 
 			UINT8 curr_tileId = mapMemPtr[mapPos] % 0x50;	// Right now don't consider the special bits
 			bool shouldDraw = true;
-			if (((m_FogOfWarTiles[mapPos] & (0b1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
-				|| (g_nonVolatile.showFog == false))
+			if (_tileVisibilityLevel > 0)
 			{
 				// Here decide which tiles to show!
 				if (curr_tileId < 0x40)	// environment tiles
 				{
+ENVIRONMENT:
 					if (PlayerIsOverland())
 					{
 						switch (curr_tileId)
 						{
 						case 0x2B:		// water tile
 							curr_spriteRect.top = TILESET_ANIMATIONS_WATER_Y_IDX * PNGTH;
-							goto element_tiles_general;
+							goto ELEMENT_TILES_GENERAL;
 						case 0x3C:		// fire tile
 							curr_spriteRect.top = TILESET_ANIMATIONS_FIRE_Y_IDX * PNGTH;
-							goto element_tiles_general;
+							goto ELEMENT_TILES_GENERAL;
 						default:
 							curr_texDesc = TextureDescriptors::AutoMapOverlandTiles;
 							curr_tileset = m_tilesOverland;
@@ -667,22 +691,22 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 						{
 						case 0x26:		// water tile
 							curr_spriteRect.top = TILESET_ANIMATIONS_WATER_Y_IDX * PNGTH;
-							goto element_tiles_general;
+							goto ELEMENT_TILES_GENERAL;
 							break;
 						case 0x27:		// forcefield tile
 							curr_spriteRect.top = TILESET_ANIMATIONS_FORCE_Y_IDX * PNGTH;
-							goto element_tiles_general;
+							goto ELEMENT_TILES_GENERAL;
 							break;
 						case 0x2C:		// acid tile
 							curr_spriteRect.top = TILESET_ANIMATIONS_ACID_Y_IDX * PNGTH;
-							goto element_tiles_general;
+							goto ELEMENT_TILES_GENERAL;
 							break;
 						case 0x2D:		// fire tile
 							curr_spriteRect.top = TILESET_ANIMATIONS_FIRE_Y_IDX * PNGTH;
-							goto element_tiles_general;
+							goto ELEMENT_TILES_GENERAL;
 						case 0x38:		// magic tile
 							curr_spriteRect.top = TILESET_ANIMATIONS_MAGIC_Y_IDX * PNGTH;
-element_tiles_general:
+ELEMENT_TILES_GENERAL:
 							curr_texDesc = TextureDescriptors::AutoMapElementsTiles;
 							curr_tileset = m_tilesAnimated;
 							curr_spriteRect.left = ((m_spriteAnimElementIdx / STROBESLOWELEMENT) % ELEMENTSPRITECT) * PNGTW;
@@ -698,6 +722,14 @@ element_tiles_general:
 				} // environment tiles
 				else // monster tiles
 				{
+					// Do we want to draw the monster? Only if we have full visibility!
+					// Otherwise swap back the original tile
+					if (_tileVisibilityLevel < 1)
+					{
+						curr_tileId = StaticTileIdAtMapPosition(mapPos % MAP_WIDTH, mapPos / MAP_WIDTH);
+						goto ENVIRONMENT;
+					}
+					// Below is to draw the monster on the tile
 					curr_texDesc = TextureDescriptors::AutoMapMonsterSpriteSheet;
 					curr_tileset = m_monsterSpriteSheet;
 					// find the monster id for this tile id
@@ -729,24 +761,6 @@ element_tiles_general:
 			{
 				RECT tilePosRectInMap = { tilePosInMap.x, tilePosInMap.y, 
 					tilePosInMap.x + PNGTW * mapScale, tilePosInMap.y + PNGTH * mapScale };
-
-				// Decide whether to display
-				// TODO: Remake my own fog of war calculation
-				// Use 8 or more tile radius
-				// Reduce based on:
-				//		MAP_VISIBILITY_RADIUS when in dungeon
-				//		daylight when outdoors
-				//		In town keep full visibility
-
-
-				float _tileVisibilityLevel = m_LOSVisibilityTiles[mapPos];
-				if (_tileVisibilityLevel < 1)
-				{
-					if ((m_FogOfWarTiles[mapPos] & (1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
-						_tileVisibilityLevel = .15f;
-				}
-				if (g_nonVolatile.showFog == false)		// override if no fog
-					_tileVisibilityLevel = 1.0f;
 
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)curr_texDesc),
 					GetTextureSize(curr_tileset.Get()), tilePosRectInMap, &curr_spriteRect, XMVECTORF32({ { { 1.f, 1.f, 1.f, _tileVisibilityLevel } } }));
