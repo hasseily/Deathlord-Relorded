@@ -100,7 +100,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			case PC_END_DRAWING_TILES:
 			{
 				auto aM = AutoMap::GetInstance();
-				aM->AnalyzeVisibleTiles();
+				aM->ShouldCalcTileVisibility();
 				break;
 			}
 			case PC_SCROLL_WINDOW:

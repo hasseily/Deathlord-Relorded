@@ -87,7 +87,8 @@ public:
 
 	void ClearMapArea();
 	void ForceRedrawMapArea();
-	void AnalyzeVisibleTiles();
+	void CalcTileVisibility(bool force = false);
+	void ShouldCalcTileVisibility();	// Ask to recalc tile visibility on next update
 	void ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states);
 	void CreateNewTileSpriteMap();	// Obsolete. Disabled
 	void SaveCurrentMapInfo();
@@ -140,7 +141,7 @@ private:
 	void Initialize();
 	bool UpdateAvatarPositionOnAutoMap(UINT x, UINT y);
 	void CalculateLOS();
-	void DrawLine(int x0, int y0, int x1, int y1, int range);
+	void DrawLine(int x0, int y0, int x1, int y1);
 	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_autoMapTextureBG;		// Transition image
@@ -162,6 +163,7 @@ private:
 	std::vector<UINT8> m_FogOfWarTiles;		// Info about the user having seen map tiles, walked on them...
 	std::vector<float> m_LOSVisibilityTiles;	// visibility level of all the tiles on the map given the line of sight
 	UINT8 m_LOSRadius;
+	bool m_shouldCalcTileVisibility;
 
 	std::string m_currentMapUniqueName;
 };

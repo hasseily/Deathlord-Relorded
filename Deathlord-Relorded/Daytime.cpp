@@ -11,6 +11,15 @@ void Daytime::Initialize()
 
 }
 
+float Daytime::TimeOfDayInFloat()
+{
+	UINT8 _hour = MemGetMainPtr(MEM_DAY_HOUR)[0];
+	UINT8 _minute = MemGetMainPtr(MEM_DAY_MINUTE)[0];	// In BCD format!!!
+	UINT8 _minTen = _minute >> 4;
+	UINT8 _minDigit = _minute & 0b1111;
+	return (_hour + (_minTen * 10 + _minDigit) / 60.f);
+}
+
 void Daytime::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 {
 	auto mmTexSize = GetTextureSize(m_daytimeSpriteSheet.Get());

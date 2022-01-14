@@ -286,6 +286,7 @@ void Game::Update(DX::StepTimer const& timer)
     if (g_isInGameMap && (autoMap != NULL))
     {
 		memTriggers->PollKeyMemoryLocations();  // But not the avatar XY
+        autoMap->CalcTileVisibility();          // Won't trigger unless the game cpu65C02.h has requested it
     }
     m_minimap->Update(memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
     m_partyLayout->Update(MemGetMainPtr(PARTY_CHAR_LEADER)[0]);

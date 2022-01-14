@@ -5,6 +5,7 @@
 #include "resource.h"
 #include "DeathlordHacks.h"
 #include "TilesetCreator.h"
+#include "Daytime.h"
 
 using namespace DirectX;
 
@@ -42,6 +43,8 @@ constexpr UINT8 TILES_OVERLAND_BLOCKVIS[0x50] = { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 											      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 												  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 												  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+constexpr UINT8 LOS_MAX_DISTANCE = 12;	// in tiles
 
 UINT m_avatarStrobeIdx = 0;
 constexpr UINT AVATARSTROBECT = 10;
@@ -240,42 +243,46 @@ bool AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 void AutoMap::CalculateLOS()
 {
 	// Here we're just calculating pure LOS given the tiles that block the view
-	int range = 40;	// To guarantee filling a 32x32 square
+	int range = m_LOSRadius;	// (in tiles)
 	int x, y;
 	std::fill(m_LOSVisibilityTiles.begin(), m_LOSVisibilityTiles.end(), 0.f);
+	int _centerX = (m_avatarPosition.x * FBTW) + FBTW / 2;
+	int _centerY = (m_avatarPosition.y * FBTH) + FBTH / 2;
 	for (double f = 0; f < 3.141592 * 2; f += 0.01) {
-		x = int(range * cos(f)) + (int)m_avatarPosition.x;
-		y = int(range * sin(f)) + (int)m_avatarPosition.y;
-		DrawLine((int)m_avatarPosition.x, (int)m_avatarPosition.y, x, y, range);
+		x = int(range * FBTW * cos(f)) + _centerX;
+		y = int(range * FBTH * sin(f)) + _centerY;
+		DrawLine(_centerX, _centerY, x, y);
 		OutputDebugStringA("\n");
 	}
 }
 
-void AutoMap::DrawLine(int x0, int y0, int x1, int y1, int range) {
-	int dx = abs(x0 - x1);
-	int dy = abs(y0 - y1);
+void AutoMap::DrawLine(int x0, int y0, int x1, int y1) {
+	int dx = abs(x0 - x1) * 2 / FBTW;
+	int dy = abs(y0 - y1) * 2 / FBTH;
 	double s = 0.99 / (dx > dy ? double(dx) : double(dy));
+	OutputDebugStringA(std::to_string(s).c_str());
+	OutputDebugStringA("\n");
 	double t = 0;
 	int mapPos;
-	UINT8 blockVal;
+	UINT8 blockVal;	
 	LPBYTE mapMemPtr = GetCurrentGameMap();
+
 	while (t < 1.0) {
 		dx = int((1.0 - t) * x0 + t * x1);
 		dy = int((1.0 - t) * y0 + t * y1);
-		if ((dx >= MAP_WIDTH) | (dy >= MAP_HEIGHT) | (dx < 0) | (dy < 0))
+		if ((dx >= MAP_WIDTH * FBTW) | (dy >= MAP_HEIGHT * FBTH) | (dx < 0) | (dy < 0))
 			goto CONT;
-		if (dx == m_avatarPosition.x && dy == m_avatarPosition.y)
+		if ((m_avatarPosition.x == dx / FBTW) && (m_avatarPosition.y == dy / FBTH))
+		{
 			goto CONT;	// Don't handle the tile the avatar is on
-		mapPos = dx + dy * MAP_WIDTH;
+		}
+		mapPos = (dx / FBTW) + ((dy / FBTH) * MAP_WIDTH);
 		if (PlayerIsOverland())
 			blockVal = TILES_OVERLAND_BLOCKVIS[mapMemPtr[mapPos] % 0x50];
 		else
 			blockVal = TILES_DUNGEON_BLOCKVIS[mapMemPtr[mapPos] % 0x50];
 		// Always show the tile, even if it's blocking
-		if ((range * t) < (m_LOSRadius + 1) )		// The fully visible range
-			m_LOSVisibilityTiles[mapPos] = 1.f;
-		else // Tiles known but beyond visible range
-			m_LOSVisibilityTiles[mapPos] = 0.15f;
+		m_LOSVisibilityTiles[mapPos] = 1.f;
 		m_FogOfWarTiles[mapPos] |= (1 << (UINT8)FogOfWarMarkers::UnFogOfWar);
 		if (blockVal != 0) // It's a blocking tile. Don't show anything behind it. Exit.
 			return;
@@ -291,10 +298,24 @@ bool AutoMap::UpdateLOSRadius()
 	if (PlayerIsOverland())
 	{
 		// Use time-of day to determine LOS radius
+		float _time = Daytime::GetInstance()->TimeOfDayInFloat();
+		if (_time <= 4 || _time >= 21)
+			m_LOSRadius = 0;
+		else if (_time >= 7 && _time <= 18)
+			m_LOSRadius = LOS_MAX_DISTANCE;	// big LOS
+		else if (_time < 7)	// _time is between 4 and 7
+		{
+			m_LOSRadius = LOS_MAX_DISTANCE * (_time - 4.f) / 3.f;
+		}
+		else // _time is between 18 and 21
+		{
+			m_LOSRadius = LOS_MAX_DISTANCE * (1.f - (_time - 18.f) / 3.f);
+		}
+
 	}
 	else if (MemGetMainPtr(MAP_TYPE)[0] == (int)MapType::Town)
 	{
-		m_LOSRadius = 40;	// Full LOS in towns
+		m_LOSRadius = LOS_MAX_DISTANCE;	// big LOS
 	}
 	else
 		m_LOSRadius = MemGetMainPtr(MAP_VISIBILITY_RADIUS)[0];
@@ -304,13 +325,22 @@ bool AutoMap::UpdateLOSRadius()
 
 #pragma endregion LineOfSight
 
-void AutoMap::AnalyzeVisibleTiles()
+void AutoMap::ShouldCalcTileVisibility()
 {
-	// Only bother updating LOS if the player has moved or the radius has changed
-	if (UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0])
-		|| UpdateLOSRadius())
+	m_shouldCalcTileVisibility = true;
+}
+
+void AutoMap::CalcTileVisibility(bool force)
+{
+	if (force || m_shouldCalcTileVisibility)
 	{
-		CalculateLOS();
+		// Only bother updating LOS if the player has moved or the radius has changed
+		if (UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0])
+			|| UpdateLOSRadius())
+		{
+			CalculateLOS();
+		}
+		m_shouldCalcTileVisibility = false;
 	}
 }
 
