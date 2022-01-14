@@ -94,6 +94,7 @@ public:
 	void InitializeCurrentMapInfo();
 	std::string GetCurrentMapUniqueName();
 	LPBYTE GetCurrentGameMap() { return MemGetMainPtr(GAMEMAP_START_MEM); };
+	bool UpdateLOSRadius();
 
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();
@@ -160,6 +161,7 @@ private:
 
 	std::vector<UINT8> m_FogOfWarTiles;		// Info about the user having seen map tiles, walked on them...
 	std::vector<float> m_LOSVisibilityTiles;	// visibility level of all the tiles on the map given the line of sight
+	UINT8 m_LOSRadius;
 
 	std::string m_currentMapUniqueName;
 };

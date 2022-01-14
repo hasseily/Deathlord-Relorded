@@ -69,6 +69,7 @@ void AutoMap::Initialize()
 	m_FogOfWarTiles = std::vector<UINT8>(MAP_LENGTH, 0x00);								// states (seen, etc...)
 	m_LOSVisibilityTiles = std::vector<float>(MAP_LENGTH, 0.f);							// visibility through line of sight
 	m_bbufCurrentMapTiles = std::vector(bbCount, std::vector<UINT8>(MAP_LENGTH, 0x00));	// tile id
+	m_LOSRadius = 8;
 }
 
 void AutoMap::ClearMapArea()
@@ -234,12 +235,14 @@ bool AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 	 */
 	return true;
 }
+#pragma region LineOfSight
 
 void AutoMap::CalculateLOS()
 {
 	// Here we're just calculating pure LOS given the tiles that block the view
-	int range = 100;	// To guarantee filling the 64x64 square
+	int range = 40;	// To guarantee filling a 32x32 square
 	int x, y;
+	std::fill(m_LOSVisibilityTiles.begin(), m_LOSVisibilityTiles.end(), 0.f);
 	for (double f = 0; f < 3.141592 * 2; f += 0.01) {
 		x = int(range * cos(f)) + (int)m_avatarPosition.x;
 		y = int(range * sin(f)) + (int)m_avatarPosition.y;
@@ -269,9 +272,9 @@ void AutoMap::DrawLine(int x0, int y0, int x1, int y1, int range) {
 		else
 			blockVal = TILES_DUNGEON_BLOCKVIS[mapMemPtr[mapPos] % 0x50];
 		// Always show the tile, even if it's blocking
-		if ((range * t) < 9 )		// 8-tile really visible range. TODO: Change to the real stuff
+		if ((range * t) < (m_LOSRadius + 1) )		// The fully visible range
 			m_LOSVisibilityTiles[mapPos] = 1.f;
-		else
+		else // Tiles known but beyond visible range
 			m_LOSVisibilityTiles[mapPos] = 0.15f;
 		m_FogOfWarTiles[mapPos] |= (1 << (UINT8)FogOfWarMarkers::UnFogOfWar);
 		if (blockVal != 0) // It's a blocking tile. Don't show anything behind it. Exit.
@@ -281,43 +284,34 @@ CONT:
 	}
 }
 
+
+bool AutoMap::UpdateLOSRadius()
+{
+	UINT8 _oldRadius = m_LOSRadius;
+	if (PlayerIsOverland())
+	{
+		// Use time-of day to determine LOS radius
+	}
+	else if (MemGetMainPtr(MAP_TYPE)[0] == (int)MapType::Town)
+	{
+		m_LOSRadius = 40;	// Full LOS in towns
+	}
+	else
+		m_LOSRadius = MemGetMainPtr(MAP_VISIBILITY_RADIUS)[0];
+
+	return (_oldRadius != m_LOSRadius);
+}
+
+#pragma endregion LineOfSight
+
 void AutoMap::AnalyzeVisibleTiles()
 {
-	if (UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]))
+	// Only bother updating LOS if the player has moved or the radius has changed
+	if (UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0])
+		|| UpdateLOSRadius())
 	{
 		CalculateLOS();
-		return;
-		// Now check the visible tiles around the avatar (tiles that aren't black)
-		// Those will have their fog-of-war bit unset
-		BYTE* tilesVisibleAroundAvatar = MemGetMainPtr(GAMEMAP_START_CURRENT_TILELIST);
-		UINT8 oldBufVal;
-		for (UINT8 j = 0; j < 9; j++)	// rows
-		{
-			for (UINT8 i = 0; i < 9; i++)	// columns
-			{
-				// First calculate the position of the tile in the map
-				UINT32 tilePosX = m_avatarPosition.x - 4 + i;
-				UINT32 tilePosY = m_avatarPosition.y - 4 + j;
-				if ((tilePosX >= MAP_WIDTH) || (tilePosY >= MAP_HEIGHT)) // outside the map (no need to check < 0, it'll roll over as a UINT32)
-					continue;
-
-				// Move the visibility bit to the FogOfWar position, and OR it with the value in the vector.
-				// If the user ever sees the tile, it stays "seen"
-				oldBufVal = m_FogOfWarTiles[tilePosX + tilePosY * MAP_WIDTH];
-				if (tilesVisibleAroundAvatar[i + 9 * j] != 0)
-				{
-					m_FogOfWarTiles[tilePosX + tilePosY * MAP_WIDTH] |=
-						(1 << (UINT8)FogOfWarMarkers::UnFogOfWar);
-				}
-				for (size_t ibb = 0; ibb < m_deviceResources->GetBackBufferCount(); ibb++)
-				{
-					// redraw all the tiles in the Deathlord viewport
-					m_bbufCurrentMapTiles[ibb][tilePosX + tilePosY * MAP_WIDTH] = TILEID_REDRAW;
-				}
-			}
-		}
 	}
-
 }
 
 void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states)
@@ -716,6 +710,11 @@ element_tiles_general:
 
 
 				float _tileVisibilityLevel = m_LOSVisibilityTiles[mapPos];
+				if (_tileVisibilityLevel < 1)
+				{
+					if ((m_FogOfWarTiles[mapPos] & (1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
+						_tileVisibilityLevel = .15f;
+				}
 				if (g_nonVolatile.showFog == false)		// override if no fog
 					_tileVisibilityLevel = 1.0f;
 
