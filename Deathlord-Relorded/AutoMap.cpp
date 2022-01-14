@@ -44,7 +44,7 @@ constexpr UINT8 TILES_OVERLAND_BLOCKVIS[0x50] = { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 												  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 												  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-constexpr UINT8 LOS_MAX_DISTANCE = 12;	// in tiles
+constexpr UINT8 LOS_MAX_DISTANCE = 16;	// in tiles
 
 UINT m_avatarStrobeIdx = 0;
 constexpr UINT AVATARSTROBECT = 10;
