@@ -177,6 +177,7 @@
   <ItemGroup>
     <ClCompile Include="AppleWinDXVideo.cpp" />
     <ClCompile Include="AutoMap.cpp" />
+    <ClCompile Include="BattleOverlay.cpp" />
     <ClCompile Include="Daytime.cpp" />
     <ClCompile Include="DeathlordHacks.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
@@ -227,6 +228,7 @@
     <ClInclude Include="AppleWinDXVideo.h" />
     <ClInclude Include="ATGColors.h" />
     <ClInclude Include="AutoMap.h" />
+    <ClInclude Include="BattleOverlay.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="Daytime.h" />
     <ClInclude Include="DeathlordHacks.h" />
