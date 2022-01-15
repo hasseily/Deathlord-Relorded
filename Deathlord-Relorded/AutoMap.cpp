@@ -60,6 +60,11 @@ constexpr UINT HIDDENSPRITECT = 4;
 
 std::string m_cursor(1, 0x7B);
 
+// food aquisition
+int m_numStepsInMap = 0;	// Number of steps taken on this map
+int m_lastFoodSteps = 0;	// Steps when food was acquired last
+constexpr UINT FOODFORAGINGSTEPS = 32;	// Number of steps to forage for 1 food / char
+
 void AutoMap::Initialize()
 {
 	bShowTransition = false;
@@ -154,6 +159,8 @@ void AutoMap::SetShowTransition(bool showTransition)
 		ClearMapArea();
 		//ForceRedrawMapArea();
 		m_currentMapUniqueName = "";
+		m_numStepsInMap = 0;
+		m_lastFoodSteps = 0;
 	}
 	else
 	{
@@ -174,18 +181,39 @@ bool AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 	if ((m_avatarPosition.x == cleanX) && (m_avatarPosition.y == cleanY))
 		return false;
 
-	/*
-	char _buf[400];
-	sprintf_s(_buf, 400, "X: %03d / %03d, Y: %03d / %03d, Map name: %s\n", 
-		cleanX, m_avatarPosition.x, cleanY, m_avatarPosition.y, m_currentMapUniqueName.c_str());
-	OutputDebugStringA(_buf);
-	*/
+	++m_numStepsInMap;
 
 	// We redraw all the tiles in the viewport later, so here just set the footsteps and LOS
 	m_avatarPosition = { cleanX, cleanY };
 	m_FogOfWarTiles[m_avatarPosition.x + m_avatarPosition.y * MAP_WIDTH] |= (1 << (UINT8)FogOfWarMarkers::Footstep);
 
+	// Peasants and rangers can forage for food
+	if (PlayerIsOverland())
+	{
+		if ((m_numStepsInMap - m_lastFoodSteps) > FOODFORAGINGSTEPS)
+		{
+			m_lastFoodSteps = m_numStepsInMap;
+			if (PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Peasant))
+			{
+				// Can forage for food. After FOODFORAGINGSTEPS, give the party 1 food
+				UINT8 _foodCt;
+				for (size_t i = 0; i < 6; i++)
+				{
+					_foodCt = MemGetMainPtr(PARTY_FOOD_START)[i];
+					if (_foodCt < 99)
+						MemGetMainPtr(PARTY_FOOD_START)[i] = _foodCt + 1;
+				}
+			}
+		}
+	}
 
+
+	/*
+	char _buf[400];
+	sprintf_s(_buf, 400, "X: %03d / %03d, Y: %03d / %03d, Map name: %s\n",
+		cleanX, m_avatarPosition.x, cleanY, m_avatarPosition.y, m_currentMapUniqueName.c_str());
+	OutputDebugStringA(_buf);
+	*/
 	/*
 	char _buf[500];
 	sprintf_s(_buf, 500, "Old Avatar Pos tileid has values %2d, %2d in vector\n",
