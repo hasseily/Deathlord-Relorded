@@ -84,11 +84,19 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				memT->DelayedTriggerInsert(DelayedTriggersFunction::FINISH_TRANSITION, 100);
 				break;
 			}
+			case PC_BATTLE_ENTER:
+			{
+				g_isInBattle = true;
+				break;
+			}
 			case PC_DECREMENT_TIMER:
 			{
 				// Process memory triggers every time the game processes the turn pass decrement timer
 				// We know here that we're in a safe place to parse the video screen, etc...
+				// And we know we're not in battle
 				// And furthermore we disable that timer because who in his right mind wants turns to pass when not doing anything?
+
+				g_isInBattle = false;
 				auto memT = MemoryTriggers::GetInstance();
 				g_hasBeenIdleOnce = true;
 				if (memT != NULL)

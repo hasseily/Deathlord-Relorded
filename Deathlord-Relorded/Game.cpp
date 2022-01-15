@@ -252,8 +252,13 @@ void Game::Update(DX::StepTimer const& timer)
         if (kbTracker.pressed.Insert)
 		    m_invOverlay->ToggleOverlay();
 
-		if (kbTracker.pressed.Delete)   // TODO: DEBUG
+		if (kbTracker.pressed.Delete)   // TODO: DEBUG - REMOVE
 			m_battleOverlay->ToggleOverlay();
+
+        if (g_isInBattle)
+            m_battleOverlay->ShowOverlay();
+        else
+			m_battleOverlay->HideOverlay();
 
         if (kbTracker.pressed.F11)
             m_a2Video->ToggleApple2Video();
@@ -281,6 +286,12 @@ void Game::Update(DX::StepTimer const& timer)
 		{
             m_invOverlay->LeftMouseButtonClicked(moTracker.GetLastState().x, moTracker.GetLastState().y);
 		}
+    }
+
+    // Let the battle window update itself
+    if (m_battleOverlay->IsOverlayDisplayed())
+    {
+        m_battleOverlay->UpdateState();
     }
 
     // Should we pause the emulator?
