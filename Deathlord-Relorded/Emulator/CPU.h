@@ -23,6 +23,7 @@
 #define PC_CHAR_TILE_DAMAGE			0x6038		// JSR to the tile damage subroutine at 0x6063. Bypass it to avoid tile damage to char at index in X.
 #define PC_SAVE_AFTER_DEATH			0x5BC5		// BNE should not branch in order to stop saving after a char dies in combat
 #define PC_NINJA_MONK_AC_RESET		0xA952		// AND with 0F that resets the Ninja and Monk A/C to 0 every 32 levels. Bypass this bug.
+#define PC_CHECK_READY_WEAPON		0x6B98		// Skip this JSR to bypass the test if the weapon is usable. A has weapon id, X has char index, Y has Melee/Range (0/1)
 
 #define PC_RECALC_ARMORCLASS		0xA93F		// Jumping to this routine recalculates the armor classes of all characters
 

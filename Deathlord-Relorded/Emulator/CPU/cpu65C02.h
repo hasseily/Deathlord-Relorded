@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "MemoryTriggers.h"	// trigger the memory polling upon passing time because we know the state is safe
 #include "DeathlordHacks.h"
 #include "TextOutput.h"
+#include "InvManager.h"
 #include "AutoMap.h"
 #include <string>
 //===========================================================================
@@ -334,10 +335,25 @@ AVOID_DAMAGE:
 				regs.pc = _origPC + 2;	// Jump to the next instruction
 				break;
 			}
+			case PC_CHECK_READY_WEAPON:
+			{
+				// We want to use our own InventoryList.csv file to check if someone can use a weapon
+				// or not. Especially the peasants, they should be able to use crossbows!
+				// That was the original idea for a crossbow: for anyone to kill a knight in armor.
+				// A has weapon id, X has char index, Y has Melee/Range (0/1)
+				InvItem* _item = InvManager::GetInstance()->ItemWithId(regs.a);
+				if (_item->canEquip((DeathlordClasses)MemGetMainPtr(PARTY_CLASS_START)[regs.x],
+					(DeathlordRaces)MemGetMainPtr(PARTY_RACE_START)[regs.x]))
+				{
+					CYC(6); // JSR (0x20) uses 6 cycles;
+					regs.pc = _origPC + 3;	// Skip to the next instruction
+				}
+				break;
+			}
 			default:
 				break;
-			}	// switch
-		}
+			}
+		}	// switch
 
 		/// END DEATHLORD HOOKS
 		
