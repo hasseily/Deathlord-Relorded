@@ -17,6 +17,7 @@
 #include "TilesetCreator.h"
 #include "AutoMap.h"
 #include "InvOverlay.h"
+#include "BattleOverlay.h"
 #include "TextOutput.h"
 #include "AppleWinDXVideo.h"
 #include "MiniMap.h"
@@ -48,6 +49,7 @@ static std::shared_ptr<LogWindow>m_logWindow;
 static std::shared_ptr<SpellWindow>m_spellWindow;
 static std::shared_ptr<DeathlordHacks>m_dlHacks;
 static InvOverlay* m_invOverlay;
+static BattleOverlay* m_battleOverlay;
 static TextOutput* m_textOutput;
 static AutoMap* m_autoMap;
 static AppleWinDXVideo* m_a2Video;
@@ -248,11 +250,15 @@ void Game::Update(DX::StepTimer const& timer)
 	if (g_isInGameMap)
 	{
         if (kbTracker.pressed.Insert)
-            m_invOverlay->ToggleInvOverlay();
+		    m_invOverlay->ToggleOverlay();
+
+		if (kbTracker.pressed.Delete)   // TODO: DEBUG
+			m_battleOverlay->ToggleOverlay();
+
         if (kbTracker.pressed.F11)
             m_a2Video->ToggleApple2Video();
 	}
-#ifdef _DEBUG
+#ifdef _DEBUGXXX
     // Poor man's 6502 instructions history
     // Press the END key to log the next 100k instructions
     if (kbTracker.pressed.End)
@@ -265,10 +271,10 @@ void Game::Update(DX::StepTimer const& timer)
 	using ButtonState = Mouse::ButtonStateTracker::ButtonState;
 	auto mo = m_mouse->GetState();
 	moTracker.Update(mo);
-    if (m_invOverlay->IsInvOverlayDisplayed())
+    if (m_invOverlay->IsOverlayDisplayed())
     {
 		if (kbTracker.pressed.Escape)       // Escape used to close the overlay
-			m_invOverlay->HideInvOverlay();
+			m_invOverlay->HideOverlay();
         m_invOverlay->UpdateState();
         m_invOverlay->MousePosInPixels(mo.x, mo.y);
 		if (moTracker.leftButton == ButtonState::PRESSED)
@@ -476,8 +482,11 @@ void Game::Render()
 
             // Draw now the overlays, each is independent
             // The inventory overlay
-			if (m_invOverlay->IsInvOverlayDisplayed())
+			if (m_invOverlay->IsOverlayDisplayed())
 				m_invOverlay->Render(SimpleMath::Rectangle(clientRect));
+			// The battle overlay
+			if (m_battleOverlay->IsOverlayDisplayed())
+                m_battleOverlay->Render(SimpleMath::Rectangle(clientRect));
 
             // The apple2 video is unique and independent
             // It should be displayed at the top if requested
@@ -696,7 +705,9 @@ void Game::CreateDeviceDependentResources()
     m_textOutput = TextOutput::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_invOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
-	m_a2Video = AppleWinDXVideo::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_battleOverlay = BattleOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_battleOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
+    m_a2Video = AppleWinDXVideo::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_a2Video->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
     m_minimap = MiniMap::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_minimap->CreateDeviceDependentResources(m_uploadBatch.get());

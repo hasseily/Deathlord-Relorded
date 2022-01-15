@@ -22,10 +22,10 @@ class InvOverlay	// Singleton
 {
 public:
 	void InvOverlay::Render(SimpleMath::Rectangle r);
-	void ShowInvOverlay();
-	void HideInvOverlay();
-	void ToggleInvOverlay();
-	bool IsInvOverlayDisplayed();
+	void ShowOverlay();
+	void HideOverlay();
+	void ToggleOverlay();
+	bool IsOverlayDisplayed();
 	void UpdateState();
 	void LeftMouseButtonClicked(int x, int y);
 	void MousePosInPixels(int x, int y);

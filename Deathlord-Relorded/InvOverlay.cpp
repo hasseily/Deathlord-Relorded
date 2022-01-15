@@ -72,24 +72,24 @@ void InvOverlay::Initialize()
 	m_currentItemInstance = 0;
 }
 
-void InvOverlay::ShowInvOverlay()
+void InvOverlay::ShowOverlay()
 {
 	SetSendKeystrokesToAppleWin(false);
 	bIsDisplayed = true;
 }
 
-void InvOverlay::HideInvOverlay()
+void InvOverlay::HideOverlay()
 {
 	SetSendKeystrokesToAppleWin(true);
 	bIsDisplayed = false;
 }
 
-void InvOverlay::ToggleInvOverlay()
+void InvOverlay::ToggleOverlay()
 {
-	IsInvOverlayDisplayed() ? HideInvOverlay() : ShowInvOverlay();
+	IsOverlayDisplayed() ? HideOverlay() : ShowOverlay();
 }
 
-bool InvOverlay::IsInvOverlayDisplayed()
+bool InvOverlay::IsOverlayDisplayed()
 {
 	return bIsDisplayed;
 }
