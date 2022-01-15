@@ -30,7 +30,8 @@ public:
 	void Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch);
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();
-	void setPartySize(UINT8 size);
+	void SetPartySize(UINT8 size);
+	UINT8 GetPartySize();
 
 	// Properties
 

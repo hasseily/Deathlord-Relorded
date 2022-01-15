@@ -18,10 +18,15 @@ void PartyLayout::Initialize()
 	m_currentLeader = 0;
 }
 
-void PartyLayout::setPartySize(UINT8 size)
+void PartyLayout::SetPartySize(UINT8 size)
 {
 	if (size < 7)
 		m_partySize = size;
+}
+
+UINT8 PartyLayout::GetPartySize()
+{
+	return m_partySize;
 }
 
 bool PartyLayout::Update(UINT8 leader)
