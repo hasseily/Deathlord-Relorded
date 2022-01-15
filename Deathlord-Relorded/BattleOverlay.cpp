@@ -3,11 +3,14 @@
 #include "resource.h"
 #include "Game.h"
 #include "DeathlordHacks.h"
+#include "PartyLayout.h"
 #include "Descriptors.h"
 #include <SimpleMath.h>
+#include <vector>
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
+using namespace std;
 
 // below because "The declaration of a static data member in its class definition is not a definition"
 BattleOverlay* BattleOverlay::s_instance;
@@ -46,7 +49,7 @@ bool BattleOverlay::IsOverlayDisplayed()
 
 #pragma region actions
 
-// Update the inventory state based on the game's data
+// Update the state based on the game's data
 void BattleOverlay::UpdateState()
 {
 	
@@ -118,7 +121,7 @@ void BattleOverlay::OnDeviceLost()
 void BattleOverlay::Render(SimpleMath::Rectangle r)
 {
 
-	auto mmBGTexSize = DirectX::XMUINT2(1150, 600);
+	auto mmBGTexSize = DirectX::XMUINT2(1000, 800);
 	auto mmSSTextureSize = GetTextureSize(m_overlaySpriteSheet.Get());
 	SimpleMath::Rectangle overlayScissorRect(r);
 	Vector2 _overlayCenter = overlayScissorRect.Center();

@@ -254,11 +254,12 @@ void Game::Update(DX::StepTimer const& timer)
 
 		if (kbTracker.pressed.Delete)   // TODO: DEBUG - REMOVE
 			m_battleOverlay->ToggleOverlay();
-
+        /* TODO: DEBUG - ENABLE
         if (g_isInBattle)
             m_battleOverlay->ShowOverlay();
         else
 			m_battleOverlay->HideOverlay();
+            */
 
         if (kbTracker.pressed.F11)
             m_a2Video->ToggleApple2Video();
