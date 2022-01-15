@@ -254,7 +254,14 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			case PC_CHAR_TILE_DAMAGE:
 			{
 				// this is a JSR to a tile damage routine that triggers for each char (regs.x has the char position)
-				// Only handle the case of cactus and swamp, overland and in dungeons
+				
+				// First handle the case of the peasant, who in Deathlord Relorded is hyper-resilient
+				// and incurs no damage from tiles
+				if ((DeathlordClasses)(MemGetMainPtr(PARTY_CLASS_START)[regs.x]) == DeathlordClasses::Peasant)
+					goto AVOID_DAMAGE;
+
+				// Now get certain classes and races to avoid poison only (cactii and swamp)
+				// In overland and in dungeons. The other damage types always do damage
 				UINT8 _tileId = MemGetMainPtr(TILEVIEW_CURRENT_PLAYERTILE)[0];
 				if (PlayerIsOverland())
 				{
@@ -270,9 +277,9 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 					if (_tileId == TILE_DUNGEON_MAGIC_OFFSET)
 						break;
 				}
-				bool avoidsSwampDamage = false;
+				bool avoidsDamage = false;
 				// the following types never get damaged by swamp
-				switch ((DeathlordClasses)(MemGetMainPtr(PARTY_CLASS_START + regs.x)[0]))
+				switch ((DeathlordClasses)(MemGetMainPtr(PARTY_CLASS_START)[regs.x]))
 				{
 				case DeathlordClasses::Barbarian:
 					[[fallthrough]];
@@ -281,13 +288,13 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				case DeathlordClasses::Peasant:
 					[[fallthrough]];
 				case DeathlordClasses::Ranger:
-					avoidsSwampDamage = true;
+					avoidsDamage = true;
 					break;
 				default:
-					avoidsSwampDamage = false;
+					avoidsDamage = false;
 					break;
 				}
-				switch ((DeathlordRaces)(MemGetMainPtr(PARTY_RACE_START + regs.x)[0]))
+				switch ((DeathlordRaces)(MemGetMainPtr(PARTY_RACE_START)[regs.x]))
 				{
 				case DeathlordRaces::Elf:
 					[[fallthrough]];
@@ -296,14 +303,15 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				case DeathlordRaces::Orc:
 					[[fallthrough]];
 				case DeathlordRaces::HalfOrc:
-					avoidsSwampDamage = true;
+					avoidsDamage = true;
 					break;
 				default:
-					avoidsSwampDamage = false;
+					avoidsDamage = false;
 					break;
 				}
-				if (avoidsSwampDamage)
+				if (avoidsDamage)
 				{
+AVOID_DAMAGE:
 					// This instruction is a JSR to the damage.
 					// The next instruction is a JSR to highlight the character and beep. We bypass both
 					CYC(12); // JSR (0x20) uses 6 cycles;
