@@ -175,6 +175,7 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Animation.cpp" />
     <ClCompile Include="AppleWinDXVideo.cpp" />
     <ClCompile Include="AutoMap.cpp" />
     <ClCompile Include="BattleOverlay.cpp" />
@@ -225,6 +226,7 @@
     <ClCompile Include="TilesetCreator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Animation.h" />
     <ClInclude Include="AppleWinDXVideo.h" />
     <ClInclude Include="ATGColors.h" />
     <ClInclude Include="AutoMap.h" />

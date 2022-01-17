@@ -5,6 +5,7 @@
 #include "DeathlordHacks.h"
 #include "PartyLayout.h"
 #include "Descriptors.h"
+#include "Animation.h"
 #include <SimpleMath.h>
 #include <vector>
 
@@ -17,6 +18,8 @@ BattleOverlay* BattleOverlay::s_instance;
 
 // In main
 extern std::unique_ptr<Game>* GetGamePtr();
+
+std::vector<std::unique_ptr<Animation>>m_animations = std::vector<std::unique_ptr<Animation>>();
 
 #pragma region main
 void BattleOverlay::Initialize()
@@ -52,7 +55,8 @@ bool BattleOverlay::IsOverlayDisplayed()
 // Update the state based on the game's data
 void BattleOverlay::UpdateState()
 {
-	
+	// Ensure that we have a sprite animation for every active actor in this battle
+
 }
 
 void BattleOverlay::MousePosInPixels(int x, int y)
