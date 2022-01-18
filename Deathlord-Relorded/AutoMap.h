@@ -107,6 +107,7 @@ public:
 	LPBYTE GetCurrentGameMap() { return MemGetMainPtr(GAMEMAP_START_MEM); };
 	bool UpdateLOSRadius();
 	UINT8 StaticTileIdAtMapPosition(UINT8 x, UINT8 y);	// (the tile that's hidden by the monster being on it)
+	ID3D12Resource* GetMonsterSpriteSheet() { return m_monsterSpriteSheet.Get(); };
 
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();

@@ -21,7 +21,7 @@ struct EquipInteractableRect
 class InvOverlay	// Singleton
 {
 public:
-	void InvOverlay::Render(SimpleMath::Rectangle r);
+	void Render(SimpleMath::Rectangle r);
 	void ShowOverlay();
 	void HideOverlay();
 	void ToggleOverlay();

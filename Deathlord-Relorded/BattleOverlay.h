@@ -8,14 +8,12 @@ using namespace DirectX::SimpleMath;
 class BattleOverlay	// Singleton
 {
 public:
-	void BattleOverlay::Render(SimpleMath::Rectangle r);
+	void Render(SimpleMath::Rectangle r);
 	void ShowOverlay();
 	void HideOverlay();
 	void ToggleOverlay();
 	bool IsOverlayDisplayed();
-	void UpdateState();
-	void LeftMouseButtonClicked(int x, int y);
-	void MousePosInPixels(int x, int y);
+	void Update();
 
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states);
 	void OnDeviceLost();
@@ -43,8 +41,10 @@ private:
 	void Initialize();
 
 	static BattleOverlay* s_instance;
+	bool bShouldDisplay;
 	bool bIsDisplayed;
 	RECT m_currentRect;	// Rect of the overlay
+	UINT8 m_monsterId;	// ID of the monster being fought in the main monster spritesheet
 
 	BattleOverlay(std::unique_ptr<DX::DeviceResources>& deviceResources,
 		std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)

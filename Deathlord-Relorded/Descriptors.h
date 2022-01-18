@@ -27,6 +27,7 @@ enum class TextureDescriptors
 	AutoMapMonsterSpriteSheet,
 	AutoMapHiddenSpriteSheet,
 	InvOverlaySpriteSheet,
+	BattleOverlaySpriteSheet,
 	MiniMapSpriteSheet,
 	DayTimeSpriteSheet,
 	PartyLayoutSpriteSheet,

@@ -34,7 +34,7 @@ void Animation::ResumeAnimation()
 #pragma region AnimationBattleChar
 // Fixed X and Y positions for battle module for all possible character slots
 constexpr int ARRAY_BATTLE_POS_X[6 + 32]{
-	210, 282, 350, 225, 280, 335,						// Player Chars
+	210, 282, 350, 280, 225, 335,						// Player Chars
 	236, 276, 330,										// Monsters melee range
 	180, 237, 310, 375,									// Monsters layer 2
 	150, 195, 242, 292, 348, 400,						// Monster layer 3
@@ -87,8 +87,8 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch)
 	// but it moves depending on the AnimationBattleState
 	// Never loop the frames unless you're idle;
 
-	m_frameRectangles.at(0).x = m_monsterId / 0x10;	// The monster spritesheet has 16 monsters per row
-	m_frameRectangles.at(0).y = m_monsterId % 0x10;
+	m_frameRectangles.at(0).x = FBTW * (m_monsterId % 0x10);	// The monster spritesheet has 16 monsters per row
+	m_frameRectangles.at(0).y = FBTH * (m_monsterId / 0x10);
 	if (tick > m_nextFrameTick)		// go to the next frame
 	{
 		// Reset to idle if the animation has completed

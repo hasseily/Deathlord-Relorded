@@ -292,7 +292,7 @@ void Game::Update(DX::StepTimer const& timer)
     // Let the battle window update itself
     if (m_battleOverlay->IsOverlayDisplayed())
     {
-        m_battleOverlay->UpdateState();
+        m_battleOverlay->Update();
     }
 
     // Should we pause the emulator?

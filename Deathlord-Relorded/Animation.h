@@ -48,10 +48,12 @@ enum class AnimationBattleState
 class AnimationBattleChar : public Animation
 {
 public:
+	void Update() { Update(AnimationBattleState::idle); };
 	void Update(AnimationBattleState state);
 	void Render(size_t tick, SpriteBatch* spriteBatch);
 	AnimationBattleChar(DescriptorHeap* resourceDescriptors,
 		XMUINT2 spriteSheetSize, UINT8 battlePosition);
+	~AnimationBattleChar() {};
 
 	UINT8 m_monsterId;							// id of the monster or party member class
 	UINT16 m_health;							// Amount of health

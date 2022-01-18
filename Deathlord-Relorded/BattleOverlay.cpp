@@ -6,6 +6,8 @@
 #include "PartyLayout.h"
 #include "Descriptors.h"
 #include "Animation.h"
+#include "AutoMap.h"
+#include "Emulator/CPU.h"
 #include <SimpleMath.h>
 #include <vector>
 
@@ -19,7 +21,8 @@ BattleOverlay* BattleOverlay::s_instance;
 // In main
 extern std::unique_ptr<Game>* GetGamePtr();
 
-std::vector<std::unique_ptr<Animation>>m_animations = std::vector<std::unique_ptr<Animation>>();
+constexpr int TOTAL_SPRITES = 6 + 32;
+auto m_animations = std::array<std::unique_ptr<AnimationBattleChar>, TOTAL_SPRITES>();
 
 #pragma region main
 void BattleOverlay::Initialize()
@@ -30,12 +33,12 @@ void BattleOverlay::Initialize()
 
 void BattleOverlay::ShowOverlay()
 {
-	bIsDisplayed = true;
+	bShouldDisplay = true;
 }
 
 void BattleOverlay::HideOverlay()
 {
-	bIsDisplayed = false;
+	bShouldDisplay = false;
 }
 
 void BattleOverlay::ToggleOverlay()
@@ -45,7 +48,7 @@ void BattleOverlay::ToggleOverlay()
 
 bool BattleOverlay::IsOverlayDisplayed()
 {
-	return bIsDisplayed;
+	return bShouldDisplay;	// because at some point it'll display
 }
 #pragma endregion
 
@@ -53,27 +56,68 @@ bool BattleOverlay::IsOverlayDisplayed()
 #pragma region actions
 
 // Update the state based on the game's data
-void BattleOverlay::UpdateState()
+void BattleOverlay::Update()
 {
 	// Ensure that we have a sprite animation for every active actor in this battle
-
-}
-
-void BattleOverlay::MousePosInPixels(int x, int y)
-{
-	if (!bIsDisplayed)
+	
+	// First figure out what monster we're fighting
+	// There is triple-dereferencing going on.
+	// First get the index of the monster for the fight.
+	// It's an index into the list of instanced monsters in the map
+	UINT8 _mIndex = MemGetMainPtr(MEM_BATTLE_MONSTER_INDEX)[0];
+	if (_mIndex == 0xFF)	// No monster, no battle
+	{
+		HideOverlay();
 		return;
-	Vector2 mousePoint(x, y);
-}
+	}
+	ShowOverlay();
 
-void BattleOverlay::LeftMouseButtonClicked(int x, int y)
-{
-	if (!bIsDisplayed)
-		return;
-	Vector2 mousePoint(x, y);
+	// Second, dereference again into the array of tiles in the map
+	// where the monster tiles start at 0x40
+	// Now we have the tile index of the type of monster we're fighting.
+	_mIndex = MemGetMainPtr(GAMEMAP_ARRAY_MONSTER_ID)[_mIndex] - 0x40;
+	// And FINALLY, look for the mapping of monsters to tiles for this specific map
+	// and go back into it
+	_mIndex = MemGetMainPtr(GAMEMAP_START_MONSTERS_IN_LEVEL_IDX)[_mIndex];
+	// We could cache this dereferencing, but it really doesn't matter
 
-ENDLEFTCLICK:
-	UpdateState();
+	// Fill animations correctly
+	UINT8 _enemyCount = MemGetMainPtr(MEM_ENEMY_COUNT)[0];
+	auto _animSpriteSheetSize = GetTextureSize(AutoMap::GetInstance()->GetMonsterSpriteSheet());
+	AnimationBattleChar* _anim;
+	for (int i = 0; i < TOTAL_SPRITES; i++)
+	{
+		if (i >= (6 + _enemyCount))		// Clear unused animations
+		{
+			m_animations[i] = NULL;
+			continue;
+		}
+		_anim = m_animations[i].get();
+		if (_anim == nullptr)
+		{
+			m_animations[i] = std::make_unique<AnimationBattleChar>(m_resourceDescriptors, _animSpriteSheetSize, i);
+			_anim = m_animations[i].get();
+		}
+		if (i < 6)	// party
+		{
+			_anim->m_monsterId = MemGetMainPtr(PARTY_CLASS_START)[i];
+			_anim->b_isParty = true;
+			_anim->m_health = (MemGetMainPtr(PARTY_HEALTH_HIBYTE_START)[i] << 8) +
+				MemGetMainPtr(PARTY_HEALTH_LOBYTE_START)[i];
+			if (MemGetMainPtr(PARTY_MAGIC_USER_TYPE_START)[i] == 0xFF)
+				_anim->m_power = 0;
+			else
+				_anim->m_power = MemGetMainPtr(PARTY_HEALTH_LOBYTE_START)[i];
+		}
+		else // This is the id of the monster in the global monster sheet
+		{
+			_anim->m_monsterId = _mIndex;
+			_anim->b_isParty = false;
+			_anim->m_health = MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6];
+			_anim->m_power = 0;
+		}
+	}
+	
 }
 
 #pragma endregion
@@ -83,10 +127,10 @@ void BattleOverlay::CreateDeviceDependentResources(ResourceUploadBatch* resource
 {
 	auto device = m_deviceResources->GetD3DDevice();
 	DX::ThrowIfFailed(
-		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/InvOverlaySpriteSheet.png",
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/BattleOverlaySpriteSheet.png",
 			m_overlaySpriteSheet.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_overlaySpriteSheet.Get(),
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet));
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet));
 
 	// Create the DTX pieces
 
@@ -124,6 +168,22 @@ void BattleOverlay::OnDeviceLost()
 
 void BattleOverlay::Render(SimpleMath::Rectangle r)
 {
+	if (!bShouldDisplay)
+	{
+		if (bIsDisplayed)
+		{
+			// just kill the overlay, it shouldn't be here.
+			// Don't bother animating it
+			bIsDisplayed = false;
+		}
+		return;
+	}
+	
+	// Now check if we should animate the display as it appears
+	if (!bIsDisplayed)
+	{
+		// TODO: Show "FIGHT!" animation
+	}
 
 	auto mmBGTexSize = DirectX::XMUINT2(1000, 800);
 	auto mmSSTextureSize = GetTextureSize(m_overlaySpriteSheet.Get());
@@ -136,6 +196,8 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 
 	auto gamePtr = GetGamePtr();
 	auto font = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular);
+	auto timer = (*gamePtr)->m_timer;
+	size_t ticks = timer.GetElapsedTicks();
 	std::wstring _bufStr;
 
 	// Now draw
@@ -162,6 +224,17 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 		VertexPositionColor(XMFLOAT3(m_currentRect.left + 5, m_currentRect.bottom - 5, 0), static_cast<XMFLOAT4>(Colors::Black))
 	);
 	///// End Draw Border
+
+	// Draw the party and monsters
+	AnimationBattleChar* _anim;
+	for (int i = 0; i < TOTAL_SPRITES; i++)
+	{
+		_anim = m_animations[i].get();
+		if (_anim != nullptr)
+		{
+			_anim->Render(ticks, m_spriteBatch.get());
+		}
+	}
 
 	// Finish up
 	m_primitiveBatch->End();

@@ -53,8 +53,11 @@
 #define PC_BATTLE_ENEMY_HAS_HIT		0xAAE1		// The enemy has hit the player (CMP at 0xAADD does the RNG comparison with: (30 - (AC-TH0+1)*5)*2.5. If RNG is below, it's a hit
 #define PC_BATTLE_ENEMY_END_HIT_ATTEMPT		0xAB49		// End of an enemy hit cycle (for example, 3 hit attempts will trigger 3 times)
 #define PC_BATTLE_TURN_END			0xAF00		// End of any turn for any player. 6 chars and 3 enemies will trigger at least 9 times per round
-#define PC_BATTLE_START_XP_ALLOC	0xA30A		// LDX #$00: starts with the first char. Randomize to start with any char the xp allocation routine
+#define PC_BATTLE_BEGIN_XP_ALLOC	0xA30A		// LDX #$00: starts with the first char. Randomize to start with any char the xp allocation routine
 #define MEM_BATTLE_GETXP_START		0xAFE8		// Array for each char that, if > 0, gives XP to the char after the battle.
+#define MEM_ENEMY_COUNT				0x52		// Number of enemies
+#define MEM_ENEMY_HP_START			0xAFAA		// Array of HPs for all enemies. Use MEM_ENEMY_COUNT to know the length
+#define MEM_BATTLE_MONSTER_INDEX	0xFC23		// Index of the monster we're fighting, index into GAMEMAP_ARRAY_MONSTER_ID. FF is empty
 
 /* the JSRs right after 0xA37F are:
 0xA382: JSR 0x51EB	Redraws center right area

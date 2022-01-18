@@ -358,7 +358,7 @@ AVOID_DAMAGE:
 				}
 				break;
 			}
-			case PC_BATTLE_START_XP_ALLOC:
+			case PC_BATTLE_BEGIN_XP_ALLOC:
 			{
 				// As you fight, Deathlord will increment [PC=0xA86B] for each party member a number every time
 				// there's an "XP-generating event". [ This array starts at 0xAFE8]
@@ -371,7 +371,7 @@ AVOID_DAMAGE:
 				// this LDX #$00 starts the XP alloc routine at char 0.
 				// we randomize the LDX value instead
 				// and make every member be given XP!
-				MemGetMainPtr(PC_BATTLE_START_XP_ALLOC)[1] = rand() % DEATHLORD_PARTY_SIZE;
+				MemGetMainPtr(PC_BATTLE_BEGIN_XP_ALLOC)[1] = rand() % DEATHLORD_PARTY_SIZE;
 				int getsXP;
 				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
 				{

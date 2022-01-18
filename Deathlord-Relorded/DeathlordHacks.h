@@ -54,7 +54,7 @@ constexpr UINT16 PARTY_ATTR_SIZ_START = 0xFD7E;
 constexpr UINT16 PARTY_ATTR_INT_START = 0xFD84;
 constexpr UINT16 PARTY_ATTR_DEX_START = 0xFD8A;
 constexpr UINT16 PARTY_ATTR_CHA_START = 0xFD90;
-constexpr UINT16 PARTY_MAGIC_USER_TYPE_START = 0xFDA2;
+constexpr UINT16 PARTY_MAGIC_USER_TYPE_START = 0xFDA2;	// FF is not a magic user. 0 is priest, etc...
 
 constexpr UINT16 PARTY_CHAR_LEADER = 0xFC19;			// Leader of the party (0-based)
 // The below also works in combat
