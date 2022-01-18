@@ -83,6 +83,10 @@ public:
 	// r is the rectangle of the game itself
 	void Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch);
 
+	// To print a string to the log.
+	// This is used when leveling up, to give feedback on XP still needed
+	void PrintWStringToLog(std::wstring ws, bool bInverse);
+
 	// public singleton code
 	static TextOutput* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,
 		std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)
@@ -122,7 +126,6 @@ private:
 	void PrintCharToKeypress(unsigned char ch, UINT8 X, bool bInverse);
 	void PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool bInverse);
 	void PrintCharToLog(unsigned char ch, UINT8 X, bool bInverse);
-	void PrintWStringToLog(std::wstring ws, bool bInverse);
 
 	TextOutput(std::unique_ptr<DX::DeviceResources>& deviceResources,
 		std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)

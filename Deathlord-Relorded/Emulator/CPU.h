@@ -24,7 +24,11 @@
 #define PC_SAVE_AFTER_DEATH			0x5BC5		// BNE should not branch in order to stop saving after a char dies in combat
 #define PC_NINJA_MONK_AC_RESET		0xA952		// AND with 0F that resets the Ninja and Monk A/C to 0 every 32 levels. Bypass this bug.
 #define PC_CHECK_READY_WEAPON		0x6B98		// Skip this JSR to bypass the test if the weapon is usable. A has weapon id, X has char index, Y has Melee/Range (0/1)
+#define PC_INCREMENT_LEVEL			0xF5BE		// Increments the level by 1 when training
+#define PC_RESET_XP_ON_LEVELUP		0xF5D4		// STA 0 on both low and high bytes
+#define PC_LEVELUP_CHECK			0xF563		// At academy, when "buying" level, if A is 0, does not level up.
 
+// TODO: Recalc armorclass on inventory change in inventory manager!
 #define PC_RECALC_ARMORCLASS		0xA93F		// Jumping to this routine recalculates the armor classes of all characters
 
 #define PC_SCROLL_WINDOW			0x5395		// This scrolls the active window
@@ -49,7 +53,8 @@
 #define PC_BATTLE_ENEMY_HAS_HIT		0xAAE1		// The enemy has hit the player (CMP at 0xAADD does the RNG comparison with: (30 - (AC-TH0+1)*5)*2.5. If RNG is below, it's a hit
 #define PC_BATTLE_ENEMY_END_HIT_ATTEMPT		0xAB49		// End of an enemy hit cycle (for example, 3 hit attempts will trigger 3 times)
 #define PC_BATTLE_TURN_END			0xAF00		// End of any turn for any player. 6 chars and 3 enemies will trigger at least 9 times per round
-
+#define PC_BATTLE_START_XP_ALLOC	0xA30A		// LDX #$00: starts with the first char. Randomize to start with any char the xp allocation routine
+#define MEM_BATTLE_GETXP_START		0xAFE8		// Array for each char that, if > 0, gives XP to the char after the battle.
 
 /* the JSRs right after 0xA37F are:
 0xA382: JSR 0x51EB	Redraws center right area
@@ -57,6 +62,11 @@
 0xA388: JSR 0x5212	Clears the billboard area top right
 0xA38B: JSR 0x5203	Sets co-ords of active window
 0xA38E: JSR 0x5194	Clear the log area bottom left
+*/
+
+/*
+At 0x702B the game checks the type of magic user for the spell level requirement
+If it's 4 and above, it's a weak magic user and they divide the max spell level by 4
 */
 
 struct regsrec

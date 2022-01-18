@@ -295,8 +295,6 @@ void TextOutput::PrintCharToLog(unsigned char ch, UINT8 X, bool bInverse)
 
 void TextOutput::PrintWStringToLog(std::wstring ws, bool bInverse)
 {
-	// purely for debugging!
-#ifdef _DEBUG
 	OutputDebugString(ws.c_str());
 	OutputDebugString(L"\n");
 	m_vLog.at(0).first = ws;
@@ -306,7 +304,6 @@ void TextOutput::PrintWStringToLog(std::wstring ws, bool bInverse)
 		m_vLog.at(0).second = FontDescriptors::FontDLRegular;
 	m_XLog = 0;
 	ScrollWindow(TextWindows::Log);
-#endif
 }
 
 #pragma endregion
