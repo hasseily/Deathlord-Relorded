@@ -9,6 +9,9 @@
 /// </summary>
 /// 
 
+constexpr UINT8 DEATHLORD_PARTY_SIZE = 6;				// DLRL DOES NOT SUPPORT A PARTY SIZE NOT 6!!!!
+constexpr UINT8 DEATHLORD_INVENTORY_SLOTS = 8;
+
 constexpr UINT16 MAP_IS_IN_GAME_MAP = 0xFCE0;			// If set to 0xE5, player is in-game and not on title screen or utilities
 constexpr UINT16 MAP_IS_OVERLAND = 0xFC10;				// Is set to 0x80 if on the overland area
 constexpr UINT16 MAP_ID = 0xFC4E;						// ID of the map
@@ -51,9 +54,11 @@ constexpr UINT16 PARTY_ATTR_SIZ_START = 0xFD7E;
 constexpr UINT16 PARTY_ATTR_INT_START = 0xFD84;
 constexpr UINT16 PARTY_ATTR_DEX_START = 0xFD8A;
 constexpr UINT16 PARTY_ATTR_CHA_START = 0xFD90;
+constexpr UINT16 PARTY_MAGIC_USER_TYPE_START = 0xFDA2;
 
 constexpr UINT16 PARTY_CHAR_LEADER = 0xFC19;			// Leader of the party (0-based)
-constexpr UINT16 PARTY_CURRENT_CHAR_POS = 0xFC21;		// Char we're getting info on (0-based)
+// The below also works in combat
+constexpr UINT16 PARTY_CURRENT_CHAR_POS = 0xFC21;		// Char we're getting info on (0-based), or active battle char
 constexpr UINT16 PARTY_CURRENT_CHAR_CLASS = 0xFC22;		// Class of the party leader or active char in battle (determines icon)
 constexpr UINT16 PARTY_ICON_TYPE = 0xFC1D;				// 0: leader icon, 1: boat
 
@@ -83,7 +88,8 @@ constexpr UINT16 MEM_PRINT_Y = 0x00AF;					// Current Y when printing a string o
 constexpr UINT16 MEM_PRINT_WIDTH = 0x00AB;				// Area width for printing current string
 constexpr UINT16 MEM_PRINT_HEIGHT = 0x00AC;				// Area height for printing current string
 
-constexpr wchar_t ARRAY_DEATHLORD_CHARSET[128]{
+constexpr wchar_t ARRAY_DEATHLORD_CHARSET[128]
+{
 	'.','.','.','.','.','.','.','.','.','.','.','.','.','\n','.','.',
 	'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',
 	' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/',
@@ -94,7 +100,8 @@ constexpr wchar_t ARRAY_DEATHLORD_CHARSET[128]{
 	'p','q','r','s','t','u','v','w','x','y','z','◆',' ',' ','[',']'	// 0x7B is the cursor
 };
 
-constexpr wchar_t ARRAY_DEATHLORD_CHARSET_EOR[128]{	// The array EOR'd with 0xE5, which Deathlord uses to obfuscate strings in RAM
+constexpr wchar_t ARRAY_DEATHLORD_CHARSET_EOR[128]
+{	// The array EOR'd with 0xE5, which Deathlord uses to obfuscate strings in RAM
 	'e','d','g','f','a','`','c','b','m','l','o','n','i','h','k','j',
 	'u','t','w','v','q','p','s','r',' ',' ',']','[','y','x','◆','z',	// 0x1E is the cursor
 	'E','D','G','F','A','@','C','B','M','L','O','N','I','H','K','J',
@@ -103,6 +110,17 @@ constexpr wchar_t ARRAY_DEATHLORD_CHARSET_EOR[128]{	// The array EOR'd with 0xE5
 	'5','4','7','6','1','0','3','2','=','<','?','>','9','8',';',':',
 	'.','.','.','.','.','.','.','.','\n','.','.','.','.','.','.','.',	// mostly unused
 	'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.'		// unused
+};
+
+constexpr int ARRAY_XP_REQUIREMENTS[22]
+{	// necessary xp to increase level
+	0,							// level 1
+	200, 200, 200, 200,			// levels 2-5
+	400, 400, 400, 400,			// levels 6-9
+	600, 600, 600, 600,			// levels 10-13
+	800, 800, 800, 800,			// levels 14-17
+	1000, 1000, 1000, 1000,		// levels 19-21
+	1200						// levels 22+
 };
 
 enum class DeathlordClasses		// in memory at 0xFD60-0xFD65
