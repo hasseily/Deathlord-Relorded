@@ -1,8 +1,11 @@
 # Deathlord Relorded
 
 Deathlord... the infamous Apple 2 RPG of 1987.
-Too tough for many, just the right level of sadistic extremism for others. But always interesting!
+Too tough for many, just the right level of sadistic extremism for others. But with brilliant dungeon design, and always interesting!
 It is time to relord Deathlord, make it more accessible, better looking, and in the process fix a few bugs.
+And make sure you never need to "save scum". Play, save, backup obviously. But never retry a dozen times something to get a good result.
+This means that magic pools always give you stats increase, search never fails, and monsters never level drain you.
+It'll still be tough as nails, it's Deathlord after all. But it will never force you to reload to get a better outcome, something every player had to constantly do in the original game.
 
 This app requires a 1920x1080 display, DirectX 12, Windows 10 x64, with working sound.
 Fork on GitHub or contact me for other builds, but the DirectX 12 requirement is set in stone, sorry.
