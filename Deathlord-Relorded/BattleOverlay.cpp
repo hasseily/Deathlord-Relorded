@@ -61,7 +61,7 @@ void BattleOverlay::Update()
 	// Ensure that we have a sprite animation for every active actor in this battle
 	
 	// First figure out what monster we're fighting
-	// There is triple-dereferencing going on.
+	// There is double-dereferencing going on.
 	// First get the index of the monster for the fight.
 	// It's an index into the list of instanced monsters in the map
 	UINT8 _mIndex = MemGetMainPtr(MEM_BATTLE_MONSTER_INDEX)[0];
@@ -72,7 +72,7 @@ void BattleOverlay::Update()
 	}
 	ShowOverlay();
 
-	// Second, dereference again into the array of tiles in the map
+	// Second, dereference into the array of tiles in the map
 	// where the monster tiles start at 0x40
 	// Now we have the tile index of the type of monster we're fighting.
 	_mIndex = MemGetMainPtr(GAMEMAP_ARRAY_MONSTER_ID)[_mIndex] - 0x40;

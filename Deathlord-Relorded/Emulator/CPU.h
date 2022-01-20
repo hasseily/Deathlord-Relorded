@@ -27,6 +27,7 @@
 #define PC_INCREMENT_LEVEL			0xF5BE		// Increments the level by 1 when training
 #define PC_RESET_XP_ON_LEVELUP		0xF5D4		// STA 0 on both low and high bytes
 #define PC_LEVELUP_CHECK			0xF563		// At academy, when "buying" level, if A is 0, does not level up.
+#define PC_PICKLOCK_CHECK			0x938C		// Beginning of the lockpick routine. NOP the instruction at 93CD and set 93D0 to 0x66 to succeed 100% of the time
 
 // TODO: Recalc armorclass on inventory change in inventory manager!
 #define PC_RECALC_ARMORCLASS		0xA93F		// Jumping to this routine recalculates the armor classes of all characters
@@ -37,10 +38,6 @@
 												// It scrolls many times on the billboard, probably for each line
 #define PC_PRINT_CHAR				0x532D		// Prints a char on screen using: AF is active Y, AE is active X, AB is width, AC is height, AD is original X (for line-feed), AA is original Y
 #define PC_PRINT_CLEAR_AREA			0x52BC		// Clears a print area. Coordinates are in 0xAA-0xAD
-#define MEM_PRINT_AREA_X_START		0x00AD		// Coordinates with the print area
-#define MEM_PRINT_AREA_X_END		0x00AB		// Coordinates with the print area
-#define MEM_PRINT_AREA_Y_START		0x00AA		// Coordinates with the print area
-#define MEM_PRINT_AREA_Y_END		0x00AC		// Coordinates with the print area
 
 // Battle module
 #define PC_BATTLE_AMBUSH			0xEB43		// Pre-entry point if ambushed

@@ -117,8 +117,8 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				if (!__textOutput)
 					__textOutput = TextOutput::GetInstance();
 				TextWindows tw = __textOutput->AreaForCoordinates(
-					MemGetMainPtr(MEM_PRINT_AREA_X_START)[0], MemGetMainPtr(MEM_PRINT_AREA_X_END)[0],
-					MemGetMainPtr(MEM_PRINT_AREA_Y_START)[0], MemGetMainPtr(MEM_PRINT_AREA_Y_END)[0]
+					MemGetMainPtr(MEM_PRINT_X_ORIGIN)[0], MemGetMainPtr(MEM_PRINT_WIDTH)[0],
+					MemGetMainPtr(MEM_PRINT_Y_ORIGIN)[0], MemGetMainPtr(MEM_PRINT_HEIGHT)[0]
 				);
 				switch (tw)
 				{
@@ -140,10 +140,10 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 					sprintf_s(_buf, 300, "%04X: %02X%02X - %02X %02X %02X - %02d %02d %02d %02d\n", _origPC,
 						MemGetRealMainPtr(_origPC + 2)[0], MemGetRealMainPtr(_origPC + 1)[0],
 						regs.a, regs.x, regs.y,
-						MemGetRealMainPtr(MEM_PRINT_AREA_X_START)[0],
-						MemGetRealMainPtr(MEM_PRINT_AREA_X_END)[0],
-						MemGetRealMainPtr(MEM_PRINT_AREA_Y_START)[0],
-						MemGetRealMainPtr(MEM_PRINT_AREA_Y_END)[0]);
+						MemGetRealMainPtr(MEM_PRINT_X_ORIGIN)[0],
+						MemGetRealMainPtr(MEM_PRINT_WIDTH)[0],
+						MemGetRealMainPtr(MEM_PRINT_Y_ORIGIN)[0],
+						MemGetRealMainPtr(MEM_PRINT_HEIGHT)[0]);
 					OutputDebugStringA(_buf);
 #endif
 				}
@@ -170,8 +170,8 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				if (!__textOutput)
 					__textOutput = TextOutput::GetInstance();
 				TextWindows tw = __textOutput->AreaForCoordinates(
-					MemGetMainPtr(MEM_PRINT_AREA_X_START)[0], MemGetMainPtr(MEM_PRINT_AREA_X_END)[0],
-					MemGetMainPtr(MEM_PRINT_AREA_Y_START)[0], MemGetMainPtr(MEM_PRINT_AREA_Y_END)[0]
+					MemGetMainPtr(MEM_PRINT_X_ORIGIN)[0], MemGetMainPtr(MEM_PRINT_WIDTH)[0],
+					MemGetMainPtr(MEM_PRINT_Y_ORIGIN)[0], MemGetMainPtr(MEM_PRINT_HEIGHT)[0]
 				);
 				__textOutput->PrintCharRaw(_glyph, tw,
 					MemGetMainPtr(MEM_PRINT_X)[0], MemGetMainPtr(MEM_PRINT_Y)[0],
@@ -193,10 +193,10 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				sprintf_s(_buf, 300, "%04X: %02X%02X - %02X %02X %02X - %02d %02d %02d %02d\n", _origPC,
 					MemGetRealMainPtr(_origPC + 2)[0], MemGetRealMainPtr(_origPC + 1)[0],
 					regs.a, regs.x, regs.y,
-					MemGetRealMainPtr(MEM_PRINT_AREA_X_START)[0],
-					MemGetRealMainPtr(MEM_PRINT_AREA_X_END)[0],
-					MemGetRealMainPtr(MEM_PRINT_AREA_Y_START)[0],
-					MemGetRealMainPtr(MEM_PRINT_AREA_Y_END)[0]);
+					MemGetRealMainPtr(MEM_PRINT_X_ORIGIN)[0],
+					MemGetRealMainPtr(MEM_PRINT_WIDTH)[0],
+					MemGetRealMainPtr(MEM_PRINT_Y_ORIGIN)[0],
+					MemGetRealMainPtr(MEM_PRINT_HEIGHT)[0]);
 				OutputDebugStringA(_buf);
 #endif
 				break;
