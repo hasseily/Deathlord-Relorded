@@ -14,7 +14,7 @@ public:
 	void ToggleOverlay();
 	bool IsOverlayDisplayed();
 	void Update();
-
+	void CharBeginAttack(UINT8 charPosition);
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states);
 	void OnDeviceLost();
 

@@ -55,6 +55,12 @@ bool BattleOverlay::IsOverlayDisplayed()
 
 #pragma region actions
 
+// A characters begins his attack
+void BattleOverlay::CharBeginAttack(UINT8 charPosition)
+{
+	m_animations[charPosition]->Update(AnimationBattleState::attacking);
+}
+
 // Update the state based on the game's data
 void BattleOverlay::Update()
 {
@@ -197,7 +203,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 	auto gamePtr = GetGamePtr();
 	auto font = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular);
 	auto timer = (*gamePtr)->m_timer;
-	size_t ticks = timer.GetElapsedTicks();
+	size_t ticks = timer.GetTotalTicks();
 	std::wstring _bufStr;
 
 	// Now draw
@@ -232,7 +238,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 		_anim = m_animations[i].get();
 		if (_anim != nullptr)
 		{
-			_anim->Render(ticks, m_spriteBatch.get());
+			_anim->Render(ticks, m_spriteBatch.get(), SimpleMath::Vector2(m_currentRect.left, m_currentRect.top));
 		}
 	}
 

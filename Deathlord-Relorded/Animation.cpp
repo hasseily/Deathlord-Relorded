@@ -66,7 +66,7 @@ AnimationBattleChar::AnimationBattleChar(DescriptorHeap* resourceDescriptors,
 	// There's only a single frame rectangle
 	// the frame will be rendered at different positions based on hit, miss, attack
 	m_frameRectangles = std::vector<SimpleMath::Rectangle>();
-	m_frameRectangles.push_back(SimpleMath::Rectangle(0,0, FBTW, FBTH));
+	m_frameRectangles.push_back(SimpleMath::Rectangle(0, 0, FBTW, FBTH));
 	SimpleMath::Vector2 _origin(ARRAY_BATTLE_POS_X[battlePosition], ARRAY_BATTLE_POS_Y[battlePosition]);
 	SetRenderOrigin(_origin);
 }
@@ -78,10 +78,11 @@ void AnimationBattleChar::Update(AnimationBattleState state)
 		m_state = state;
 		m_currentFrame = 0;
 		m_renderCurrent = m_renderOrigin;
+		m_nextFrameTick = m_tickFrameLength[m_currentFrame];
 	}
 }
 
-void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch)
+void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, SimpleMath::Vector2 overlayOrigin)
 {
 	// The battle animation uses a single image for all frames
 	// but it moves depending on the AnimationBattleState
@@ -92,42 +93,45 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch)
 	if (tick > m_nextFrameTick)		// go to the next frame
 	{
 		// Reset to idle if the animation has completed
-		if ((m_state != AnimationBattleState::idle) && (m_currentFrame == (m_frameCount -1)))
+		if ((m_state != AnimationBattleState::idle) && (m_currentFrame == (m_frameCount - 1)))
 			Update(AnimationBattleState::idle);
 		else
+		{
 			m_currentFrame = (m_currentFrame + 1) % m_frameCount;
+			m_nextFrameTick = m_tickFrameLength[m_currentFrame];
+		}
 
 	}
 	if (m_state != AnimationBattleState::idle)	// update position
 	{
 		int _moveX = 0;
-			int _moveY = 0;
-			int _mP = (b_isParty ? -1 : +1);
-			switch (m_state)
-			{
-			case AnimationBattleState::idle:
-				break;
-			case AnimationBattleState::attacking:	// edge forward
-				_moveY = _mP * (m_currentFrame > 2 ? +1 : -1);
-					break;
-			case AnimationBattleState::hit:			// shake
-				if (m_currentFrame == 1 || m_currentFrame == 4)
-					_moveX = _mP;
-				else if (m_currentFrame == 2 || m_currentFrame == 3)
-					_moveX = -_mP;
-				break;
-			case AnimationBattleState::dodged:		// edge back diagonally
-				_moveX = _mP * (m_currentFrame > 2 ? -1 : +1);
-				_moveY = _mP * (m_currentFrame > 2 ? -1 : +1);
-				break;
-			default:
-				break;
-			}
+		int _moveY = 0;
+		int _mP = (b_isParty ? -1 : +1);
+		switch (m_state)
+		{
+		case AnimationBattleState::idle:
+			break;
+		case AnimationBattleState::attacking:	// edge forward
+			_moveY = _mP * (m_currentFrame > 2 ? -1 : +1);
+			break;
+		case AnimationBattleState::hit:			// shake
+			if (m_currentFrame == 1 || m_currentFrame == 4)
+				_moveX = _mP;
+			else if (m_currentFrame == 2 || m_currentFrame == 3)
+				_moveX = -_mP;
+			break;
+		case AnimationBattleState::dodged:		// edge back diagonally
+			_moveX = _mP * (m_currentFrame > 2 ? -1 : +1);
+			_moveY = _mP * (m_currentFrame > 2 ? -1 : +1);
+			break;
+		default:
+			break;
+		}
 		m_renderCurrent.x += _moveX;
 		m_renderCurrent.y += _moveY;
 	}
-	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet), 
-		m_spriteSheetSize, m_renderCurrent, &(RECT)m_frameRectangles.at(0), Colors::White, 0.f, XMFLOAT2(), 1.f);
+	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
+		m_spriteSheetSize, m_renderCurrent + overlayOrigin, &(RECT)m_frameRectangles.at(0), Colors::White, 0.f, XMFLOAT2(), 1.f);
 	// TODO: Draw health and power bars
 }
 #pragma endregion AnimationBattleChar

@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "TextOutput.h"
 #include "InvManager.h"
 #include "AutoMap.h"
+#include "BattleOverlay.h"
 #include <string>
 //===========================================================================
 
@@ -356,6 +357,11 @@ AVOID_DAMAGE:
 					CYC(6); // JSR (0x20) uses 6 cycles;
 					regs.pc = _origPC + 3;	// Skip to the next instruction
 				}
+				break;
+			}
+			case PC_BATTLE_CHAR_BEGIN_ATK:
+			{
+				BattleOverlay::GetInstance()->CharBeginAttack(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]);
 				break;
 			}
 			case PC_BATTLE_BEGIN_XP_ALLOC:

@@ -18,7 +18,7 @@ public:
 	void SetRenderOrigin(SimpleMath::Vector2 origin);
 	bool IsFinished() { return b_isFinished; };
 	virtual void Update() = 0;
-	virtual void Render(size_t tick, SpriteBatch* spriteBatch) = 0;
+	virtual void Render(size_t tick, SpriteBatch* spriteBatch, SimpleMath::Vector2 overlayOrigin) = 0;
 	virtual ~Animation() {};
 
 protected:
@@ -50,7 +50,7 @@ class AnimationBattleChar : public Animation
 public:
 	void Update() { Update(AnimationBattleState::idle); };
 	void Update(AnimationBattleState state);
-	void Render(size_t tick, SpriteBatch* spriteBatch);
+	void Render(size_t tick, SpriteBatch* spriteBatch, SimpleMath::Vector2 overlayOrigin);
 	AnimationBattleChar(DescriptorHeap* resourceDescriptors,
 		XMUINT2 spriteSheetSize, UINT8 battlePosition);
 	~AnimationBattleChar() {};
