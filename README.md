@@ -1,55 +1,54 @@
-# Deathlord Companion
+# Deathlord Relorded
 
-Welcome to Deathlord Companion!
-It is a fully self-contained Windows 10 application for running Deathlord, the infamous Apple 2 RPG of 1987.
-It goes beyond simple emulation, and provides you with configurable sidebars to display all sorts of useful in-game information, as well as an auto-log which continuously copies conversations into a window that you can edit, translate, save...
+Deathlord... the infamous Apple 2 RPG of 1987.
+Too tough for many, just the right level of sadistic extremism for others. But always interesting!
+It is time to relord Deathlord, make it more accessible, better looking, and in the process fix a few bugs.
 
-Deathlord  Companion also provides GameLink support for Grid Cartographer, a commercial program that helps you map as you play (or use existing maps).
+This app requires a 1920x1080 display, DirectX 12, Windows 10 x64, with working sound.
+Fork on GitHub or contact me for other builds, but the DirectX 12 requirement is set in stone, sorry.
 
-Deathlord Companion's emulation layer is based on AppleWin, the great Apple 2 emulator. This program would never have seen the light of day without the amazing work of the AppleWin developers.
+## How I'm doing it
 
-This app requires DirectX 12 and Windows 10 x64, with working sound.
-Fork on github or contact me for other builds, but the DirectX 12 requirement is set in stone, sorry.
+The architecture of Deathlord Relorded is relatively unique. Fundamentally, you'll be running the original Deathlord game in an emulator.
+No change has been made whatsoever to the original Deathlord codebase. Even the original copy protection is kept.
+In fact, you can take the .woz images of the original game and run them in your favorite emulator, the game is untouched.
+
+What has changed, and immensely so, is the emulation layer that is running the game. I took the AppleWin codebase and transformed it.
+First, I ripped out everything except for the core emulation code of an Apple //e Enhanced. I rewrote the graphics layer in pure DX12.
+Then I heavily tweaked the CPU emulation to hook into the original code as necessary and fire off either display events or changes
+in the code behavior. So sometimes the emulated CPU will do something different, and sometimes it's the GUI layer that will update itself.
+
+This results in a game that looks retro-modern, but whose logic is encapsulated in a 6502 assembly codebase from 1987.
 
 ## Installation
 
-- Copy the Deathlord folder anywhere you want, ideally in your Program Files directory.
-- Run the companion .exe. If you want to choose different disks, use the menu to select each of boot, scenario A and scenario B. It'll remember them for future sessions.
+There are no releases for now, it's an in-development project. Generally the main branch should be compilable with Visual Studio 2019.
 
-## Running the program
+## Features
 
-The companion embeds a heavily modified version of AppleWin 1.29.16, and will automatically load Deathlord after you select the boot image file.
-You can optionally load the profile of your choice (they're located in the Profiles directory), and play the game.
+* The game runs in a fixed 1920x1080 resolution, windowed or full screen.
+* The map is expanded from 9x9 to 32x32
+* There's a world mini-map to not get lost at sea
+* Many, many more colors
+* Tilesets redone with the help from @BillG.
+* Log is 30 lines long instead of 3
+* Fixed known Deathlord bugs such as the ninja/monk AC reset at level 32, and stat increase ceiling
+* Magic water effect is always a random stat increase
+* Search always works (that was evil!)
+* No char HP loss from starvation, but no automatic healing when starving
+* Certain races and classes have bonuses
+* Rear rank can use ranged weapons
+* No autosave when char dies in battle
+* Equipment use has improved. Peasants can use light bows and longbows, ninja can wield katanas
+* Battle XP allocation is proeprly distributed across all characters
+* Every character gets battle XP. No more having to "cast-cancel" to get XP for mages that don't want to cast spells
+* Additional XP does not reset on level up
+* Can check missing required XP when trying to level up
 
-Ther are a number of emulation options, all directly accessible from the main menu bar. Playing at max speed automatically disables sound, and it will generally play so fast that you won't see battle animations. This is highly discouraged unless you've become very adept at the game.
+Happy retro RPG gaming, and see you on the Lost Sectors Discord server, or on the discussions here in GitHub.
 
-## Automap
-
-The most obvious feature of the Companion is its automapping. It's straightforward except for the "quadrants" menu items. Every Deathlord map is 64x64 tiles, but most dungeons and towers have levels of 16x16 tiles. Deathlord puts together 4 levels in a single map. The Companion allows you to "zoom in" to the quadrant that you want, showing you a better view of where you are.
-
-## Profiles
-
-The other key feature of the Companion is its profiles. A profile is a JSON document that specifies what the Companion should display, and where. The Companion has support for many types of data in memory, including being able to translate numeric identifiers into strings (something very useful when you want to show "Short Sword +1" instead of 0x0b).
-
-The documentation for profiles is sorely lacking, but I've included a base profile that will autoload upon launch. Feel free to experiment and ping me for more info.
-
-## Logging
-
-The Companion can automatically log all interactions with the world, conversations and battles. Logging is automatic when the log window is displayed, but you can turn on or off the logging of battles from the menu. You can copy, paste, or otherwise modify the text within the log window. You can (also from the menu) load and save the log.
-
-WARNING: Save or copy the log window content somewhere else before you quit the app or it is lost forever!
-
-## Other unique things
-
-There's a hack window where you can modify a byte of memory, and save the current map to disk in the Maps/ folder.
-Also the current map will save if you hit PAGEDOWN. When saving the map, it also saves the related tileset for import in your favorite mapping program. The tileset data is 448x512 pixels, in RGBA format. Use Gimp or other programs to transform it into PNG or anything else.
-
-Another unique feature of the Deathlord Companion is that it doesn't skip a turn if you wait too long. The time and food usage pass normally though, so if you want to be away from your keyboard for a long time make sure you at least put yourself in a character stats screen (press 1-6 on the keyboard).
-
-Happy retro RPG gaming, and see you on the Lost Sectors Discord server.
-
-Rikkles, Lebanon, 2021.
-
+Rikkles, Lebanon, 2022.
+@RikRetro on Twitter.
 
 @rikretro on twitter
 https://github.com/hasseily/Deathlord-Companion
