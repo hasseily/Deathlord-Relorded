@@ -39,6 +39,7 @@ There are no releases for now, it's an in-development project. Generally the mai
 * Magic water effect is always a random stat increase
 * Search always works (that was evil!)
 * No char HP loss from starvation, but no automatic healing when starving
+* No level drain
 * Certain races and classes have bonuses
 * Rear rank can use ranged weapons
 * No autosave when char dies in battle
