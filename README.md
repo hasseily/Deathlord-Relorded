@@ -39,16 +39,17 @@ There are no releases for now, it's an in-development project. Generally the mai
 * Certain races and classes have bonuses
 * Rear rank can use ranged weapons
 * No autosave when char dies in battle
-* Equipment use has improved. Peasants can use light bows and longbows, ninja can wield katanas
-* Battle XP allocation is proeprly distributed across all characters
+* Equipment use has improved. Peasants can use light bows and longbows, ninjas can wield katanas
+* Battle XP allocation is properly distributed across all characters
 * Every character gets battle XP. No more having to "cast-cancel" to get XP for mages that don't want to cast spells
 * Additional XP does not reset on level up
 * Can check missing required XP when trying to level up
+
+Many thanks to @a2-qkumba for code analysis and @BillG for graphics.
 
 Happy retro RPG gaming, and see you on the Lost Sectors Discord server, or on the discussions here in GitHub.
 
 Rikkles, Lebanon, 2022.
 @RikRetro on Twitter.
 
-@rikretro on twitter
-https://github.com/hasseily/Deathlord-Companion
+https://github.com/hasseily/Deathlord-Relorded
