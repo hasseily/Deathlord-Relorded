@@ -56,7 +56,7 @@ AnimationBattleChar::AnimationBattleChar(DescriptorHeap* resourceDescriptors,
 	m_resourceDescriptors = resourceDescriptors;
 	m_spriteSheetSize = spriteSheetSize;
 	m_nextFrameTick = SIZE_T_MAX;
-	m_tickFrameLength = std::vector<size_t>{ 500000, 500000, 500000, 500000, 500000 };
+	m_tickFrameLength = std::vector<size_t>{ 300000, 300000, 300000, 300000, 300000, 300000, 300000 };
 	m_frameCount = m_tickFrameLength.size();
 	m_monsterId = 1;
 	m_health = 1;
@@ -66,7 +66,7 @@ AnimationBattleChar::AnimationBattleChar(DescriptorHeap* resourceDescriptors,
 	// There's only a single frame rectangle
 	// the frame will be rendered at different positions based on hit, miss, attack
 	m_frameRectangles = std::vector<SimpleMath::Rectangle>();
-	m_frameRectangles.push_back(SimpleMath::Rectangle(0, 0, FBTW, FBTH));
+	m_frameRectangles.emplace_back(0, 0, FBTW, FBTH);
 	SimpleMath::Vector2 _origin(ARRAY_BATTLE_POS_X[battlePosition], ARRAY_BATTLE_POS_Y[battlePosition]);
 	SetRenderOrigin(_origin);
 }
@@ -102,6 +102,8 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, SimpleMa
 		}
 
 	}
+	float _scale = 1.0f;
+	auto _origin = XMFLOAT2();
 	if (m_state != AnimationBattleState::idle)	// update position
 	{
 		int _moveX = 0;
@@ -112,17 +114,22 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, SimpleMa
 		case AnimationBattleState::idle:
 			break;
 		case AnimationBattleState::attacking:	// edge forward
-			_moveY = _mP * (m_currentFrame > 2 ? -1 : +1);
+			_moveY = _mP * (m_currentFrame > (m_frameCount/2) ? -1 : +1);
 			break;
 		case AnimationBattleState::hit:			// shake
 			if (m_currentFrame == 1 || m_currentFrame == 4)
-				_moveX = _mP;
+				_moveX = _mP * 2;
 			else if (m_currentFrame == 2 || m_currentFrame == 3)
-				_moveX = -_mP;
+				_moveX = -_mP * 2;
 			break;
 		case AnimationBattleState::dodged:		// edge back diagonally
-			_moveX = _mP * (m_currentFrame > 2 ? -1 : +1);
-			_moveY = _mP * (m_currentFrame > 2 ? -1 : +1);
+			_moveX = _mP * (m_currentFrame > (m_frameCount / 2) ? -2 : +2);
+			_moveY = _mP * (m_currentFrame > (m_frameCount / 2) ? +2 : -2);
+			break;
+		case AnimationBattleState::died:		// shrink to nothingness
+			_scale = ((float)m_frameCount - m_currentFrame) / (float)m_frameCount;
+			_origin.x = 0.5f;
+			_origin.y = 0.5f;
 			break;
 		default:
 			break;
@@ -131,7 +138,7 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, SimpleMa
 		m_renderCurrent.y += _moveY;
 	}
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
-		m_spriteSheetSize, m_renderCurrent + overlayOrigin, &(RECT)m_frameRectangles.at(0), Colors::White, 0.f, XMFLOAT2(), 1.f);
+		m_spriteSheetSize, m_renderCurrent + overlayOrigin, &(RECT)m_frameRectangles.at(0), Colors::White, 0.f, _origin, _scale);
 	// TODO: Draw health and power bars
 }
 #pragma endregion AnimationBattleChar

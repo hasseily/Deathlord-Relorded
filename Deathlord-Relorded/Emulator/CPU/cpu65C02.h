@@ -226,7 +226,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			case PC_ENEMY_ACTION_DRAIN:
 			{
 				CYC(2); // BCS uses 2 cycles;
-				regs.pc = regs.pc + 2 + MemGetMainPtr(regs.pc+1)[0];	// Always branch to the new instruction
+				regs.pc = regs.pc + 2 + MemGetMainPtr(regs.pc + 1)[0];	// Always branch to the new instruction
 				break;
 			}
 			/*	Another option for removing level drain. This one makes the level drain always miss, and is earlier in the process
@@ -248,7 +248,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				regs.pc = _origPC + 2;	// Jump to the next instruction, disregard the branch
 				break;
 			}
-			
+
 			case PC_CHAR_HP_LOSS:
 			{
 				// In the previous instructions it sets A to 1 (lo byte) and Y to 0 (hi byte), which is the amount to reduce HP by.
@@ -264,7 +264,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			case PC_CHAR_TILE_DAMAGE:
 			{
 				// this is a JSR to a tile damage routine that triggers for each char (regs.x has the char position)
-				
+
 				// First handle the case of the peasant, who in Deathlord Relorded is hyper-resilient
 				// and incurs no damage from tiles
 				if ((DeathlordClasses)(MemGetMainPtr(PARTY_CLASS_START)[regs.x]) == DeathlordClasses::Peasant)
@@ -321,7 +321,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				}
 				if (avoidsDamage)
 				{
-AVOID_DAMAGE:
+				AVOID_DAMAGE:
 					// This instruction is a JSR to the damage.
 					// The next instruction is a JSR to highlight the character and beep. We bypass both
 					CYC(12); // JSR (0x20) uses 6 cycles;
@@ -359,9 +359,41 @@ AVOID_DAMAGE:
 				}
 				break;
 			}
+			case PC_BATTLE_ENEMY_BEGIN_ATK:
+			{
+				OutputDebugStringA("ENEMY BEGIN ATK\n");
+				BattleOverlay::GetInstance()->SpriteBeginAttack(6 + MemGetMainPtr(MEM_BATTLE_ENEMY_INDEX)[0]);
+				break;
+			}
 			case PC_BATTLE_CHAR_BEGIN_ATK:
 			{
-				BattleOverlay::GetInstance()->CharBeginAttack(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]);
+				OutputDebugStringA("CHAR BEGIN ATK\n");
+				BattleOverlay::GetInstance()->SpriteBeginAttack(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]);
+				break;
+			}
+			case PC_BATTLE_ENEMY_MISSED:
+			{
+				OutputDebugStringA("ENEMY MISSED ATK\n");
+				BattleOverlay::GetInstance()->SpriteDodge(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]);
+				break;
+			}
+			case PC_BATTLE_ENEMY_HAS_HIT:
+			{
+				OutputDebugStringA("ENEMY HAS HIT\n");
+				BattleOverlay::GetInstance()->SpriteIsHit(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0],
+					MemGetMainPtr(MEM_ENEMY_DMG_AMOUNT)[0]);
+				break;
+			}
+			case PC_BATTLE_CHAR_HAS_HIT:
+			{
+				OutputDebugStringA("CHAR HAS HIT\n");
+				BattleOverlay::GetInstance()->SpriteIsHit(regs.x + 6, MemGetMainPtr(MEM_DAMAGE_AMOUNT)[0]);
+				break;
+			}
+			case PC_BATTLE_CHAR_HAS_KILLED:
+			{
+				OutputDebugStringA("CHAR HAS KILLED\n");
+				BattleOverlay::GetInstance()->SpriteDied(6);
 				break;
 			}
 			case PC_BATTLE_BEGIN_XP_ALLOC:

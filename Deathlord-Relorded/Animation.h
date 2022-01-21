@@ -25,6 +25,7 @@ protected:
 	size_t m_nextFrameTick;		// Tick after which we should swap to the next frame
 	int m_currentFrame;
 	int m_frameCount;
+	// NOTE: It's useless to set a frame length below 333,333 when running at 30 FPS for example
 	std::vector<size_t> m_tickFrameLength;		// max tick count per frame (TicksPerSecond 10,000,000)
 	SimpleMath::Vector2 m_renderOrigin;			// Starting XY position for rendering
 	SimpleMath::Vector2 m_renderCurrent;		// Current XY position for rendering (changes by frame)
@@ -42,13 +43,14 @@ enum class AnimationBattleState
 	idle = 0,
 	attacking,
 	hit,
-	dodged
+	dodged,
+	died
 };
 
 class AnimationBattleChar : public Animation
 {
 public:
-	void Update() { Update(AnimationBattleState::idle); };
+	void Update() override { Update(AnimationBattleState::idle); };
 	void Update(AnimationBattleState state);
 	void Render(size_t tick, SpriteBatch* spriteBatch, SimpleMath::Vector2 overlayOrigin);
 	AnimationBattleChar(DescriptorHeap* resourceDescriptors,

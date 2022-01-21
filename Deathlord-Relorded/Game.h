@@ -12,11 +12,7 @@
 #include <map>
 #include "Descriptors.h"
 
-#ifdef _DEBUG
-constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 10;  // In debug, the emulator is slow needs a lot more time than the render
-#else
 constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 30;  // Only render so many frames. Give the emulator all the rest of the time
-#endif
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;

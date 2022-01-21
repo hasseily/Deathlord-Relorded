@@ -16,7 +16,6 @@
 #define PC_CHECK_REAR_ATTACK		0xA7EF		// BCS after CMP that checks for the rear rank not allowed to attack
 #define PC_CHECK_SEARCH_SUCCESS		0x9428		// BCS after CMP that checks success of search
 #define PC_ENEMY_ACTION_DRAIN		0xAB19		// BCS: Always branch to avoid level drain. This option makes the enemy skip the turn without feedback
-#define PC_ENEMY_ACTION_DRAIN2		0xAADF		// BCS: Always branch to avoid level drain. This option makes the enemy always Miss the level drain
 #define PC_MAGIC_WATER_EFFECT		0xB707		// Set X register to 0 to always branch to stat +1
 #define PC_STAT_INCREASE_CEILING	0xB7A3		// BCS: Don't branch to remove the max 18 of the stat increase from magic water
 #define PC_CHAR_HP_LOSS				0x54B8		// It sets A to 01 (lo byte) and Y to 00 (hi byte), which is the amount we'll drop HP by because of starvation, toxicity, etc... when calling subroutine 0x605D. X has the char position.
@@ -49,22 +48,25 @@
 #define PC_BATTLE_HAS_GOLD			0x8EAA		// The previous instruction at 0x8EA7 branches away if A > mem(0x8F55+X). It's a % chance of loot based on enemy type
 #define PC_BATTLE_DISPLAY_GOLD		0x8EDF		// Start of the gold display routine 0x8EDF prints the number, 0x8EE2-0x8EF1 prints " gold pieces!"
 #define PC_BATTLE_CHAR_BEGIN_ATK	0xA85E		// Char starts attack
-#define PC_BATTLE_CHAR_HAS_HIT		0xA868		// Character has hit in their attack. Damage calculation start
+#define PC_BATTLE_CHAR_HAS_HIT		0xA8A6		// Character has hit in their attack. Enemy is in X, damage in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_DID_DMG		0xA9FA		// Character inflicted some damage. Don't know amount yet.
 #define PC_BATTLE_CHAR_HAS_KILLED	0xAA15		// Character has killed enemy, Damage amount known
 #define PC_BATTLE_CHAR_END_ATK		0xAB49		// End of a single char attack. The damage is in A and also in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_END_TURN		0xA886		// Char has exhausted all attack. Move on to next char
 #define PC_BATTLE_ENEMY_BEGIN_ATK	0xAA42		// Enemy starts attack
-#define PC_BATTLE_ENEMY_HAS_HIT		0xAAE1		// The enemy has hit the player (CMP at 0xAADD does the RNG comparison with: (30 - (AC-TH0+1)*5)*2.5. If RNG is below, it's a hit
+#define PC_BATTLE_ENEMY_MISSED		0xAB43		// Enemy missed, after branch from 0xAADF which decides on hit/miss
+#define PC_BATTLE_ENEMY_HAS_HIT		0x6069		// The enemy has hit the player, damage is at MEM_ENEMY_DMG_AMOUNT
 #define PC_BATTLE_ENEMY_END_ATK		0xAB49		// End of an enemy hit cycle (for example, 3 hit attempts will trigger 3 times)
 #define PC_BATTLE_TURN_END			0xAF00		// End of any turn for any player. 6 chars and 3 enemies will trigger at least 9 times per round
 #define PC_BATTLE_BEGIN_XP_ALLOC	0xA30A		// LDX #$00: starts with the first char. Randomize to start with any char the xp allocation routine
 #define MEM_BATTLE_GETXP_START		0xAFE8		// Array for each char that, if > 0, gives XP to the char after the battle.
 #define MEM_CHAR_ATK_COUNT			0xA882		// Current char remaining attack count. Set at PC_BATTLE_CHAR_BEGIN_ATK
-#define MEM_DAMAGE_AMOUNT			0x67		// Damage amount of the last attack, to check in PC_BATTLE_XXX_END_ATK
+#define MEM_DAMAGE_AMOUNT			0x67		// Damage amount of the last attack
+#define MEM_ENEMY_DMG_AMOUNT		0x6068		// Enemy's damage to player at X
 #define MEM_ENEMY_COUNT				0x52		// Number of enemies
 #define MEM_ENEMY_HP_START			0xAFAA		// Array of HPs for all enemies. Use MEM_ENEMY_COUNT to know the length
 #define MEM_BATTLE_MONSTER_INDEX	0xFC23		// Index of the monster we're fighting, index into GAMEMAP_ARRAY_MONSTER_ID. FF is empty
+#define MEM_BATTLE_ENEMY_INDEX		0xA574		// Index of the monster instance who is attacking
 
 /* the JSRs right after 0xA37F are:
 0xA382: JSR 0x51EB	Redraws center right area

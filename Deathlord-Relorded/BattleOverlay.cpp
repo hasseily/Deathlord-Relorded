@@ -53,14 +53,38 @@ bool BattleOverlay::IsOverlayDisplayed()
 #pragma endregion
 
 
-#pragma region actions
+#pragma region animations
 
 // A characters begins his attack
-void BattleOverlay::CharBeginAttack(UINT8 charPosition)
+void BattleOverlay::SpriteBeginAttack(UINT8 charPosition)
 {
+	if (m_animations[charPosition] == NULL)
+		Update();
 	m_animations[charPosition]->Update(AnimationBattleState::attacking);
 }
+// etc...
+void BattleOverlay::SpriteDodge(UINT8 charPosition)
+{
+	if (m_animations[charPosition] == NULL)
+		Update();
+	m_animations[charPosition]->Update(AnimationBattleState::dodged);
+}
+void BattleOverlay::SpriteIsHit(UINT8 charPosition, UINT8 damage)
+{
+	if (m_animations[charPosition] == NULL)
+		Update();
+	m_animations[charPosition]->Update(AnimationBattleState::hit);
+}
+void BattleOverlay::SpriteDied(UINT8 charPosition)
+{
+	if (m_animations[charPosition] == NULL)
+		Update();
+	m_animations[charPosition]->Update(AnimationBattleState::died);
+}
+#pragma endregion
 
+
+#pragma region actions
 // Update the state based on the game's data
 void BattleOverlay::Update()
 {
