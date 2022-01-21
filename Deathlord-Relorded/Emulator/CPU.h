@@ -48,14 +48,15 @@
 #define PC_BATTLE_HAS_GOLD			0x8EAA		// The previous instruction at 0x8EA7 branches away if A > mem(0x8F55+X). It's a % chance of loot based on enemy type
 #define PC_BATTLE_DISPLAY_GOLD		0x8EDF		// Start of the gold display routine 0x8EDF prints the number, 0x8EE2-0x8EF1 prints " gold pieces!"
 #define PC_BATTLE_CHAR_BEGIN_ATK	0xA85E		// Char starts attack
-#define PC_BATTLE_CHAR_HAS_HIT		0xA8A6		// Character has hit in their attack. Enemy is in X, damage in MEM_DAMAGE_AMOUNT
+#define PC_BATTLE_CHAR_HAS_HIT		0xA88E		// player hits monster, $a895 = monster index, $afaa+ = monster HP array, MEM_DAMAGE_AMOUNT = damage
 #define PC_BATTLE_CHAR_DID_DMG		0xA9FA		// Character inflicted some damage. Don't know amount yet.
 #define PC_BATTLE_CHAR_HAS_KILLED	0xA8C2		// Character has killed enemy, Enemy is in X, damage in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_END_ATK		0xAB49		// End of a single char attack. The damage is in A and also in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_END_TURN		0xA886		// Char has exhausted all attack. Move on to next char
 #define PC_BATTLE_ENEMY_BEGIN_ATK	0xAA42		// Enemy starts attack
 #define PC_BATTLE_ENEMY_MISSED		0xAB43		// Enemy missed, after branch from 0xAADF which decides on hit/miss
-#define PC_BATTLE_ENEMY_HAS_HIT		0x6069		// The enemy has hit the player, damage is at MEM_ENEMY_DMG_AMOUNT
+#define PC_BATTLE_ENEMY_HAS_HIT		0xADC7		// enemy hits player, PARTY_CURRENT_CHAR_POS = player index, MEM_DAMAGE_AMOUNT = damage
+#define PC_BATTLE_ENEMY_HAS_KILLED	0xADF0		// enemy has killed the player, PARTY_CURRENT_CHAR_POS = player index, MEM_DAMAGE_AMOUNT = damage
 #define PC_BATTLE_ENEMY_END_ATK		0xAB49		// End of an enemy hit cycle (for example, 3 hit attempts will trigger 3 times)
 #define PC_BATTLE_TURN_END			0xAF00		// End of any turn for any player. 6 chars and 3 enemies will trigger at least 9 times per round
 #define PC_BATTLE_BEGIN_XP_ALLOC	0xA30A		// LDX #$00: starts with the first char. Randomize to start with any char the xp allocation routine
