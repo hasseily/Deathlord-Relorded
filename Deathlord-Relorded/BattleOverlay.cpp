@@ -5,7 +5,7 @@
 #include "DeathlordHacks.h"
 #include "PartyLayout.h"
 #include "Descriptors.h"
-#include "Animation.h"
+#include "AnimationBattle.h"
 #include "AutoMap.h"
 #include "Emulator/CPU.h"
 #include <SimpleMath.h>
@@ -61,26 +61,26 @@ bool BattleOverlay::IsOverlayDisplayed()
 // A characters begins his attack
 void BattleOverlay::SpriteBeginAttack(UINT8 charPosition)
 {
-	if (m_animations[charPosition] == NULL)
+	if (m_animations[charPosition] == nullptr)
 		Update();
 	m_animations[charPosition]->Update(AnimationBattleState::attacking);
 }
 // etc...
 void BattleOverlay::SpriteDodge(UINT8 charPosition)
 {
-	if (m_animations[charPosition] == NULL)
+	if (m_animations[charPosition] == nullptr)
 		Update();
 	m_animations[charPosition]->Update(AnimationBattleState::dodged);
 }
 void BattleOverlay::SpriteIsHit(UINT8 charPosition, UINT8 damage)
 {
-	if (m_animations[charPosition] == NULL)
+	if (m_animations[charPosition] == nullptr)
 		Update();
 	m_animations[charPosition]->Update(AnimationBattleState::hit);
 }
 void BattleOverlay::SpriteDied(UINT8 charPosition)
 {
-	if (m_animations[charPosition] == NULL)
+	if (m_animations[charPosition] == nullptr)
 		Update();
 	m_animations[charPosition]->Update(AnimationBattleState::died);
 }
@@ -122,7 +122,7 @@ void BattleOverlay::Update()
 	{
 		if (i >= (6 + _enemyCount))		// Clear unused animations
 		{
-			m_animations[i] = NULL;
+			m_animations[i] = nullptr;
 			continue;
 		}
 		_anim = m_animations[i].get();

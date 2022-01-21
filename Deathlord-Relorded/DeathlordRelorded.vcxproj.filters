@@ -165,6 +165,9 @@
     <ClCompile Include="Animation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AnimationBattle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATGColors.h">
@@ -356,6 +359,9 @@
     <ClInclude Include="Animation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AnimationBattle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="emulator\cpu\cpu_general.inl">
@@ -416,6 +422,7 @@
     <None Include="Assets\dlfont-12pt.spritefont">
       <Filter>Assets</Filter>
     </None>
+    <None Include="AnimationBattle" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc">

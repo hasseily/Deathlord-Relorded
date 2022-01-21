@@ -176,6 +176,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Animation.cpp" />
+    <ClCompile Include="AnimationBattle.cpp" />
     <ClCompile Include="AppleWinDXVideo.cpp" />
     <ClCompile Include="AutoMap.cpp" />
     <ClCompile Include="BattleOverlay.cpp" />
@@ -227,6 +228,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Animation.h" />
+    <ClInclude Include="AnimationBattle.h" />
     <ClInclude Include="AppleWinDXVideo.h" />
     <ClInclude Include="ATGColors.h" />
     <ClInclude Include="AutoMap.h" />
@@ -291,6 +293,7 @@
     <ClInclude Include="TilesetCreator.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="AnimationBattle" />
     <None Include="Assets\a2-12pt-bold.spritefont">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
