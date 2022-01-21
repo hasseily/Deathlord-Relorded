@@ -49,7 +49,7 @@ There are no releases for now, it's an in-development project. Generally the mai
 * Additional XP does not reset on level up
 * Can check missing required XP when trying to level up
 
-Many thanks to @a2-qkumba for code analysis and @BillG for graphics.
+Many thanks to @a2_qkumba for code analysis and @BillG for graphics.
 
 Happy retro RPG gaming, and see you on the Lost Sectors Discord server, or on the discussions here in GitHub.
 
