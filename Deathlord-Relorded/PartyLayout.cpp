@@ -157,7 +157,7 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	//fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x + 1.f, _mNameOrigin.y - 1.f }, Colors::Black, 0.f, Vector2(), 1.0f);
 	fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x + 1.f, _mNameOrigin.y + 1.f }, VColorCurtain, 0.f, Vector2(), 1.0f);
 	if (MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0] == member)
-		fontDL->DrawString(spriteBatch, _mName.c_str(), _mNameOrigin, Colors::Yellow, 0.f, Vector2(), 1.0f);
+		fontDLInverse->DrawString(spriteBatch, _mName.c_str(), _mNameOrigin, Colors::Yellow, 0.f, Vector2(), 1.0f);
 	else
 		fontDL->DrawString(spriteBatch, _mName.c_str(), _mNameOrigin, VColorText, 0.f, Vector2(), 1.0f);
 
