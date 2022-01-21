@@ -150,7 +150,8 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	}
 
 	///// Draw name with black outline
-	std::wstring _mName = StringFromMemory(PARTY_NAME_START + (member*9), 9);
+	std::wstring _mName = StringFromMemory(PARTY_NAME_START + (member*9), 11);
+	_mName.resize(11, ' ');	// Looks better if using an inverse font, it goes closer to the level string
 	Vector2 _mNameOrigin(_mPortraitOrigin.x + PARTY_PORTRAIT_WIDTH + 6, _mPortraitOrigin.y + 3);
 	//fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x - 1.f, _mNameOrigin.y - 1.f } , Colors::Black, 0.f, Vector2(), 1.0f);
 	//fontDL->DrawString(spriteBatch, _mName.c_str(), { _mNameOrigin.x - 1.f, _mNameOrigin.y + 1.f }, Colors::Black, 0.f, Vector2(), 1.0f);
