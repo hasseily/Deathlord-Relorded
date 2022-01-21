@@ -21,6 +21,9 @@ BattleOverlay* BattleOverlay::s_instance;
 // In main
 extern std::unique_ptr<Game>* GetGamePtr();
 
+constexpr int OVERLAY_WIDTH = 600;
+constexpr int OVERLAY_HEIGHT = 600;
+
 constexpr int TOTAL_SPRITES = 6 + 32;
 auto m_animations = std::array<std::unique_ptr<AnimationBattleChar>, TOTAL_SPRITES>();
 
@@ -215,7 +218,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 		// TODO: Show "FIGHT!" animation
 	}
 
-	auto mmBGTexSize = DirectX::XMUINT2(1000, 800);
+	auto mmBGTexSize = DirectX::XMUINT2(OVERLAY_WIDTH, OVERLAY_HEIGHT);
 	auto mmSSTextureSize = GetTextureSize(m_overlaySpriteSheet.Get());
 	SimpleMath::Rectangle overlayScissorRect(r);
 	Vector2 _overlayCenter = overlayScissorRect.Center();
