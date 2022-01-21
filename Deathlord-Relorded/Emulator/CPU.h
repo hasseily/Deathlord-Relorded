@@ -50,7 +50,7 @@
 #define PC_BATTLE_CHAR_BEGIN_ATK	0xA85E		// Char starts attack
 #define PC_BATTLE_CHAR_HAS_HIT		0xA8A6		// Character has hit in their attack. Enemy is in X, damage in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_DID_DMG		0xA9FA		// Character inflicted some damage. Don't know amount yet.
-#define PC_BATTLE_CHAR_HAS_KILLED	0xAA15		// Character has killed enemy, Damage amount known
+#define PC_BATTLE_CHAR_HAS_KILLED	0xA8C2		// Character has killed enemy, Enemy is in X, damage in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_END_ATK		0xAB49		// End of a single char attack. The damage is in A and also in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_END_TURN		0xA886		// Char has exhausted all attack. Move on to next char
 #define PC_BATTLE_ENEMY_BEGIN_ATK	0xAA42		// Enemy starts attack

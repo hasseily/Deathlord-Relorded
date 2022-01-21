@@ -361,39 +361,33 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			}
 			case PC_BATTLE_ENEMY_BEGIN_ATK:
 			{
-				OutputDebugStringA("ENEMY BEGIN ATK\n");
 				BattleOverlay::GetInstance()->SpriteBeginAttack(6 + MemGetMainPtr(MEM_BATTLE_ENEMY_INDEX)[0]);
 				break;
 			}
 			case PC_BATTLE_CHAR_BEGIN_ATK:
 			{
-				OutputDebugStringA("CHAR BEGIN ATK\n");
 				BattleOverlay::GetInstance()->SpriteBeginAttack(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]);
 				break;
 			}
 			case PC_BATTLE_ENEMY_MISSED:
 			{
-				OutputDebugStringA("ENEMY MISSED ATK\n");
 				BattleOverlay::GetInstance()->SpriteDodge(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]);
 				break;
 			}
 			case PC_BATTLE_ENEMY_HAS_HIT:
 			{
-				OutputDebugStringA("ENEMY HAS HIT\n");
 				BattleOverlay::GetInstance()->SpriteIsHit(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0],
 					MemGetMainPtr(MEM_ENEMY_DMG_AMOUNT)[0]);
 				break;
 			}
 			case PC_BATTLE_CHAR_HAS_HIT:
 			{
-				OutputDebugStringA("CHAR HAS HIT\n");
 				BattleOverlay::GetInstance()->SpriteIsHit(regs.x + 6, MemGetMainPtr(MEM_DAMAGE_AMOUNT)[0]);
 				break;
 			}
 			case PC_BATTLE_CHAR_HAS_KILLED:
 			{
-				OutputDebugStringA("CHAR HAS KILLED\n");
-				BattleOverlay::GetInstance()->SpriteDied(6);
+				BattleOverlay::GetInstance()->SpriteDied(regs.x + 6);
 				break;
 			}
 			case PC_BATTLE_BEGIN_XP_ALLOC:

@@ -35,7 +35,7 @@ void Animation::ResumeAnimation()
 // Fixed X and Y positions for battle module for all possible character slots
 constexpr int ARRAY_BATTLE_POS_X[6 + 32]{
 	210, 282, 350, 280, 225, 335,						// Player Chars
-	236, 276, 330,										// Monsters melee range
+	276, 236, 330,										// Monsters melee range
 	180, 237, 310, 375,									// Monsters layer 2
 	150, 195, 242, 292, 348, 400,						// Monster layer 3
 	120, 165, 212, 268, 312, 352, 395, 442,				// Monster layer 4
@@ -43,7 +43,7 @@ constexpr int ARRAY_BATTLE_POS_X[6 + 32]{
 };
 constexpr int ARRAY_BATTLE_POS_Y[6 + 32]{
 	355, 349, 352, 443, 485, 488,						// Player Chars
-	285, 300, 292,										// Monsters melee range
+	300, 287, 292,										// Monsters melee range
 	238, 234, 236, 239,									// Monsters layer 2
 	163, 160, 164, 158, 162, 160,						// Monster layer 3
 	113, 116, 110, 115, 117, 112, 110, 114,				// Monster layer 4
@@ -114,7 +114,7 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, SimpleMa
 		case AnimationBattleState::idle:
 			break;
 		case AnimationBattleState::attacking:	// edge forward
-			_moveY = _mP * (m_currentFrame > (m_frameCount/2) ? -1 : +1);
+			_moveY = _mP * (m_currentFrame > (m_frameCount/2) ? -2 : +2);
 			break;
 		case AnimationBattleState::hit:			// shake
 			if (m_currentFrame == 1 || m_currentFrame == 4)
@@ -128,8 +128,8 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, SimpleMa
 			break;
 		case AnimationBattleState::died:		// shrink to nothingness
 			_scale = ((float)m_frameCount - m_currentFrame) / (float)m_frameCount;
-			_origin.x = 0.5f;
-			_origin.y = 0.5f;
+			_origin.x = (FBTW / 2) * _scale;
+			_origin.y = (FBTH / 2) * _scale;
 			break;
 		default:
 			break;
@@ -138,7 +138,7 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, SimpleMa
 		m_renderCurrent.y += _moveY;
 	}
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
-		m_spriteSheetSize, m_renderCurrent + overlayOrigin, &(RECT)m_frameRectangles.at(0), Colors::White, 0.f, _origin, _scale);
+		m_spriteSheetSize, m_renderCurrent + overlayOrigin + _origin, &(RECT)m_frameRectangles.at(0), Colors::White, 0.f, XMFLOAT2(), _scale);
 	// TODO: Draw health and power bars
 }
 #pragma endregion AnimationBattleChar
