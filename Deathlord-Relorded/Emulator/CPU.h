@@ -43,6 +43,7 @@
 #define PC_BATTLE_AMBUSH			0xEB43		// Pre-entry point if ambushed
 #define PC_BATTLE_ENTER				0xEC30		// Entry point for battle module (also called after ambush)
 #define PC_BATTLE_EXIT				0xA37F		// Exits the battle module (before clearing the screen areas and handling loot)
+#define PC_BATTLE_ENEMY_HP_SET		0xA2D1		// Point where the MEM_ENEMY_HP_START is filled in at the start of the battle
 #define MEM_BATTLE_GOLD_LO			0x009A		// Gold at end of battle Low Byte
 #define MEM_BATTLE_GOLD_HI			0x009B		// Gold at end of battle High Byte
 #define PC_BATTLE_HAS_GOLD			0x8EAA		// The previous instruction at 0x8EA7 branches away if A > mem(0x8F55+X). It's a % chance of loot based on enemy type

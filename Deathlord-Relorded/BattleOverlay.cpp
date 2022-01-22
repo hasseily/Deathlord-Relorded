@@ -27,6 +27,8 @@ constexpr int OVERLAY_HEIGHT = 600;
 constexpr int TOTAL_SPRITES = 6 + 32;
 auto m_animations = std::array<std::unique_ptr<AnimationBattleChar>, TOTAL_SPRITES>();
 auto m_animationTransition = std::unique_ptr<AnimationBattleTransition>();
+UINT8 m_enemyMaxHP = 0x01;	// The highest HP of the monsters we're facing. Every monster will have its health bar relative to this
+bool m_enemyHPIsSet = false;
 
 #pragma region main
 void BattleOverlay::Initialize()
@@ -55,6 +57,25 @@ bool BattleOverlay::IsOverlayDisplayed()
 {
 	return bIsDisplayed;
 }
+
+void BattleOverlay::BattleEnemyHPIsSet()
+{
+	m_enemyHPIsSet = true;
+	BattleSetEnemyMaxHP();
+}
+
+void BattleOverlay::BattleSetEnemyMaxHP()
+{
+	if (!m_enemyHPIsSet)
+		return;
+	for (size_t i = 0; i < MemGetMainPtr(MEM_ENEMY_COUNT)[0]; i++)
+	{
+		if (m_enemyMaxHP < MemGetMainPtr(MEM_ENEMY_HP_START)[i])
+			m_enemyMaxHP = MemGetMainPtr(MEM_ENEMY_HP_START)[i];
+	}
+	m_enemyHPIsSet = false;	// Only set it at the start of the fight
+}
+
 #pragma endregion
 
 
@@ -81,7 +102,7 @@ void BattleOverlay::SpriteIsHit(UINT8 charPosition, UINT8 damage)
 		Update();
 	_anim->Update(AnimationBattleState::hit);
 	// TODO: Trigger floating text animation
-	SimpleMath::Rectangle _animRect = _anim->CurrentFrameRectangle();
+	auto _animRect = _anim->CurrentFrameRectangle();
 	auto _animCenter = _animRect.Center();
 }
 void BattleOverlay::SpriteDied(UINT8 charPosition)
@@ -157,7 +178,6 @@ void BattleOverlay::Update()
 			_anim->m_power = 0;
 		}
 	}
-	
 }
 
 #pragma endregion
@@ -215,6 +235,8 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 			// just kill the overlay, it shouldn't be here.
 			// Don't bother animating it
 			bIsDisplayed = false;
+			m_enemyHPIsSet = false;
+			m_enemyMaxHP = 0x01;
 		}
 		return;
 	}
@@ -270,13 +292,44 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 	///// End Draw Border
 
 	// Draw the party and monsters
+	auto _battleSpriteSheetSize = GetTextureSize(m_overlaySpriteSheet.Get());
+	SimpleMath::Rectangle _barRect(0, 0, 28, 5);
 	AnimationBattleChar* _anim;
 	for (int i = 0; i < TOTAL_SPRITES; i++)
 	{
 		_anim = m_animations[i].get();
 		if (_anim != nullptr)
 		{
+			// Render the animated sprites
 			_anim->Render(ticks, m_spriteBatch.get(), &m_currentRect);
+			// Draw the health and power bars
+			auto _animRect = _anim->CurrentFrameRectangle();
+			SimpleMath::Rectangle _healthBarR(_animRect);
+			_healthBarR.y += _animRect.height + 2;
+			_healthBarR.height = 5;
+			if (i < 6)	// party
+			{
+				UINT16 _mHealth = MemGetMainPtr(PARTY_HEALTH_LOBYTE_START)[i] + ((UINT16)MemGetMainPtr(PARTY_HEALTH_HIBYTE_START)[i] << 8);
+				UINT16 _mHealthMax = MemGetMainPtr(PARTY_HEALTH_MAX_LOBYTE_START)[i] + ((UINT16)MemGetMainPtr(PARTY_HEALTH_MAX_HIBYTE_START)[i] << 8);
+				_healthBarR.width = _animRect.width * _mHealth / _mHealthMax;
+				if (MemGetMainPtr(PARTY_MAGIC_USER_TYPE_START)[i] != 0xFF)	// magic user
+				{
+					SimpleMath::Rectangle _powerBarR(_healthBarR);
+					_powerBarR.y += _healthBarR.height + 2;
+					_powerBarR.width = _animRect.width * MemGetMainPtr(PARTY_POWER_START)[i] / MemGetMainPtr(PARTY_POWER_MAX_START)[i];
+					m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
+						_battleSpriteSheetSize, (RECT)_powerBarR, &(RECT)_barRect, Colors::Blue, 0.f, XMFLOAT2());
+				}
+			}
+			else // monsters
+			{
+				UINT8 _mMonsterHPDisplay = MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6];
+				if (_mMonsterHPDisplay > m_enemyMaxHP)
+					m_enemyMaxHP = _mMonsterHPDisplay;
+				_healthBarR.width = _animRect.width * MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6] / m_enemyMaxHP;
+			}
+			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
+				_battleSpriteSheetSize, (RECT)_healthBarR, &(RECT)_barRect, Colors::Red, 0.f, XMFLOAT2());
 		}
 	}
 	

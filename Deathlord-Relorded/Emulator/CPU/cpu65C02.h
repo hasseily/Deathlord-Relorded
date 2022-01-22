@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 static int __posXOrigin = 0xff;
 static int __posY = 0xff;
-static std::string interactiveTextOutput = "";
+static std::string interactiveTextOutput;
 static int interactiveTextOutputLineCt = 0;
 static std::shared_ptr<LogWindow> __logWindow;
 extern std::shared_ptr<LogWindow> GetLogWindow();
@@ -90,6 +90,12 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			case PC_BATTLE_ENTER:
 			{
 				g_isInBattle = true;
+				break;
+			}
+			case PC_BATTLE_ENEMY_HP_SET:
+			{
+				// The enemy HP array has just been filled. Tell that to the battle overlay.
+				BattleOverlay::GetInstance()->BattleEnemyHPIsSet();
 				break;
 			}
 			case PC_DECREMENT_TIMER:

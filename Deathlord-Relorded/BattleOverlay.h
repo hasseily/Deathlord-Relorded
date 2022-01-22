@@ -14,6 +14,7 @@ public:
 	void ToggleOverlay();
 	bool IsOverlayDisplayed();
 	void Update();
+	void BattleEnemyHPIsSet();	// call this from PC_BATTLE_ENEMY_HP_SET to grab the MEM_ENEMY_HP_START
 	void SpriteBeginAttack(UINT8 charPosition);
 	void SpriteDodge(UINT8 charPosition);
 	void SpriteIsHit(UINT8 charPosition, UINT8 damage);
@@ -42,6 +43,7 @@ public:
 	}
 private:
 	void Initialize();
+	void BattleSetEnemyMaxHP();
 
 	static BattleOverlay* s_instance;
 	bool bShouldDisplay;
