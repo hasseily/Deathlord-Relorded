@@ -1,5 +1,6 @@
 #pragma once
 #include "Animation.h"
+#include <vector>
 
 using namespace DirectX;
 
@@ -20,7 +21,7 @@ class AnimationBattleChar : public Animation
 public:
 	void Update() override { Update(AnimationBattleState::idle); };
 	void Update(AnimationBattleState state);
-	void Render(size_t tick, SpriteBatch* spriteBatch, SimpleMath::Vector2 overlayOrigin);
+	void Render(size_t tick, SpriteBatch* spriteBatch, RECT* overlayRect);
 	AnimationBattleChar(DescriptorHeap* resourceDescriptors,
 		XMUINT2 spriteSheetSize, UINT8 battlePosition);
 	~AnimationBattleChar() {};
@@ -32,3 +33,15 @@ public:
 	bool b_isParty;								// is a party member (not a monster)
 };
 
+class AnimationBattleTransition : public Animation
+{
+public:
+	void Update() override { };
+	void Render(size_t tick, SpriteBatch* spriteBatch, RECT* overlayRect);
+	AnimationBattleTransition(DescriptorHeap* resourceDescriptors,
+		XMUINT2 spriteSheetSize);
+	~AnimationBattleTransition() {};
+
+private:
+	std::vector<float> m_transparency;
+};

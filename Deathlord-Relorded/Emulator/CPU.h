@@ -48,7 +48,7 @@
 #define PC_BATTLE_HAS_GOLD			0x8EAA		// The previous instruction at 0x8EA7 branches away if A > mem(0x8F55+X). It's a % chance of loot based on enemy type
 #define PC_BATTLE_DISPLAY_GOLD		0x8EDF		// Start of the gold display routine 0x8EDF prints the number, 0x8EE2-0x8EF1 prints " gold pieces!"
 #define PC_BATTLE_CHAR_BEGIN_ATK	0xA85E		// Char starts attack
-#define PC_BATTLE_CHAR_HAS_HIT		0xA88E		// player hits monster, $a895 = monster index, $afaa+ = monster HP array, MEM_DAMAGE_AMOUNT = damage
+#define PC_BATTLE_CHAR_HAS_HIT		0xA88E		// player hits monster, X = monster index, A/MEM_DAMAGE_AMOUNT = damage
 #define PC_BATTLE_CHAR_DID_DMG		0xA9FA		// Character inflicted some damage. Don't know amount yet.
 #define PC_BATTLE_CHAR_HAS_KILLED	0xA8C2		// Character has killed enemy, Enemy is in X, damage in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_END_ATK		0xAB49		// End of a single char attack. The damage is in A and also in MEM_DAMAGE_AMOUNT

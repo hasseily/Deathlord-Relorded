@@ -55,7 +55,7 @@ void AnimationBattleChar::Update(AnimationBattleState state)
 	}
 }
 
-void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, SimpleMath::Vector2 overlayOrigin)
+void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, RECT* overlayRect)
 {
 	// The battle animation uses a single image for all frames
 	// but it moves depending on the AnimationBattleState
@@ -75,6 +75,7 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, SimpleMa
 		}
 
 	}
+	XMFLOAT2 overlayOrigin = { (float)overlayRect->left, (float)overlayRect->top };
 	float _scale = 1.0f;
 	auto _origin = XMFLOAT2();
 	if (m_state != AnimationBattleState::idle)	// update position
@@ -117,3 +118,48 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, SimpleMa
 #pragma endregion AnimationBattleChar
 
 
+#pragma region AnimationBattleTransition
+constexpr int SPRITE_WIDTH = 155;
+constexpr int SPRITE_HEIGHT = 190;
+
+AnimationBattleTransition::AnimationBattleTransition(DescriptorHeap* resourceDescriptors,
+	XMUINT2 spriteSheetSize)
+{
+	m_resourceDescriptors = resourceDescriptors;
+	m_spriteSheetSize = spriteSheetSize;
+	m_nextFrameTick = 0;
+	m_tickFrameLength = std::vector<size_t>{	1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000,
+												1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000};
+	m_transparency = std::vector<float>{ 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, .9f, .8f, .7f, .55f, .4f, .2f };
+	m_frameCount = m_tickFrameLength.size();
+	m_currentFrame = 0;
+	b_isFinished = false;
+	// There's only a single frame rectangle
+	// the frame will be zoomed out and faded
+	m_frameRectangles = std::vector<SimpleMath::Rectangle>();
+	m_frameRectangles.emplace_back(28, 0, 28 + SPRITE_WIDTH, SPRITE_HEIGHT);
+	SetRenderOrigin(SimpleMath::Vector2());
+}
+
+void AnimationBattleTransition::Render(size_t tick, SpriteBatch* spriteBatch, RECT* overlayRect)
+{
+	if (b_isFinished)
+		return;
+	if (tick > m_nextFrameTick)		// go to the next frame
+	{
+		m_currentFrame = (m_currentFrame + 1) % m_frameCount;
+		m_nextFrameTick = m_tickFrameLength[m_currentFrame];
+		if (m_currentFrame == (m_frameCount - 1))
+			b_isFinished = true;
+	}
+
+	XMVECTORF32 _color = { { { 1.000000000f, 1.000000000f, 1.000000000f,  m_transparency[m_currentFrame] } } };
+	float _scale = ((float)(m_currentFrame + 1) * 2) / (float)m_frameCount;
+	XMFLOAT2 _pos = {	(float)overlayRect->left + (overlayRect->right - overlayRect->left) / 2,
+						(float)overlayRect->top + (overlayRect->bottom - overlayRect->top) / 2 };
+	_pos.x -= (SPRITE_WIDTH / 2) * _scale;
+	_pos.y -= (SPRITE_HEIGHT / 2) * _scale;
+	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
+		m_spriteSheetSize, _pos, &(RECT)m_frameRectangles.at(0), _color, 0.f, XMFLOAT2(), _scale);
+}
+#pragma endregion AnimationBattleTransition

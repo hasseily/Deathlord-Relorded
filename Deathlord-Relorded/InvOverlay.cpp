@@ -68,6 +68,7 @@ inline int PaddingToCenterString(UINT8 maxStringLength, UINT8 stringLength)
 void InvOverlay::Initialize()
 {
 	bIsDisplayed = false;
+	bShouldDisplay = false;
 	m_currentRect = { 0,0,0,0 };
 	m_currentItemInstance = 0;
 }
@@ -75,13 +76,13 @@ void InvOverlay::Initialize()
 void InvOverlay::ShowOverlay()
 {
 	SetSendKeystrokesToAppleWin(false);
-	bIsDisplayed = true;
+	bShouldDisplay = true;
 }
 
 void InvOverlay::HideOverlay()
 {
 	SetSendKeystrokesToAppleWin(true);
-	bIsDisplayed = false;
+	bShouldDisplay = false;
 }
 
 void InvOverlay::ToggleOverlay()
@@ -256,6 +257,22 @@ void InvOverlay::OnDeviceLost()
 
 void InvOverlay::Render(SimpleMath::Rectangle r)
 {
+	if (!bShouldDisplay)
+	{
+		if (bIsDisplayed)
+		{
+			// Kill the overlay, it shouldn't be here.
+			// Don't bother animating it
+			bIsDisplayed = false;
+		}
+		return;
+	}
+
+	// Now check if we should animate the display as it appears
+	if (!bIsDisplayed)
+	{
+		// No animation for inventory overlay showing up
+	}
 
 	auto mmBGTexSize = DirectX::XMUINT2(1150, 600);
 	auto mmSSTextureSize = GetTextureSize(m_invOverlaySpriteSheet.Get());

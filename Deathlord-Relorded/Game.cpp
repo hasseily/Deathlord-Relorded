@@ -492,11 +492,9 @@ void Game::Render()
 
             // Draw now the overlays, each is independent
             // The inventory overlay
-			if (m_invOverlay->IsOverlayDisplayed())
-				m_invOverlay->Render(SimpleMath::Rectangle(clientRect));
+			m_invOverlay->Render(SimpleMath::Rectangle(clientRect));
 			// The battle overlay
-			if (m_battleOverlay->IsOverlayDisplayed())
-                m_battleOverlay->Render(SimpleMath::Rectangle(clientRect));
+			m_battleOverlay->Render(SimpleMath::Rectangle(clientRect));
 
             // The apple2 video is unique and independent
             // It should be displayed at the top if requested

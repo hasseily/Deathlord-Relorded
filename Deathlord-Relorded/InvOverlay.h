@@ -59,6 +59,7 @@ private:
 	InvInstance ItemInstanceOfOwner(UINT8 owner);
 
 	static InvOverlay* s_instance;
+	bool bShouldDisplay;
 	bool bIsDisplayed;
 	RECT m_currentRect;	// Rect of the overlay
 	std::vector<EquipInteractableRect>v_eIRects;		// equipment interactable buttons

@@ -26,11 +26,13 @@ constexpr int OVERLAY_HEIGHT = 600;
 
 constexpr int TOTAL_SPRITES = 6 + 32;
 auto m_animations = std::array<std::unique_ptr<AnimationBattleChar>, TOTAL_SPRITES>();
+auto m_animationTransition = std::unique_ptr<AnimationBattleTransition>();
 
 #pragma region main
 void BattleOverlay::Initialize()
 {
 	bIsDisplayed = false;
+	bShouldDisplay = false;
 	m_currentRect = { 0,0,0,0 };
 }
 
@@ -51,7 +53,7 @@ void BattleOverlay::ToggleOverlay()
 
 bool BattleOverlay::IsOverlayDisplayed()
 {
-	return bShouldDisplay;	// because at some point it'll display
+	return bIsDisplayed;
 }
 #pragma endregion
 
@@ -100,10 +102,10 @@ void BattleOverlay::Update()
 	UINT8 _mIndex = MemGetMainPtr(MEM_BATTLE_MONSTER_INDEX)[0];
 	if (_mIndex == 0xFF)	// No monster, no battle
 	{
-		HideOverlay();
+		// This is after the end of the battle
+		// during the post battle looting
 		return;
 	}
-	ShowOverlay();
 
 	// Second, dereference into the array of tiles in the map
 	// where the monster tiles start at 0x40
@@ -215,7 +217,11 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 	// Now check if we should animate the display as it appears
 	if (!bIsDisplayed)
 	{
-		// TODO: Show "FIGHT!" animation
+		// Show "FIGHT!" animation
+		if (m_animationTransition == nullptr)
+		{
+			m_animationTransition = std::make_unique<AnimationBattleTransition>(m_resourceDescriptors, GetTextureSize(m_overlaySpriteSheet.Get()));
+		}
 	}
 
 	auto mmBGTexSize = DirectX::XMUINT2(OVERLAY_WIDTH, OVERLAY_HEIGHT);
@@ -265,9 +271,18 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 		_anim = m_animations[i].get();
 		if (_anim != nullptr)
 		{
-			_anim->Render(ticks, m_spriteBatch.get(), SimpleMath::Vector2(m_currentRect.left, m_currentRect.top));
+			_anim->Render(ticks, m_spriteBatch.get(), &m_currentRect);
 		}
 	}
+	
+	// Draw the battle transition animation if necessary
+	if (m_animationTransition != nullptr)
+	{
+		m_animationTransition->Render(ticks, m_spriteBatch.get(), &m_currentRect);
+		if (m_animationTransition->IsFinished())
+			m_animationTransition = nullptr;
+	}
+	
 
 	// Finish up
 	m_primitiveBatch->End();

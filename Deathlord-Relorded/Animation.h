@@ -18,7 +18,7 @@ public:
 	void SetRenderOrigin(SimpleMath::Vector2 origin);
 	bool IsFinished() { return b_isFinished; };
 	virtual void Update() = 0;
-	virtual void Render(size_t tick, SpriteBatch* spriteBatch, SimpleMath::Vector2 overlayOrigin) = 0;
+	virtual void Render(size_t tick, SpriteBatch* spriteBatch, RECT* overlayRect) = 0;
 	virtual ~Animation() {};
 
 protected:
