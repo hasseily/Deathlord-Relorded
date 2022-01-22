@@ -16,6 +16,9 @@ public:
 	void StopAnimation();
 	void ResumeAnimation();
 	void SetRenderOrigin(SimpleMath::Vector2 origin);
+	SimpleMath::Rectangle CurrentFrameRectangle() {
+		return m_renderRectangle;
+	};
 	bool IsFinished() { return b_isFinished; };
 	virtual void Update() = 0;
 	virtual void Render(size_t tick, SpriteBatch* spriteBatch, RECT* overlayRect) = 0;
@@ -31,6 +34,7 @@ protected:
 	SimpleMath::Vector2 m_renderCurrent;		// Current XY position for rendering (changes by frame)
 	bool b_isFinished;							// Is the animation finished
 	std::vector<SimpleMath::Rectangle> m_frameRectangles;
+	SimpleMath::Rectangle m_renderRectangle;	// final current render rectangle after all translations
 	DescriptorHeap* m_resourceDescriptors;
 	XMUINT2 m_spriteSheetSize;
 };

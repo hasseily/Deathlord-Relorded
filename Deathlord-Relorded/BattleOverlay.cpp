@@ -76,9 +76,13 @@ void BattleOverlay::SpriteDodge(UINT8 charPosition)
 }
 void BattleOverlay::SpriteIsHit(UINT8 charPosition, UINT8 damage)
 {
-	if (m_animations[charPosition] == nullptr)
+	auto _anim = m_animations[charPosition].get();
+	if (_anim == nullptr)
 		Update();
-	m_animations[charPosition]->Update(AnimationBattleState::hit);
+	_anim->Update(AnimationBattleState::hit);
+	// TODO: Trigger floating text animation
+	SimpleMath::Rectangle _animRect = _anim->CurrentFrameRectangle();
+	auto _animCenter = _animRect.Center();
 }
 void BattleOverlay::SpriteDied(UINT8 charPosition)
 {
@@ -119,6 +123,7 @@ void BattleOverlay::Update()
 	// Fill animations correctly
 	UINT8 _enemyCount = MemGetMainPtr(MEM_ENEMY_COUNT)[0];
 	auto _animSpriteSheetSize = GetTextureSize(AutoMap::GetInstance()->GetMonsterSpriteSheet());
+	auto _battleSpriteSheetSize = GetTextureSize(m_overlaySpriteSheet.Get());
 	AnimationBattleChar* _anim;
 	for (int i = 0; i < TOTAL_SPRITES; i++)
 	{
@@ -130,7 +135,7 @@ void BattleOverlay::Update()
 		_anim = m_animations[i].get();
 		if (_anim == nullptr)
 		{
-			m_animations[i] = std::make_unique<AnimationBattleChar>(m_resourceDescriptors, _animSpriteSheetSize, i);
+			m_animations[i] = std::make_unique<AnimationBattleChar>(m_resourceDescriptors, _animSpriteSheetSize, i, _battleSpriteSheetSize);
 			_anim = m_animations[i].get();
 		}
 		if (i < 6)	// party

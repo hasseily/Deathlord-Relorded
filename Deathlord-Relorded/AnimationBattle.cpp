@@ -24,10 +24,11 @@ constexpr int ARRAY_BATTLE_POS_Y[6 + 32]{
 };
 
 AnimationBattleChar::AnimationBattleChar(DescriptorHeap* resourceDescriptors,
-	XMUINT2 spriteSheetSize, UINT8 battlePosition)
+	XMUINT2 monsterSpriteSheetSize, UINT8 battlePosition, XMUINT2 battleSpriteSheetSize)
 {
 	m_resourceDescriptors = resourceDescriptors;
-	m_spriteSheetSize = spriteSheetSize;
+	m_spriteSheetSize = monsterSpriteSheetSize;
+	m_battleSpriteSheetSize = battleSpriteSheetSize;
 	m_nextFrameTick = SIZE_T_MAX;
 	m_tickFrameLength = std::vector<size_t>{ 300000, 300000, 300000, 300000, 300000, 300000, 300000 };
 	m_frameCount = m_tickFrameLength.size();
@@ -76,7 +77,7 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, RECT* ov
 
 	}
 	XMFLOAT2 overlayOrigin = { (float)overlayRect->left, (float)overlayRect->top };
-	float _scale = 1.0f;
+	float _scale = 1.000000000f;
 	auto _origin = XMFLOAT2();
 	if (m_state != AnimationBattleState::idle)	// update position
 	{
@@ -102,17 +103,21 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, RECT* ov
 			break;
 		case AnimationBattleState::died:		// shrink to nothingness
 			_scale = ((float)m_frameCount - m_currentFrame) / (float)m_frameCount;
-			_origin.x = (FBTW / 2) * _scale;
-			_origin.y = (FBTH / 2) * _scale;
 			break;
 		default:
 			break;
 		}
 		m_renderCurrent.x += _moveX;
 		m_renderCurrent.y += _moveY;
+		_origin.x = (FBTW / 2) * (1 - _scale);
+		_origin.y = (FBTH / 2) * (1 - _scale);
 	}
+	m_renderRectangle.x = m_renderCurrent.x + overlayOrigin.x + _origin.x;
+	m_renderRectangle.y = m_renderCurrent.y + overlayOrigin.y + _origin.y;
+	m_renderRectangle.width = m_frameRectangles.at(0).width * _scale;
+	m_renderRectangle.height = m_frameRectangles.at(0).height * _scale;
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
-		m_spriteSheetSize, m_renderCurrent + overlayOrigin + _origin, &(RECT)m_frameRectangles.at(0), Colors::White, 0.f, XMFLOAT2(), _scale);
+		m_spriteSheetSize, (RECT)m_renderRectangle, &(RECT)m_frameRectangles.at(0), Colors::White, 0.f, XMFLOAT2());
 	// TODO: Draw health and power bars
 }
 #pragma endregion AnimationBattleChar
