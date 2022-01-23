@@ -6,6 +6,7 @@
 #include "PartyLayout.h"
 #include "Descriptors.h"
 #include "AnimationBattle.h"
+#include "AnimTextManager.h"
 #include "AutoMap.h"
 #include "Emulator/CPU.h"
 #include <SimpleMath.h>
@@ -25,10 +26,15 @@ constexpr int OVERLAY_WIDTH = 600;
 constexpr int OVERLAY_HEIGHT = 600;
 
 constexpr int TOTAL_SPRITES = 6 + 32;
+AnimTextManager* m_animTextManager;
 auto m_animations = std::array<std::unique_ptr<AnimationBattleChar>, TOTAL_SPRITES>();
 auto m_animationTransition = std::unique_ptr<AnimationBattleTransition>();
 int m_enemyMaxHP = 0x01;	// The highest HP of the monsters we're facing. Every monster will have its health bar relative to this
 bool m_enemyHPIsSet = false;
+std::wstring m_wstrHit = L"-%d hp";
+std::wstring m_wstrDied = L"+%d xp";
+wchar_t m_bufHit[30];
+wchar_t m_bufDied[30];
 
 #pragma region main
 void BattleOverlay::Initialize()
@@ -36,6 +42,7 @@ void BattleOverlay::Initialize()
 	bIsDisplayed = false;
 	bShouldDisplay = false;
 	m_currentRect = { 0,0,0,0 };
+	m_animTextManager = AnimTextManager::GetInstance(m_deviceResources, m_resourceDescriptors);
 }
 
 void BattleOverlay::ShowOverlay()
@@ -102,15 +109,24 @@ void BattleOverlay::SpriteIsHit(UINT8 charPosition, UINT8 damage)
 	if (_anim == nullptr)
 		Update();
 	_anim->Update(AnimationBattleState::hit);
-	// TODO: Trigger floating text animation
+	// Trigger floating text animation
 	auto _animRect = _anim->CurrentFrameRectangle();
 	auto _animCenter = _animRect.Center();
+	_animCenter.y -= _animRect.height - 4;
+	swprintf_s(m_bufHit, m_wstrHit.c_str(), damage);
+	m_animTextManager->CreateAnimation(_animCenter, std::wstring(m_bufHit), AnimationTextTypes::Damage);
 }
 void BattleOverlay::SpriteDied(UINT8 charPosition)
 {
-	if (m_animations[charPosition] == nullptr)
+	auto _anim = m_animations[charPosition].get();
+	if (_anim == nullptr)
 		Update();
-	m_animations[charPosition]->Update(AnimationBattleState::died);
+	_anim->Update(AnimationBattleState::died);
+	// Trigger floating text animation
+	auto _animRect = _anim->CurrentFrameRectangle();
+	auto _animCenter = _animRect.Center();
+	swprintf_s(m_bufDied, m_wstrDied.c_str(), MemGetMainPtr(MONSTER_CURR_XP)[0]);
+	m_animTextManager->CreateAnimation(_animCenter, std::wstring(m_bufDied), AnimationTextTypes::Info);
 }
 #pragma endregion
 

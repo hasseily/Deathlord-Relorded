@@ -23,6 +23,7 @@
 #include "MiniMap.h"
 #include "Daytime.h"
 #include "PartyLayout.h"
+#include "AnimTextManager.h"
 #include <vector>
 #include <string>
 #include <map>
@@ -56,6 +57,7 @@ static AppleWinDXVideo* m_a2Video;
 static Daytime* m_daytime;
 static MiniMap* m_minimap;
 static PartyLayout* m_partyLayout;
+static AnimTextManager* m_animTextManager;
 
 AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
 
@@ -139,6 +141,7 @@ void Game::Initialize(HWND window)
     m_deviceResources->CreateWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
 
+    m_animTextManager = AnimTextManager::GetInstance(m_deviceResources.get(), m_resourceDescriptors.get());
 	m_trigger = MemoryTriggers::GetInstance(&m_timer);
 	m_trigger->PollMapSetCurrentValues();
 }
@@ -495,6 +498,12 @@ void Game::Render()
 			m_invOverlay->Render(SimpleMath::Rectangle(clientRect));
 			// The battle overlay
 			m_battleOverlay->Render(SimpleMath::Rectangle(clientRect));
+
+            // and the floating text animations
+            // TODO: Really have to figure out how to reduce the sprite batch begin/end calls
+			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
+            m_animTextManager->RenderAnimations(m_timer.GetTotalTicks(), m_spriteBatch.get());
+			m_spriteBatch->End();
 
             // The apple2 video is unique and independent
             // It should be displayed at the top if requested

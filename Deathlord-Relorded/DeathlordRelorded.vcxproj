@@ -177,6 +177,8 @@
   <ItemGroup>
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="AnimationBattle.cpp" />
+    <ClCompile Include="AnimationTextFloating.cpp" />
+    <ClCompile Include="AnimTextManager.cpp" />
     <ClCompile Include="AppleWinDXVideo.cpp" />
     <ClCompile Include="AutoMap.cpp" />
     <ClCompile Include="BattleOverlay.cpp" />
@@ -229,6 +231,8 @@
   <ItemGroup>
     <ClInclude Include="Animation.h" />
     <ClInclude Include="AnimationBattle.h" />
+    <ClInclude Include="AnimationTextFloating.h" />
+    <ClInclude Include="AnimTextManager.h" />
     <ClInclude Include="AppleWinDXVideo.h" />
     <ClInclude Include="ATGColors.h" />
     <ClInclude Include="AutoMap.h" />
