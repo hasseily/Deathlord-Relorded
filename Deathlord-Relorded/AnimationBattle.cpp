@@ -134,8 +134,16 @@ AnimationBattleTransition::AnimationBattleTransition(DescriptorHeap* resourceDes
 	m_spriteSheetSize = spriteSheetSize;
 	m_nextFrameTick = 0;
 	m_tickFrameLength = std::vector<size_t>{	1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000,
+												1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000,
 												1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000};
-	m_transparency = std::vector<float>{ 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, .9f, .8f, .7f, .55f, .4f, .2f };
+	m_transparency = std::vector<float>{ 
+											1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f,
+											1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f,
+											1.f, 1.f, .9f, .8f, .7f, .55f, .4f, .2f };
+	m_scale = std::vector<float>{ 
+											.1f, .25f, .4f, .5f, .6f, .7f, .8f, .9f,
+											1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f,
+											1.1f, 1.25f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f };
 	m_frameCount = m_tickFrameLength.size();
 	m_currentFrame = 0;
 	b_isFinished = false;
@@ -159,7 +167,7 @@ void AnimationBattleTransition::Render(size_t tick, SpriteBatch* spriteBatch, RE
 	}
 
 	XMVECTORF32 _color = { { { 1.000000000f, 1.000000000f, 1.000000000f,  m_transparency[m_currentFrame] } } };
-	float _scale = ((float)(m_currentFrame + 1) * 2) / (float)m_frameCount;
+	float _scale = m_scale[m_currentFrame];
 	XMFLOAT2 _pos = {	(float)overlayRect->left + (overlayRect->right - overlayRect->left) / 2,
 						(float)overlayRect->top + (overlayRect->bottom - overlayRect->top) / 2 };
 	_pos.x -= (SPRITE_WIDTH / 2) * _scale;

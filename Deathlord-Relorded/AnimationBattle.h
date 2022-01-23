@@ -45,4 +45,5 @@ public:
 
 private:
 	std::vector<float> m_transparency;
+	std::vector<float> m_scale;
 };
