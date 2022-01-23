@@ -27,7 +27,7 @@ constexpr int OVERLAY_HEIGHT = 600;
 constexpr int TOTAL_SPRITES = 6 + 32;
 auto m_animations = std::array<std::unique_ptr<AnimationBattleChar>, TOTAL_SPRITES>();
 auto m_animationTransition = std::unique_ptr<AnimationBattleTransition>();
-UINT8 m_enemyMaxHP = 0x01;	// The highest HP of the monsters we're facing. Every monster will have its health bar relative to this
+int m_enemyMaxHP = 0x01;	// The highest HP of the monsters we're facing. Every monster will have its health bar relative to this
 bool m_enemyHPIsSet = false;
 
 #pragma region main
@@ -66,13 +66,14 @@ void BattleOverlay::BattleEnemyHPIsSet()
 
 void BattleOverlay::BattleSetEnemyMaxHP()
 {
+	// This must only run once per fight, setting the max HP for the enemy type
+	// Enemy HP is random within a range. It's calculated by:
+	// loop MONSTER_CURR_HPMULT times RAND(1-7), adding them up.
+	// So you throw a 7-sided die MONSTER_CURR_HPMULT times
+	// Hence the max starting HP is MONSTER_CURR_HPMULT * 7
 	if (!m_enemyHPIsSet)
 		return;
-	for (size_t i = 0; i < MemGetMainPtr(MEM_ENEMY_COUNT)[0]; i++)
-	{
-		if (m_enemyMaxHP < MemGetMainPtr(MEM_ENEMY_HP_START)[i])
-			m_enemyMaxHP = MemGetMainPtr(MEM_ENEMY_HP_START)[i];
-	}
+	m_enemyMaxHP = 7 * MemGetMainPtr(MONSTER_CURR_HPMULT)[0];
 	m_enemyHPIsSet = false;	// Only set it at the start of the fight
 }
 
@@ -324,9 +325,8 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 			else // monsters
 			{
 				UINT8 _mMonsterHPDisplay = MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6];
-				if (_mMonsterHPDisplay > m_enemyMaxHP)
-					m_enemyMaxHP = _mMonsterHPDisplay;
-				_healthBarR.width = _animRect.width * MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6] / m_enemyMaxHP;
+				int _maxHPUsed = (_mMonsterHPDisplay > m_enemyMaxHP ? _mMonsterHPDisplay : m_enemyMaxHP);
+				_healthBarR.width = _animRect.width * MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6] / _maxHPUsed;
 			}
 			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
 				_battleSpriteSheetSize, (RECT)_healthBarR, &(RECT)_barRect, Colors::Red, 0.f, XMFLOAT2());

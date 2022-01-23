@@ -69,6 +69,9 @@
 #define MEM_ENEMY_HP_START			0xAFAA		// Array of HPs for all enemies. Use MEM_ENEMY_COUNT to know the length
 #define MEM_BATTLE_MONSTER_INDEX	0xFC23		// Index of the monster we're fighting, index into GAMEMAP_ARRAY_MONSTER_ID. FF is empty
 #define MEM_BATTLE_ENEMY_INDEX		0xA574		// Index of the monster instance who is attacking
+#define PC_BATTLE_CALC_NUM_ENEMY1	0x5200		// JSR (jump table) to calculate # of enemies. Returns at 0xA2AC with enemy ct in X.
+#define PC_BATTLE_CALC_NUM_ENEMY2	0x6188		// JMP from the above JSR
+#define PC_BATTLE_BEGIN_ENEMY_HP	0xA423		// RTS after having calculated HP of enemy in position X, using sum(rand(0-7)), MONSTER_CURR_HPMULT times.
 
 /* the JSRs right after 0xA37F are:
 0xA382: JSR 0x51EB	Redraws center right area

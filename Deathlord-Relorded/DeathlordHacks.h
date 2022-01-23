@@ -62,6 +62,30 @@ constexpr UINT16 PARTY_CURRENT_CHAR_POS = 0xFC21;		// Char we're getting info on
 constexpr UINT16 PARTY_CURRENT_CHAR_CLASS = 0xFC22;		// Class of the party leader or active char in battle (determines icon)
 constexpr UINT16 PARTY_ICON_TYPE = 0xFC1D;				// 0: leader icon, 1: boat
 
+// Monsters
+// The monster list starts with 0xFF
+// The entries are variable length due to monster names being variable
+// Monster name as usual gets its high bit set at the end.
+// First byte is enemy type
+// Second byte is THAC0
+// Third byte is health
+constexpr UINT16 MONSTER_ATTR_LIST_START = 0xD000;		// Start of the full monster list attributes
+constexpr UINT16 MONSTER_ATTR_IDX_LO = 0xA4;			// Current monster's attributes memptr in MEM_MSTRATTRLIST, lo byte
+constexpr UINT16 MONSTER_ATTR_IDX_HI = 0xA5;			// Current monster's attributes memptr in MEM_MSTRATTRLIST, hi byte
+constexpr UINT16 MONSTER_CURR_ATTR_START = 0xAF70;		// Current monster's copy of attributes as battle starts.
+constexpr UINT16 MONSTER_CURR_TYPE = 0xAF70;
+constexpr UINT16 MONSTER_CURR_THAC0 = 0xAF71;
+constexpr UINT16 MONSTER_CURR_HPMULT = 0xAF72;			// HP multiplier (multiplier * d7) where d7 is 7 Sided dice (rand(1-7))
+constexpr UINT16 MONSTER_CURR_ARMORCLASS = 0xAF73;		// AC starts at zero and increases
+constexpr UINT16 MONSTER_CURR_NUM = 0xAF74;				// Max number of enemies at start
+constexpr UINT16 MONSTER_CURR_ATTACKS = 0xAF75;			// # of attacks per round
+constexpr UINT16 MONSTER_CURR_DAMAGE = 0xAF76;			// Damage is 1 to this number
+constexpr UINT16 MONSTER_CURR_XP = 0xAF7C;				// Amount of XP enemy gives
+constexpr UINT16 MONSTER_CURR_SPACES = 0xAF7D;			// Amount of spaces to add in order to center enemy name on screen
+constexpr UINT16 MONSTER_CURR_NAME = 0xAF7E;			// Name, ends with char with high bit set
+
+
+
 constexpr UINT16 TILEVIEW_CURRENT_START = 0x0300;		// Start of the current tiles in the viewport. Ends at 0x0350. There are 9x9 tiles
 constexpr UINT16 TILEVIEW_NEW_START = 0x0351;			// Start of the new tileset. Ends 0x03A1.
 constexpr UINT16 TILEVIEW_CURRENT_PLAYERTILE = 0x0328;	// The player is in the center at tile 41
