@@ -6,6 +6,12 @@
 // Program Counter locations to hijack when processing the game
 // to change the behavior on the fly without patching the original code
 // Research by rikkles and qkumba
+
+// Pre-game (main menu, boot disk)
+#define PC_PROMPT_USE_2_DRIVES		0x871C		// Prompts for 2 drives. Skip PC to $8738 to bypass the prompt.
+#define PC_PROMPT_INSERT_SCENARIOS	0x840B		// Prompts to insert scenarii. NOP to avoid it. Before $842B, swap images for verification to pass.
+
+// In-game
 #define PC_RNG						0x4AE0		// Random number generator
 #define PC_WAIT_FOR_KEYPRESS		0x540B		// Waits for a keypress
 #define PC_DECREMENT_TIMER			0x621F		// routine to decrement a timer before it makes the player "wait" and pass a turn

@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "InvManager.h"
 #include "AutoMap.h"
 #include "BattleOverlay.h"
+#include "resource.h"
 #include <string>
 //===========================================================================
 
@@ -39,6 +40,7 @@ static int interactiveTextOutputLineCt = 0;
 static std::shared_ptr<LogWindow> __logWindow;
 extern std::shared_ptr<LogWindow> GetLogWindow();
 static TextOutput* __textOutput;
+static bool hasTriedInsertingScenarii = false;
 
 static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 {
@@ -451,7 +453,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			{
 				// Do not reset XP on levelup
 				// Previously it did LDA #$0, and now it will STA on both low and high bytes
-				CYC(5*2); // STA uses 5 cycles;
+				CYC(5 * 2); // STA uses 5 cycles;
 				regs.pc = _origPC + 6;	// Jump to after the 2 STA
 				break;
 			}
@@ -477,12 +479,39 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			}
 			default:
 				break;
-			}
+			}	// switch
 
-		}	// switch
+		} // if is in game map
+		else
+		{
+			switch (_origPC)
+			{
+			case PC_PROMPT_USE_2_DRIVES:
+			{
+				regs.pc = 0x8738;	// Bypass the 2 drives prompt (use 2 drives)
+				hasTriedInsertingScenarii = false;
+				break;
+			}
+			case PC_PROMPT_INSERT_SCENARIOS:
+			{
+				if (!hasTriedInsertingScenarii)
+				{
+					// let's auto-insert scenarii
+					CYC(6); // JSR (0x20) uses 6 cycles;
+					regs.pc = _origPC + 3;	// Skip to the next instruction
+					// Synchronously insert scenarii
+					SendMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_INSERTSCENARIODISKS, 1);
+					hasTriedInsertingScenarii = true;
+				}
+				break;
+			}
+			default:
+				break;
+			}
+		}
 
 		/// END DEATHLORD HOOKS
-		
+
 
 		HEATMAP_X(regs.pc);
 		Fetch(iOpcode, uExecutedCycles);
@@ -754,7 +783,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			}
 
 			char _buf[300];
-			sprintf_s(_buf, 300, "%04X: %s  %02X%02X - %02X %02X %02X\n", _origPC, _opStr.c_str(), 
+			sprintf_s(_buf, 300, "%04X: %s  %02X%02X - %02X %02X %02X\n", _origPC, _opStr.c_str(),
 				MemGetRealMainPtr(_origPC + 1)[0], MemGetRealMainPtr(_origPC + 2)[0],
 				regs.a, regs.x, regs.y);
 			OutputDebugStringA(_buf);
@@ -1023,7 +1052,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 		}
 
 
-AFTERFETCH:
+	AFTERFETCH:
 		CheckSynchronousInterruptSources(uExecutedCycles - uPreviousCycles, uExecutedCycles);
 		NMI(uExecutedCycles, flagc, flagn, flagv, flagz);
 		IRQ(uExecutedCycles, flagc, flagn, flagv, flagz);
