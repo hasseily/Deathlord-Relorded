@@ -63,13 +63,18 @@ void AnimationTextFloating::Render(size_t tick, SpriteBatch* spriteBatch)
 	if (b_isFinished)
 		return;
 	m_font->DrawString(spriteBatch, m_text.c_str(), m_renderCurrent, m_color, 0.f, { 0,0 }, m_scale);
-	++m_currentFrame;
-	if (m_currentFrame == m_tickFrameLength.size())
+	if (tick > m_nextFrameTick)		// go to the next frame
 	{
-		b_isFinished = true;
-		return;
+		++m_currentFrame;
+		if (m_currentFrame == m_tickFrameLength.size())
+		{
+			b_isFinished = true;
+			return;
+		}
+		m_nextFrameTick = m_tickFrameLength[m_currentFrame] + tick;
+		m_color = { {{ m_color[0], m_color[1], m_color[2], 1 - ((float)m_currentFrame / m_tickFrameLength.size()) }} };
+		m_renderCurrent.x += (rand() % 4) - 2;		// sway sideways up to 2 pixels for next frame
+		m_renderCurrent.y -= 3;
 	}
-	m_color = { {{ m_color[0], m_color[1], m_color[2], 1 - ((float)m_currentFrame / m_tickFrameLength.size()) }} };
-	m_renderCurrent.x += (rand() % 4) - 2;		// sway sideways up to 2 pixels for next frame
-	m_renderCurrent.y -= 3;
+
 }

@@ -52,7 +52,7 @@ void AnimationBattleChar::Update(AnimationBattleState state)
 		m_state = state;
 		m_currentFrame = 0;
 		m_renderCurrent = m_renderOrigin;
-		m_nextFrameTick = m_tickFrameLength[m_currentFrame];
+		m_nextFrameTick = 0;
 	}
 }
 
@@ -64,18 +64,7 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, RECT* ov
 
 	m_frameRectangles.at(0).x = FBTW * (m_monsterId % 0x10);	// The monster spritesheet has 16 monsters per row
 	m_frameRectangles.at(0).y = FBTH * (m_monsterId / 0x10);
-	if (tick > m_nextFrameTick)		// go to the next frame
-	{
-		// Reset to idle if the animation has completed
-		if ((m_state != AnimationBattleState::idle) && (m_currentFrame == (m_frameCount - 1)))
-			Update(AnimationBattleState::idle);
-		else
-		{
-			m_currentFrame = (m_currentFrame + 1) % m_frameCount;
-			m_nextFrameTick = m_tickFrameLength[m_currentFrame];
-		}
 
-	}
 	XMFLOAT2 overlayOrigin = { (float)overlayRect->left, (float)overlayRect->top };
 	float _scale = 1.000000000f;
 	auto _origin = XMFLOAT2();
@@ -118,7 +107,19 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, RECT* ov
 	m_renderRectangle.height = m_frameRectangles.at(0).height * _scale;
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
 		m_spriteSheetSize, (RECT)m_renderRectangle, &(RECT)m_frameRectangles.at(0), Colors::White, 0.f, XMFLOAT2());
-	// TODO: Draw health and power bars
+	
+	// check for the next tick
+	if (tick > m_nextFrameTick)		// go to the next frame
+	{
+		// Reset to idle if the animation has completed
+		if ((m_state != AnimationBattleState::idle) && (m_currentFrame == (m_frameCount - 1)))
+			Update(AnimationBattleState::idle);
+		else
+		{
+			m_currentFrame = (m_currentFrame + 1) % m_frameCount;
+			m_nextFrameTick = m_tickFrameLength[m_currentFrame] + tick;
+		}
+	}
 }
 #pragma endregion AnimationBattleChar
 
@@ -133,17 +134,12 @@ AnimationBattleTransition::AnimationBattleTransition(DescriptorHeap* resourceDes
 	m_resourceDescriptors = resourceDescriptors;
 	m_spriteSheetSize = spriteSheetSize;
 	m_nextFrameTick = 0;
-	m_tickFrameLength = std::vector<size_t>{	1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000,
-												1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000,
-												1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000, 1000000};
+	m_tickFrameLength = std::vector<size_t>{	300000, 300000, 300000, 8000000,
+												300000, 300000, 300000, 300000, 300000, 300000, 300000 };
 	m_transparency = std::vector<float>{ 
-											1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f,
-											1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f,
-											1.f, 1.f, .9f, .8f, .7f, .55f, .4f, .2f };
+											.4f, .6f, .8f, 1.f, .9f, .8f, .7f, .6f, .5f, .4f, .2f };
 	m_scale = std::vector<float>{ 
-											.1f, .25f, .4f, .5f, .6f, .7f, .8f, .9f,
-											1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f,
-											1.1f, 1.25f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f };
+											.4f, .6f, .8f, 1.f, 1.25f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f };
 	m_frameCount = m_tickFrameLength.size();
 	m_currentFrame = 0;
 	b_isFinished = false;
@@ -158,13 +154,6 @@ void AnimationBattleTransition::Render(size_t tick, SpriteBatch* spriteBatch, RE
 {
 	if (b_isFinished)
 		return;
-	if (tick > m_nextFrameTick)		// go to the next frame
-	{
-		m_currentFrame = (m_currentFrame + 1) % m_frameCount;
-		m_nextFrameTick = m_tickFrameLength[m_currentFrame];
-		if (m_currentFrame == (m_frameCount - 1))
-			b_isFinished = true;
-	}
 
 	XMVECTORF32 _color = { { { 1.000000000f, 1.000000000f, 1.000000000f,  m_transparency[m_currentFrame] } } };
 	float _scale = m_scale[m_currentFrame];
@@ -174,5 +163,13 @@ void AnimationBattleTransition::Render(size_t tick, SpriteBatch* spriteBatch, RE
 	_pos.y -= (SPRITE_HEIGHT / 2) * _scale;
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
 		m_spriteSheetSize, _pos, &(RECT)m_frameRectangles.at(0), _color, 0.f, XMFLOAT2(), _scale);
+
+	if (tick > m_nextFrameTick)		// go to the next frame
+	{
+		m_currentFrame = (m_currentFrame + 1) % m_frameCount;
+		m_nextFrameTick = m_tickFrameLength[m_currentFrame] + tick;
+		if (m_currentFrame == (m_frameCount - 1))
+			b_isFinished = true;
+	}
 }
 #pragma endregion AnimationBattleTransition
