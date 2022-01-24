@@ -5,6 +5,9 @@
 
 using namespace DirectX;
 
+constexpr int TICKS_30FPS = 300000;		// Use this to get 30FPS
+constexpr int TICKS_60FPS = 150000;		// Use this to get 60FPS
+
 // Base animation class (virtual)
 // An animation expects the correct spritesheet
 // And when calling Render(), the spriteBatch needs to have Begin() called on it already

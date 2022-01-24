@@ -30,7 +30,7 @@ AnimationBattleChar::AnimationBattleChar(DescriptorHeap* resourceDescriptors,
 	m_spriteSheetSize = monsterSpriteSheetSize;
 	m_battleSpriteSheetSize = battleSpriteSheetSize;
 	m_nextFrameTick = SIZE_T_MAX;
-	m_tickFrameLength = std::vector<size_t>{ 300000, 300000, 300000, 300000, 300000, 300000, 300000 };
+	m_tickFrameLength = std::vector<size_t>{ TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS };
 	m_frameCount = m_tickFrameLength.size();
 	m_monsterId = 1;
 	m_health = 1;
@@ -134,8 +134,9 @@ AnimationBattleTransition::AnimationBattleTransition(DescriptorHeap* resourceDes
 	m_resourceDescriptors = resourceDescriptors;
 	m_spriteSheetSize = spriteSheetSize;
 	m_nextFrameTick = 0;
-	m_tickFrameLength = std::vector<size_t>{	300000, 300000, 300000, 8000000,
-												300000, 300000, 300000, 300000, 300000, 300000, 300000 };
+	m_tickFrameLength = std::vector<size_t>{	TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, 8000000,
+												TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, 
+												TICKS_30FPS, TICKS_30FPS, TICKS_30FPS };
 	m_transparency = std::vector<float>{ 
 											.4f, .6f, .8f, 1.f, .9f, .8f, .7f, .6f, .5f, .4f, .2f };
 	m_scale = std::vector<float>{ 
@@ -157,8 +158,9 @@ void AnimationBattleTransition::Render(size_t tick, SpriteBatch* spriteBatch, RE
 
 	XMVECTORF32 _color = { { { 1.000000000f, 1.000000000f, 1.000000000f,  m_transparency[m_currentFrame] } } };
 	float _scale = m_scale[m_currentFrame];
+	// Display the sprite towards the top of the overlay to leave space to display the start of the fight
 	XMFLOAT2 _pos = {	(float)overlayRect->left + (overlayRect->right - overlayRect->left) / 2,
-						(float)overlayRect->top + (overlayRect->bottom - overlayRect->top) / 2 };
+						(float)overlayRect->top + SPRITE_HEIGHT };
 	_pos.x -= (SPRITE_WIDTH / 2) * _scale;
 	_pos.y -= (SPRITE_HEIGHT / 2) * _scale;
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),

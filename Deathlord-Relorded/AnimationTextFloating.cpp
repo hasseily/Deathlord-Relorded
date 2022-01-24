@@ -11,9 +11,9 @@ AnimationTextFloating::AnimationTextFloating(DescriptorHeap* resourceDescriptors
 	m_resourceDescriptors = resourceDescriptors;
 	m_renderOrigin = centeredOrigin;
 	m_renderCurrent = m_renderOrigin;
-	m_tickFrameLength = std::vector<size_t>{	300000, 300000, 300000, 300000, 300000, 300000, 300000,
-												300000, 300000, 300000, 300000, 300000, 300000, 300000,
-												300000, 300000, 300000, 300000, 300000, 300000, 300000, 300000 };
+	m_tickFrameLength = std::vector<size_t>{ TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS,
+											 TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS,
+											 TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, };
 	m_nextFrameTick = m_tickFrameLength[0];
 	m_currentFrame = 0;
 	b_isFinished = false;
