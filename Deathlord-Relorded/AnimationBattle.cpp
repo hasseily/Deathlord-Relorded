@@ -7,16 +7,16 @@
 #pragma region AnimationBattleChar
 // Fixed X and Y positions for battle module for all possible character slots
 constexpr int ARRAY_BATTLE_POS_X[6 + 32]{
-	210, 282, 350, 280, 225, 335,						// Player Chars
-	276, 236, 330,										// Monsters melee range
-	180, 237, 310, 375,									// Monsters layer 2
-	150, 195, 242, 292, 348, 400,						// Monster layer 3
-	120, 165, 212, 268, 312, 352, 395, 442,				// Monster layer 4
-	43, 92, 137, 185, 229, 274, 316, 382, 411, 451, 498	// Monster layer 5
+	286, 240, 330, 286, 190, 385,						// Player Chars
+	286, 246, 330,										// Monsters melee range
+	190, 247, 320, 385,									// Monsters layer 2
+	160, 205, 252, 302, 358, 410,						// Monster layer 3
+	130, 175, 222, 278, 322, 362, 405, 452,				// Monster layer 4
+	43, 92, 137, 185, 229, 274, 316, 362, 411, 461, 518	// Monster layer 5
 };
 constexpr int ARRAY_BATTLE_POS_Y[6 + 32]{
-	355, 349, 352, 443, 485, 488,						// Player Chars
-	300, 287, 292,										// Monsters melee range
+	379, 385, 382, 463, 505, 508,						// Player Chars
+	318, 277, 282,										// Monsters melee range
 	238, 234, 236, 239,									// Monsters layer 2
 	163, 160, 164, 158, 162, 160,						// Monster layer 3
 	113, 116, 110, 115, 117, 112, 110, 114,				// Monster layer 4

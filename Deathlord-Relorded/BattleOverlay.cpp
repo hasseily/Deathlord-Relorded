@@ -306,6 +306,23 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 	);
 	///// End Draw Border
 
+	///// Begin Draw Inner Wall (boundary between party and enemies)
+	m_primitiveBatch->DrawQuad(
+		VertexPositionColor(XMFLOAT3(m_currentRect.left + 12, m_currentRect.top + 333, 0), ColorAmber),
+		VertexPositionColor(XMFLOAT3(m_currentRect.right - 12, m_currentRect.top + 333, 0), ColorAmber),
+		VertexPositionColor(XMFLOAT3(m_currentRect.right - 12, m_currentRect.top + 343, 0), ColorAmber),
+		VertexPositionColor(XMFLOAT3(m_currentRect.left + 12, m_currentRect.top + 343, 0), ColorAmber)
+	);
+	m_primitiveBatch->DrawQuad(		// Make a hole inside the wall for the first enemy
+		VertexPositionColor(XMFLOAT3(m_currentRect.left + 272, m_currentRect.top + 330, 0), static_cast<XMFLOAT4>(Colors::Black)),
+		VertexPositionColor(XMFLOAT3(m_currentRect.right - 272, m_currentRect.top + 330, 0), static_cast<XMFLOAT4>(Colors::Black)),
+		VertexPositionColor(XMFLOAT3(m_currentRect.right - 272, m_currentRect.top + 350, 0), static_cast<XMFLOAT4>(Colors::Black)),
+		VertexPositionColor(XMFLOAT3(m_currentRect.left + 272, m_currentRect.top + 350, 0), static_cast<XMFLOAT4>(Colors::Black))
+	);
+
+	///// End Draw Inner Wall
+
+
 	// Draw the party and monsters
 	auto _battleSpriteSheetSize = GetTextureSize(m_overlaySpriteSheet.Get());
 	SimpleMath::Rectangle _barRect(0, 0, 28, 5);
