@@ -52,6 +52,7 @@
 #define PC_BATTLE_CHAR_HAS_HIT		0xA88E		// player hits monster, X = monster index, A/MEM_DAMAGE_AMOUNT = damage
 #define PC_BATTLE_CHAR_DID_DMG		0xA9FA		// Character inflicted some damage. Don't know amount yet.
 #define PC_BATTLE_CHAR_HAS_KILLED	0xA8C2		// Character has killed enemy, Enemy is in X, damage in MEM_DAMAGE_AMOUNT
+#define PC_BATTLE_CHAR_HAS_BANISHED	0x7B53		// Enemy was banished (hard kill, no check for HP). Enemy is in X, but 1-based!
 #define PC_BATTLE_CHAR_END_ATK		0xAB49		// End of a single char attack. The damage is in A and also in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_END_TURN		0xA886		// Char has exhausted all attack. Move on to next char
 #define PC_BATTLE_ENEMY_BEGIN_ATK	0xAA42		// Enemy starts attack

@@ -120,7 +120,10 @@ void BattleOverlay::SpriteDied(UINT8 charPosition)
 {
 	auto _anim = m_animations[charPosition].get();
 	if (_anim == nullptr)
+	{
 		Update();
+		_anim = m_animations[charPosition].get();
+	}
 	_anim->Update(AnimationBattleState::died);
 	// Trigger floating text animation
 	auto _animRect = _anim->CurrentFrameRectangle();
