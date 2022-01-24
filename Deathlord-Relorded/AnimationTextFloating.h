@@ -18,8 +18,8 @@ class AnimationTextFloating : public Animation
 public:
 
 	void Update() override { };
-	void Render(size_t tick, SpriteBatch* spriteBatch);
-	void Render(size_t tick, SpriteBatch* spriteBatch, RECT* overlayRect) override { Render(tick, spriteBatch); };
+	void Render(SpriteBatch* spriteBatch);
+	void Render(SpriteBatch* spriteBatch, RECT* overlayRect) override { Render(spriteBatch); };
 	void SetText(std::wstring text);
 	AnimationTextFloating(DescriptorHeap* resourceDescriptors, SimpleMath::Vector2 centeredOrigin, 
 		std::wstring text = L"", AnimationTextTypes type = AnimationTextTypes::Info);

@@ -153,6 +153,12 @@ void Game::SetWindowSizeOnChangedProfile()
     // TODO: Remove this function
 
 }
+
+UINT64 Game::GetTotalTicks()
+{
+    return m_timer.GetTotalTicks();
+}
+
 #pragma endregion
 
 #pragma region Others
@@ -502,7 +508,7 @@ void Game::Render()
             // and the floating text animations
             // TODO: Really have to figure out how to reduce the sprite batch begin/end calls
 			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
-            m_animTextManager->RenderAnimations(m_timer.GetTotalTicks(), m_spriteBatch.get());
+            m_animTextManager->RenderAnimations(m_spriteBatch.get());
 			m_spriteBatch->End();
 
             // The apple2 video is unique and independent

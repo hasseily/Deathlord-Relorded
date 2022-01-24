@@ -84,6 +84,7 @@ public:
 
     // Other methods
     void SetWindowSizeOnChangedProfile();
+    UINT64 GetTotalTicks(); // Total ticks since start of program
 
     // Accessors
     SimpleMath::Rectangle GetDrawRectangle();

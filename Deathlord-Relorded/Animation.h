@@ -2,11 +2,14 @@
 #include <vector>
 #include <SimpleMath.h>
 #include "DeviceResources.h"
+#include "Game.h"
 
 using namespace DirectX;
 
 constexpr int TICKS_30FPS = 300000;		// Use this to get 30FPS
 constexpr int TICKS_60FPS = 150000;		// Use this to get 60FPS
+
+extern std::unique_ptr<Game>* GetGamePtr();
 
 // Base animation class (virtual)
 // An animation expects the correct spritesheet
@@ -24,7 +27,7 @@ public:
 	};
 	bool IsFinished() { return b_isFinished; };
 	virtual void Update() = 0;
-	virtual void Render(size_t tick, SpriteBatch* spriteBatch, RECT* overlayRect) = 0;
+	virtual void Render(SpriteBatch* spriteBatch, RECT* overlayRect) = 0;
 	virtual ~Animation() {};
 
 protected:

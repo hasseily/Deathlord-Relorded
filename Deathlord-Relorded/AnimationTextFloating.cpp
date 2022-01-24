@@ -3,8 +3,6 @@
 #include "Descriptors.h"
 #include "Game.h"
 
-extern std::unique_ptr<Game>* GetGamePtr();
-
 AnimationTextFloating::AnimationTextFloating(DescriptorHeap* resourceDescriptors, SimpleMath::Vector2 centeredOrigin,
 	std::wstring text /*= L""*/, AnimationTextTypes type /*= AnimationTextTypes::Info*/)
 {
@@ -58,11 +56,16 @@ void AnimationTextFloating::SetText(std::wstring text)
 	m_renderCurrent.x = m_renderOrigin.x;
 }
 
-void AnimationTextFloating::Render(size_t tick, SpriteBatch* spriteBatch)
+void AnimationTextFloating::Render(SpriteBatch* spriteBatch)
 {
 	if (b_isFinished)
 		return;
+
 	m_font->DrawString(spriteBatch, m_text.c_str(), m_renderCurrent, m_color, 0.f, { 0,0 }, m_scale);
+
+	// Finalize
+	auto gamePtr = GetGamePtr();
+	auto tick = (*gamePtr)->GetTotalTicks();
 	if (tick > m_nextFrameTick)		// go to the next frame
 	{
 		++m_currentFrame;

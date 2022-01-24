@@ -32,9 +32,9 @@ AnimationTextFloating* AnimTextManager::CreateAnimation(SimpleMath::Vector2 cent
 	}
 }
 
-void AnimTextManager::RenderAnimations(size_t tick, SpriteBatch* spriteBatch)
+void AnimTextManager::RenderAnimations(SpriteBatch* spriteBatch)
 {
-	auto _toDelete = std::vector<int>();
+	auto _toDelete = std::vector<size_t>();
 	for (size_t i = 0; i < m_animations.size(); i++)
 	{
 		if (m_animations[i].IsFinished())
@@ -42,7 +42,7 @@ void AnimTextManager::RenderAnimations(size_t tick, SpriteBatch* spriteBatch)
 			_toDelete.push_back(i);
 			continue;
 		}
-		m_animations[i].Render(tick, spriteBatch);
+		m_animations[i].Render(spriteBatch);
 	}
 	for (size_t i = 0; i < _toDelete.size(); i++)
 	{

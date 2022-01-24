@@ -56,7 +56,7 @@ void AnimationBattleChar::Update(AnimationBattleState state)
 	}
 }
 
-void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, RECT* overlayRect)
+void AnimationBattleChar::Render(SpriteBatch* spriteBatch, RECT* overlayRect)
 {
 	// The battle animation uses a single image for all frames
 	// but it moves depending on the AnimationBattleState
@@ -108,7 +108,10 @@ void AnimationBattleChar::Render(size_t tick, SpriteBatch* spriteBatch, RECT* ov
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
 		m_spriteSheetSize, (RECT)m_renderRectangle, &(RECT)m_frameRectangles.at(0), Colors::White, 0.f, XMFLOAT2());
 	
-	// check for the next tick
+	// Finalize
+	auto gamePtr = GetGamePtr();
+	auto tick = (*gamePtr)->GetTotalTicks();
+
 	if (tick > m_nextFrameTick)		// go to the next frame
 	{
 		// Reset to idle if the animation has completed
@@ -151,7 +154,7 @@ AnimationBattleTransition::AnimationBattleTransition(DescriptorHeap* resourceDes
 	SetRenderOrigin(SimpleMath::Vector2());
 }
 
-void AnimationBattleTransition::Render(size_t tick, SpriteBatch* spriteBatch, RECT* overlayRect)
+void AnimationBattleTransition::Render(SpriteBatch* spriteBatch, RECT* overlayRect)
 {
 	if (b_isFinished)
 		return;
@@ -165,6 +168,10 @@ void AnimationBattleTransition::Render(size_t tick, SpriteBatch* spriteBatch, RE
 	_pos.y -= (SPRITE_HEIGHT / 2) * _scale;
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
 		m_spriteSheetSize, _pos, &(RECT)m_frameRectangles.at(0), _color, 0.f, XMFLOAT2(), _scale);
+
+	// Finalize
+	auto gamePtr = GetGamePtr();
+	auto tick = (*gamePtr)->GetTotalTicks();
 
 	if (tick > m_nextFrameTick)		// go to the next frame
 	{

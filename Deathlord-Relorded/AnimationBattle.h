@@ -21,7 +21,7 @@ class AnimationBattleChar : public Animation
 public:
 	void Update() override { Update(AnimationBattleState::idle); };
 	void Update(AnimationBattleState state);
-	void Render(size_t tick, SpriteBatch* spriteBatch, RECT* overlayRect);
+	void Render(SpriteBatch* spriteBatch, RECT* overlayRect);
 	AnimationBattleChar(DescriptorHeap* resourceDescriptors,
 		XMUINT2 monsterSpriteSheetSize, UINT8 battlePosition, XMUINT2 battleSpriteSheetSize);
 	~AnimationBattleChar() {};
@@ -38,7 +38,7 @@ class AnimationBattleTransition : public Animation
 {
 public:
 	void Update() override { };
-	void Render(size_t tick, SpriteBatch* spriteBatch, RECT* overlayRect);
+	void Render(SpriteBatch* spriteBatch, RECT* overlayRect);
 	AnimationBattleTransition(DescriptorHeap* resourceDescriptors,
 		XMUINT2 spriteSheetSize);
 	~AnimationBattleTransition() {};

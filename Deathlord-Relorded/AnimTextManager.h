@@ -8,7 +8,7 @@ class AnimTextManager
 public:
 	AnimationTextFloating* CreateAnimation(SimpleMath::Vector2 centeredOrigin,
 		std::wstring text = L"", AnimationTextTypes type = AnimationTextTypes::Info);
-	void RenderAnimations(size_t tick, SpriteBatch* spriteBatch);
+	void RenderAnimations(SpriteBatch* spriteBatch);
 
 	// public singleton code
 	static AnimTextManager* GetInstance(DX::DeviceResources* deviceResources, DirectX::DescriptorHeap* resourceDescriptors)

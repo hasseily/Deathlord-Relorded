@@ -279,8 +279,6 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 
 	auto gamePtr = GetGamePtr();
 	auto font = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular);
-	auto timer = (*gamePtr)->m_timer;
-	size_t ticks = timer.GetTotalTicks();
 	std::wstring _bufStr;
 
 	// Now draw
@@ -318,7 +316,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 		if (_anim != nullptr)
 		{
 			// Render the animated sprites
-			_anim->Render(ticks, m_spriteBatch.get(), &m_currentRect);
+			_anim->Render(m_spriteBatch.get(), &m_currentRect);
 			// Draw the health and power bars
 			auto _animRect = _anim->CurrentFrameRectangle();
 			SimpleMath::Rectangle _healthBarR(_animRect);
@@ -352,7 +350,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 	// Draw the battle transition animation if necessary
 	if (m_animationTransition != nullptr)
 	{
-		m_animationTransition->Render(ticks, m_spriteBatch.get(), &m_currentRect);
+		m_animationTransition->Render(m_spriteBatch.get(), &m_currentRect);
 		if (m_animationTransition->IsFinished())
 			m_animationTransition = nullptr;
 	}
