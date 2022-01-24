@@ -311,16 +311,16 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 
 	///// Begin Draw Inner Wall (boundary between party and enemies)
 	m_primitiveBatch->DrawQuad(
-		VertexPositionColor(XMFLOAT3(m_currentRect.left + 12, m_currentRect.top + 333, 0), ColorAmber),
-		VertexPositionColor(XMFLOAT3(m_currentRect.right - 12, m_currentRect.top + 333, 0), ColorAmber),
-		VertexPositionColor(XMFLOAT3(m_currentRect.right - 12, m_currentRect.top + 343, 0), ColorAmber),
-		VertexPositionColor(XMFLOAT3(m_currentRect.left + 12, m_currentRect.top + 343, 0), ColorAmber)
+		VertexPositionColor(XMFLOAT3(m_currentRect.left + 12, m_currentRect.top + 315, 0), ColorAmber),
+		VertexPositionColor(XMFLOAT3(m_currentRect.right - 12, m_currentRect.top + 315, 0), ColorAmber),
+		VertexPositionColor(XMFLOAT3(m_currentRect.right - 12, m_currentRect.top + 320, 0), ColorAmber),
+		VertexPositionColor(XMFLOAT3(m_currentRect.left + 12, m_currentRect.top + 320, 0), ColorAmber)
 	);
-	m_primitiveBatch->DrawQuad(		// Make a hole inside the wall for the first enemy
-		VertexPositionColor(XMFLOAT3(m_currentRect.left + 272, m_currentRect.top + 330, 0), static_cast<XMFLOAT4>(Colors::Black)),
-		VertexPositionColor(XMFLOAT3(m_currentRect.right - 272, m_currentRect.top + 330, 0), static_cast<XMFLOAT4>(Colors::Black)),
-		VertexPositionColor(XMFLOAT3(m_currentRect.right - 272, m_currentRect.top + 350, 0), static_cast<XMFLOAT4>(Colors::Black)),
-		VertexPositionColor(XMFLOAT3(m_currentRect.left + 272, m_currentRect.top + 350, 0), static_cast<XMFLOAT4>(Colors::Black))
+	m_primitiveBatch->DrawQuad(		// Make a hole inside the wall
+		VertexPositionColor(XMFLOAT3(m_currentRect.left + 230, m_currentRect.top + 310, 0), static_cast<XMFLOAT4>(Colors::Black)),
+		VertexPositionColor(XMFLOAT3(m_currentRect.right - 230, m_currentRect.top + 310, 0), static_cast<XMFLOAT4>(Colors::Black)),
+		VertexPositionColor(XMFLOAT3(m_currentRect.right - 230, m_currentRect.top + 325, 0), static_cast<XMFLOAT4>(Colors::Black)),
+		VertexPositionColor(XMFLOAT3(m_currentRect.left + 230, m_currentRect.top + 325, 0), static_cast<XMFLOAT4>(Colors::Black))
 	);
 
 	///// End Draw Inner Wall
