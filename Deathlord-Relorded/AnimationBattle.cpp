@@ -66,6 +66,10 @@ void AnimationBattleChar::Render(SpriteBatch* spriteBatch, RECT* overlayRect)
 	m_frameRectangles.at(0).y = FBTH * (m_monsterId / 0x10);
 
 	XMFLOAT2 overlayOrigin = { (float)overlayRect->left, (float)overlayRect->top };
+	// Move the guys so very slightly based on their HP. When the array thins out and enemies are shifted,
+	// it'll look like they moved, and not be totally static.
+	overlayOrigin.x += (m_health % 4) - 2;
+	overlayOrigin.y += (m_health % 4) - 2;
 	float _scale = 1.000000000f;
 	auto _origin = XMFLOAT2();
 	if (m_state != AnimationBattleState::idle)	// update position
