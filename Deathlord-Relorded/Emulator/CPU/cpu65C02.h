@@ -87,6 +87,38 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				memT->DelayedTriggerInsert(DelayedTriggersFunction::FINISH_TRANSITION, 100);
 				break;
 			}
+			case PC_OVERLAND_KEY_PRESS:
+			{
+				// A key has been pressed when in map
+				// Could be 'C' to cast, or a number for the "Cast-" prompt, or the spell menu, etc...
+				// What we want is to intercept the arrow keys ONLY when this subroutine was called
+				// from when we're not in a menu selection situation.
+				// Arrow keys are used in menus, so can't just blindly remap them.
+				if ((MemGetMainPtr(regs.sp)[1] != SP_OVERLAND_KEY_PRESS_1)
+					&& (MemGetMainPtr(regs.sp)[2] != SP_OVERLAND_KEY_PRESS_2))
+				{
+					// The keycode is in A. See asciicode[][] in Keyboard.cpp
+					// The high bit is set
+					switch (regs.a)
+					{
+					case 0x8B:	//up arrow
+						regs.a = 'I' + 0x80;
+						break;
+					case 0x88:	//left arrow
+						regs.a = 'J' + 0x80;
+						break;
+					case 0x95:	//right arrow
+						regs.a = 'K' + 0x80;
+						break;
+					case 0x8A:	//down arrow
+						regs.a = 'M' + 0x80;
+						break;
+					default:
+						break;
+					};
+				};
+				break;
+			}
 			case PC_BATTLE_AMBUSH:
 				[[fallthrough]];
 			case PC_BATTLE_ENTER:
