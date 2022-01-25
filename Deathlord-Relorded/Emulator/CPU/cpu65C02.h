@@ -95,7 +95,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				// from when we're not in a menu selection situation.
 				// Arrow keys are used in menus, so can't just blindly remap them.
 				if ((MemGetMainPtr(regs.sp)[1] != SP_OVERLAND_KEY_PRESS_1)
-					&& (MemGetMainPtr(regs.sp)[2] != SP_OVERLAND_KEY_PRESS_2))
+					|| (MemGetMainPtr(regs.sp)[2] != SP_OVERLAND_KEY_PRESS_2))
 				{
 					// The keycode is in A. See asciicode[][] in Keyboard.cpp
 					// The high bit is set
