@@ -193,6 +193,8 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				}
 				break;
 			}
+			case 0x53FF:
+				[[fallthrough]];
 			case PC_PRINT_CHAR:
 			{
 				// First check if it's the topright area. If so, do nothing. We don't need to display changes
