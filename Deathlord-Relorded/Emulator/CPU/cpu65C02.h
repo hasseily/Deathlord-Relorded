@@ -401,6 +401,16 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				}
 				break;
 			}
+			case PC_BATTLE_CHAR_BEGIN_TURN:
+			{
+				BattleOverlay::GetInstance()->SetActiveActor(regs.x);
+				break;
+			}
+			case PC_BATTLE_ENEMY_BEGIN_TURN:
+			{
+				BattleOverlay::GetInstance()->SetActiveActor(regs.x + 6);
+				break;
+			}
 			case PC_BATTLE_ENEMY_BEGIN_ATK:
 			{
 				BattleOverlay::GetInstance()->SpriteBeginAttack(6 + MemGetMainPtr(MEM_BATTLE_ENEMY_INDEX)[0]);

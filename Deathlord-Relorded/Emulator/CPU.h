@@ -58,6 +58,7 @@
 #define MEM_BATTLE_GOLD_HI			0x009B		// Gold at end of battle High Byte
 #define PC_BATTLE_HAS_GOLD			0x8EAA		// The previous instruction at 0x8EA7 branches away if A > mem(0x8F55+X). It's a % chance of loot based on enemy type
 #define PC_BATTLE_DISPLAY_GOLD		0x8EDF		// Start of the gold display routine 0x8EDF prints the number, 0x8EE2-0x8EF1 prints " gold pieces!"
+#define PC_BATTLE_CHAR_BEGIN_TURN	0x5C0B		// Char start turn. Char # is in X (before it's stored in PARTY_CURRENT_CHAR_POS)
 #define PC_BATTLE_CHAR_BEGIN_ATK	0xA85E		// Char starts attack
 #define PC_BATTLE_CHAR_HAS_HIT		0xA88E		// player hits monster, X = monster index, A/MEM_DAMAGE_AMOUNT = damage
 #define PC_BATTLE_CHAR_DID_DMG		0xA9FA		// Character inflicted some damage. Don't know amount yet.
@@ -65,6 +66,7 @@
 #define PC_BATTLE_CHAR_HAS_BANISHED	0x7B53		// Enemy was banished (hard kill, no check for HP). Enemy is in X, but 1-based!
 #define PC_BATTLE_CHAR_END_ATK		0xAB49		// End of a single char attack. The damage is in A and also in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_END_TURN		0xA886		// Char has exhausted all attack. Move on to next char
+#define PC_BATTLE_ENEMY_BEGIN_TURN	0xA50C		// Enemy start turn. Enemy # is in X (before it's stored in MEM_BATTLE_ENEMY_INDEX)
 #define PC_BATTLE_ENEMY_BEGIN_ATK	0xAA42		// Enemy starts attack
 #define PC_BATTLE_ENEMY_MISSED		0xAB43		// Enemy missed, after branch from 0xAADF which decides on hit/miss
 #define PC_BATTLE_ENEMY_HAS_HIT		0xADC7		// enemy hits player, PARTY_CURRENT_CHAR_POS = player index, MEM_DAMAGE_AMOUNT = damage

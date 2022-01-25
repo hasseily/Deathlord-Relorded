@@ -24,6 +24,7 @@ extern std::unique_ptr<Game>* GetGamePtr();
 
 constexpr int OVERLAY_WIDTH = 600;
 constexpr int OVERLAY_HEIGHT = 600;
+constexpr RECT RECT_SPRITE_CURSOR = { 0, 200, 32, 236};
 
 constexpr int TOTAL_SPRITES = 6 + 32;
 AnimTextManager* m_animTextManager;
@@ -43,6 +44,7 @@ void BattleOverlay::Initialize()
 	bShouldDisplay = false;
 	m_currentRect = { 0,0,0,0 };
 	m_animTextManager = AnimTextManager::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_activeActor = 0xFF;
 }
 
 void BattleOverlay::ShowOverlay()
@@ -84,6 +86,10 @@ void BattleOverlay::BattleSetEnemyMaxHP()
 	m_enemyHPIsSet = false;	// Only set it at the start of the fight
 }
 
+void BattleOverlay::SetActiveActor(UINT8 actorNumber)
+{
+	m_activeActor = actorNumber;
+}
 #pragma endregion
 
 
@@ -335,10 +341,17 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 		_anim = m_animations[i].get();
 		if (_anim != nullptr)
 		{
+			auto _animRect = _anim->CurrentFrameRectangle();
+			// Draw the cursor on the active sprite
+			if ((i == m_activeActor) && i < 9)	// don't bother with any enemy above 3rd
+			{
+				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
+					_battleSpriteSheetSize, Vector2(_animRect.x - 2, _animRect.y - 2), &RECT_SPRITE_CURSOR, 
+					(i < 6 ? Colors::White : Colors::Red), 0.f, XMFLOAT2(), 1.0f);
+			}
 			// Render the animated sprites
 			_anim->Render(m_spriteBatch.get(), &m_currentRect);
 			// Draw the health and power bars
-			auto _animRect = _anim->CurrentFrameRectangle();
 			SimpleMath::Rectangle _healthBarR(_animRect);
 			_healthBarR.y += _animRect.height + 2;
 			_healthBarR.height = 5;
