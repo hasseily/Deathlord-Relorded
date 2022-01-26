@@ -29,7 +29,7 @@ bool MiniMap::Update(UINT8 overlandX, UINT8 overlandY)
 	}
 	m_overlandX = overlandX;
 	m_overlandY = overlandY;
-	UINT8 XY = (m_overlandX << 4) + m_overlandY;
+	UINT8 XY = (m_overlandY << 4) + m_overlandX;
 	if (m_sectorsSeen.at(XY) > 0)	// already been in this sector
 		return false;
 	// Update sector to seen
@@ -54,17 +54,17 @@ void MiniMap::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 		{
 			for (UINT8 col = 0; col < 16; col++)
 			{
-				if (m_sectorsSeen.at((col << 4) + row) & 0b1)	// No need for a mask, it's been seen
+				if (m_sectorsSeen.at((row << 4) + col) & 0b1)	// No need for a mask, it's been seen
 					continue;
 				mst = MaskTypeForCoords(col, row);
-				_maskRect = { MINIMAP_SPRITE_WIDTH * (int)mst, 0 * MINIMAP_SPRITE_HEIGHT,
-						MINIMAP_SPRITE_WIDTH * ((int)mst + 1), 1 * MINIMAP_SPRITE_HEIGHT };
+				_maskRect = { SPRITE_FOG_WIDTH * (int)mst, 0 * SPRITE_FOG_HEIGHT,
+						SPRITE_FOG_WIDTH * ((int)mst + 1), 1 * SPRITE_FOG_HEIGHT };
 				_overlayMaskPosInMap = {
-					r.x + MINIMAP_ORIGIN_X + MINIMAP_X_INCREMENT * col - 15,
-					r.y + MINIMAP_ORIGIN_Y + MINIMAP_Y_INCREMENT * row - 15
+					(float)r.x + MINIMAP_ORIGIN_X + MINIMAP_X_INCREMENT * col,
+					(float)r.y + MINIMAP_ORIGIN_Y + MINIMAP_Y_INCREMENT * row
 				};
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::MiniMapSpriteSheet),
-					mmTexSize, _overlayMaskPosInMap, &_maskRect, Colors::White, 0.f);
+					mmTexSize, _overlayMaskPosInMap, &_maskRect, Colors::White, 0.f, XMFLOAT2(), 1.f);
 			}
 		}
 		bShouldRenderNew = false;
@@ -72,11 +72,11 @@ void MiniMap::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch)
 
 	// Now draw the pin
 	XMFLOAT2 _originPin = { 15.f, 18.f };	// Where the pin points within its sprite
-	RECT _pinRect = {	MINIMAP_SPRITE_WIDTH * PIN_X, MINIMAP_SPRITE_HEIGHT * PIN_Y,
-						MINIMAP_SPRITE_WIDTH * (PIN_X + 1), MINIMAP_SPRITE_HEIGHT* (PIN_Y + 1) };
+	RECT _pinRect = {	SPRITE_PIN_X, SPRITE_PIN_Y,
+						SPRITE_PIN_X + SPRITE_PIN_WIDTH, SPRITE_PIN_Y + SPRITE_PIN_HEIGHT };
 	XMFLOAT2 _overlayPinPosInMap = {
-		r.x + MINIMAP_ORIGIN_X + MINIMAP_X_INCREMENT * m_overlandX,
-		r.y + MINIMAP_ORIGIN_Y + MINIMAP_Y_INCREMENT * m_overlandY
+		(float)r.x + MINIMAP_ORIGIN_X + MINIMAP_X_INCREMENT * m_overlandX + 12,
+		(float)r.y + MINIMAP_ORIGIN_Y + MINIMAP_Y_INCREMENT * m_overlandY + 7
 	};
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::MiniMapSpriteSheet), mmTexSize,
 		_overlayPinPosInMap, &_pinRect, Colors::White, 0.f, _originPin);
@@ -103,7 +103,7 @@ void MiniMap::OnDeviceLost()
 #pragma region Other
 MaskSpriteType MiniMap::MaskTypeForCoords(UINT8 _x, UINT8 _y)
 {
-	UINT8 _mask = 0;
+	UINT8 _mask = 0;	// left right top bottom
 	UINT8 XY;
 	int x = _x;
 	int y = _y;
@@ -112,7 +112,7 @@ MaskSpriteType MiniMap::MaskTypeForCoords(UINT8 _x, UINT8 _y)
 		_mask += 0b1000;
 	else
 	{
-		XY = ((_x - 1) << 4) + _y;
+		XY = (_y << 4) + (_x - 1);
 		if (m_sectorsSeen.at(XY) & 0b1)
 			_mask += 0b1000;
 	}
@@ -120,7 +120,7 @@ MaskSpriteType MiniMap::MaskTypeForCoords(UINT8 _x, UINT8 _y)
 		_mask += 0b0100;
 	else
 	{
-		XY = ((_x + 1) << 4) + _y;
+		XY = (_y << 4) + (_x + 1);
 		if (m_sectorsSeen.at(XY) & 0b1)
 			_mask += 0b0100;
 	}
@@ -128,7 +128,7 @@ MaskSpriteType MiniMap::MaskTypeForCoords(UINT8 _x, UINT8 _y)
 		_mask += 0b0010;
 	else
 	{
-		XY = (x << 4) + (_y - 1);
+		XY = ((_y - 1) << 4) + x;
 		if (m_sectorsSeen.at(XY) & 0b1)
 			_mask += 0b0010;
 	}
@@ -136,7 +136,7 @@ MaskSpriteType MiniMap::MaskTypeForCoords(UINT8 _x, UINT8 _y)
 		_mask += 0b001;
 	else
 	{
-		XY = (x << 4) + (_y + 1);
+		XY = ((_y + 1) << 4) + x;
 		if (m_sectorsSeen.at(XY) & 0b1)
 			_mask += 0b001;
 	}

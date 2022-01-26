@@ -27,18 +27,21 @@ enum class MaskSpriteType {			// 1 if mask in adjacent row/col
 	Count
 };
 
-// Where to put the pin on the minimap.
-constexpr UINT16 MINIMAP_ORIGIN_X = 1600;
-constexpr UINT16 MINIMAP_ORIGIN_Y = 42;
-constexpr float MINIMAP_X_INCREMENT = 17.5f;
-constexpr float MINIMAP_Y_INCREMENT = 20.f;
 
 // Spritesheet info
-constexpr UINT8 MINIMAP_SPRITE_WIDTH = 28;
-constexpr UINT8 MINIMAP_SPRITE_HEIGHT = 32;
+constexpr UINT8 SPRITE_FOG_WIDTH = 18;
+constexpr UINT8 SPRITE_FOG_HEIGHT = 20;
+constexpr UINT8 SPRITE_PIN_WIDTH = 28;
+constexpr UINT8 SPRITE_PIN_HEIGHT = 32;
 // XY coords of pin
-constexpr UINT8 PIN_X = 0;
-constexpr UINT8 PIN_Y = 1;
+constexpr UINT8 SPRITE_PIN_X = 0;
+constexpr UINT8 SPRITE_PIN_Y = 32;
+
+// Minimap positioning
+constexpr UINT16 MINIMAP_ORIGIN_X = 1585;
+constexpr UINT16 MINIMAP_ORIGIN_Y = 27;
+constexpr UINT8 MINIMAP_X_INCREMENT = SPRITE_FOG_WIDTH;
+constexpr UINT8 MINIMAP_Y_INCREMENT = SPRITE_FOG_HEIGHT;
 
 class MiniMap	// Singleton
 {
