@@ -193,7 +193,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				}
 				break;
 			}
-			case 0x53FF:
+			case PC_INVERSE_CHAR:
 				[[fallthrough]];
 			case PC_PRINT_CHAR:
 			{
