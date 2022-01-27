@@ -36,7 +36,7 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 	// Render everything on the wood plank: Party name, Module string...
 	// All centered in the plank.
 	float _plankCenterX = 1415.f;
-	float _plankMinY = 305.f;
+	float _plankMinY = 45.f;
 	XMVECTOR _sSize;
 	XMFLOAT2 _origin;
 	std::wstring _partyName = StringFromMemory(PARTY_PARTYNAME, 16);
@@ -64,7 +64,7 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 	for each (auto bbLine in m_vBillboard)
 	{
 		(*gamePtr)->GetSpriteFontAtIndex(bbLine.second)->DrawString(spriteBatch, bbLine.first.c_str(),
-			{ r.x + 1292.f, r.y + 200.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
+			{ r.x + 1287.f, r.y + 930.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
 		yInc -= 18;
 	}
 	yInc = 0.f;
@@ -73,9 +73,9 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 	{
 		if (_lineIdx == 0)	// Emboss the input line
 			(*gamePtr)->GetSpriteFontAtIndex(logLine.second)->DrawString(spriteBatch, logLine.first.c_str(),
-				{ r.x + 1295.f, r.y + 986.f + yInc }, Colors::DarkBlue, 0.f, Vector2(), 1.f);
+				{ r.x + 1299.f, r.y + 704.f + yInc }, Colors::DarkBlue, 0.f, Vector2(), 1.f);
 		(*gamePtr)->GetSpriteFontAtIndex(logLine.second)->DrawString(spriteBatch, logLine.first.c_str(),
-			{ r.x + 1294.f, r.y + 985.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
+			{ r.x + 1298.f, r.y + 702.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
 		_lineIdx++;
 		yInc -= 18;
 	}
