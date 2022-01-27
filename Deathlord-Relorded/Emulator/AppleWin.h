@@ -36,6 +36,8 @@ void EmulatorMessageLoopProcessing();
 UINT8 EmulatorGetSpeed();
 void EmulatorSetSpeed(UINT8 speed);
 
+bool DiskActivity();	// Returns true if disk drives are active
+
 void UseClockMultiplier(double clockMultiplier);
 
 extern bool       g_bFullSpeed;

@@ -420,6 +420,7 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
     </Image>
+    <Image Include="DeathlordRelorded.ico" />
     <Image Include="Emulator\Resources\CHARSET4.BMP" />
     <Image Include="Emulator\Resources\CHARSET82.bmp" />
     <Image Include="Emulator\Resources\CHARSET8C.bmp" />

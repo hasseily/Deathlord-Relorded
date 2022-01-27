@@ -156,6 +156,17 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				goto AFTERFETCH;
 				break;
 			}
+			case PC_ALL_CHARS_DEAD:
+			{
+				// Prints that all players are dead.
+				// TODO: Show Game Over screen?
+				// TODO: Stop the game from saving when all chars are dead?
+				g_isInGameTransition = false;
+				g_isInBattle = false;
+				g_isInGameMap = true;
+				g_hasBeenIdleOnce = true;
+				break;
+			}
 			case PC_END_DRAWING_TILES:
 			{
 				auto aM = AutoMap::GetInstance();
@@ -537,14 +548,31 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 		{
 			switch (_origPC)
 			{
+			case PC_CHECK_KEYPRESS_TITLE:
+			{
+				if (EmulatorGetSpeed() != 1)
+					EmulatorSetSpeed(1);
+				g_startMenuState = StartMenuState::Title;
+				break;
+			}
+			case PC_CHECK_KEYPRESS_MENU:
+			{
+				if (regs.a > 0x7F)	// key was pressed
+					g_startMenuState = StartMenuState::Other;	// Could be anything, including character creation
+				else
+					g_startMenuState = StartMenuState::Menu;
+				break;
+			}
 			case PC_PROMPT_USE_2_DRIVES:
 			{
+				EmulatorSetSpeed(5);	// Accelerate the loading;
 				regs.pc = 0x8738;	// Bypass the 2 drives prompt (use 2 drives)
 				hasTriedInsertingScenarii = false;
 				break;
 			}
 			case PC_PROMPT_INSERT_SCENARIOS:
 			{
+				g_startMenuState = StartMenuState::PromptScenarios;
 				if (!hasTriedInsertingScenarii)
 				{
 					// let's auto-insert scenarii
@@ -554,6 +582,12 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 					SendMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_INSERTSCENARIODISKS, 1);
 					hasTriedInsertingScenarii = true;
 				}
+				break;
+			}
+			case PC_SCENARIOS_ARE_IN_DRIVES:
+			{
+				g_isInGameTransition = true;
+				g_startMenuState = StartMenuState::LoadingGame;
 				break;
 			}
 			default:

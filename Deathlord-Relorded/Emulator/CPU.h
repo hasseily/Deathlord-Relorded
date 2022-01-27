@@ -10,6 +10,9 @@
 // Pre-game (main menu, boot disk)
 #define PC_PROMPT_USE_2_DRIVES		0x871C		// Prompts for 2 drives. Skip PC to $8738 to bypass the prompt.
 #define PC_PROMPT_INSERT_SCENARIOS	0x840B		// Prompts to insert scenarii. NOP to avoid it. Before $842B, swap images for verification to pass.
+#define PC_SCENARIOS_ARE_IN_DRIVES	0x8430		// At this PC, the scenarii are in the drives and validated
+#define PC_CHECK_KEYPRESS_TITLE		0x1D47		// Check for keypress on title screen to go to menu ("Play a Game...")
+#define PC_CHECK_KEYPRESS_MENU		0x1C19		// Checks for 'U', 'C', 'P'
 
 // In-game
 #define PC_RNG						0x4AE0		// Random number generator
@@ -33,6 +36,7 @@
 #define PC_RESET_XP_ON_LEVELUP		0xF5D4		// STA 0 on both low and high bytes
 #define PC_LEVELUP_CHECK			0xF563		// At academy, when "buying" level, if A is 0, does not level up.
 #define PC_PICKLOCK_CHECK			0x938C		// Beginning of the lockpick routine. NOP the instruction at 93CD and set 93D0 to 0x66 to succeed 100% of the time
+#define PC_ALL_CHARS_DEAD			0x880C		// "ALL PLYRS OUT". Everyone's dead, time to reload from a backup!
 
 #define PC_MAP_KEY_PRESS			0x5893		// A key has been pressed when on the map, value is in A (could be movement, spell choice...)
 #define SP_MAP_KEY_PRESS_1			0xCB		// Last 2 bytes in stack pointer when waiting for keystroke in menu list only

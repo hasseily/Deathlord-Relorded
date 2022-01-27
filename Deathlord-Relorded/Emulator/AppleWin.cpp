@@ -192,6 +192,7 @@ void ContinueExecution(void)
 	const DWORD uActualCyclesExecuted = CpuExecute(uCyclesToExecute, bVideoUpdate);
 	g_dwCyclesThisFrame += uActualCyclesExecuted;
 
+	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).UpdateDriveState(uActualCyclesExecuted);
 	JoyUpdateButtonLatch(nExecutionPeriodUsec);	// Button latch time is independent of CPU clock frequency
 	MB_PeriodicUpdate(uActualCyclesExecuted);
 
@@ -479,32 +480,6 @@ void ApplyNonVolatileConfig()
 	default:
 		SetVideoType(VT_COLOR_MONITOR_NTSC);
 	}
-	switch (g_nonVolatile.speed)
-	{
-	case 0:
-		g_dwSpeed = SPEED_MIN;
-		break;
-	case 1:
-		g_dwSpeed = SPEED_NORMAL;
-		break;
-	case 2:
-		g_dwSpeed = 20;
-		break;
-	case 3:
-		g_dwSpeed = 40;
-		break;
-	case 4:
-		g_dwSpeed = 60;
-		break;
-	case 5:
-		g_dwSpeed = 80;
-		break;
-	case 6:
-		g_dwSpeed = SPEED_MAX;
-		break;
-	default:
-		g_dwSpeed = SPEED_NORMAL;
-	}
 	SetVideoStyle((VideoStyle_e)(VS_COLOR_VERTICAL_BLEND + g_nonVolatile.scanlines * VS_HALF_SCANLINES));
 	RemoteControlManager::setRemoteControlEnabled(g_nonVolatile.useGameLink);
 	SetCurrentCLK6502();
@@ -519,6 +494,19 @@ void ApplyNonVolatileConfig()
 	MB_Demute();
 }
 
+bool DiskActivity()
+{
+	Disk_Status_e _s1 = DISK_STATUS_OFF;
+	Disk_Status_e _s2 = DISK_STATUS_OFF;
+
+	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).GetLightStatus(&_s1, &_s2);
+	if (_s1 != DISK_STATUS_OFF)
+		return true;
+	if (_s2 != DISK_STATUS_OFF)
+		return true;
+	return false;
+}
+
 // DO INITIALIZATION THAT MUST BE REPEATED FOR A RESTART
 void EmulatorRepeatInitialization()
 {
@@ -529,6 +517,7 @@ void EmulatorRepeatInitialization()
 	}
 
 	ApplyNonVolatileConfig();
+	EmulatorSetSpeed(3);	// Normal speed is too slow for start
 	PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_INSERTBOOTDISK, 1);
 
 	// Init palette color
@@ -542,16 +531,20 @@ void EmulatorRepeatInitialization()
 void EmulatorReboot()
 {
 	g_nAppMode = AppMode_e::MODE_RUNNING;
+	g_startMenuState = StartMenuState::Booting;
 	g_isInGameMap = false;
+	g_isInGameTransition = false;
 	g_hasBeenIdleOnce = false;
 	g_isInBattle = false;
 	g_bFullSpeed = 0;	// Might've hit reset in middle of InternalCpuExecute() - so beep may get (partially) muted
+	EmulatorSetSpeed(3);	// Normal speed is too slow for start
 	MemReset();	// calls CpuInitialize(), CNoSlotClock.Reset()
 	VideoResetState();
 	KeybReset();
 	MB_Reset();
 	SpkrReset();
 	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).Reset(true);
+	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).SetEnhanceDisk(true);
 	SetActiveCpu(GetMainCpu());
 	EmulatorRepeatInitialization();
 	SoundCore_SetFade(FADE_NONE);

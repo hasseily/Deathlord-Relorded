@@ -33,6 +33,7 @@ using namespace DirectX::SimpleMath;
 using Microsoft::WRL::ComPtr;
 using namespace HA;
 
+extern void SetSendKeystrokesToAppleWin(bool shouldSend);
 
 // AppleWin video texture
 D3D12_SUBRESOURCE_DATA g_textureData;
@@ -64,6 +65,10 @@ AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
 static std::wstring last_logged_line;
 static UINT64 tickOfLastRender = 0;
 
+static std::wstring s_hourglass = std::wstring(1, '\u005B'); // horizontal bar that will spin
+static std::wstring s_pressSpace = std::wstring(L"PRESS SPACE");
+
+
 static Vector2 m_vector2Zero = { 0.f, 0.f };
 
 static MemoryTriggers* m_trigger;
@@ -72,6 +77,8 @@ UINT64	g_debug_video_data = 0;
 NonVolatile g_nonVolatile;
 
 bool g_isInGameMap = false;
+StartMenuState g_startMenuState = StartMenuState::Booting;
+bool g_isInGameTransition = false;  // Before being in game map
 bool g_hasBeenIdleOnce = false;
 bool g_isInBattle = false;
 bool g_wantsToSave = true;  // DISABLED. It can corrupt saved games
@@ -226,21 +233,18 @@ void Game::Update(DX::StepTimer const& timer)
 {
     PIXBeginEvent(PIX_COLOR_DEFAULT, L"Update");
 
-	UINT8* memPtr = MemGetMainPtr(0);
-	g_isInGameMap = (memPtr[MAP_IS_IN_GAME_MAP] == 0xE5);	// when not in game map, that area is all zeros
-    if (g_isInGameMap)
-    {    // Always set speed to SPEED_NORMAL when playing, otherwise things are too fast
-		if (EmulatorGetSpeed() != 1)
-			EmulatorSetSpeed(1);    // SPEED_NORMAL
-    }
-    else
-    {
-		if (EmulatorGetSpeed() != g_nonVolatile.speed)
-			EmulatorSetSpeed(g_nonVolatile.speed);
-    }
+	EmulatorMessageLoopProcessing();
 
-    // Now parse input
-    // Pad is unused, just kept here for reference
+	// Modern keyboard handling
+    // Keystrokes are passed to AppleWin in Main.cpp before getting here
+    // So the only thing one should do here is handle special keys that
+    // we know don't do anything under the emulated Deathlord
+    // Unless SetSendKeystrokesToAppleWin(false), in which case we take care
+    // of the whole keyboard state here
+
+	auto kb = m_keyboard->GetState();
+	kbTracker.Update(kb);
+	// Pad is unused, just kept here for reference
 	auto pad = m_gamePad->GetState(0);
 	if (pad.IsConnected())
 	{
@@ -250,12 +254,36 @@ void Game::Update(DX::StepTimer const& timer)
 		}
 	}
 
-    // Modern keyboard handling
-    // Keystrokes are passed to AppleWin in Main.cpp before getting here
-    // So the only thing one should do here is handle special keys that
-    // we know don't do anything under the emulated Deathlord
-	auto kb = m_keyboard->GetState();
-	kbTracker.Update(kb);
+	UINT8* memPtr = MemGetMainPtr(0);
+	g_isInGameMap = (memPtr[MAP_IS_IN_GAME_MAP] == 0xE5);	// when not in game map, that area is all zeros
+
+    if (g_isInGameTransition)
+    {
+		// If in transition from pre-game to game, only show the transition screen
+		// And wait for keypress
+        SetSendKeystrokesToAppleWin(false);
+		if (EmulatorGetSpeed() != 1)
+			EmulatorSetSpeed(1);    // SPEED_NORMAL
+		if (kbTracker.pressed.Space)
+		{
+			g_isInGameTransition = false;
+			SetSendKeystrokesToAppleWin(true);
+			return;
+		}
+        if (g_hasBeenIdleOnce)
+        {
+            // The game is in a state where we can play it!
+            // Let's switch to the game
+            if (kbTracker.pressed.Space)
+            {
+                g_isInGameTransition = false;
+                SetSendKeystrokesToAppleWin(true);
+                return;
+            }
+        }
+        return;
+    }
+
 	if (g_isInGameMap)
 	{
         if (kbTracker.pressed.Insert)
@@ -301,10 +329,6 @@ void Game::Update(DX::StepTimer const& timer)
     {
         m_battleOverlay->Update();
     }
-
-    // Should we pause the emulator?
-    // Not pausing it allows us to get automatic feedback of inventory changes
-    EmulatorMessageLoopProcessing();
 
     auto autoMap = AutoMap::GetInstance();
     auto memTriggers = MemoryTriggers::GetInstance();
@@ -359,6 +383,7 @@ void Game::Render()
 
         // First update the sidebar, it doesn't need to be updated until right before the render
         // Only allow x microseconds for updates of sidebar every render
+        // TODO: Get rid of that, unused
         UINT64 sbTimeSpent = m_sbC.UpdateAllSidebarText(&m_sbM, false, 500);
 
         // Prepare the command list to render a new frame.
@@ -376,12 +401,58 @@ void Game::Render()
         // We'll need it for the effects projection matrix
 		RECT clientRect;
 		GetClientRect(m_window, &clientRect);
+		auto _scRect = SimpleMath::Rectangle(clientRect);
 
         // Now render
-	    if (!g_isInGameMap)
+        if (g_isInGameTransition)
+        {
+            // In between pre-game and game
+            m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
+            m_spriteBatch->Begin(commandList, m_states->LinearClamp(), SpriteSortMode_Deferred);
+
+            // Draw the game background
+            auto mmTexSize = GetTextureSize(m_DLRLLoadingScreen.Get());
+            m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DLRLLoadingScreen), mmTexSize,
+                r, nullptr, Colors::White, 0.f, XMFLOAT2());
+
+            if (g_hasBeenIdleOnce)
+            {
+				// If the game is ready, draw the "press space"
+				FontDescriptors _fontD = ((tickOfLastRender / 10000000) % 2 ? FontDescriptors::FontDLRegular : FontDescriptors::FontDLInverse);
+                auto _sSize = m_spriteFonts.at(FontDescriptors::FontDLRegular)->MeasureString(s_pressSpace.c_str(), false);
+				float _sX = _scRect.Center().x - (XMVectorGetX(_sSize) / 2.f);
+				float _sY = 950.f;
+				m_spriteFonts.at(_fontD)->DrawString(m_spriteBatch.get(), s_pressSpace.c_str(),
+                    { _sX, _sY }, Colors::AntiqueWhite, 0.f, m_vector2Zero, 1.f);
+            }
+
+			m_spriteBatch->End();
+        }
+	    else if (!g_isInGameMap)
 		{
-            // Only run the original game if not in the game map already
-			m_a2Video->Render(SimpleMath::Rectangle(clientRect), m_uploadBatch.get());
+            // Start Menu Loading and utilities, character creation
+            m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
+			m_spriteBatch->Begin(commandList, m_states->LinearClamp(), SpriteSortMode_Deferred);
+			m_a2Video->Render(_scRect, m_uploadBatch.get());
+            // Show extra info for the modern gamer who doesn't expect to tap a key unless explicitly told
+            std::wstring _sMenu;
+            if (g_startMenuState == StartMenuState::Title)
+                _sMenu = L"Press any key";
+            else if (g_startMenuState == StartMenuState::Menu)
+                _sMenu = L"Choose 'U', 'C', or 'P' to continue";
+            auto _sSize = m_spriteFonts.at(FontDescriptors::FontDLRegular)->MeasureString(_sMenu.c_str(), false);
+            float _sX = _scRect.Center().x - (XMVectorGetX(_sSize) / 2.f);
+            float _sY = 800.f;
+			m_spriteFonts.at(FontDescriptors::FontDLRegular)->DrawString(m_spriteBatch.get(),
+                _sMenu.c_str(), { _sX, _sY }, Colors::AntiqueWhite, 0.f, Vector2(), 1.f);
+			// Display loading/writing status
+			if (DiskActivity())
+			{
+				m_spriteFonts.at(FontDescriptors::FontDLRegular)->DrawString(m_spriteBatch.get(),
+					s_hourglass.c_str(), { 1400, 800 }, Colors::AntiqueWhite, ((tickOfLastRender / 100000) % 32) / 10.f,
+					Vector2(7, 8), 1.f);
+			}
+			m_spriteBatch->End();
         }
         else
         {
@@ -692,6 +763,13 @@ void Game::CreateDeviceDependentResources()
 
     m_uploadBatch->Begin();
 
+	// Upload the transition loading screen
+	DX::ThrowIfFailed(
+		CreateWICTextureFromFile(device, *m_uploadBatch, L"Assets/DLRL_Loading_Screen.png",
+            m_DLRLLoadingScreen.ReleaseAndGetAddressOf()));
+	CreateShaderResourceView(device, m_DLRLLoadingScreen.Get(),
+		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::DLRLLoadingScreen));
+
     // Upload the background of the main window
 	DX::ThrowIfFailed(
 		CreateWICTextureFromFile(device, *m_uploadBatch, L"Assets/Background_Relorded.png",
@@ -807,6 +885,7 @@ void Game::OnDeviceLost()
 	m_daytime->OnDeviceLost();
 	m_partyLayout->OnDeviceLost();
 
+	m_DLRLLoadingScreen.Reset();
 	m_gameTextureBG.Reset();
     m_states.reset();
     m_spriteBatch.reset();

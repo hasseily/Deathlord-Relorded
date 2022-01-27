@@ -18,7 +18,6 @@ static nlohmann::json nv_json = R"(
     "diskBootPath":		  "Images\\Deathlord - Disk 1, Side A Boot disk.woz",
     "diskScenAPath":	  "Images\\Deathlord Scenario A.nib",
     "diskScenBPath":	  "Images\\Deathlord Scenario B.nib",
-	"speed":			  1,
 	"scanlines":		  false,
 	"showMap":			  true,
 	"showFog":			  true,
@@ -57,7 +56,6 @@ int NonVolatile::SaveToDisk()
 	nv_json["diskBootPath"]			= sDiskBootPath;
 	nv_json["diskScenAPath"]		= sDiskScenAPath;
 	nv_json["diskScenBPath"]		= sDiskScenBPath;
-	nv_json["speed"]				= speed;
 	nv_json["scanlines"]			= scanlines;
 	nv_json["showMap"]				= showMap;
 	nv_json["showFog"]				= showFog;
@@ -116,7 +114,6 @@ int NonVolatile::LoadFromDisk()
 	std::string _diskScenBPath = nv_json["diskScenBPath"].get<std::string>();
 	HA::ConvertStrToWStr(&_diskScenBPath, &diskScenBPath);
 
-	speed = nv_json["speed"].get<int>();
 	scanlines = nv_json["scanlines"].get<bool>();
 	showMap = nv_json["showMap"].get<bool>();
 	showFog = nv_json["showFog"].get<bool>();

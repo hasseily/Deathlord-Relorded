@@ -227,6 +227,7 @@ private:
 	bool isDisplayed = false;
 };
 
-// defined in Main.cpp
+// defined in Main.cpp/Game.cpp
 extern std::shared_ptr<DeathlordHacks> GetDeathlordHacks();
 extern bool g_isInGameMap;
+extern bool g_isInGameTransition;

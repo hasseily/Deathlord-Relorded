@@ -154,16 +154,11 @@ void UpdateMenuBarStatus(HWND hwnd)
 	HMENU topMenu = GetMenu(hwnd);
 	HMENU emuMenu = GetSubMenu(topMenu, 1);	// Emulator menu
 	HMENU cmpMenu = GetSubMenu(topMenu, 2);	// Companion menu
-	HMENU speedMenu = GetSubMenu(emuMenu, 10);
-	HMENU videoMenu = GetSubMenu(emuMenu, 11);
-	HMENU volumeMenu = GetSubMenu(emuMenu, 12);
+	HMENU videoMenu = GetSubMenu(emuMenu, 10);
+	HMENU volumeMenu = GetSubMenu(emuMenu, 11);
 	HMENU autoMapMenu = GetSubMenu(cmpMenu, 3);
 	HMENU logMenu = GetSubMenu(cmpMenu, 4);
 
-	bool res;
-	res = CheckMenuRadioItem(speedMenu, 0, 6, g_nonVolatile.speed, MF_BYPOSITION);
-	if (!res)
-		HA::AlertIfError(hwnd);
 	CheckMenuRadioItem(videoMenu, 0, 3, g_nonVolatile.video, MF_BYPOSITION);
 	CheckMenuRadioItem(volumeMenu, 0, 4, g_nonVolatile.volumeSpeaker, MF_BYPOSITION);
 	// For All and quadrants
@@ -712,41 +707,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			VideoRedrawScreen();
 			break;
 		}
-		case ID_SPEED_0:
-			g_nonVolatile.speed = 0;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			break;
-		case ID_SPEED_1:
-			g_nonVolatile.speed = 1;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			break;
-		case ID_SPEED_2:
-			g_nonVolatile.speed = 2;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			break;
-		case ID_SPEED_3:
-			g_nonVolatile.speed = 3;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			break;
-		case ID_SPEED_4:
-			g_nonVolatile.speed = 4;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			break;
-		case ID_SPEED_5:
-			g_nonVolatile.speed = 5;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			break;
-		case ID_SPEED_6:
-			g_nonVolatile.speed = 6;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			break;
 		case ID_VIDEO_IDEALIZED:
 			g_nonVolatile.video = 0;
 			g_nonVolatile.SaveToDisk();

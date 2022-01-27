@@ -32,6 +32,17 @@ enum class EmulatorLayout
 	NONE = UINT8_MAX
 };
 
+enum class StartMenuState
+{
+    Booting = 0,
+    Title,
+    Menu,
+    PromptScenarios,
+    LoadingGame,
+    Other
+};
+
+extern StartMenuState g_startMenuState;       // State of the emulation during the start menu phase
 extern bool g_isInGameMap;          // is the player in-game?
 extern bool g_hasBeenIdleOnce;      // This becomes true once the game has once hit the idle loop
 extern bool g_isInBattle;           // is the player in the battle module?
@@ -150,4 +161,6 @@ private:
 
     // The main game texture background
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_gameTextureBG;
+    // Loading screen
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_DLRLLoadingScreen;
 };

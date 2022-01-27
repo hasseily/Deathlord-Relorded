@@ -508,6 +508,9 @@
     <Image Include="Assets\BattleOverlaySpriteSheet.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="DeathlordRelorded.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\PixelShader.hlsl">
