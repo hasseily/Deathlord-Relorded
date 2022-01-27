@@ -71,13 +71,14 @@
 #define PC_BATTLE_CHAR_DID_DMG		0xA9FA		// Character inflicted some damage. Don't know amount yet.
 #define PC_BATTLE_CHAR_HAS_KILLED	0xA8C2		// Character has killed enemy, Enemy is in X, damage in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_HAS_BANISHED	0x7B53		// Enemy was banished (hard kill, no check for HP). Enemy is in X, but 1-based!
+#define PC_BATTLE_CHAR_HAS_HEALED	0x785B		// Char in PARTY_CURRENT_CHAR_POS will heal char in X amount of A in high byte, and Y in low byte
 #define PC_BATTLE_CHAR_END_ATK		0xAB49		// End of a single char attack. The damage is in A and also in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_END_TURN		0xA886		// Char has exhausted all attack. Move on to next char
 #define PC_BATTLE_ENEMY_BEGIN_TURN	0xA50C		// Enemy start turn. Enemy # is in X (before it's stored in MEM_BATTLE_ENEMY_INDEX)
 #define PC_BATTLE_ENEMY_BEGIN_ATK	0xAA42		// Enemy starts attack
 #define PC_BATTLE_ENEMY_MISSED		0xAB43		// Enemy missed, after branch from 0xAADF which decides on hit/miss
-#define PC_BATTLE_ENEMY_HAS_HIT		0xADC7		// enemy hits player, PARTY_CURRENT_CHAR_POS = player index, MEM_DAMAGE_AMOUNT = damage
-#define PC_BATTLE_ENEMY_HAS_KILLED	0xADF0		// enemy has killed the player, PARTY_CURRENT_CHAR_POS = player index, MEM_DAMAGE_AMOUNT = damage
+#define PC_BATTLE_ENEMY_HAS_HIT		0xADC7		// Enemy hits player, PARTY_CURRENT_CHAR_POS = player index, MEM_DAMAGE_AMOUNT = damage
+#define PC_BATTLE_ENEMY_HAS_KILLED	0xADF0		// Enemy has killed the player, PARTY_CURRENT_CHAR_POS = player index, MEM_DAMAGE_AMOUNT = damage
 #define PC_BATTLE_ENEMY_END_ATK		0xAB49		// End of an enemy hit cycle (for example, 3 hit attempts will trigger 3 times)
 #define PC_BATTLE_TURN_END			0xAF00		// End of any turn for any player. 6 chars and 3 enemies will trigger at least 9 times per round
 #define PC_BATTLE_BEGIN_XP_ALLOC	0xA30A		// LDX #$00: starts with the first char. Randomize to start with any char the xp allocation routine

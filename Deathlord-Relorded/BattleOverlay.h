@@ -19,6 +19,7 @@ public:
 	void SpriteBeginAttack(UINT8 charPosition);
 	void SpriteDodge(UINT8 charPosition);
 	void SpriteIsHit(UINT8 charPosition, UINT8 damage);
+	void SpriteIsHealed(UINT8 charPosition, UINT16 healingAmount);
 	void SpriteDied(UINT8 charPosition);
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states);
 	void OnDeviceLost();

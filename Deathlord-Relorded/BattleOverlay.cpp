@@ -33,8 +33,10 @@ auto m_animationTransition = std::unique_ptr<AnimationBattleTransition>();
 int m_enemyMaxHP = 0x01;	// The highest HP of the monsters we're facing. Every monster will have its health bar relative to this
 bool m_enemyHPIsSet = false;
 std::wstring m_wstrHit = L"-%d hp";
+std::wstring m_wstrHealed = L"+%d hp";
 std::wstring m_wstrDied = L"+%d xp";
 wchar_t m_bufHit[30];
+wchar_t m_bufHealed[30];
 wchar_t m_bufDied[30];
 
 #pragma region main
@@ -121,6 +123,19 @@ void BattleOverlay::SpriteIsHit(UINT8 charPosition, UINT8 damage)
 	_animCenter.y -= _animRect.height - 4;
 	swprintf_s(m_bufHit, m_wstrHit.c_str(), damage);
 	m_animTextManager->CreateAnimation(_animCenter, std::wstring(m_bufHit), AnimationTextTypes::Damage);
+}
+void BattleOverlay::SpriteIsHealed(UINT8 charPosition, UINT16 healingAmount)
+{
+	auto _anim = m_animations[charPosition].get();
+	if (_anim == nullptr)
+		Update();
+	_anim->Update(AnimationBattleState::healed);
+	// Trigger floating text animation
+	auto _animRect = _anim->CurrentFrameRectangle();
+	auto _animCenter = _animRect.Center();
+	_animCenter.y -= _animRect.height - 4;
+	swprintf_s(m_bufHealed, m_wstrHealed.c_str(), healingAmount);
+	m_animTextManager->CreateAnimation(_animCenter, std::wstring(m_bufHealed), AnimationTextTypes::Healing);
 }
 void BattleOverlay::SpriteDied(UINT8 charPosition)
 {

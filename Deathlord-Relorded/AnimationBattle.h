@@ -13,6 +13,7 @@ enum class AnimationBattleState
 	attacking,
 	hit,
 	dodged,
+	healed,
 	died
 };
 

@@ -467,6 +467,11 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				BattleOverlay::GetInstance()->SpriteDied(regs.x + 6 - 1);	// 1-based!
 				break;
 			}
+			case PC_BATTLE_CHAR_HAS_HEALED:
+			{
+				BattleOverlay::GetInstance()->SpriteIsHealed(regs.x, (regs.a << 8) + regs.y);
+				break;
+			}
 			case PC_BATTLE_BEGIN_XP_ALLOC:
 			{
 				// As you fight, Deathlord will increment [PC=0xA86B] for each party member a number every time
