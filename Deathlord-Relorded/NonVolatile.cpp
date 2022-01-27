@@ -18,15 +18,14 @@ static nlohmann::json nv_json = R"(
     "diskBootPath":		  "Images\\Deathlord - Disk 1, Side A Boot disk.woz",
     "diskScenAPath":	  "Images\\Deathlord Scenario A.nib",
     "diskScenBPath":	  "Images\\Deathlord Scenario B.nib",
-	"scanlines":		  false,
-	"showMap":			  true,
-	"showFog":			  true,
-	"showFootsteps":	  true,
-	"showHidden":		  true,
-	"showSpells":		  true,
+	"scanlines":		  true,
+	"removeFog":		  false,
+	"showFootsteps":	  false,
+	"showHidden":		  false,
+	"showSpells":		  false,
 	"video":			  0,
     "volumeSpeaker":	  2,
-	"useGameLink":        true,
+	"useGameLink":        false,
 	"logCombat":		  false
   }
 )"_json;
@@ -57,8 +56,7 @@ int NonVolatile::SaveToDisk()
 	nv_json["diskScenAPath"]		= sDiskScenAPath;
 	nv_json["diskScenBPath"]		= sDiskScenBPath;
 	nv_json["scanlines"]			= scanlines;
-	nv_json["showMap"]				= showMap;
-	nv_json["showFog"]				= showFog;
+	nv_json["removeFog"]			= removeFog;
 	nv_json["showFootsteps"]		= showFootsteps;
 	nv_json["showHidden"]			= showHidden;
 	nv_json["showSpells"]			= showSpells;
@@ -115,8 +113,7 @@ int NonVolatile::LoadFromDisk()
 	HA::ConvertStrToWStr(&_diskScenBPath, &diskScenBPath);
 
 	scanlines = nv_json["scanlines"].get<bool>();
-	showMap = nv_json["showMap"].get<bool>();
-	showFog = nv_json["showFog"].get<bool>();
+	removeFog = nv_json["removeFog"].get<bool>();
 	showFootsteps = nv_json["showFootsteps"].get<bool>();
 	showHidden = nv_json["showHidden"].get<bool>();
 	showSpells = nv_json["showSpells"].get<bool>();

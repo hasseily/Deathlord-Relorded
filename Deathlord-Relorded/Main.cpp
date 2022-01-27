@@ -153,32 +153,31 @@ void UpdateMenuBarStatus(HWND hwnd)
 	
 	HMENU topMenu = GetMenu(hwnd);
 	HMENU emuMenu = GetSubMenu(topMenu, 1);	// Emulator menu
-	HMENU cmpMenu = GetSubMenu(topMenu, 2);	// Companion menu
+	HMENU relordedMenu = GetSubMenu(topMenu, 2);	// Relorded menu
 	HMENU videoMenu = GetSubMenu(emuMenu, 10);
 	HMENU volumeMenu = GetSubMenu(emuMenu, 11);
-	HMENU autoMapMenu = GetSubMenu(cmpMenu, 3);
-	HMENU logMenu = GetSubMenu(cmpMenu, 4);
+	HMENU autoMapMenu = GetSubMenu(relordedMenu, 0);
+	HMENU logMenu = GetSubMenu(relordedMenu, 2);
 
 	CheckMenuRadioItem(videoMenu, 0, 3, g_nonVolatile.video, MF_BYPOSITION);
 	CheckMenuRadioItem(volumeMenu, 0, 4, g_nonVolatile.volumeSpeaker, MF_BYPOSITION);
 	// For All and quadrants
-	CheckMenuRadioItem(autoMapMenu, 5, 9, (int)g_nonVolatile.mapQuadrant+5, MF_BYPOSITION);
+	CheckMenuRadioItem(autoMapMenu, 4, 8, (int)g_nonVolatile.mapQuadrant+4, MF_BYPOSITION);
 	// For FollowPlayer which is the same as All
-	CheckMenuRadioItem(autoMapMenu, 5, 5, 5, MF_BYPOSITION);
+	if (g_nonVolatile.mapQuadrant == AutoMapQuadrant::FollowPlayer)
+		CheckMenuRadioItem(autoMapMenu, 4, 4, 4, MF_BYPOSITION);
 
 	CheckMenuItem(emuMenu, ID_EMULATOR_GAMELINK,
 		MF_BYCOMMAND | (g_nonVolatile.useGameLink ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(videoMenu, ID_VIDEO_SCANLINES,
 		MF_BYCOMMAND | (g_nonVolatile.scanlines ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(autoMapMenu, ID_AUTOMAP_SHOWMAP,
-		MF_BYCOMMAND | (g_nonVolatile.showMap ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(autoMapMenu, ID_AUTOMAP_SHOWFOG,
-		MF_BYCOMMAND | (g_nonVolatile.showFog ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(autoMapMenu, ID_AUTOMAP_REMOVEFOG,
+		MF_BYCOMMAND | (g_nonVolatile.removeFog ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(autoMapMenu, ID_AUTOMAP_SHOWFOOTSTEPS,
 		MF_BYCOMMAND | (g_nonVolatile.showFootsteps ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(autoMapMenu, ID_AUTOMAP_SHOWHIDDEN,
 		MF_BYCOMMAND | (g_nonVolatile.showHidden ? MF_CHECKED : MF_UNCHECKED));
-	CheckMenuItem(cmpMenu, ID_COMPANION_SPELLWINDOW,
+	CheckMenuItem(relordedMenu, ID_COMPANION_SPELLWINDOW,
 		MF_BYCOMMAND | (g_nonVolatile.showSpells ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(logMenu, ID_LOGWINDOW_ALSOLOGCOMBAT,
 		MF_BYCOMMAND | (g_nonVolatile.logCombat ? MF_CHECKED : MF_UNCHECKED));
@@ -767,14 +766,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_nonVolatile.SaveToDisk();
 			UpdateMenuBarStatus(hWnd);
 			break;
-		case ID_AUTOMAP_SHOWMAP:
-			g_nonVolatile.showMap = !g_nonVolatile.showMap;
-			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
-			game->SetWindowSizeOnChangedProfile();
-			break;
-		case ID_AUTOMAP_SHOWFOG:
-			g_nonVolatile.showFog = !g_nonVolatile.showFog;
+		case ID_AUTOMAP_REMOVEFOG:
+			g_nonVolatile.removeFog = !g_nonVolatile.removeFog;
 			g_nonVolatile.SaveToDisk();
 			UpdateMenuBarStatus(hWnd);
 			break;

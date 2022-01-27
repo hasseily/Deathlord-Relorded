@@ -534,23 +534,20 @@ void Game::Render()
 #endif // _DEBUG
 			m_spriteBatch->End();
 
-			if (g_nonVolatile.showMap)  // TODO: Always show the map
-			{
-				// Now draw autoMap
-				auto mmOrigin = Vector2(r.x + 361.f, r.y + 10.f);
-				RECT mapRectInViewport = {
-					mmOrigin.x,
-					mmOrigin.y,
-					mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
-					mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
-				};
-				m_autoMap->DrawAutoMap(m_spriteBatch, m_states.get(), &mapRectInViewport);
-				// End drawing autoMap
+			// Now draw autoMap
+			auto mmOrigin = Vector2(r.x + 361.f, r.y + 10.f);
+			RECT mapRectInViewport = {
+				mmOrigin.x,
+				mmOrigin.y,
+				mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
+				mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
+			};
+			m_autoMap->DrawAutoMap(m_spriteBatch, m_states.get(), &mapRectInViewport);
+			// End drawing autoMap
 
-				// now draw the hidden layer around the player if he's allowed to see it
-				// inside the original Deathlord viewport
-				m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
-			}
+			// now draw the hidden layer around the player if he's allowed to see it
+			// inside the original Deathlord viewport
+			m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
 
 
             // Now draw everything else that's in the main viewport

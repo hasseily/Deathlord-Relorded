@@ -19,8 +19,7 @@ public:
 	std::wstring diskScenBPath;
 	int speed = 1;
 	bool scanlines = false;
-	bool showMap = true;
-	bool showFog = true;
+	bool removeFog = true;
 	bool showFootsteps = true;
 	bool showHidden = true;
 	bool showSpells = true;

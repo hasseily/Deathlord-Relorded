@@ -680,7 +680,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 				if ((m_FogOfWarTiles[mapPos] & (1 << (UINT8)FogOfWarMarkers::UnFogOfWar)) > 0)
 					_tileVisibilityLevel = .15f;
 			}
-			if (g_nonVolatile.showFog == false)		// override if no fog
+			if (g_nonVolatile.removeFog == true)		// override if no fog
 				_tileVisibilityLevel = 1.0f;
 
 
