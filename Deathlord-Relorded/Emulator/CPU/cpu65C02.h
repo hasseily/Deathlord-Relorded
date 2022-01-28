@@ -126,20 +126,6 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				};
 				break;
 			}
-			case PC_BATTLE_AMBUSH:
-				[[fallthrough]];
-			case PC_BATTLE_ENTER:	// Doesn't work in dungeons
-			{
-				g_isInBattle = true;
-				break;
-			}
-			case PC_BATTLE_ENEMY_HP_SET: // Works everywhere, including dungeons
-			{
-				// The enemy HP array has just been filled. Tell that to the battle overlay.
-				g_isInBattle = true;
-				BattleOverlay::GetInstance()->BattleEnemyHPIsSet();
-				break;
-			}
 			case PC_DECREMENT_TIMER:
 			{
 				// Process memory triggers every time the game processes the turn pass decrement timer
@@ -422,55 +408,78 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				}
 				break;
 			}
+			case PC_BATTLE_AMBUSH:
+				[[fallthrough]];
+			case PC_BATTLE_ENTER:	// Doesn't work in dungeons
+			{
+				g_isInBattle = true;
+				break;
+			}
+			case PC_BATTLE_ENEMY_HP_SET: // Works everywhere, including dungeons
+			{
+				// The enemy HP array has just been filled. Tell that to the battle overlay.
+				g_isInBattle = true;
+				BattleOverlay::GetInstance()->BattleEnemyHPIsSet();
+				break;
+			}
 			case PC_BATTLE_CHAR_BEGIN_TURN:
 			{
-				BattleOverlay::GetInstance()->SetActiveActor(regs.x);
+				if (g_isInBattle)
+					BattleOverlay::GetInstance()->SetActiveActor(regs.x);
 				break;
 			}
 			case PC_BATTLE_ENEMY_BEGIN_TURN:
 			{
-				BattleOverlay::GetInstance()->SetActiveActor(regs.x + 6);
+				if (g_isInBattle)
+					BattleOverlay::GetInstance()->SetActiveActor(regs.x + 6);
 				break;
 			}
 			case PC_BATTLE_ENEMY_BEGIN_ATK:
 			{
-				BattleOverlay::GetInstance()->SpriteBeginAttack(6 + MemGetMainPtr(MEM_BATTLE_ENEMY_INDEX)[0]);
+				if (g_isInBattle)
+					BattleOverlay::GetInstance()->SpriteBeginAttack(6 + MemGetMainPtr(MEM_BATTLE_ENEMY_INDEX)[0]);
 				break;
 			}
 			case PC_BATTLE_CHAR_BEGIN_ATK:
 			{
-				BattleOverlay::GetInstance()->SpriteBeginAttack(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]);
+				if (g_isInBattle)
+					BattleOverlay::GetInstance()->SpriteBeginAttack(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]);
 				break;
 			}
 			case PC_BATTLE_ENEMY_MISSED:
 			{
-				BattleOverlay::GetInstance()->SpriteDodge(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]);
+				if (g_isInBattle)
+					BattleOverlay::GetInstance()->SpriteDodge(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]);
 				break;
 			}
 			case PC_BATTLE_ENEMY_HAS_HIT:
 			{
-				BattleOverlay::GetInstance()->SpriteIsHit(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0],
-					MemGetMainPtr(MEM_DAMAGE_AMOUNT)[0]);
+				if (g_isInBattle)
+					BattleOverlay::GetInstance()->SpriteIsHit(MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0], MemGetMainPtr(MEM_DAMAGE_AMOUNT)[0]);
 				break;
 			}
 			case PC_BATTLE_CHAR_HAS_HIT:
 			{
-				BattleOverlay::GetInstance()->SpriteIsHit(regs.x + 6, regs.a);
+				if (g_isInBattle)
+					BattleOverlay::GetInstance()->SpriteIsHit(regs.x + 6, regs.a);
 				break;
 			}
 			case PC_BATTLE_CHAR_HAS_KILLED:
 			{
-				BattleOverlay::GetInstance()->SpriteDied(regs.x + 6);
+				if (g_isInBattle)
+					BattleOverlay::GetInstance()->SpriteDied(regs.x + 6);
 				break;
 			}
 			case PC_BATTLE_CHAR_HAS_BANISHED:
 			{
-				BattleOverlay::GetInstance()->SpriteDied(regs.x + 6 - 1);	// 1-based!
+				if (g_isInBattle)
+					BattleOverlay::GetInstance()->SpriteDied(regs.x + 6 - 1);	// 1-based!
 				break;
 			}
-			case PC_BATTLE_CHAR_HAS_HEALED:
+			case PC_BATTLE_CHAR_HAS_HEALED: // This can trigger any time a char is healed, not just in battle
 			{
-				BattleOverlay::GetInstance()->SpriteIsHealed(regs.x, (regs.a << 8) + regs.y);
+				if (g_isInBattle)
+					BattleOverlay::GetInstance()->SpriteIsHealed(regs.x, (regs.a << 8) + regs.y);
 				break;
 			}
 			case PC_BATTLE_BEGIN_XP_ALLOC:
