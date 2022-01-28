@@ -211,6 +211,14 @@ SWITCH_GAMEMAP:
 						break;
 					};
 				};
+				// When in a pit, any movement key should register as trying to get the hell out of the pit
+				// Why did the devs only allow for '^' to exit the pit?
+				if (MemGetMainPtr(PARTY_ICON_TYPE)[0] == (UINT8)PartyIconType::Pit)
+				{
+					char _theKey = regs.a & 0x7F;
+					if (_theKey == 'I' || _theKey == 'J' || _theKey == 'K' || _theKey == 'M')
+						regs.a = '^' + 0x80;
+				}
 				break;
 			}
 			case PC_DECREMENT_TIMER:
