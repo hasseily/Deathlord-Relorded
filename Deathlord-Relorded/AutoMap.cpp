@@ -908,25 +908,33 @@ ELEMENT_TILES_GENERAL:
 
 			if (posX == m_avatarPosition.x && posY == m_avatarPosition.y)
 			{
-				// Check if the player is on a boat or not
-				if (MemGetMainPtr(PARTY_ICON_TYPE)[0] == 1)
+				switch ((PartyIconType)(MemGetMainPtr(PARTY_ICON_TYPE)[0]))
 				{
-					// We're on a boat! Boat is tile 0x12 of overland sheet
-					RECT boatRect = { 2 * PNGTW, 1 * PNGTH, 3 * PNGTW, 2 * PNGTH };
-					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapOverlandTiles),
-						GetTextureSize(m_tilesOverland.Get()), tilePosInMap, &boatRect, 
-						Colors::White, 0.f, XMFLOAT2(), mapScale);
-				}
-				else // On foot
-				{
-					// If hidden, don't draw!
+				case PartyIconType::Regular:
+				{	
+					// Only draw if not hidden
 					if (MemGetMainPtr(MAP_IS_HIDDEN)[0] == 0)
 					{
 						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
 							GetTextureSize(m_monsterSpriteSheet.Get()), overlayPosInMap, &avatarRect,
 							Colors::White, 0.f, _origin,
-							mapScale* AVATARSTROBE[(m_avatarStrobeIdx / STROBESLOWAVATAR) % AVATARSTROBECT]);
+							mapScale * AVATARSTROBE[(m_avatarStrobeIdx / STROBESLOWAVATAR) % AVATARSTROBECT]);
 					}
+					break;
+				}
+				case PartyIconType::Boat:
+				{
+					// We're on a boat! Boat is tile 0x12 of overland sheet
+					RECT boatRect = { 2 * PNGTW, 1 * PNGTH, 3 * PNGTW, 2 * PNGTH };
+					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapOverlandTiles),
+						GetTextureSize(m_tilesOverland.Get()), tilePosInMap, &boatRect,
+						Colors::White, 0.f, XMFLOAT2(), mapScale);
+					break;
+				}
+				case PartyIconType::Pit:
+					break;
+				default:
+					break;
 				}
 				++m_avatarStrobeIdx;
 				if (m_avatarStrobeIdx >= (AVATARSTROBECT * STROBESLOWAVATAR))

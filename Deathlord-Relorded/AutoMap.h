@@ -63,6 +63,12 @@ enum class MapType	// Based on MAP_TYPE memory address at 0xFC04
 	count
 };
 
+enum class PartyIconType	// What to draw on the party icon tile
+{
+	Regular = 0,
+	Boat = 1,
+	Pit = 2
+};
 
 /// Summary:
 /// This class handles the management of the automapper.
