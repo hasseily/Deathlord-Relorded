@@ -176,7 +176,15 @@ void BattleOverlay::Update()
 	// Second, dereference into the array of tiles in the map
 	// where the monster tiles start at 0x40
 	// Now we have the tile index of the type of monster we're fighting.
-	_mIndex = MemGetMainPtr(GAMEMAP_ARRAY_MONSTER_ID)[_mIndex] - 0x40;
+	if (MemGetMainPtr(MAP_TYPE)[0] == (int)MapType::Dungeon)
+	{
+		_mIndex = MemGetMainPtr(DUNGEON_ARRAY_MONSTER_ID)[_mIndex] - 0x40;
+
+	}
+	else
+	{
+		_mIndex = MemGetMainPtr(OVERLAND_ARRAY_MONSTER_ID)[_mIndex] - 0x40;
+	}
 	// And FINALLY, look for the mapping of monsters to tiles for this specific map
 	// and go back into it
 	_mIndex = MemGetMainPtr(GAMEMAP_START_MONSTERS_IN_LEVEL_IDX)[_mIndex];

@@ -18,17 +18,26 @@ constexpr UINT32 GAMEMAP_START_NEW_TILELIST = 0x351;		// Start of the new tileli
 // Each id is the monster position in the monster spritesheet
 // The 16 monsters are put in the level tilemap starting at 0x4800
 // While the tilemap starts at 0x4000.
+// The inactive tilemap starts at 0xDD00. The game switches between tilemaps
+// depending on overland/dungeon status
 constexpr UINT32 GAMEMAP_START_MONSTERS_IN_LEVEL_IDX = 0x8EF;
 
 // Everything the game uses to track monsters on the map
-// The map at GAMEMAP_START_MEM has monster IDs as tiles
+// The map at _START_MEM has monster IDs as tiles
 // Below is the info needed to swap back the original tile IDs as the monsters move
-constexpr UINT8 GAMEMAP_ARRAY_MONSTER_SIZE = 32;				// Max # of tracked monsters in the level
-constexpr UINT16 GAMEMAP_ARRAY_MONSTER_POSITION_X = 0x800;		// Empty slot when FF
-constexpr UINT16 GAMEMAP_ARRAY_MONSTER_POSITION_Y = 0x820;		// Empty slot when FF
-constexpr UINT16 GAMEMAP_ARRAY_MONSTER_ID = 0x840;
-constexpr UINT16 GAMEMAP_ARRAY_MONSTER_TILE_ID = 0x860;
-
+// Overland and towns use a system with 32 max monsters.
+// Dungeons and towers use a totally different system, with 16 max monsters per level,
+// and 4 levels per map. So that's an array of 64 monsters.
+constexpr UINT8  OVERLAND_ARRAY_MONSTER_SIZE = 32;				// Max # of tracked monsters in the level
+constexpr UINT16 OVERLAND_ARRAY_MONSTER_POSITION_X = 0x800;		// Empty slot when FF
+constexpr UINT16 OVERLAND_ARRAY_MONSTER_POSITION_Y = 0x820;		// Empty slot when FF
+constexpr UINT16 OVERLAND_ARRAY_MONSTER_ID = 0x840;
+constexpr UINT16 OVERLAND_ARRAY_MONSTER_TILE_ID = 0x860;
+constexpr UINT8  DUNGEON_ARRAY_MONSTER_SIZE = 64;				// Max 16 monsters per dungeon level, 4 levels per map
+constexpr UINT16 DUNGEON_ARRAY_MONSTER_POSITION_X = 0x800;		// Empty slot when FF
+constexpr UINT16 DUNGEON_ARRAY_MONSTER_POSITION_Y = 0x840;		// Empty slot when FF
+constexpr UINT16 DUNGEON_ARRAY_MONSTER_ID = 0x8A0;
+constexpr UINT16 DUNGEON_ARRAY_MONSTER_TILE_ID = 0xAC0;
 
 // Animation tiles
 constexpr UINT16 TILESET_ANIMATIONS_ACID_Y_IDX= 0;

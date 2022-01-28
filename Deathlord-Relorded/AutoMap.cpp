@@ -370,15 +370,32 @@ void AutoMap::CalcTileVisibility(bool force)
 
 UINT8 AutoMap::StaticTileIdAtMapPosition(UINT8 x, UINT8 y)
 {
-	UINT8* _xArray = MemGetMainPtr(GAMEMAP_ARRAY_MONSTER_POSITION_X);
-	UINT8* _yArray = MemGetMainPtr(GAMEMAP_ARRAY_MONSTER_POSITION_Y);
-
-	for (size_t i = 0; i < GAMEMAP_ARRAY_MONSTER_SIZE; i++)
+	if (MemGetMainPtr(MAP_TYPE)[0] == (int)MapType::Dungeon)
 	{
-		if (x == _xArray[i])
+		UINT8* _xArray = MemGetMainPtr(DUNGEON_ARRAY_MONSTER_POSITION_X);
+		UINT8* _yArray = MemGetMainPtr(DUNGEON_ARRAY_MONSTER_POSITION_Y);
+
+		for (size_t i = 0; i < DUNGEON_ARRAY_MONSTER_SIZE; i++)
 		{
-			if (y == _yArray[i])
-				return MemGetMainPtr(GAMEMAP_ARRAY_MONSTER_TILE_ID)[i];
+			if (x == _xArray[i])
+			{
+				if (y == _yArray[i])
+					return MemGetMainPtr(DUNGEON_ARRAY_MONSTER_TILE_ID)[i];
+			}
+		}
+	}
+	else
+	{
+		UINT8* _xArray = MemGetMainPtr(OVERLAND_ARRAY_MONSTER_POSITION_X);
+		UINT8* _yArray = MemGetMainPtr(OVERLAND_ARRAY_MONSTER_POSITION_Y);
+
+		for (size_t i = 0; i < OVERLAND_ARRAY_MONSTER_SIZE; i++)
+		{
+			if (x == _xArray[i])
+			{
+				if (y == _yArray[i])
+					return MemGetMainPtr(OVERLAND_ARRAY_MONSTER_TILE_ID)[i];
+			}
 		}
 	}
 	// No monster is on this tile, return default
