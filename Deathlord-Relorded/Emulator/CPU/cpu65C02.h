@@ -128,14 +128,15 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			}
 			case PC_BATTLE_AMBUSH:
 				[[fallthrough]];
-			case PC_BATTLE_ENTER:
+			case PC_BATTLE_ENTER:	// Doesn't work in dungeons
 			{
 				g_isInBattle = true;
 				break;
 			}
-			case PC_BATTLE_ENEMY_HP_SET:
+			case PC_BATTLE_ENEMY_HP_SET: // Works everywhere, including dungeons
 			{
 				// The enemy HP array has just been filled. Tell that to the battle overlay.
+				g_isInBattle = true;
 				BattleOverlay::GetInstance()->BattleEnemyHPIsSet();
 				break;
 			}
