@@ -206,6 +206,9 @@ void InvOverlay::LeftMouseButtonClicked(int x, int y)
 		}
 	}
 ENDLEFTCLICK:
+	// Always recalculate AC after a change.
+	// Deathlord only recalcs AC during fights and if you view a party member's info
+
 	UpdateState();
 }
 
@@ -692,10 +695,10 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 	{
 		if (pItemInstance->charges != EMPTY_CHARGES_COUNT)
 			swprintf_s(_spBuf, 200, L"%-14s (%03d)   %+d    %+d   %s",
-				item->name.c_str(), pItemInstance->charges, item->thaco, item->ac, item->special.c_str());
+				item->name.c_str(), pItemInstance->charges, item->thaco, -1 * item->ac, item->special.c_str());
 		else
 			swprintf_s(_spBuf, 200, L"%-20s   %+d    %+d   %s",
-				item->name.c_str(), item->thaco, item->ac, item->special.c_str());
+				item->name.c_str(), item->thaco, -1 * item->ac, item->special.c_str());
 	}
 	font->DrawString(m_spriteBatch.get(), _spBuf,
 		Vector2(xPos, yPos),
