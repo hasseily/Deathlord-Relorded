@@ -317,12 +317,12 @@ void PartyLayout::CreateDeviceDependentResources(ResourceUploadBatch* resourceUp
 	CreateShaderResourceView(device, m_partyLayoutSpriteSheet.Get(),
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::PartyLayoutSpriteSheet));
 	DX::ThrowIfFailed(
-		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/Spritesheet_Portraits_Male.png",
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/Spritesheet_Portraits_Male.jpg",
 			m_portraitsMale.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_portraitsMale.Get(),
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::PortraitsMale));
 	DX::ThrowIfFailed(	// TODO: Make the female portraits
-		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/Spritesheet_Portraits_Male.png",
+		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/Spritesheet_Portraits_Female.jpg",
 			m_portraitsFemale.ReleaseAndGetAddressOf()));
 	CreateShaderResourceView(device, m_portraitsFemale.Get(),
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::PortraitsFemale));

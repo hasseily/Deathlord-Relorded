@@ -475,15 +475,6 @@
     <Image Include="Assets\Background_NoMap.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\Background_Grass_32x32.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Background.jpg">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Spritesheet_Portraits_Male.png">
-      <Filter>Assets</Filter>
-    </Image>
     <Image Include="Assets\MinimapSpriteSheet.png">
       <Filter>Assets</Filter>
     </Image>
@@ -510,6 +501,12 @@
     </Image>
     <Image Include="DeathlordRelorded.ico">
       <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Assets\Spritesheet_Portraits_Female.jpg">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Spritesheet_Portraits_Male.jpg">
+      <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>

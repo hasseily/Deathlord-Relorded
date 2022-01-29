@@ -361,19 +361,6 @@
     <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Assets\Background_Grass_32x32.png">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-      <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GeneratePremultipliedAlpha>
-      <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GeneratePremultipliedAlpha>
-    </Image>
-    <Image Include="Assets\Background.jpg">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-      <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GeneratePremultipliedAlpha>
-      <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GeneratePremultipliedAlpha>
-    </Image>
     <Image Include="Assets\Background_NoMap.png">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
@@ -408,10 +395,8 @@
       <GeneratePremultipliedAlpha Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GeneratePremultipliedAlpha>
     </Image>
     <Image Include="Assets\SpriteSheet_PartyLayout.png" />
-    <Image Include="Assets\Spritesheet_Portraits_Male.png">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-    </Image>
+    <Image Include="Assets\Spritesheet_Portraits_Female.jpg" />
+    <Image Include="Assets\Spritesheet_Portraits_Male.jpg" />
     <Image Include="Assets\Tileset_Elements_Animated.png" />
     <Image Include="Assets\Tileset_Relorded_Dungeon.png" />
     <Image Include="Assets\Tileset_Relorded_Monsters.png" />
