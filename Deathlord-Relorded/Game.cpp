@@ -4,9 +4,6 @@
 
 #include "pch.h"
 #include "Game.h"
-#include "SidebarManager.h"
-#include "SidebarContent.h"
-#include "Sidebar.h"
 #include "RemoteControl/Gamelink.h"
 #include "Keyboard.h"
 #include "Emulator/AppleWin.h"
@@ -42,8 +39,6 @@ ComPtr<ID3D12Resource> g_textureUploadHeap;
 
 // Instance variables
 HWND m_window;
-static SidebarManager m_sbM;
-static SidebarContent m_sbC;
 Mouse::ButtonStateTracker moTracker;
 Keyboard::KeyboardStateTracker kbTracker;
 
@@ -135,8 +130,6 @@ void Game::Initialize(HWND window)
 	EmulatorOneTimeInitialization(window);
 	EmulatorRepeatInitialization();
 
-	m_sbC.Initialize();
-
     shouldRender = true;
     m_clientFrameScale = 1.f;
 
@@ -153,20 +146,10 @@ void Game::Initialize(HWND window)
 	m_trigger->PollMapSetCurrentValues();
 }
 
-#pragma region Window texture and size
-
-void Game::SetWindowSizeOnChangedProfile()
-{
-    // TODO: Remove this function
-
-}
-
 UINT64 Game::GetTotalTicks()
 {
     return m_timer.GetTotalTicks();
 }
-
-#pragma endregion
 
 #pragma region Others
 
@@ -381,11 +364,6 @@ void Game::Render()
         tickOfLastRender = m_timer.GetTotalTicks();
         SimpleMath::Rectangle r = GetDrawRectangle();   // TODO: Cache this?
 
-        // First update the sidebar, it doesn't need to be updated until right before the render
-        // Only allow x microseconds for updates of sidebar every render
-        // TODO: Get rid of that, unused
-        UINT64 sbTimeSpent = m_sbC.UpdateAllSidebarText(&m_sbM, false, 500);
-
         // Prepare the command list to render a new frame.
         m_deviceResources->Prepare();
         Clear();
@@ -464,69 +442,12 @@ void Game::Render()
 			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::MainBackground), mmBGTexSize,
 				r, nullptr, Colors::White, 0.f, XMFLOAT2());
 			// End drawing the game background
-            
-#if 0   // No more sidebars
-			// Now time to draw the text and lines
-			m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(clientRect.left, clientRect.right, clientRect.bottom, clientRect.top, 0, 1));
-			m_dxtEffectLines->Apply(commandList);
-			m_primitiveBatchLines->Begin(commandList);
-			for each (auto sb in m_sbM.sidebars)
-			{
-
-				// shifted sidebar position if the window is different size than original size
-				XMFLOAT2 shiftedPosition = sb.position;
-				switch (sb.type)
-				{
-				case SidebarTypes::Right:
-					shiftedPosition.x += r.x;
-					break;
-				case SidebarTypes::Bottom:
-					shiftedPosition.y += r.x;
-					break;
-				default:
-					break;
-				}
-
-				// Draw each block's text
-				// shift it by the amount the sidebar was shifted
-				XMFLOAT2 sblockPosition;    // shifted block position
-				for each (auto b in sb.blocks)
-				{
-					sblockPosition = b->position;
-					sblockPosition.x += shiftedPosition.x - sb.position.x;
-					sblockPosition.y += shiftedPosition.y - sb.position.y;
-					m_spriteFonts.at(b->fontId)->DrawString(m_spriteBatch.get(), b->text.c_str(),
-						sblockPosition, b->color, 0.f, m_vector2Zero);
-				}
-
-				// Now draw a delimiter line for the sidebar
-				// TODO: not sure if we want those delimiters
-				XMFLOAT3 lstart = XMFLOAT3(shiftedPosition.x, shiftedPosition.y, 0);
-				XMFLOAT3 lend = lstart;
-				switch (sb.type)
-				{
-				case SidebarTypes::Right:
-					lend.y = lstart.y + r.height;
-					break;
-				case SidebarTypes::Bottom:
-					lend.x = lstart.x + GetFrameBufferWidth();
-					break;
-				default:
-					break;
-				}
-				m_primitiveBatchLines->DrawLine(
-					VertexPositionColor(lstart, static_cast<XMFLOAT4>(Colors::DimGray)),
-					VertexPositionColor(lend, static_cast<XMFLOAT4>(Colors::Black))
-				);
-			}
-			m_primitiveBatchLines->End();
-#endif
 
 #if 1
 			char pcbuf[4000];
 			//    snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %I64x : %I64x", g_debug_video_field, g_debug_video_data);
-			snprintf(pcbuf, sizeof(pcbuf), "%.2d FPS , %6.0f usec/frame - Time: %6.2f - Sidebar Time: %6lld\n", 
-                m_timer.GetFramesPerSecond(), 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds(), sbTimeSpent);
+			snprintf(pcbuf, sizeof(pcbuf), "%.2d FPS , %6.0f usec/frame - Time: %6.2f\n", 
+                m_timer.GetFramesPerSecond(), 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds());
 			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
 				{ 11.f, 11.f }, Colors::Black, 0.f, m_vector2Zero, 1.f);
 			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
@@ -684,20 +605,6 @@ void Game::OnWindowSizeChanged(LONG width, LONG height)
 #pragma endregion
 
 #pragma region Menu commands
-
-void Game::MenuActivateProfile()
-{
-    m_sbC.LoadProfileUsingDialog(&m_sbM);
-    SetWindowSizeOnChangedProfile();
-	g_nonVolatile.SaveToDisk();
-}
-
-void Game::MenuDeactivateProfile()
-{
-    m_sbC.ClearActiveProfile(&m_sbM);
-    SetWindowSizeOnChangedProfile();
-	g_nonVolatile.SaveToDisk();
-}
 
 void Game::MenuShowLogWindow()
 {
@@ -902,16 +809,4 @@ void Game::OnDeviceRestored()
 }
 #pragma endregion
 
-#pragma region Utilities
-
-void Game::ActivateLastUsedProfile()
-{
-	// Autoload the last used profile
-	std::string profileName = m_sbC.OpenProfile(g_nonVolatile.profilePath);
-	m_sbC.setActiveProfile(&m_sbM, &profileName);
-    SetWindowSizeOnChangedProfile();
-}
-
-
-#pragma endregion
 

@@ -75,7 +75,6 @@ public:
     void OnDeviceLost() override;
     void OnDeviceRestored() override;
 
-    void ActivateLastUsedProfile();
     // Messages
     void OnActivated();
     void OnDeactivated();
@@ -85,8 +84,6 @@ public:
 	void OnWindowSizeChanged(LONG width, LONG height);  // pass in new width and height of client rect
 
     // Menu commands
-    void MenuActivateProfile();
-    void MenuDeactivateProfile();
     void MenuShowLogWindow();
     void MenuShowSpellWindow();
 	void MenuToggleLogWindow();
@@ -94,7 +91,6 @@ public:
 	void MenuToggleHacksWindow();
 
     // Other methods
-    void SetWindowSizeOnChangedProfile();
     UINT64 GetTotalTicks(); // Total ticks since start of program
 
     // Accessors

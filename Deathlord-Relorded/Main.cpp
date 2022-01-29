@@ -6,8 +6,6 @@
 #include "Game.h"
 #include "resource.h"
 #include <WinUser.h>
-#include "SidebarManager.h"
-#include "SidebarContent.h"
 #include "RemoteControl/GameLink.h"
 #include "Keyboard.h"
 #include "LogWindow.h"
@@ -293,9 +291,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			g_spellW = std::make_unique<SpellWindow>(g_hInstance, hwnd);
 			g_dlHacks = std::make_unique<DeathlordHacks>(g_hInstance, hwnd);
 
-			// Autoload the last used profile
-			// g_game->ActivateLastUsedProfile();
-
 			// And open the spells window if necessary
 			if (g_nonVolatile.showSpells)
 				g_game->MenuShowSpellWindow();
@@ -566,24 +561,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			else
 			{
 				MessageBox(hWnd, L"Scenario disks were not restored. Drives are empty.", L"Restore failed", MB_ICONWARNING | MB_OK);
-			}
-			break;
-		}
-		case ID_FILE_ACTIVATEPROFILE:
-		{
-			// this is now in the companion menu
-			if (game)
-			{
-				game->MenuActivateProfile();
-			}
-			break;
-		}
-		case ID_FILE_DEACTIVATEPROFILE:
-		{
-			// this is now in the companion menu
-			if (game)
-			{
-				game->MenuDeactivateProfile();
 			}
 			break;
 		}

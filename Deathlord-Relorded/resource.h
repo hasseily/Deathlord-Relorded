@@ -39,7 +39,6 @@
 #define IDC_BUTTON_SPRITESAVE           1008
 #define IDC_EDIT_SPRITEMEM              1009
 #define IDC_EDIT_SPRITECT               1010
-#define ID_FILE_ACTIVATEPROFILE         32771
 #define ID_EMULATOR_PAUSE               32772
 #define ID_EMULATOR_RESET               32773
 #define ID_EMULATOR_SHUTDOWN            32774
@@ -48,7 +47,6 @@
 #define ID_VIDEOFLIP_FLIPX              32777
 #define ID_VIDEOFLIP_FLIPY              32778
 #define ID_VIDEOFLIP_FLIPXY             32779
-#define ID_FILE_DEACTIVATEPROFILE       32781
 #define ID_GAMEPLAY_LOGWINDOW           32782
 #define IDM_LOG                         32783
 #define ID_LOGWINDOW_SHOW               32785

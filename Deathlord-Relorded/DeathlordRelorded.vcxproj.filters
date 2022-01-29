@@ -39,15 +39,6 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Sidebar.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SidebarContent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SidebarManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="emulator\AppleWin.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -207,15 +198,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Sidebar.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SidebarContent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SidebarManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="StepTimer.h">
@@ -401,12 +383,6 @@
     <None Include="Emulator\Resources\DISK2.rom">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Profiles\_Empty.json">
-      <Filter>Assets</Filter>
-    </None>
-    <None Include="Profiles\_Profiles_Schema.json">
-      <Filter>Assets</Filter>
-    </None>
     <None Include="Assets\a2-12pt-italic.spritefont">
       <Filter>Assets</Filter>
     </None>
@@ -414,9 +390,6 @@
       <Filter>Assets</Filter>
     </None>
     <None Include="Assets\a2-12pt-bolditalic.spritefont">
-      <Filter>Assets</Filter>
-    </None>
-    <None Include="Profiles\Deathlord_Default.json">
       <Filter>Assets</Filter>
     </None>
     <None Include="Assets\InventoryList.csv">

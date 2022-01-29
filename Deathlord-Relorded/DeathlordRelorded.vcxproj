@@ -221,9 +221,6 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="remotecontrol\Gamelink.cpp" />
     <ClCompile Include="remotecontrol\RemoteControlManager.cpp" />
-    <ClCompile Include="Sidebar.cpp" />
-    <ClCompile Include="SidebarContent.cpp" />
-    <ClCompile Include="SidebarManager.cpp" />
     <ClCompile Include="SpellWindow.cpp" />
     <ClCompile Include="TextOutput.cpp" />
     <ClCompile Include="TilesetCreator.cpp" />
@@ -287,9 +284,6 @@
     <ClInclude Include="remotecontrol\Gamelink.h" />
     <ClInclude Include="remotecontrol\RemoteControlManager.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="Sidebar.h" />
-    <ClInclude Include="SidebarContent.h" />
-    <ClInclude Include="SidebarManager.h" />
     <ClInclude Include="SpellWindow.h" />
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="targetver.h" />
@@ -344,18 +338,6 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
     </None>
     <None Include="packages.config" />
-    <None Include="Profiles\Deathlord_Default.json">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-    </None>
-    <None Include="Profiles\_Empty.json">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-    </None>
-    <None Include="Profiles\_Profiles_Schema.json">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

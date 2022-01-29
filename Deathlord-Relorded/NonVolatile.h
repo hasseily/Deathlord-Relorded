@@ -13,7 +13,6 @@ enum class AutoMapQuadrant
 class NonVolatile
 {
 public:
-	std::wstring profilePath;
 	std::wstring diskBootPath;
 	std::wstring diskScenAPath;
 	std::wstring diskScenBPath;

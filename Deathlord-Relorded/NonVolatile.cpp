@@ -13,7 +13,6 @@ namespace fs = std::filesystem;
 
 static nlohmann::json nv_json = R"(
   {
-    "profilePath": "Profiles\\Deathlord_Default.json",
     "hdvPath":			  "",
     "diskBootPath":		  "Images\\Deathlord - Disk 1, Side A Boot disk.woz",
     "diskScenAPath":	  "Images\\Deathlord Scenario A.nib",
@@ -42,16 +41,13 @@ static std::string markersfilename = "dcmarkers.data";	// contains markers data 
 
 int NonVolatile::SaveToDisk()
 {
-	std::string sprofPath;
 	std::string sDiskBootPath;
 	std::string sDiskScenAPath;
 	std::string sDiskScenBPath;
-	HA::ConvertWStrToStr(&profilePath, &sprofPath);
 	HA::ConvertWStrToStr(&diskBootPath, &sDiskBootPath);
 	HA::ConvertWStrToStr(&diskScenAPath, &sDiskScenAPath);
 	HA::ConvertWStrToStr(&diskScenBPath, &sDiskScenBPath);
 
-	nv_json["profilePath"]			= sprofPath;
 	nv_json["diskBootPath"]			= sDiskBootPath;
 	nv_json["diskScenAPath"]		= sDiskScenAPath;
 	nv_json["diskScenBPath"]		= sDiskScenBPath;
@@ -98,13 +94,6 @@ int NonVolatile::LoadFromDisk()
 		nvmarkers_json.merge_patch(j);
 	}
 
-	std::string _profilePath = nv_json["profilePath"].get<std::string>();
-	if (_profilePath.size() == 0) {
-		fs::path defaultPath = fs::current_path();
-		defaultPath += "\\Profiles\\Deathlord_Default.json";
-		_profilePath.assign(defaultPath.string());
-	}
-	HA::ConvertStrToWStr(&_profilePath, &profilePath);
 	std::string _diskBootPath = nv_json["diskBootPath"].get<std::string>();
 	HA::ConvertStrToWStr(&_diskBootPath, &diskBootPath);
 	std::string _diskScenAPath = nv_json["diskScenAPath"].get<std::string>();
