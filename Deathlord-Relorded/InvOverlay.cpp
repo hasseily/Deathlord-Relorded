@@ -7,6 +7,7 @@
 #include <SimpleMath.h>
 #include <vector>
 #include "InvManager.h"
+#include "Emulator/CPU.h"
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -208,7 +209,7 @@ void InvOverlay::LeftMouseButtonClicked(int x, int y)
 ENDLEFTCLICK:
 	// Always recalculate AC after a change.
 	// Deathlord only recalcs AC during fights and if you view a party member's info
-
+	ExecuteDeathlordArmorClassRoutine();
 	UpdateState();
 }
 

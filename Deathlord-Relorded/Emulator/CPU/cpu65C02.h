@@ -566,6 +566,13 @@ SWITCH_GAMEMAP:
 				}
 				break;
 			}
+			case PC_RECALC_ARMORCLASS_END:
+			{
+				// finish processing and return to ExecuteDeathlordArmorClassRoutine()
+				if (isForcingACCalculation)
+					return uExecutedCycles;
+				break;
+			}
 			default:
 				break;
 			}	// switch

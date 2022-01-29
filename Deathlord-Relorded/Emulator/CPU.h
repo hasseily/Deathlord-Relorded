@@ -44,8 +44,9 @@
 #define SP_MAP_KEY_PRESS_SPELL_1	0x1E		// Last 2 bytes in stack pointer when typing spell
 #define SP_MAP_KEY_PRESS_SPELL_2	0x5F		// Last 2 bytes in stack pointer when typing spell
 
-// TODO: Recalc armorclass on inventory change in inventory manager!
-#define PC_RECALC_ARMORCLASS		0xA93F		// Jumping to this routine recalculates the armor classes of all characters
+// Recalc armorclass on inventory change in inventory manager
+#define PC_RECALC_ARMORCLASS_BEGIN	0xA93F		// Jumping to this routine recalculates the armor classes of all characters
+#define PC_RECALC_ARMORCLASS_END	0xA9E4		// JSR of the armor class recalc
 
 #define PC_SCROLL_WINDOW			0x5395		// This scrolls the active window
 												// if A is $01, it's the log window
@@ -149,3 +150,6 @@ void     SetActiveCpu(eCpuType cpu);
 
 bool Is6502InterruptEnabled(void);
 void ResetCyclesExecutedForDebugger(void);
+
+// Special function to execute just the Armor Class calculation
+void ExecuteDeathlordArmorClassRoutine();

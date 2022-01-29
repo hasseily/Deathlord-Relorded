@@ -150,6 +150,7 @@ static eCpuType g_MainCPU = CPU_65C02;
 static eCpuType g_ActiveCPU = CPU_65C02;
 
 static wchar_t strDebug[1000] = L"";
+static bool isForcingACCalculation = false;		// If set to true, stop Cpu65C02() at the RTS of the AC routine
 
 eCpuType GetMainCpu(void)
 {
@@ -589,4 +590,21 @@ void CpuReset()
 	g_irqDefer1Opcode = false;
 
 	SetActiveCpu( GetMainCpu() );
+}
+
+//===========================================================================
+
+// This runs just the Armor Class calculation routine, as if we'd JSR'd into it
+// We need to be able to run it at any time, independently of the state of the CPU
+// Cpu65C02 will check at the end of the routine if it needs to stop via isForcingACCalculation
+void ExecuteDeathlordArmorClassRoutine()
+{
+	regsrec regs_orig = regs;
+	regs.pc = PC_RECALC_ARMORCLASS_BEGIN;
+	isForcingACCalculation = true;
+	// Routine will never use up so many cycles
+	// and will exit at PC_RECALC_ARMORCLASS_END
+	Cpu65C02(10000, false);
+	isForcingACCalculation = false;
+	regs = regs_orig;
 }
