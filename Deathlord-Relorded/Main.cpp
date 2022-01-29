@@ -796,8 +796,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				game->MenuToggleSpellWindow();
 			}
-			g_nonVolatile.showSpells = !g_nonVolatile.showSpells;
-			g_nonVolatile.SaveToDisk();
 			UpdateMenuBarStatus(hWnd);
 			break;
 		}
