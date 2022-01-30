@@ -13,6 +13,10 @@
 #define PC_SCENARIOS_ARE_IN_DRIVES	0x8430		// At this PC, the scenarii are in the drives and validated
 #define PC_CHECK_KEYPRESS_TITLE		0x1D47		// Check for keypress on title screen to go to menu ("Play a Game...")
 #define PC_CHECK_KEYPRESS_MENU		0x1C19		// Checks for 'U', 'C', 'P'
+#define PC_CHAR_MANAGEMENT_KEYPRESS	0x7C0A		// Check if key was pressed in the character management option menus
+#define PC_CHAR_WAIT_KEYPRESS		0x7A63		// Waiting for keypress (routine called from many places in the options menus)
+#define PC_CHAR_PRESSED_ESC			0x701B		// Pressed ESC to exit char creation
+#define MEM_CHAR_CREATE_ATTR_START	0x71F2		// When creating a char and rolling attributes, these are the attributes
 
 // In-game
 #define PC_RNG						0x4AE0		// Random number generator

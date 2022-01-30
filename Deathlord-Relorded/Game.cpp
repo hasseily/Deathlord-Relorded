@@ -31,6 +31,7 @@ using Microsoft::WRL::ComPtr;
 using namespace HA;
 
 extern void SetSendKeystrokesToAppleWin(bool shouldSend);
+extern int rerollCount;
 
 // AppleWin video texture
 D3D12_SUBRESOURCE_DATA g_textureData;
@@ -73,6 +74,7 @@ NonVolatile g_nonVolatile;
 
 bool g_isInGameMap = false;
 StartMenuState g_startMenuState = StartMenuState::Booting;
+int g_rerollCount = 0;  // Number of rerolls in char attributes creation
 bool g_isInGameTransition = false;  // Before being in game map
 bool g_hasBeenIdleOnce = false;
 bool g_isInBattle = false;
@@ -245,8 +247,6 @@ void Game::Update(DX::StepTimer const& timer)
 		// If in transition from pre-game to game, only show the transition screen
 		// And wait for keypress
         SetSendKeystrokesToAppleWin(false);
-		if (EmulatorGetSpeed() != 1)
-			EmulatorSetSpeed(1);    // SPEED_NORMAL
 		if (kbTracker.pressed.Space)
 		{
 			g_isInGameTransition = false;
@@ -414,10 +414,37 @@ void Game::Render()
 			m_a2Video->Render(_scRect, m_uploadBatch.get());
             // Show extra info for the modern gamer who doesn't expect to tap a key unless explicitly told
             std::wstring _sMenu;
-            if (g_startMenuState == StartMenuState::Title)
-                _sMenu = L"Press any key";
-            else if (g_startMenuState == StartMenuState::Menu)
+            switch (g_startMenuState)
+            {
+            case StartMenuState::Booting:
+                break;
+            case StartMenuState::Title:
+				_sMenu = L"Press any key";
+                break;
+            case StartMenuState::Menu:
                 _sMenu = L"Choose 'U', 'C', or 'P' to continue";
+                break;
+            case StartMenuState::AttributesRerollPropose:
+                _sMenu = L"Press 'A' to autoroll until STR, CON, INT and DEX are all 16+";
+                break;
+            case StartMenuState::AttributesRerolling:
+                _sMenu = L"Rolling attributes for 16+, press almost any key to cancel";
+                break;
+			case StartMenuState::AttributesRerollCancelled:
+				_sMenu = L"";
+				break;
+			case StartMenuState::AttributesRerollDone:
+				_sMenu = L"Saved you rolling " + std::to_wstring(g_rerollCount) + L" times to get to this set of attributes";
+				break;
+            case StartMenuState::PromptScenarios:
+                break;
+            case StartMenuState::LoadingGame:
+                break;
+            case StartMenuState::Other:
+                break;
+            default:
+                break;
+            }
             auto _sSize = m_spriteFonts.at(FontDescriptors::FontDLRegular)->MeasureString(_sMenu.c_str(), false);
             float _sX = _scRect.Center().x - (XMVectorGetX(_sSize) / 2.f);
             float _sY = 800.f;

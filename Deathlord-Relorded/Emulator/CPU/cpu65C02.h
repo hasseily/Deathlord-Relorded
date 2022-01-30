@@ -41,6 +41,8 @@ static std::shared_ptr<LogWindow> __logWindow;
 extern std::shared_ptr<LogWindow> GetLogWindow();
 static TextOutput* __textOutput;
 static bool hasTriedInsertingScenarii = false;
+static bool shouldReroll = false;
+static regsrec __rollRegs;
 
 static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 {
@@ -584,8 +586,6 @@ SWITCH_GAMEMAP:
 			{
 			case PC_CHECK_KEYPRESS_TITLE:
 			{
-				if (EmulatorGetSpeed() != 1)
-					EmulatorSetSpeed(1);
 				g_startMenuState = StartMenuState::Title;
 				break;
 			}
@@ -599,7 +599,6 @@ SWITCH_GAMEMAP:
 			}
 			case PC_PROMPT_USE_2_DRIVES:
 			{
-				EmulatorSetSpeed(5);	// Accelerate the loading;
 				regs.pc = 0x8738;	// Bypass the 2 drives prompt (use 2 drives)
 				hasTriedInsertingScenarii = false;
 				break;
@@ -622,6 +621,99 @@ SWITCH_GAMEMAP:
 			{
 				g_isInGameTransition = true;
 				g_startMenuState = StartMenuState::LoadingGame;
+				break;
+			}
+			case PC_CHAR_WAIT_KEYPRESS:
+			{
+				// When in reroll mode, don't wait for a keypress and just roll again
+				// Unless a key was pressed to cancel, or we rolled 16+ on the 4 attributes
+				if (g_startMenuState == StartMenuState::AttributesRerolling)
+				{
+					if ((regs.a != 'A') && (regs.a != 0))	// a key was pressed, stop the autoreroll
+					{
+						g_startMenuState = StartMenuState::AttributesRerollCancelled;
+						EmulatorSetSpeed(1);
+						break;
+					}
+
+					// Otherwise check if attrs 16+, if not then keep going
+					shouldReroll = false;
+					if (MemGetMainPtr(MEM_CHAR_CREATE_ATTR_START)[0] < 16)	// STR < 16
+						shouldReroll = true;
+					if (MemGetMainPtr(MEM_CHAR_CREATE_ATTR_START)[1] < 16)	// CON < 16
+						shouldReroll = true;
+					if (MemGetMainPtr(MEM_CHAR_CREATE_ATTR_START)[3] < 16)	// INT < 16
+						shouldReroll = true;
+					if (MemGetMainPtr(MEM_CHAR_CREATE_ATTR_START)[4] < 16)	// DEX < 16
+						shouldReroll = true;
+					if (shouldReroll)
+					{
+						++g_rerollCount;
+						regs.a = 'N' + 0x80;
+						MemGetMainPtr(0xC000)[0] = 0;
+						regs.pc = 0x7A6B;	// RTS after having simulated a 'N'
+					}
+					else
+					{
+						g_startMenuState = StartMenuState::AttributesRerollDone;
+						EmulatorSetSpeed(1);
+					}
+				}
+				break;
+			}
+			case PC_CHAR_PRESSED_ESC:
+			{
+				g_startMenuState = StartMenuState::Other;
+				break;
+			}
+			case PC_CHAR_MANAGEMENT_KEYPRESS:
+			{
+				// We're only interested in the char attribute rolls
+				// The sp having those 2 bytes ensures we're in the correct area of the code
+				if ((MemGetMainPtr(regs.sp)[1] != 0xA9)
+					|| (MemGetMainPtr(regs.sp)[2] != 0x6E))
+				{
+					g_startMenuState = StartMenuState::Other;
+					break;
+				}
+				// Note that the contextual help text that's added at the bottom is dependent
+				// on StartMenuState and is handled in Game.cpp's render() directly.
+				switch (g_startMenuState)
+				{
+				case StartMenuState::AttributesRerolling:
+					regs.pc = 0x7C16;
+					break;
+				case StartMenuState::AttributesRerollCancelled:
+					[[fallthrough]];
+				case StartMenuState::AttributesRerollDone:
+					[[fallthrough]];
+				case StartMenuState::AttributesRerollPropose:
+					if (regs.a == 'A' + 0x80)
+					{
+						g_rerollCount = 0;
+						g_startMenuState = StartMenuState::AttributesRerolling;
+						MemGetMainPtr(0xC000)[0] = 0;
+						regs.pc = 0x7C16;
+						EmulatorSetSpeed(6);
+					}
+					else if (regs.a == 'N' + 0x80)	// 0xCE
+					{
+						g_startMenuState = StartMenuState::AttributesRerollPropose;
+						MemGetMainPtr(0xC000)[0] = 0;
+						regs.pc = 0x7C16;
+					}
+					else if (regs.a > 0x80)
+					{
+						g_startMenuState = StartMenuState::Other;
+						MemGetMainPtr(0xC000)[0] = 0;
+						regs.pc = 0x7C17;
+					}
+					break;
+				default:
+					g_startMenuState = StartMenuState::AttributesRerollPropose;
+					break;
+				}
+
 				break;
 			}
 			default:

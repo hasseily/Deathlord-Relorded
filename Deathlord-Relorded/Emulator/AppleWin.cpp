@@ -145,7 +145,8 @@ void ContinueExecution(void)
 	const double fExecutionPeriodClks = g_fCurrentCLK6502 * ((double)nExecutionPeriodUsec / fUsecPerSec);
 
 	const bool bWasFullSpeed = g_bFullSpeed;
-	g_bFullSpeed = (g_dwSpeed == SPEED_MAX);
+	g_bFullSpeed = (g_dwSpeed == SPEED_MAX ||
+		dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).IsConditionForFullSpeed() && !Spkr_IsActive() && !MB_IsActive());
 
 	if (g_bFullSpeed)
 	{
@@ -517,7 +518,9 @@ void EmulatorRepeatInitialization()
 	}
 
 	ApplyNonVolatileConfig();
-	EmulatorSetSpeed(3);	// Normal speed is too slow for start
+	// Always keep the game speed at normal. It's only the disk access that matters.
+	EmulatorSetSpeed(1);
+	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).SetEnhanceDisk(true);
 	PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_INSERTBOOTDISK, 1);
 
 	// Init palette color
@@ -537,14 +540,12 @@ void EmulatorReboot()
 	g_hasBeenIdleOnce = false;
 	g_isInBattle = false;
 	g_bFullSpeed = 0;	// Might've hit reset in middle of InternalCpuExecute() - so beep may get (partially) muted
-	EmulatorSetSpeed(3);	// Normal speed is too slow for start
 	MemReset();	// calls CpuInitialize(), CNoSlotClock.Reset()
 	VideoResetState();
 	KeybReset();
 	MB_Reset();
 	SpkrReset();
 	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).Reset(true);
-	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).SetEnhanceDisk(true);
 	SetActiveCpu(GetMainCpu());
 	EmulatorRepeatInitialization();
 	SoundCore_SetFade(FADE_NONE);
