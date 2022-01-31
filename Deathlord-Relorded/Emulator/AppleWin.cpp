@@ -539,6 +539,7 @@ void EmulatorReboot()
 	g_isInGameTransition = false;
 	g_hasBeenIdleOnce = false;
 	g_isInBattle = false;
+	g_isDead = false;
 	g_bFullSpeed = 0;	// Might've hit reset in middle of InternalCpuExecute() - so beep may get (partially) muted
 	MemReset();	// calls CpuInitialize(), CNoSlotClock.Reset()
 	VideoResetState();

@@ -24,6 +24,7 @@ AppleWinDXVideo* AppleWinDXVideo::s_instance;
 void AppleWinDXVideo::Initialize()
 {
 	bIsDisplayed = false;
+	m_scale = 2.f;
 }
 
 void AppleWinDXVideo::ShowApple2Video()
@@ -45,7 +46,14 @@ bool AppleWinDXVideo::IsApple2VideoDisplayed()
 {
 	return bIsDisplayed;
 }
-#pragma endregion
+
+XMUINT2 AppleWinDXVideo::GetSize()
+{
+	auto _size = GetTextureSize(m_AppleWinDXVideoSpriteSheet.Get());
+	_size.x *= m_scale;
+	_size.y *= m_scale;
+	return _size;
+}
 
 void AppleWinDXVideo::Render(SimpleMath::Rectangle r, 
 	ResourceUploadBatch* uploadBatch)
@@ -68,7 +76,7 @@ void AppleWinDXVideo::Render(SimpleMath::Rectangle r,
 	m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
 
 	// Draw the applewin video in the dead center of r
-	XMFLOAT2 _texCenter = { (float)mmTexSize.x / 2.f, (float)mmTexSize.y / 2.f };
+	XMFLOAT2 _texCenter = { m_scale * (float)mmTexSize.x / 2.f, m_scale * (float)mmTexSize.y / 2.f };
 	XMFLOAT2 _winCenter = r.Center();
 	RECT texRect = {
 		_winCenter.x - _texCenter.x,	// left
@@ -95,11 +103,14 @@ void AppleWinDXVideo::Render(SimpleMath::Rectangle r,
 		VertexPositionColor(XMFLOAT3(texRect.right, texRect.bottom, 0), ColorBlack),
 		VertexPositionColor(XMFLOAT3(texRect.left, texRect.bottom, 0), ColorBlack)
 	);
-	m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video), mmTexSize,
-		r.Center(), NULL, Colors::White, 0.f, _texCenter);
+	m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video), mmTexSize, texRect);
+		
+	//m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::Apple2Video), mmTexSize,
+	//	r.Center(), NULL, Colors::White, 0.f, _texCenter);
 	m_primitiveBatch->End();
 	m_spriteBatch->End();
 }
+#pragma endregion
 
 #pragma region D3D stuff
 void AppleWinDXVideo::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states)

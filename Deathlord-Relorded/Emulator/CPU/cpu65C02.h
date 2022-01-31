@@ -575,6 +575,9 @@ SWITCH_GAMEMAP:
 					return uExecutedCycles;
 				break;
 			}
+			case PC_DEAD:
+				g_isDead = true;
+				break;
 			default:
 				break;
 			}	// switch

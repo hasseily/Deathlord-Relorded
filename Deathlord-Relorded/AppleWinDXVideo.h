@@ -6,14 +6,6 @@ using namespace DirectX;
 using namespace DirectX::SimpleMath;
 using namespace std;
 
-
-// Where to put the pin on the AppleWinDXVideo.
-constexpr UINT16 APPLEWINDXVIDEO_ORIGIN_X = 1297;
-constexpr UINT16 APPLEWINDXVIDEO_ORIGIN_Y = 42;
-
-constexpr UINT8 APPLEWINDXVIDEO_SPRITE_WIDTH = 28;
-constexpr UINT8 APPLEWINDXVIDEO_SPRITE_HEIGHT = 32;
-
 class AppleWinDXVideo	// Singleton
 {
 public:
@@ -23,6 +15,8 @@ public:
 	void HideApple2Video();
 	void ToggleApple2Video();
 	bool IsApple2VideoDisplayed();
+
+	DirectX::XMUINT2 GetSize();
 
 	// Call Render() at the end of the rendering stage to draw the AppleWinDXVideo stuff
 	// r is the rectangle of the game itself
@@ -66,6 +60,7 @@ private:
 	}
 
 	bool bIsDisplayed;
+	float m_scale;
 
 	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;

@@ -20,6 +20,7 @@ enum class TextureDescriptors
 	MainBackground,
 	MainBackgroundLayerTop,
 	DLRLLoadingScreen,
+	DLRLGameOver,
 	Apple2Video,
 	AutoMapBackgroundTransition,
 	AutoMapOverlandTiles,

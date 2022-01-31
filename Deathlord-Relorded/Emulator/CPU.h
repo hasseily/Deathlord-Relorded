@@ -99,6 +99,8 @@
 #define PC_BATTLE_CALC_NUM_ENEMY2	0x6188		// JMP from the above JSR
 #define PC_BATTLE_BEGIN_ENEMY_HP	0xA423		// RTS after having calculated HP of enemy in position X, using sum(rand(0-7)), MONSTER_CURR_HPMULT times.
 
+#define PC_DEAD						0x897E		// Everyone dead. JMP that infinite loops on itself.
+
 /* the JSRs right after 0xA37F are:
 0xA382: JSR 0x51EB	Redraws center right area
 0xA385: JSR 0x5162	Clears enemy sprite from map
