@@ -1,10 +1,12 @@
 #include "pch.h"
 #include "SpellWindow.h"
+#include "NonVolatile.h"
 #include "resource.h"
 
 static HINSTANCE appInstance = nullptr;
 static HWND hwndMain = nullptr;				// handle to main window
 
+extern NonVolatile g_nonVolatile;
 
 INT_PTR CALLBACK SpellProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -52,6 +54,8 @@ void SpellWindow::ShowSpellWindow()
 	ShowWindow(hwndSpell, SW_SHOWNORMAL);
 	CheckMenuItem(hm, ID_COMPANION_SPELLWINDOW, MF_BYCOMMAND | MF_CHECKED);
 	isDisplayed = true;
+	g_nonVolatile.showSpells = isDisplayed;
+	g_nonVolatile.SaveToDisk();
 }
 
 void SpellWindow::HideSpellWindow()
@@ -60,6 +64,8 @@ void SpellWindow::HideSpellWindow()
 	ShowWindow(hwndSpell, SW_HIDE);
 	CheckMenuItem(hm, ID_COMPANION_SPELLWINDOW, MF_BYCOMMAND | MF_UNCHECKED);
 	isDisplayed = false;
+	g_nonVolatile.showSpells = isDisplayed;
+	g_nonVolatile.SaveToDisk();
 }
 
 bool SpellWindow::IsSpellWindowDisplayed()
