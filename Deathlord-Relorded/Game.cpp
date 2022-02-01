@@ -491,7 +491,7 @@ void Game::Render()
 				r, nullptr, Colors::White, 0.f, XMFLOAT2());
 			// End drawing the game background
 
-#if 1
+#if _DEBUG
 			char pcbuf[4000];
 			//    snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %I64x : %I64x", g_debug_video_field, g_debug_video_data);
 			snprintf(pcbuf, sizeof(pcbuf), "%.2d FPS , %6.0f usec/frame - Time: %6.2f\n", 
