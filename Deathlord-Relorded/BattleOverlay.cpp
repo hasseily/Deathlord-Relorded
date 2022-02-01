@@ -9,6 +9,7 @@
 #include "AnimTextManager.h"
 #include "AutoMap.h"
 #include "Emulator/CPU.h"
+#include "GameOverOverlay.h"
 #include <SimpleMath.h>
 #include <vector>
 
@@ -22,8 +23,6 @@ BattleOverlay* BattleOverlay::s_instance;
 // In main
 extern std::unique_ptr<Game>* GetGamePtr();
 
-constexpr int OVERLAY_WIDTH = 600;
-constexpr int OVERLAY_HEIGHT = 600;
 constexpr RECT RECT_SPRITE_CURSOR = { 0, 200, 32, 236};
 
 constexpr int TOTAL_SPRITES = 6 + 32;
@@ -44,29 +43,16 @@ void BattleOverlay::Initialize()
 {
 	bIsDisplayed = false;
 	bShouldDisplay = false;
+	bShouldBlockKeystrokes = false;
 	m_currentRect = { 0,0,0,0 };
+	m_width = 600;
+	m_height = 600;
+	m_spritesheetDescriptor = TextureDescriptors::BattleOverlaySpriteSheet;
+	m_spritesheetPath = L"Assets/BattleOverlaySpriteSheet.png";
+	m_type = OverlayType::Bordered;
+
 	m_animTextManager = AnimTextManager::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_activeActor = 0xFF;
-}
-
-void BattleOverlay::ShowOverlay()
-{
-	bShouldDisplay = true;
-}
-
-void BattleOverlay::HideOverlay()
-{
-	bShouldDisplay = false;
-}
-
-void BattleOverlay::ToggleOverlay()
-{
-	IsOverlayDisplayed() ? HideOverlay() : ShowOverlay();
-}
-
-bool BattleOverlay::IsOverlayDisplayed()
-{
-	return bIsDisplayed;
 }
 
 void BattleOverlay::BattleEnemyHPIsSet()
@@ -139,6 +125,12 @@ void BattleOverlay::SpriteIsHealed(UINT8 charPosition, UINT16 healingAmount)
 }
 void BattleOverlay::SpriteDied(UINT8 charPosition)
 {
+	// track the number of enemies killed
+	if (charPosition >= 6)
+	{
+		GameOverOverlay* _goo = GameOverOverlay::GetInstance();
+		_goo->m_monstersKilled++;
+	}
 	auto _anim = m_animations[charPosition].get();
 	if (_anim == nullptr)
 	{
@@ -231,48 +223,6 @@ void BattleOverlay::Update()
 
 #pragma endregion
 
-#pragma region D3D stuff
-void BattleOverlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states)
-{
-	auto device = m_deviceResources->GetD3DDevice();
-	DX::ThrowIfFailed(
-		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/BattleOverlaySpriteSheet.png",
-			m_overlaySpriteSheet.ReleaseAndGetAddressOf()));
-	CreateShaderResourceView(device, m_overlaySpriteSheet.Get(),
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet));
-
-	// Create the DTX pieces
-
-	auto sampler = states->LinearWrap();
-	RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
-
-	EffectPipelineStateDescription epdTriangles(
-		&VertexPositionColor::InputLayout,
-		CommonStates::Opaque,
-		CommonStates::DepthDefault,
-		CommonStates::CullNone,		// Note: don't cull because some quadlines are drawn clockwise
-									// Specifically the swaplines if the recipient person is to the left of the sender
-		rtState,
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
-	m_dxtEffect = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdTriangles);
-	m_primitiveBatch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
-
-	// The applewin texture is AlphaBlend
-	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
-	m_spriteBatch = std::make_unique<SpriteBatch>(device, *resourceUpload, spd);
-	m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
-}
-
-void BattleOverlay::OnDeviceLost()
-{
-	m_overlaySpriteSheet.Reset();
-	m_spriteBatch.reset();
-	m_primitiveBatch.reset();
-	m_dxtEffect.reset();
-}
-
-#pragma endregion
-
 #pragma region Drawing
 
 void BattleOverlay::Render(SimpleMath::Rectangle r)
@@ -300,45 +250,15 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 		}
 	}
 
-	auto mmBGTexSize = DirectX::XMUINT2(OVERLAY_WIDTH, OVERLAY_HEIGHT);
-	auto mmSSTextureSize = GetTextureSize(m_overlaySpriteSheet.Get());
-	SimpleMath::Rectangle overlayScissorRect(r);
-	Vector2 _overlayCenter = overlayScissorRect.Center();
+	Overlay::PreRender(r);
+
+	///// Begin Draw Inner Wall (boundary between party and enemies)
+	auto mmBGTexSize = DirectX::XMUINT2(m_width, m_height);
+	Vector2 _overlayCenter = r.Center();
 	m_currentRect.left = _overlayCenter.x - mmBGTexSize.x / 2;
 	m_currentRect.top = _overlayCenter.y - mmBGTexSize.y / 2;
 	m_currentRect.right = _overlayCenter.x + mmBGTexSize.x / 2;
 	m_currentRect.bottom = _overlayCenter.y + mmBGTexSize.y / 2;
-
-	auto gamePtr = GetGamePtr();
-	auto font = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular);
-	std::wstring _bufStr;
-
-	// Now draw
-	auto commandList = m_deviceResources->GetCommandList();
-	m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(
-		r.x, r.x + r.width,
-		r.y + r.height, r.y, 0, 1));
-	m_dxtEffect->Apply(commandList);
-	m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
-	m_primitiveBatch->Begin(commandList);
-	m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
-
-	///// Begin Draw Border (2 quads, the black one 10px smaller per side for a 5px thickness
-	m_primitiveBatch->DrawQuad(
-		VertexPositionColor(XMFLOAT3(m_currentRect.left, m_currentRect.top, 0), ColorAmber),
-		VertexPositionColor(XMFLOAT3(m_currentRect.right, m_currentRect.top, 0), ColorAmber),
-		VertexPositionColor(XMFLOAT3(m_currentRect.right, m_currentRect.bottom, 0), ColorAmber),
-		VertexPositionColor(XMFLOAT3(m_currentRect.left, m_currentRect.bottom, 0), ColorAmber)
-	);
-	m_primitiveBatch->DrawQuad(
-		VertexPositionColor(XMFLOAT3(m_currentRect.left + 5, m_currentRect.top + 5, 0), static_cast<XMFLOAT4>(Colors::Black)),
-		VertexPositionColor(XMFLOAT3(m_currentRect.right - 5, m_currentRect.top + 5, 0), static_cast<XMFLOAT4>(Colors::Black)),
-		VertexPositionColor(XMFLOAT3(m_currentRect.right - 5, m_currentRect.bottom - 5, 0), static_cast<XMFLOAT4>(Colors::Black)),
-		VertexPositionColor(XMFLOAT3(m_currentRect.left + 5, m_currentRect.bottom - 5, 0), static_cast<XMFLOAT4>(Colors::Black))
-	);
-	///// End Draw Border
-
-	///// Begin Draw Inner Wall (boundary between party and enemies)
 	m_primitiveBatch->DrawQuad(
 		VertexPositionColor(XMFLOAT3(m_currentRect.left + 12, m_currentRect.top + 315, 0), ColorAmber),
 		VertexPositionColor(XMFLOAT3(m_currentRect.right - 12, m_currentRect.top + 315, 0), ColorAmber),
@@ -351,9 +271,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 		VertexPositionColor(XMFLOAT3(m_currentRect.right - 230, m_currentRect.top + 325, 0), static_cast<XMFLOAT4>(Colors::Black)),
 		VertexPositionColor(XMFLOAT3(m_currentRect.left + 230, m_currentRect.top + 325, 0), static_cast<XMFLOAT4>(Colors::Black))
 	);
-
 	///// End Draw Inner Wall
-
 
 	// Draw the party and monsters
 	auto _battleSpriteSheetSize = GetTextureSize(m_overlaySpriteSheet.Get());
@@ -368,8 +286,8 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 			// Draw the cursor on the active sprite
 			if ((i == m_activeActor) && i < 9)	// don't bother with any enemy above 3rd
 			{
-				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
-					_battleSpriteSheetSize, Vector2(_animRect.x - 2, _animRect.y - 2), &RECT_SPRITE_CURSOR, 
+				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
+					_battleSpriteSheetSize, Vector2(_animRect.x - 2, _animRect.y - 2), &RECT_SPRITE_CURSOR,
 					(i < 6 ? Colors::White : Colors::Red), 0.f, XMFLOAT2(), 1.0f);
 			}
 			// Render the animated sprites
@@ -388,7 +306,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 					SimpleMath::Rectangle _powerBarR(_healthBarR);
 					_powerBarR.y += _healthBarR.height + 2;
 					_powerBarR.width = _animRect.width * MemGetMainPtr(PARTY_POWER_START)[i] / MemGetMainPtr(PARTY_POWER_MAX_START)[i];
-					m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
+					m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
 						_battleSpriteSheetSize, (RECT)_powerBarR, &(RECT)_barRect, Colors::Blue, 0.f, XMFLOAT2());
 				}
 			}
@@ -398,11 +316,11 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 				int _maxHPUsed = (_mMonsterHPDisplay > m_enemyMaxHP ? _mMonsterHPDisplay : m_enemyMaxHP);
 				_healthBarR.width = _animRect.width * MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6] / _maxHPUsed;
 			}
-			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
+			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
 				_battleSpriteSheetSize, (RECT)_healthBarR, &(RECT)_barRect, Colors::Red, 0.f, XMFLOAT2());
 		}
 	}
-	
+
 	// Draw the battle transition animation if necessary
 	if (m_animationTransition != nullptr)
 	{
@@ -410,12 +328,9 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 		if (m_animationTransition->IsFinished())
 			m_animationTransition = nullptr;
 	}
-	
 
-	// Finish up
-	m_primitiveBatch->End();
-	m_spriteBatch->End();
-	bIsDisplayed = true;
+	Overlay::PostRender(r);
+
 }
 
 #pragma endregion
