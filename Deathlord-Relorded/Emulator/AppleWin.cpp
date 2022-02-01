@@ -47,6 +47,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "NTSC.h"
 #include "../resource.h"
 #include "../Game.h"
+#include "GameOverOverlay.h"
 
 RemoteControlManager g_RemoteControlMgr;
 
@@ -550,4 +551,7 @@ void EmulatorReboot()
 	SetActiveCpu(GetMainCpu());
 	EmulatorRepeatInitialization();
 	SoundCore_SetFade(FADE_NONE);
+	GameOverOverlay* _goo = GameOverOverlay::GetInstance();
+	if (_goo)
+		_goo->Initialize();
 }

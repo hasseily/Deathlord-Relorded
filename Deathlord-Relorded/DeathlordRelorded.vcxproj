@@ -208,6 +208,7 @@
     <ClCompile Include="emulator\SynchronousEventManager.cpp" />
     <ClCompile Include="emulator\Video.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="GameOverOverlay.cpp" />
     <ClCompile Include="HAUtils.cpp" />
     <ClCompile Include="InvItem.cpp" />
     <ClCompile Include="InvManager.cpp" />
@@ -270,6 +271,7 @@
     <ClInclude Include="emulator\Video.h" />
     <ClInclude Include="FindMedia.h" />
     <ClInclude Include="Game.h" />
+    <ClInclude Include="GameOverOverlay.h" />
     <ClInclude Include="HAUtils.h" />
     <ClInclude Include="InvItem.h" />
     <ClInclude Include="InvManager.h" />

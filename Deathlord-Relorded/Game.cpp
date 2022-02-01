@@ -15,6 +15,7 @@
 #include "AutoMap.h"
 #include "InvOverlay.h"
 #include "BattleOverlay.h"
+#include "GameOverOverlay.h"
 #include "TextOutput.h"
 #include "AppleWinDXVideo.h"
 #include "MiniMap.h"
@@ -48,6 +49,7 @@ static std::shared_ptr<SpellWindow>m_spellWindow;
 static std::shared_ptr<DeathlordHacks>m_dlHacks;
 static InvOverlay* m_invOverlay;
 static BattleOverlay* m_battleOverlay;
+static GameOverOverlay* m_gameOverOverlay;
 static TextOutput* m_textOutput;
 static AutoMap* m_autoMap;
 static AppleWinDXVideo* m_a2Video;
@@ -245,11 +247,10 @@ void Game::Update(DX::StepTimer const& timer)
 
     if (g_isDead)
     {
-        // TODO:
         // Call up the dead class singleton
         // and tell it we died
         // It will know if we're already dead and do nothing, or will initiate the game over screen
-
+        m_gameOverOverlay->ShowOverlay();
         return;
     }
 
@@ -280,6 +281,16 @@ void Game::Update(DX::StepTimer const& timer)
 
 	if (g_isInGameMap)
 	{
+
+		if (kbTracker.pressed.Delete)  // TODO: REMOVE
+			m_gameOverOverlay->ToggleOverlay();
+
+        if (m_gameOverOverlay->IsOverlayDisplayed())
+        {
+            m_gameOverOverlay->Update();
+            return;
+        }
+
         if (g_isInBattle && (!m_battleOverlay->IsOverlayDisplayed()))
             m_battleOverlay->ShowOverlay();
         if ((!g_isInBattle) && m_battleOverlay->IsOverlayDisplayed())
@@ -542,6 +553,8 @@ void Game::Render()
 			if (m_a2Video->IsApple2VideoDisplayed())
 				m_a2Video->Render(SimpleMath::Rectangle(clientRect), m_uploadBatch.get());
 
+            m_gameOverOverlay->Render(SimpleMath::Rectangle(clientRect));
+
         }   // end if !g_isInGameMap
 
         // Now check if the game is paused and display an overlay
@@ -749,6 +762,8 @@ void Game::CreateDeviceDependentResources()
     m_invOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
 	m_battleOverlay = BattleOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_battleOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
+	m_gameOverOverlay = GameOverOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
+    m_gameOverOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
     m_a2Video = AppleWinDXVideo::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_a2Video->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
     m_minimap = MiniMap::GetInstance(m_deviceResources, m_resourceDescriptors);

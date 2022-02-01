@@ -9,6 +9,7 @@
 #include "AnimTextManager.h"
 #include "AutoMap.h"
 #include "Emulator/CPU.h"
+#include "GameOverOverlay.h"
 #include <SimpleMath.h>
 #include <vector>
 
@@ -124,6 +125,12 @@ void BattleOverlay::SpriteIsHealed(UINT8 charPosition, UINT16 healingAmount)
 }
 void BattleOverlay::SpriteDied(UINT8 charPosition)
 {
+	// track the number of enemies killed
+	if (charPosition >= 6)
+	{
+		GameOverOverlay* _goo = GameOverOverlay::GetInstance();
+		_goo->m_monstersKilled++;
+	}
 	auto _anim = m_animations[charPosition].get();
 	if (_anim == nullptr)
 	{
@@ -279,7 +286,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 			// Draw the cursor on the active sprite
 			if ((i == m_activeActor) && i < 9)	// don't bother with any enemy above 3rd
 			{
-				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
+				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
 					_battleSpriteSheetSize, Vector2(_animRect.x - 2, _animRect.y - 2), &RECT_SPRITE_CURSOR,
 					(i < 6 ? Colors::White : Colors::Red), 0.f, XMFLOAT2(), 1.0f);
 			}
@@ -299,7 +306,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 					SimpleMath::Rectangle _powerBarR(_healthBarR);
 					_powerBarR.y += _healthBarR.height + 2;
 					_powerBarR.width = _animRect.width * MemGetMainPtr(PARTY_POWER_START)[i] / MemGetMainPtr(PARTY_POWER_MAX_START)[i];
-					m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
+					m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
 						_battleSpriteSheetSize, (RECT)_powerBarR, &(RECT)_barRect, Colors::Blue, 0.f, XMFLOAT2());
 				}
 			}
@@ -309,7 +316,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 				int _maxHPUsed = (_mMonsterHPDisplay > m_enemyMaxHP ? _mMonsterHPDisplay : m_enemyMaxHP);
 				_healthBarR.width = _animRect.width * MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6] / _maxHPUsed;
 			}
-			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::BattleOverlaySpriteSheet),
+			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
 				_battleSpriteSheetSize, (RECT)_healthBarR, &(RECT)_barRect, Colors::Red, 0.f, XMFLOAT2());
 		}
 	}
