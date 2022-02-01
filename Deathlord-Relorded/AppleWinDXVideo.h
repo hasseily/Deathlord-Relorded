@@ -27,6 +27,7 @@ public:
 	void OnDeviceLost();
 
 	// Properties
+	float m_scale;
 
 	// public singleton code
 	static AppleWinDXVideo* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,
@@ -60,7 +61,6 @@ private:
 	}
 
 	bool bIsDisplayed;
-	float m_scale;
 
 	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;

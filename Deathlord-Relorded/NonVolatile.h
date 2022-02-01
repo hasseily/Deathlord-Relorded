@@ -17,6 +17,7 @@ public:
 	std::wstring diskScenAPath;
 	std::wstring diskScenBPath;
 	int speed = 1;
+	float applewinScale = 1.0f;
 	bool scanlines = false;
 	bool removeFog = true;
 	bool showFootsteps = true;

@@ -2,6 +2,7 @@
 #include "AppleWinDXVideo.h"
 #include "DeathlordHacks.h"
 #include "Emulator/Video.h"
+#include "NonVolatile.h"
 #include "Descriptors.h"
 
 // The applewin video displays differently from the other "easy" display classes
@@ -20,11 +21,13 @@
 // below because "The declaration of a static data member in its class definition is not a definition"
 AppleWinDXVideo* AppleWinDXVideo::s_instance;
 
+extern NonVolatile g_nonVolatile;
+
 #pragma region main
 void AppleWinDXVideo::Initialize()
 {
 	bIsDisplayed = false;
-	m_scale = 2.f;
+	m_scale = 1.0f;
 }
 
 void AppleWinDXVideo::ShowApple2Video()
@@ -58,6 +61,7 @@ XMUINT2 AppleWinDXVideo::GetSize()
 void AppleWinDXVideo::Render(SimpleMath::Rectangle r, 
 	ResourceUploadBatch* uploadBatch)
 {
+	m_scale = g_nonVolatile.applewinScale;
 	// First, update the GPU texture with the latest AppleWin video frame
 	m_AppleWinTextureData.pData = g_pFramebufferbits;	// AppleWin might have rebooted
 	auto command_queue = m_deviceResources->GetCommandQueue();

@@ -17,6 +17,7 @@ static nlohmann::json nv_json = R"(
     "diskBootPath":		  "Images\\Deathlord - Disk 1, Side A Boot disk.woz",
     "diskScenAPath":	  "Images\\Deathlord Scenario A.nib",
     "diskScenBPath":	  "Images\\Deathlord Scenario B.nib",
+    "applewinScale":	  1.0,
 	"scanlines":		  true,
 	"removeFog":		  false,
 	"showFootsteps":	  false,
@@ -51,6 +52,7 @@ int NonVolatile::SaveToDisk()
 	nv_json["diskBootPath"]			= sDiskBootPath;
 	nv_json["diskScenAPath"]		= sDiskScenAPath;
 	nv_json["diskScenBPath"]		= sDiskScenBPath;
+	nv_json["applewinScale"]		= applewinScale;
 	nv_json["scanlines"]			= scanlines;
 	nv_json["removeFog"]			= removeFog;
 	nv_json["showFootsteps"]		= showFootsteps;
@@ -101,6 +103,7 @@ int NonVolatile::LoadFromDisk()
 	std::string _diskScenBPath = nv_json["diskScenBPath"].get<std::string>();
 	HA::ConvertStrToWStr(&_diskScenBPath, &diskScenBPath);
 
+	applewinScale = nv_json["applewinScale"].get<float>();
 	scanlines = nv_json["scanlines"].get<bool>();
 	removeFog = nv_json["removeFog"].get<bool>();
 	showFootsteps = nv_json["showFootsteps"].get<bool>();
