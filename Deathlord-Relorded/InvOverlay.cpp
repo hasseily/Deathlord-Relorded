@@ -382,13 +382,13 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
-		_bufStr = NameOfClass((DeathlordClasses)memberClass, false);
+		_bufStr = NameOfClass((DeathlordClasses)memberClass, true);
 		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
 		UINT8 memberRace = MemGetMainPtr(PARTY_RACE_START)[iMember];
-		_bufStr = NameOfRace((DeathlordRaces)memberRace, false);
+		_bufStr = NameOfRace((DeathlordRaces)memberRace, true);
 		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
