@@ -15,6 +15,7 @@
 #include "AutoMap.h"
 #include "InvOverlay.h"
 #include "BattleOverlay.h"
+#include "GameOverOverlay.h"
 #include "TextOutput.h"
 #include "AppleWinDXVideo.h"
 #include "MiniMap.h"
@@ -48,6 +49,7 @@ static std::shared_ptr<SpellWindow>m_spellWindow;
 static std::shared_ptr<DeathlordHacks>m_dlHacks;
 static InvOverlay* m_invOverlay;
 static BattleOverlay* m_battleOverlay;
+static GameOverOverlay* m_gameOverOverlay;
 static TextOutput* m_textOutput;
 static AutoMap* m_autoMap;
 static AppleWinDXVideo* m_a2Video;
@@ -78,6 +80,7 @@ int g_rerollCount = 0;  // Number of rerolls in char attributes creation
 bool g_isInGameTransition = false;  // Before being in game map
 bool g_hasBeenIdleOnce = false;
 bool g_isInBattle = false;
+bool g_isDead = false;
 bool g_wantsToSave = true;  // DISABLED. It can corrupt saved games
 int g_debugLogInstructions = 0;    // Tapping "End" key logs the next 100,000 instructions
 float Game::m_clientFrameScale = 1.f;
@@ -242,6 +245,15 @@ void Game::Update(DX::StepTimer const& timer)
 	UINT8* memPtr = MemGetMainPtr(0);
 	g_isInGameMap = (memPtr[MAP_IS_IN_GAME_MAP] == 0xE5);	// when not in game map, that area is all zeros
 
+    if (g_isDead)
+    {
+        // Call up the dead class singleton
+        // and tell it we died
+        // It will know if we're already dead and do nothing, or will initiate the game over screen
+        m_gameOverOverlay->ShowOverlay();
+        return;
+    }
+
     if (g_isInGameTransition)
     {
 		// If in transition from pre-game to game, only show the transition screen
@@ -269,15 +281,23 @@ void Game::Update(DX::StepTimer const& timer)
 
 	if (g_isInGameMap)
 	{
-        if (kbTracker.pressed.Insert)
-		    m_invOverlay->ToggleOverlay();
 
-		if (kbTracker.pressed.Delete)   // TODO: DEBUG - REMOVE
-			m_battleOverlay->ToggleOverlay();
-        if (g_isInBattle)
+		if (kbTracker.pressed.Delete)  // TODO: REMOVE
+			m_gameOverOverlay->ToggleOverlay();
+
+        if (m_gameOverOverlay->IsOverlayDisplayed())
+        {
+            m_gameOverOverlay->Update();
+            return;
+        }
+
+        if (g_isInBattle && (!m_battleOverlay->IsOverlayDisplayed()))
             m_battleOverlay->ShowOverlay();
-        else
+        if ((!g_isInBattle) && m_battleOverlay->IsOverlayDisplayed())
 			m_battleOverlay->HideOverlay();
+
+		if (kbTracker.pressed.Insert)
+			m_invOverlay->ToggleOverlay();
 
         if (kbTracker.pressed.F11)
             m_a2Video->ToggleApple2Video();
@@ -299,7 +319,7 @@ void Game::Update(DX::StepTimer const& timer)
     {
 		if (kbTracker.pressed.Escape)       // Escape used to close the overlay
 			m_invOverlay->HideOverlay();
-        m_invOverlay->UpdateState();
+        m_invOverlay->Update();
         m_invOverlay->MousePosInPixels(mo.x, mo.y);
 		if (moTracker.leftButton == ButtonState::PRESSED)
 		{
@@ -446,15 +466,16 @@ void Game::Render()
                 break;
             }
             auto _sSize = m_spriteFonts.at(FontDescriptors::FontDLRegular)->MeasureString(_sMenu.c_str(), false);
+            auto _a2VideoSize = m_a2Video->GetSize();
             float _sX = _scRect.Center().x - (XMVectorGetX(_sSize) / 2.f);
-            float _sY = 800.f;
+            float _sY = _scRect.Center().y + (_a2VideoSize.y / 2) + 50;
 			m_spriteFonts.at(FontDescriptors::FontDLRegular)->DrawString(m_spriteBatch.get(),
                 _sMenu.c_str(), { _sX, _sY }, Colors::AntiqueWhite, 0.f, Vector2(), 1.f);
 			// Display loading/writing status
 			if (DiskActivity())
 			{
 				m_spriteFonts.at(FontDescriptors::FontDLRegular)->DrawString(m_spriteBatch.get(),
-					s_hourglass.c_str(), { 1400, 800 }, Colors::AntiqueWhite, ((tickOfLastRender / 100000) % 32) / 10.f,
+					s_hourglass.c_str(), { _scRect.Center().x + (_a2VideoSize.x / 2) + 50, _sY }, Colors::AntiqueWhite, ((tickOfLastRender / 100000) % 32) / 10.f,
 					Vector2(7, 8), 1.f);
 			}
 			m_spriteBatch->End();
@@ -531,6 +552,8 @@ void Game::Render()
             // It should be displayed at the top if requested
 			if (m_a2Video->IsApple2VideoDisplayed())
 				m_a2Video->Render(SimpleMath::Rectangle(clientRect), m_uploadBatch.get());
+
+            m_gameOverOverlay->Render(SimpleMath::Rectangle(clientRect));
 
         }   // end if !g_isInGameMap
 
@@ -739,6 +762,8 @@ void Game::CreateDeviceDependentResources()
     m_invOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
 	m_battleOverlay = BattleOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_battleOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
+	m_gameOverOverlay = GameOverOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
+    m_gameOverOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
     m_a2Video = AppleWinDXVideo::GetInstance(m_deviceResources, m_resourceDescriptors);
     m_a2Video->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
     m_minimap = MiniMap::GetInstance(m_deviceResources, m_resourceDescriptors);

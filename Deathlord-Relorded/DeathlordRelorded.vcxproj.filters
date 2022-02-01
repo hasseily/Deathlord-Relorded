@@ -165,6 +165,12 @@
     <ClCompile Include="AnimTextManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Overlay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GameOverOverlay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATGColors.h">
@@ -356,6 +362,12 @@
     <ClInclude Include="AnimTextManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Overlay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GameOverOverlay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="emulator\cpu\cpu_general.inl">
@@ -479,6 +491,9 @@
       <Filter>Assets</Filter>
     </Image>
     <Image Include="Assets\Spritesheet_Portraits_Male.jpg">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\GameOver.png">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>

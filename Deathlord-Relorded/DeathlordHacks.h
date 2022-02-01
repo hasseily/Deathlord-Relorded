@@ -24,6 +24,8 @@ constexpr UINT16 MAP_OVERLAND_Y = 0xFC4C;				// Y position of the overland subma
 constexpr UINT16 MAP_VISIBILITY_RADIUS = 0xFC05;		// Visibility radius in squares around the player
 constexpr UINT16 MAP_IS_HIDDEN = 0xFC25;				// 0 if visible, otherwise the party member number (1-BASED!) that succeeded in hiding
 
+// NOTE: A party size less than 6 is not supported currently
+constexpr UINT16 PARTY_PARTYSIZE = 0xFC20;				// Party size, 1-6
 constexpr UINT16 PARTY_PARTYNAME = 0xFCF0;				// Name of the party! Fixed length 16, centered with space padding
 constexpr UINT16 PARTY_NAME_START = 0xFD00;				// Names of the party members, fixed length of 9
 constexpr UINT16 PARTY_CLASS_START = 0xFD60;			// Start of the array of party classes

@@ -70,37 +70,24 @@ void InvOverlay::Initialize()
 {
 	bIsDisplayed = false;
 	bShouldDisplay = false;
+	bShouldBlockKeystrokes = true;
 	m_currentRect = { 0,0,0,0 };
+	m_width = 1150;
+	m_height = 500;
+	m_spritesheetDescriptor = TextureDescriptors::InvOverlaySpriteSheet;
+	m_spritesheetPath = L"Assets/InvOverlaySpriteSheet.png";
+	m_curtainColor = { 0.f, 0.f, 0.f, 0.2f };
+	m_type = OverlayType::Bordered;
+
 	m_currentItemInstance = 0;
 }
 
-void InvOverlay::ShowOverlay()
-{
-	SetSendKeystrokesToAppleWin(false);
-	bShouldDisplay = true;
-}
-
-void InvOverlay::HideOverlay()
-{
-	SetSendKeystrokesToAppleWin(true);
-	bShouldDisplay = false;
-}
-
-void InvOverlay::ToggleOverlay()
-{
-	IsOverlayDisplayed() ? HideOverlay() : ShowOverlay();
-}
-
-bool InvOverlay::IsOverlayDisplayed()
-{
-	return bIsDisplayed;
-}
 #pragma endregion
 
 #pragma region actions
 
 // Update the inventory state based on the game's data
-void InvOverlay::UpdateState()
+void InvOverlay::Update()
 {
 	m_invRows = invMgr->AllInventoryInSlot(selectedSlot);
 }
@@ -210,52 +197,11 @@ ENDLEFTCLICK:
 	// Always recalculate AC after a change.
 	// Deathlord only recalcs AC during fights and if you view a party member's info
 	ExecuteDeathlordArmorClassRoutine();
-	UpdateState();
+	Update();
 }
 
 #pragma endregion
 
-#pragma region D3D stuff
-void InvOverlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states)
-{
-	auto device = m_deviceResources->GetD3DDevice();
-	DX::ThrowIfFailed(
-		CreateWICTextureFromFile(device, *resourceUpload, L"Assets/InvOverlaySpriteSheet.png",
-			m_invOverlaySpriteSheet.ReleaseAndGetAddressOf()));
-	CreateShaderResourceView(device, m_invOverlaySpriteSheet.Get(),
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet));
-
-	// Create the DTX pieces
-
-	auto sampler = states->LinearWrap();
-	RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
-
-	EffectPipelineStateDescription epdTriangles(
-		&VertexPositionColor::InputLayout,
-		CommonStates::Opaque,
-		CommonStates::DepthDefault,
-		CommonStates::CullNone,		// Note: don't cull because some quadlines are drawn clockwise
-									// Specifically the swaplines if the recipient person is to the left of the sender
-		rtState,
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
-	m_dxtEffect = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdTriangles);
-	m_primitiveBatch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
-
-	// The applewin texture is AlphaBlend
-	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
-	m_spriteBatch = std::make_unique<SpriteBatch>(device, *resourceUpload, spd);
-	m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
-}
-
-void InvOverlay::OnDeviceLost()
-{
-	m_invOverlaySpriteSheet.Reset();
-	m_spriteBatch.reset();
-	m_primitiveBatch.reset();
-	m_dxtEffect.reset();
-}
-
-#pragma endregion
 
 #pragma region Drawing
 
@@ -278,10 +224,11 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 		// No animation for inventory overlay showing up
 	}
 
-	auto mmBGTexSize = DirectX::XMUINT2(1150, 600);
-	auto mmSSTextureSize = GetTextureSize(m_invOverlaySpriteSheet.Get());
-	SimpleMath::Rectangle overlayScissorRect(r);
-	Vector2 _overlayCenter = overlayScissorRect.Center();
+	Overlay::PreRender(r);
+
+	auto mmBGTexSize = DirectX::XMUINT2(m_width, m_height);
+	auto mmSSTextureSize = GetTextureSize(m_overlaySpriteSheet.Get());
+	Vector2 _overlayCenter = r.Center();
 	m_currentRect.left = _overlayCenter.x - mmBGTexSize.x / 2;
 	m_currentRect.top = _overlayCenter.y - mmBGTexSize.y / 2;
 	m_currentRect.right = _overlayCenter.x + mmBGTexSize.x / 2;
@@ -303,31 +250,6 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 
 	float invSlotsOriginX = innerRect.left;			// beginning of inventory slots
 	float invSlotsOriginY = innerRect.top + 90.f;
-
-	// Now draw
-	auto commandList = m_deviceResources->GetCommandList();
-	m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(
-		r.x, r.x + r.width,
-		r.y + r.height, r.y, 0, 1));
-	m_dxtEffect->Apply(commandList);
-	m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
-	m_primitiveBatch->Begin(commandList);
-	m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
-
-	///// Begin Draw Border (2 quads, the black one 10px smaller per side for a 5px thickness
-	m_primitiveBatch->DrawQuad(
-		VertexPositionColor(XMFLOAT3(m_currentRect.left, m_currentRect.top, 0), ColorAmber),
-		VertexPositionColor(XMFLOAT3(m_currentRect.right, m_currentRect.top, 0), ColorAmber),
-		VertexPositionColor(XMFLOAT3(m_currentRect.right, m_currentRect.bottom, 0), ColorAmber),
-		VertexPositionColor(XMFLOAT3(m_currentRect.left, m_currentRect.bottom, 0), ColorAmber)
-	);
-	m_primitiveBatch->DrawQuad(
-		VertexPositionColor(XMFLOAT3(m_currentRect.left+5, m_currentRect.top+5, 0), static_cast<XMFLOAT4>(Colors::Black)),
-		VertexPositionColor(XMFLOAT3(m_currentRect.right-5, m_currentRect.top+5, 0), static_cast<XMFLOAT4>(Colors::Black)),
-		VertexPositionColor(XMFLOAT3(m_currentRect.right-5, m_currentRect.bottom-5, 0), static_cast<XMFLOAT4>(Colors::Black)),
-		VertexPositionColor(XMFLOAT3(m_currentRect.left+5, m_currentRect.bottom-5, 0), static_cast<XMFLOAT4>(Colors::Black))
-	);
-	///// End Draw Border
 
 		///// Begin Draw crossed lines
 	m_primitiveBatch->DrawQuad(
@@ -460,13 +382,13 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
-		_bufStr = NameOfClass((DeathlordClasses)memberClass, false);
+		_bufStr = NameOfClass((DeathlordClasses)memberClass, true);
 		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
 		UINT8 memberRace = MemGetMainPtr(PARTY_RACE_START)[iMember];
-		_bufStr = NameOfRace((DeathlordRaces)memberRace, false);
+		_bufStr = NameOfRace((DeathlordRaces)memberRace, true);
 		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
@@ -643,10 +565,8 @@ ENDSWAPHELPERS:
 	}
 	///// End Draw Inventory Rows
 
-	// Finish up
-	m_primitiveBatch->End();
-	m_spriteBatch->End();
-	bIsDisplayed = true;
+	Overlay::PostRender(r);
+
 }
 
 // Returns rect of the owner of an item instance
@@ -708,7 +628,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 	// Calculate the xpos of the first equipment status sprite. It is centered in the column
 	// The next ones will just be shifted by memberColWidth
 	int _xPos = innerRect.left + widthTabsArea + (memberColWidth / 2) - (spRectInvEmpty.right - spRectInvEmpty.left) / 2;
-	auto mmSSTextureSize = GetTextureSize(m_invOverlaySpriteSheet.Get());
+	auto mmSSTextureSize = GetTextureSize(m_overlaySpriteSheet.Get());
 	for (UINT8 i = 0; i < DEATHLORD_PARTY_SIZE; i++)
 	{
 		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),

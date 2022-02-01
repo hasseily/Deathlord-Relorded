@@ -47,6 +47,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "NTSC.h"
 #include "../resource.h"
 #include "../Game.h"
+#include "GameOverOverlay.h"
 
 RemoteControlManager g_RemoteControlMgr;
 
@@ -539,6 +540,7 @@ void EmulatorReboot()
 	g_isInGameTransition = false;
 	g_hasBeenIdleOnce = false;
 	g_isInBattle = false;
+	g_isDead = false;
 	g_bFullSpeed = 0;	// Might've hit reset in middle of InternalCpuExecute() - so beep may get (partially) muted
 	MemReset();	// calls CpuInitialize(), CNoSlotClock.Reset()
 	VideoResetState();
@@ -549,4 +551,7 @@ void EmulatorReboot()
 	SetActiveCpu(GetMainCpu());
 	EmulatorRepeatInitialization();
 	SoundCore_SetFade(FADE_NONE);
+	GameOverOverlay* _goo = GameOverOverlay::GetInstance();
+	if (_goo)
+		_goo->Initialize();
 }

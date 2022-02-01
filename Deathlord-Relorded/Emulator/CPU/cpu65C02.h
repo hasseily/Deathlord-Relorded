@@ -229,12 +229,12 @@ SWITCH_GAMEMAP:
 				// We know here that we're in a safe place to parse the video screen, etc...
 				// And we know we're not in battle
 				// And furthermore we disable that timer because who in his right mind wants turns to pass when not doing anything?
-
 				g_isInBattle = false;
 				auto memT = MemoryTriggers::GetInstance();
 				g_hasBeenIdleOnce = true;
 				if (memT != NULL)
 					memT->Process();
+				
 				CYC(6);		// NOP 6 cycles. The DEC instruction takes 6 cycles
 				regs.pc = _origPC + 3;
 				goto AFTERFETCH;
@@ -475,10 +475,16 @@ SWITCH_GAMEMAP:
 				}
 				break;
 			}
-			case PC_SAVE_AFTER_DEATH:
+			case PC_SAVE_AFTER_ONE_DEAD:
 			{
 				CYC(2); // BNE uses 2 cycles;
 				regs.pc = _origPC + 2;	// Jump to the next instruction
+				break;
+			}
+			case PC_SAVE_AFTER_ALL_DEAD:
+			{
+				// Setting this value to 0 ensures the write to disk routine doesn't run after TPK
+				MemGetMainPtr(0x8710)[0] = 0;
 				break;
 			}
 			case PC_NINJA_MONK_AC_RESET:
@@ -575,6 +581,9 @@ SWITCH_GAMEMAP:
 					return uExecutedCycles;
 				break;
 			}
+			case PC_DEAD:
+				g_isDead = true;
+				break;
 			default:
 				break;
 			}	// switch
