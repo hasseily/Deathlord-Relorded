@@ -25,7 +25,7 @@ This results in a game that looks retro-modern, but whose logic is encapsulated 
 
 ## Installation
 
-There are no releases for now, it's an in-development project. Generally the main branch should be compilable with Visual Studio 2019.
+Grab the latest release from GitHub. Unzip it anywhere, and double click the app.
 
 ## Features
 
