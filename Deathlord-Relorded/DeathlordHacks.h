@@ -178,7 +178,46 @@ enum class DeathlordRaces
 	Gnome,
 	DarkElf,
 	Orc,
-	HalfOrc
+	HalfOrc,
+	Count
+};
+
+enum class DeathlordAttributes
+{
+	xSTR = 0,
+	xCON,
+	xSIZ,
+	xINT,
+	xDEX,
+	xCHA,
+	xPOW,
+	Count
+};
+
+// Note:	Those 2 arrays aren't used, we instead grab the data from memory when creating a char
+//			They're here for completion
+constexpr UINT8 ARRAY_MIN_ATTRIBUTES_BY_RACE[(int)DeathlordRaces::Count][(int)DeathlordAttributes::Count]
+{ // STR CON SIZ INT DEX CHA POW
+	{  3,  3,  8,  3,  3,  3,  3 },	// Human
+	{  3,  3,  3,  8,  8,  7,  8 },	// Elf
+	{  3,  3,  5,  6,  6,  5,  5 },	// HalfElf
+	{  8,  8,  3,  3,  3,  3,  3 },	// Dwarf
+	{  5,  8,  3,  3,  6,  3,  3 },	// Gnome
+	{  3,  3,  3,  3,  8,  3,  3 },	// DarkElf
+	{ 11, 11, 13,  3,  3,  3,  3 },	// Orc
+	{  8,  8, 11,  3,  3,  3,  3 }	// HalfOrc
+};
+
+constexpr UINT8 ARRAY_MAX_ATTRIBUTES_BY_RACE[(int)DeathlordRaces::Count][(int)DeathlordAttributes::Count]
+{ // STR CON SIZ INT DEX CHA POW
+	{ 18, 18, 18, 18, 18, 18, 18 },	// Human
+	{ 13, 13, 12, 19, 19, 18, 19 },	// Elf
+	{ 15, 15, 14, 18, 18, 18, 18 },	// HalfElf
+	{ 19, 19,  8, 16, 16, 16, 16 },	// Dwarf
+	{ 18, 18,  6, 17, 18, 16, 17 },	// Gnome
+	{ 15, 16,  7, 14, 20, 14, 18 },	// DarkElf
+	{ 21, 20, 21, 11, 13,  9, 12 },	// Orc
+	{ 19, 19, 19, 13, 13, 11, 14 }	// HalfOrc
 };
 
 enum class DeathlordCharStatus

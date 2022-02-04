@@ -16,7 +16,11 @@
 #define PC_CHAR_MANAGEMENT_KEYPRESS	0x7C0A		// Check if key was pressed in the character management option menus
 #define PC_CHAR_WAIT_KEYPRESS		0x7A63		// Waiting for keypress (routine called from many places in the options menus)
 #define PC_CHAR_PRESSED_ESC			0x701B		// Pressed ESC to exit char creation
+#define PC_CHAR_CREATE_RNG			0x6780		// Char creation RNG routine
+#define MEM_CHAR_CREATE_RNG_START	0x6500		// Table of 256 numbers used and rotated for RNG
 #define MEM_CHAR_CREATE_ATTR_START	0x71F2		// When creating a char and rolling attributes, these are the attributes
+#define MEM_RACES_ATTR_MIN_START	0x70A0		// Starting point of the minimum values for attributes, for each race. 8 bytes per race, STR starting at byte 1.
+#define MEM_RACES_ATTR_MAX_START	0x70E0		// Starting point of the maximum values for attributes, for each race. 8 bytes per race, STR starting at byte 1.
 
 // In-game
 #define PC_RNG						0x4AE0		// Random number generator

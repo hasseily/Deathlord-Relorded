@@ -645,15 +645,17 @@ SWITCH_GAMEMAP:
 						break;
 					}
 
-					// Otherwise check if attrs 16+, if not then keep going
+					// Otherwise check if specific attrs are at least max-1, if not then keep going
 					shouldReroll = false;
-					if (MemGetMainPtr(MEM_CHAR_CREATE_ATTR_START)[0] < 16)	// STR < 16
+					UINT8 _race = MemGetMainPtr(0xEC)[0];	// this is where the chosen race is
+					LPBYTE _attrMaxStart = MemGetMainPtr(MEM_RACES_ATTR_MAX_START + (8 * _race) + 1);
+					if (MemGetMainPtr(MEM_CHAR_CREATE_ATTR_START)[(int)DeathlordAttributes::xSTR] < (_attrMaxStart[(int)DeathlordAttributes::xSTR] - 1))
 						shouldReroll = true;
-					if (MemGetMainPtr(MEM_CHAR_CREATE_ATTR_START)[1] < 16)	// CON < 16
+					if (MemGetMainPtr(MEM_CHAR_CREATE_ATTR_START)[(int)DeathlordAttributes::xCON] < (_attrMaxStart[(int)DeathlordAttributes::xCON] - 1))
 						shouldReroll = true;
-					if (MemGetMainPtr(MEM_CHAR_CREATE_ATTR_START)[3] < 16)	// INT < 16
+					if (MemGetMainPtr(MEM_CHAR_CREATE_ATTR_START)[(int)DeathlordAttributes::xINT] < (_attrMaxStart[(int)DeathlordAttributes::xINT] - 1))
 						shouldReroll = true;
-					if (MemGetMainPtr(MEM_CHAR_CREATE_ATTR_START)[4] < 16)	// DEX < 16
+					if (MemGetMainPtr(MEM_CHAR_CREATE_ATTR_START)[(int)DeathlordAttributes::xDEX] < (_attrMaxStart[(int)DeathlordAttributes::xDEX] - 1))
 						shouldReroll = true;
 					if (shouldReroll)
 					{
@@ -661,6 +663,16 @@ SWITCH_GAMEMAP:
 						regs.a = 'N' + 0x80;
 						MemGetMainPtr(0xC000)[0] = 0;
 						regs.pc = 0x7A6B;	// RTS after having simulated a 'N'
+
+						// Reseed the RNG table every once in a while, because we're never waiting for user keyboard input,
+						// and the game recalcs the RNG table while it waits.
+						if (g_rerollCount > UINT8_MAX)
+						{
+							for (UINT8 i = 0; i < UINT8_MAX; i++)
+							{
+								MemGetMainPtr(MEM_CHAR_CREATE_RNG_START)[i] = rand() % UINT8_MAX;
+							}
+						}
 					}
 					else
 					{

@@ -445,10 +445,10 @@ void Game::Render()
                 _sMenu = L"Choose 'U', 'C', or 'P' to continue";
                 break;
             case StartMenuState::AttributesRerollPropose:
-                _sMenu = L"Press 'A' to autoroll until STR, CON, INT and DEX are all 16+";
+                _sMenu = L"Press 'A' to autoroll until STR/CON/INT/DEX are all at least 1 below the maximum for the chosen race";
                 break;
             case StartMenuState::AttributesRerolling:
-                _sMenu = L"Rolling attributes for 16+, press almost any key to cancel";
+                _sMenu = L"Rolling attributes for STR/CON/INT/DEX >= (max-1), press almost any key to cancel";
                 break;
 			case StartMenuState::AttributesRerollCancelled:
 				_sMenu = L"";
