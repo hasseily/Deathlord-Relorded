@@ -347,8 +347,16 @@ bool AutoMap::UpdateLOSRadius()
 		m_LOSRadius = LOS_MAX_DISTANCE;	// big LOS
 	}
 	else
-		m_LOSRadius = MemGetMainPtr(MAP_VISIBILITY_RADIUS)[0];
-
+	{
+		if (PartyLeaderIsOfRace(DeathlordRaces::Gnome))
+		{
+			m_LOSRadius = LOS_MAX_DISTANCE;	// Gnomes get incredible LOS
+		}
+		else // default underground
+		{
+			m_LOSRadius = MemGetMainPtr(MAP_VISIBILITY_RADIUS)[0];
+		}
+	}
 	return (_oldRadius != m_LOSRadius);
 }
 
