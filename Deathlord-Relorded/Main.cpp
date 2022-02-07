@@ -186,20 +186,15 @@ void UpdateMenuBarStatus(HWND hwnd)
 void ToggleFullScreen(HWND hWnd)
 {
 	static bool s_fullscreen = false;
-	// TODO: Set s_fullscreen to true if defaulting to fullscreen.
 	if (s_fullscreen)
 	{
-		SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
-		SetWindowLongPtr(hWnd, GWL_EXSTYLE, 0);
-
+		SetWindowLongPtr(hWnd, GWL_EXSTYLE, WS_OVERLAPPEDWINDOW);
 		ShowWindow(hWnd, SW_SHOWNORMAL);
 		SetWindowPos(hWnd, HWND_TOP, 0, 0, m_initialWindowWidth, m_initialWindowHeight, SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
 	}
 	else
 	{
-		SetWindowLongPtr(hWnd, GWL_STYLE, 0);
 		SetWindowLongPtr(hWnd, GWL_EXSTYLE, WS_EX_TOPMOST);
-
 		SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 		ShowWindow(hWnd, SW_SHOWMAXIMIZED);
 	}
