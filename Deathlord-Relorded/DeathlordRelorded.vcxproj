@@ -223,6 +223,7 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="remotecontrol\Gamelink.cpp" />
     <ClCompile Include="remotecontrol\RemoteControlManager.cpp" />
+    <ClCompile Include="RenderTexture.cpp" />
     <ClCompile Include="SpellWindow.cpp" />
     <ClCompile Include="TextOutput.cpp" />
     <ClCompile Include="TilesetCreator.cpp" />
@@ -287,6 +288,7 @@
     <ClInclude Include="ReadData.h" />
     <ClInclude Include="remotecontrol\Gamelink.h" />
     <ClInclude Include="remotecontrol\RemoteControlManager.h" />
+    <ClInclude Include="RenderTexture.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SpellWindow.h" />
     <ClInclude Include="StepTimer.h" />

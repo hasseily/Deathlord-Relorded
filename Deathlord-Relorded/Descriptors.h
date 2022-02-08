@@ -15,8 +15,15 @@ constexpr XMVECTORF32 VColorCurtain = { { { 0.f, 0.f, 0.f, 0.9f } } };
 constexpr XMFLOAT4 ColorShadow = { 0.f, 0.f, 0.f, 0.33333f };
 constexpr XMVECTORF32 VColorShadow = { { { 0.f, 0.f, 0.f, 0.33333f } } };
 
+enum class RTDescriptors	// Render Targets
+{
+	Offscreen,
+	Count
+};
+
 enum class TextureDescriptors
 {
+	OffscreenTexture,
 	MainBackground,
 	MainBackgroundLayerTop,
 	DLRLLoadingScreen,

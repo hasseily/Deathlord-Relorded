@@ -11,6 +11,7 @@
 #include <Keyboard.h>
 #include <map>
 #include "Descriptors.h"
+#include "RenderTexture.h"
 
 constexpr int MAX_RENDERED_FRAMES_PER_SECOND = 30;  // Only render so many frames. Give the emulator all the rest of the time
 
@@ -115,6 +116,7 @@ private:
 
     void Update(DX::StepTimer const& timer);
     void Render();
+    void PostProcess(ID3D12GraphicsCommandList* commandList);
 
     D3D12_VIEWPORT GetCurrentViewport()
     {
@@ -147,8 +149,11 @@ private:
 	std::unique_ptr<DirectX::Mouse>         m_mouse;
 
 	std::unique_ptr<DirectX::DescriptorHeap> m_resourceDescriptors;
-
     std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
+
+    // Offscreen rendering
+    std::unique_ptr<DirectX::DescriptorHeap> m_renderDescriptors;
+    std::unique_ptr<DX::RenderTexture> m_offscreenTexture;
 
 	// fonts and primitives from dxtoolkit12 to draw everything
 	std::map<FontDescriptors, std::unique_ptr<SpriteFont>> m_spriteFonts;

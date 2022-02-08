@@ -76,6 +76,7 @@
 #include "PostProcess.h"
 #include "PrimitiveBatch.h"
 #include "RenderTargetState.h"
+#include "RenderTexture.h"
 #include "ResourceUploadBatch.h"
 #include "ScreenGrab.h"
 #include "SimpleMath.h"

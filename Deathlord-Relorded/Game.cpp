@@ -97,6 +97,10 @@ Game::Game() noexcept(false)
 	//m_deviceResources = std::make_unique<DX::DeviceResources>(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_D32_FLOAT, 2, D3D_FEATURE_LEVEL_11_0);
     m_deviceResources->RegisterDeviceNotify(this);
 
+    // Offscreen rendering
+	const auto format = m_deviceResources->GetBackBufferFormat();
+	m_offscreenTexture = std::make_unique<DX::RenderTexture>(format);
+
     // Any time the layouts differ, a recreation of the vertex buffer is triggered
     m_previousLayout = EmulatorLayout::NONE;
     m_currentLayout = EmulatorLayout::NORMAL;
@@ -395,6 +399,9 @@ void Game::Render()
 		ID3D12DescriptorHeap* heaps[] = { m_resourceDescriptors->Heap(), m_states->Heap() };
 		commandList->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
 
+        // Always draw to offscreen texture
+        m_offscreenTexture->BeginScene(commandList);
+
 		// Get the window size
         // We'll need it for the effects projection matrix
 		RECT clientRect;
@@ -576,12 +583,33 @@ void Game::Render()
 
 		PIXEndEvent(commandList);
 
+        // Offscreen postprocessing
+        m_offscreenTexture->EndScene(commandList);
+        PostProcess(commandList);
+
 		// Show the new frame.
 		PIXBeginEvent(PIX_COLOR_DEFAULT, L"Present");
 		m_deviceResources->Present();
 		m_graphicsMemory->Commit(m_deviceResources->GetCommandQueue());
 		PIXEndEvent();
     }
+}
+
+void Game::PostProcess(ID3D12GraphicsCommandList* commandList)
+{
+	auto renderTarget = m_deviceResources->GetRenderTarget();
+	auto offscreenTarget = m_offscreenTexture->GetResource();
+
+	ScopedBarrier barriers(commandList,
+		{
+			CD3DX12_RESOURCE_BARRIER::Transition(renderTarget,
+				D3D12_RESOURCE_STATE_RENDER_TARGET,
+				D3D12_RESOURCE_STATE_COPY_DEST, 0),
+			CD3DX12_RESOURCE_BARRIER::Transition(offscreenTarget,
+				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+				D3D12_RESOURCE_STATE_COPY_SOURCE, 0)
+		});
+	commandList->CopyResource(renderTarget, offscreenTarget);
 }
 
 // Helper method to clear the back buffers.
@@ -591,7 +619,8 @@ void Game::Clear()
     PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"Clear");
 
     // Clear the views.
-    auto rtvDescriptor = m_deviceResources->GetRenderTargetView();
+	// auto rtvDescriptor = m_deviceResources->GetRenderTargetView();	// using offscreen texture instead
+	auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen);
     auto dsvDescriptor = m_deviceResources->GetDepthStencilView();
 
     commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &dsvDescriptor);
@@ -706,6 +735,18 @@ void Game::MenuToggleHacksWindow()
 void Game::CreateDeviceDependentResources()
 {
     auto device = m_deviceResources->GetD3DDevice();
+
+	// Check Shader Model 6 support
+	D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { D3D_SHADER_MODEL_6_0 };
+	if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel)))
+		|| (shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_0))
+	{
+#ifdef _DEBUG
+		OutputDebugStringA("ERROR: Shader Model 6.0 is not supported!\n");
+#endif
+		throw std::runtime_error("Shader Model 6.0 is not supported!");
+	}
+
     auto command_queue = m_deviceResources->GetCommandQueue();
     m_graphicsMemory = std::make_unique<GraphicsMemory>(device);
     m_uploadBatch = std::make_shared<ResourceUploadBatch>(device);
@@ -781,6 +822,15 @@ void Game::CreateDeviceDependentResources()
 	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
 	m_spriteBatch = std::make_unique<SpriteBatch>(device, *m_uploadBatch.get(), spd);
 
+    // offscreen rendering and postprocessing
+	m_renderDescriptors = std::make_unique<DescriptorHeap>(device,
+		D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+		D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+		(size_t)RTDescriptors::Count);
+
+	m_offscreenTexture->SetDevice(device,
+		m_resourceDescriptors->GetCpuHandle((size_t)TextureDescriptors::OffscreenTexture),
+		m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen));
 
     auto uploadResourcesFinished = m_uploadBatch->End(command_queue);
     uploadResourcesFinished.wait();
@@ -825,6 +875,9 @@ void Game::CreateDeviceDependentResources()
 void Game::CreateWindowSizeDependentResources()
 {
     m_spriteBatch->SetViewport(GetCurrentViewport());
+	auto size = m_deviceResources->GetOutputSize();
+	// offscreen rendering and postprocessing
+	m_offscreenTexture->SetWindow(size);
 }
 
 void Game::OnDeviceLost()
@@ -845,12 +898,17 @@ void Game::OnDeviceLost()
 	m_gameTextureBG.Reset();
     m_states.reset();
     m_spriteBatch.reset();
-    m_graphicsMemory.reset();
 	m_primitiveBatchLines.reset();
 	m_primitiveBatchTriangles.reset();
 	m_dxtEffectLines.reset();
 	m_dxtEffectTriangles.reset();
 	m_uploadBatch.reset();
+
+	// offscreen rendering and postprocessing
+	m_offscreenTexture->ReleaseDevice();
+	m_renderDescriptors.reset();
+
+	m_graphicsMemory.reset();
 }
 
 void Game::OnDeviceRestored()
