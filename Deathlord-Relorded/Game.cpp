@@ -100,6 +100,7 @@ Game::Game() noexcept(false)
     // Offscreen rendering
 	const auto format = m_deviceResources->GetBackBufferFormat();
 	m_offscreenTexture = std::make_unique<DX::RenderTexture>(format);
+    m_offscreenTexture->SetClearColor(Colors::Black);
 
     // Any time the layouts differ, a recreation of the vertex buffer is triggered
     m_previousLayout = EmulatorLayout::NONE;
@@ -599,7 +600,13 @@ void Game::PostProcess(ID3D12GraphicsCommandList* commandList)
 {
 	auto renderTarget = m_deviceResources->GetRenderTarget();
 	auto offscreenTarget = m_offscreenTexture->GetResource();
+	auto vp = m_deviceResources->GetScreenViewport();
+	auto rtvDescriptor = m_deviceResources->GetRenderTargetView();
+	commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, nullptr);
+	commandList->RSSetViewports(1, &vp);
+	m_postProcess->Process(commandList);
 
+    /*
 	ScopedBarrier barriers(commandList,
 		{
 			CD3DX12_RESOURCE_BARRIER::Transition(renderTarget,
@@ -610,6 +617,7 @@ void Game::PostProcess(ID3D12GraphicsCommandList* commandList)
 				D3D12_RESOURCE_STATE_COPY_SOURCE, 0)
 		});
 	commandList->CopyResource(renderTarget, offscreenTarget);
+    */
 }
 
 // Helper method to clear the back buffers.
@@ -625,6 +633,7 @@ void Game::Clear()
 
     commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &dsvDescriptor);
     // TODO: we do not manually overdraw what has been modified, we redraw every frame completely every time
+    m_offscreenTexture->TransitionTo(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET);
     commandList->ClearRenderTargetView(rtvDescriptor, Colors::Black, 0, nullptr);
     commandList->ClearDepthStencilView(dsvDescriptor, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
@@ -831,6 +840,9 @@ void Game::CreateDeviceDependentResources()
 	m_offscreenTexture->SetDevice(device,
 		m_resourceDescriptors->GetCpuHandle((size_t)TextureDescriptors::OffscreenTexture),
 		m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen));
+
+	m_postProcess = std::make_unique<BasicPostProcess>(device, rtState, BasicPostProcess::Sepia);
+    m_postProcess->SetSourceTexture(m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture), m_offscreenTexture->GetResource());
 
     auto uploadResourcesFinished = m_uploadBatch->End(command_queue);
     uploadResourcesFinished.wait();
