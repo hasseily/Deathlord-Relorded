@@ -113,34 +113,34 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 		_mPortraitOrigin.y + PARTY_PORTRAIT_HEIGHT - 4 - 16);
 	if (_mStatus & (UINT8)DeathlordCharStatus::STV)
 	{
-		fontDLInverse->DrawString(spriteBatch, L"STV", _mStatusOrigin, VColorText, 0.f, Vector2(), 1.0f);
+		fontDLInverse->DrawString(spriteBatch, L"STV", _mStatusOrigin, Colors::Yellow, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 	if (_mStatus & (UINT8)DeathlordCharStatus::TOX)
 	{
-		fontDLInverse->DrawString(spriteBatch, L"TOX", _mStatusOrigin, VColorText, 0.f, Vector2(), 1.0f);
+		fontDLInverse->DrawString(spriteBatch, L"TOX", _mStatusOrigin, Colors::Yellow, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 	if (_mStatus & (UINT8)DeathlordCharStatus::ILL)
 	{
-		fontDLInverse->DrawString(spriteBatch, L"ILL", _mStatusOrigin, VColorText, 0.f, Vector2(), 1.0f);
+		fontDLInverse->DrawString(spriteBatch, L"ILL", _mStatusOrigin, Colors::Yellow, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 	if (_mStatus & (UINT8)DeathlordCharStatus::PAR)
 	{
-		fontDLInverse->DrawString(spriteBatch, L"PAR", _mStatusOrigin, VColorText, 0.f, Vector2(), 1.0f);
+		fontDLInverse->DrawString(spriteBatch, L"PAR", _mStatusOrigin, Colors::Red, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 	if (_mStatus & (UINT8)DeathlordCharStatus::STN)
 	{
-		fontDLInverse->DrawString(spriteBatch, L"STN", _mStatusOrigin, VColorText, 0.f, Vector2(), 1.0f);
+		fontDLInverse->DrawString(spriteBatch, L"STN", _mStatusOrigin, Colors::Red, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 	// the 2 RIP should be combined but it'd be fun to have someone get those 2 statuses (if possible)
 	// and complain the game has a bug
 	if (_mStatus & (UINT8)DeathlordCharStatus::RIP)
 	{
-		fontDLInverse->DrawString(spriteBatch, L"RIP", _mStatusOrigin, VColorText, 0.f, Vector2(), 1.0f);
+		fontDLInverse->DrawString(spriteBatch, L"RIP", _mStatusOrigin, Colors::Red, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 	if (_mStatus & (UINT8)DeathlordCharStatus::RIP2)
