@@ -604,20 +604,24 @@ void Game::PostProcess(ID3D12GraphicsCommandList* commandList)
 	auto rtvDescriptor = m_deviceResources->GetRenderTargetView();
 	commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, nullptr);
 	commandList->RSSetViewports(1, &vp);
-	m_postProcess->Process(commandList);
+    
+	//ScopedBarrier barriers(commandList,
+	//	{
+	//		CD3DX12_RESOURCE_BARRIER::Transition(renderTarget,
+	//			D3D12_RESOURCE_STATE_RENDER_TARGET,
+	//			D3D12_RESOURCE_STATE_COPY_DEST, 0),
+	//		CD3DX12_RESOURCE_BARRIER::Transition(offscreenTarget,
+	//			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+	//			D3D12_RESOURCE_STATE_COPY_SOURCE, 0)
+	//	});
+	//commandList->CopyResource(renderTarget, offscreenTarget);
 
-    /*
-	ScopedBarrier barriers(commandList,
-		{
-			CD3DX12_RESOURCE_BARRIER::Transition(renderTarget,
-				D3D12_RESOURCE_STATE_RENDER_TARGET,
-				D3D12_RESOURCE_STATE_COPY_DEST, 0),
-			CD3DX12_RESOURCE_BARRIER::Transition(offscreenTarget,
-				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-				D3D12_RESOURCE_STATE_COPY_SOURCE, 0)
-		});
-	commandList->CopyResource(renderTarget, offscreenTarget);
-    */
+	//m_postProcessBlur->SetSourceTexture(m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture), m_offscreenTexture->GetResource());
+ //   m_postProcessBlur->SetBloomBlurParameters(true, abs(sin((m_timer.GetTotalTicks() << 10) >> 8)) + 3.f, 1.f);
+ //   m_postProcessBlur->Process(commandList);
+	m_postProcessCopy->SetSourceTexture(m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture), m_offscreenTexture->GetResource());
+	m_postProcessCopy->Process(commandList);
+
 }
 
 // Helper method to clear the back buffers.
@@ -841,8 +845,8 @@ void Game::CreateDeviceDependentResources()
 		m_resourceDescriptors->GetCpuHandle((size_t)TextureDescriptors::OffscreenTexture),
 		m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen));
 
-	m_postProcess = std::make_unique<BasicPostProcess>(device, rtState, BasicPostProcess::Sepia);
-    m_postProcess->SetSourceTexture(m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture), m_offscreenTexture->GetResource());
+	m_postProcessBlur = std::make_unique<BasicPostProcess>(device, rtState, BasicPostProcess::BloomBlur);
+	m_postProcessCopy = std::make_unique<BasicPostProcess>(device, rtState, BasicPostProcess::Copy);
 
     auto uploadResourcesFinished = m_uploadBatch->End(command_queue);
     uploadResourcesFinished.wait();

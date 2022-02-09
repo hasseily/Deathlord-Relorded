@@ -154,7 +154,8 @@ private:
     // Offscreen rendering
     std::unique_ptr<DirectX::DescriptorHeap> m_renderDescriptors;
     std::unique_ptr<DX::RenderTexture> m_offscreenTexture;
-    std::unique_ptr<BasicPostProcess> m_postProcess;
+    std::unique_ptr<BasicPostProcess> m_postProcessBlur;
+	std::unique_ptr<BasicPostProcess> m_postProcessCopy;
 
 	// fonts and primitives from dxtoolkit12 to draw everything
 	std::map<FontDescriptors, std::unique_ptr<SpriteFont>> m_spriteFonts;
