@@ -117,6 +117,8 @@ private:
     void Update(DX::StepTimer const& timer);
     void Render();
     void PostProcess(ID3D12GraphicsCommandList* commandList);
+	// To be called right after the map is done to composite it before the rest
+	void PostProcessMap(ID3D12GraphicsCommandList* commandList);
 
     D3D12_VIEWPORT GetCurrentViewport()
     {

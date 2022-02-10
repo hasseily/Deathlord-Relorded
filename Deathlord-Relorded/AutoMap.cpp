@@ -843,12 +843,6 @@ ELEMENT_TILES_GENERAL:
 					_tileColor.f[1] *= .8f + _ttd;
 					_tileColor.f[2] *= .2f + _ttd;
 				}
-				if (_mStatus & (UINT8)DeathlordCharStatus::ILL)
-				{
-					INT64 _ttd = (INT64)(_tt_fast % 3) - 1;
-					tilePosRectInMap.left	+= _ttd;
-					tilePosRectInMap.right	+= _ttd;
-				}
 
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)curr_texDesc),
 					GetTextureSize(curr_tileset.Get()), tilePosRectInMap, &curr_spriteRect, _tileColor);

@@ -518,7 +518,6 @@ void Game::Render()
 			m_spriteBatch->End();
 
 			// Now draw autoMap using the second offscreen render target
-			m_offscreenTexture1->EndScene(commandList);
 			m_offscreenTexture2->BeginScene(commandList);
 			auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen2);
 			commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
@@ -537,10 +536,9 @@ void Game::Render()
 			// inside the original Deathlord viewport
 			m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
 
-			m_offscreenTexture2->EndScene(commandList);
-			m_offscreenTexture1->BeginScene(commandList);
-			rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen1);
-			commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
+			// and postprocess the map, combining it with the first offscreen texture
+			// back into m_offscreenTexture2. At this point we're working on m_offscreenTexture2
+			PostProcessMap(commandList);
 
             // Now draw everything else that's in the main viewport
             // We use the same vp, primitivebatch and spriteBatch for all.
@@ -600,7 +598,10 @@ void Game::Render()
 		PIXEndEvent(commandList);
 
         // Offscreen postprocessing
-        m_offscreenTexture1->EndScene(commandList);
+		if (m_offscreenTexture1->GetCurrentState() == D3D12_RESOURCE_STATE_RENDER_TARGET)
+			m_offscreenTexture1->EndScene(commandList);
+		if (m_offscreenTexture2->GetCurrentState() == D3D12_RESOURCE_STATE_RENDER_TARGET)
+			m_offscreenTexture2->EndScene(commandList);
         PostProcess(commandList);
 
 		// Show the new frame.
@@ -611,61 +612,86 @@ void Game::Render()
     }
 }
 
+void Game::PostProcessMap(ID3D12GraphicsCommandList* commandList)
+{
+	if (!g_isInGameMap)
+		return;
+
+	auto vp = m_deviceResources->GetScreenViewport();
+	{
+		// apply postprocessing on the map
+		// OffscreenTexture2 -> OffscreenTexture3
+		m_offscreenTexture3->BeginScene(commandList);
+		auto renderTarget = m_offscreenTexture3->GetResource();
+		auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen3);
+		commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
+		commandList->RSSetViewports(1, &vp);
+		// Determine if the leader character has a certain status
+		UINT8 _mStatus = MemGetMainPtr(PARTY_STATUS_START)[MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]];
+		if (_mStatus & (UINT8)DeathlordCharStatus::ILL)
+		{	// blur if ILL
+			m_postProcessBlur->SetSourceTexture(
+				m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture2),
+				m_offscreenTexture2->GetResource());
+			m_postProcessBlur->SetBloomBlurParameters(true, abs(sin((m_timer.GetTotalTicks() << 10) >> 8)) + 3.f, 1.f);
+			m_postProcessBlur->Process(commandList);
+		}
+		else
+		{	// do nothing
+			m_postProcessCopy->SetSourceTexture(
+				m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture2),
+				m_offscreenTexture2->GetResource());
+			m_postProcessCopy->Process(commandList);
+			// another way to do the above (no speed difference):
+//			auto offscreenTarget = m_offscreenTexture2->GetResource();
+//
+//			m_offscreenTexture2->TransitionTo(commandList, D3D12_RESOURCE_STATE_COPY_SOURCE);
+//			m_offscreenTexture3->TransitionTo(commandList, D3D12_RESOURCE_STATE_COPY_DEST);
+//			commandList->CopyResource(renderTarget, offscreenTarget);
+//			m_offscreenTexture2->TransitionTo(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET);
+//			m_offscreenTexture3->TransitionTo(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		}
+		m_offscreenTexture3->EndScene(commandList);
+	}
+	{
+		// Now merge the post-processed map with the main game offscreen render
+		// into OffscreenTexture2
+		// OffscreenTexture1 + OffscreenTexture3 -> OffscreenTexture2
+		auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen2);
+		commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
+		commandList->RSSetViewports(1, &vp);
+		m_postProcessMerge->SetSourceTexture(m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture1));
+		m_postProcessMerge->SetSourceTexture2(m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture3));
+		m_postProcessMerge->SetMergeParameters(1.f, 1.f);   // add them
+		m_postProcessMerge->Process(commandList);
+	}
+}
+
 void Game::PostProcess(ID3D12GraphicsCommandList* commandList)
 {
 	auto vp = m_deviceResources->GetScreenViewport();
     if (g_isInGameMap)
 	{
-		// TODO:
-		// Composite the automap before doing the overlays
-		// Try to composite the automap in AutoMap.cpp
+		// OffscreenTexture2 -> framebuffer
+		PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"In-Game PostProcess");
+		auto renderTarget = m_deviceResources->GetRenderTarget();
+		auto offscreenTarget = m_offscreenTexture2->GetResource();
+		auto rtvDescriptor = m_deviceResources->GetRenderTargetView();
+		commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, nullptr);
+		commandList->RSSetViewports(1, &vp);
 		{
-			// apply postprocessing on the map
-			// OffscreenTexture2 -> OffscreenTexture3
-			// TODO: Only do this for ILL
-			m_offscreenTexture3->BeginScene(commandList);
-			auto renderTarget = m_offscreenTexture3->GetResource();
-			auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen3);
-			commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
-			commandList->RSSetViewports(1, &vp);
-			m_postProcessBlur->SetSourceTexture(m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture2), m_offscreenTexture2->GetResource());
-			m_postProcessBlur->SetBloomBlurParameters(true, abs(sin((m_timer.GetTotalTicks() << 10) >> 8)) + 3.f, 1.f);
-			m_postProcessBlur->Process(commandList);
-			m_offscreenTexture3->EndScene(commandList);
+			ScopedBarrier barriers(commandList,
+				{
+					CD3DX12_RESOURCE_BARRIER::Transition(renderTarget,
+						D3D12_RESOURCE_STATE_RENDER_TARGET,
+						D3D12_RESOURCE_STATE_COPY_DEST, 0),
+					CD3DX12_RESOURCE_BARRIER::Transition(offscreenTarget,
+						D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+						D3D12_RESOURCE_STATE_COPY_SOURCE, 0)
+				});
+			commandList->CopyResource(renderTarget, offscreenTarget);
 		}
-		{
-			// Now merge the post-processed map with the main game offscreen render
-			// into the final framebuffer
-			// OffscreenTexture1 + OffscreenTexture3 -> final framebuffer
-			auto renderTarget = m_deviceResources->GetRenderTarget();
-			auto offscreenTarget = m_offscreenTexture1->GetResource();
-			auto rtvDescriptor = m_deviceResources->GetRenderTargetView();
-			commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
-			commandList->RSSetViewports(1, &vp);
-
-			//ScopedBarrier barriers(commandList,
-			//	{
-			//		CD3DX12_RESOURCE_BARRIER::Transition(renderTarget,
-			//			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			//			D3D12_RESOURCE_STATE_COPY_DEST, 0),
-			//		CD3DX12_RESOURCE_BARRIER::Transition(offscreenTarget,
-			//			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-			//			D3D12_RESOURCE_STATE_COPY_SOURCE, 0)
-			//	});
-			//commandList->CopyResource(renderTarget, offscreenTarget);
-
-			 //m_postProcessCopy->SetSourceTexture(m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture1), m_offscreenTexture->GetResource());
-			 //m_postProcessCopy->Process(commandList);
-			// TODO:
-			// Depending on what the automap wants, apply a postprocess on the automap into the texture 2
-			// And then when done copy it to the render viewport.
-			// But first make sure the viewport is only on the map itself
-			// If it only copies the map over, then merge the map and the original texture into the framebuffer
-			m_postProcessMerge->SetSourceTexture(m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture1));
-			m_postProcessMerge->SetSourceTexture2(m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture3));
-			m_postProcessMerge->SetMergeParameters(1.f, 1.f);   // add them
-			m_postProcessMerge->Process(commandList);
-		}
+		PIXEndEvent(commandList);
 	}
     else
     {   // Not in game map
