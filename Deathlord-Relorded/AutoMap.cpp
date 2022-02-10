@@ -614,6 +614,12 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 	float _scale = (g_nonVolatile.mapQuadrant == AutoMapQuadrant::All ? 1.f : 2.f);
 	Vector2 _mapCenter = mapScissorRect.Center();
 
+	// Determine if the leader character has a certain status
+	// STV should fade the map to blander colors
+	// TOX should tint it green
+	// ILL should fuzzy it up
+	UINT8 _mStatus = MemGetMainPtr(PARTY_STATUS_START)[MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]];
+
 	switch (g_nonVolatile.mapQuadrant)
 	{
 	case AutoMapQuadrant::FollowPlayer:
@@ -667,9 +673,10 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 	mapViewport.y -= _mapTranslation.y;
 	mapViewport.width *= _scale;
 	mapViewport.height *= _scale;
+	//(*gamePtr)->m_mapViewport = mapViewport;
+	//(*gamePtr)->m_mapScissorRect = mapScissorRect;
 	commandList->RSSetViewports(1, mapViewport.Get12());
-	RECT mSRect = { mapScissorRect.x, mapScissorRect.y, mapScissorRect.x + mapScissorRect.width, mapScissorRect.y + mapScissorRect.height };
-	commandList->RSSetScissorRects(1, &mSRect);
+	commandList->RSSetScissorRects(1, &(RECT)mapScissorRect);
 
 	// Now draw the automap tiles
 	if (g_isInGameMap)
@@ -815,8 +822,36 @@ ELEMENT_TILES_GENERAL:
 				RECT tilePosRectInMap = { tilePosInMap.x, tilePosInMap.y, 
 					tilePosInMap.x + PNGTW * mapScale, tilePosInMap.y + PNGTH * mapScale };
 
+				XMVECTORF32 _tileColor = XMVECTORF32({ { { 1.f, 1.f, 1.f, _tileVisibilityLevel } } });
+				// set the statuses special effects
+				auto _tt = (*gamePtr)->GetTotalTicks();
+				auto _tt_fast = _tt >> 4;
+				auto _tt_slow = _tt >> 16;
+
+				if (_mStatus & (UINT8)DeathlordCharStatus::STV)
+				{
+					float _ttd = ((float)(_tt_slow % 5) - 2.f) / 100.f;	// delta for animation
+					_tileColor.f[0] *= .7f + _ttd;
+					_tileColor.f[1] *= .7f + _ttd;
+					_tileColor.f[2] *= .7f + _ttd;
+					_tileColor.f[3] *= .7f + _ttd;
+				}
+				if (_mStatus & (UINT8)DeathlordCharStatus::TOX)
+				{
+					float _ttd = ((float)(_tt_slow % 5) - 2.f) / 100.f;	// delta for animation
+					_tileColor.f[0] *= .2f + _ttd;
+					_tileColor.f[1] *= .8f + _ttd;
+					_tileColor.f[2] *= .2f + _ttd;
+				}
+				if (_mStatus & (UINT8)DeathlordCharStatus::ILL)
+				{
+					INT64 _ttd = (INT64)(_tt_fast % 3) - 1;
+					tilePosRectInMap.left	+= _ttd;
+					tilePosRectInMap.right	+= _ttd;
+				}
+
 				spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)curr_texDesc),
-					GetTextureSize(curr_tileset.Get()), tilePosRectInMap, &curr_spriteRect, XMVECTORF32({ { { 1.f, 1.f, 1.f, _tileVisibilityLevel } } }));
+					GetTextureSize(curr_tileset.Get()), tilePosRectInMap, &curr_spriteRect, _tileColor);
 
 				// Show a marker for traps, hidden and unopened items
 				// Only when not on the overland map

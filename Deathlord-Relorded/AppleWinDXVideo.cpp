@@ -9,14 +9,6 @@
 // because it uses a texture that needs to be uploaded to the GPU every frame
 // A simple UpdateSubresources is necessary with a proper barrier, but otherwise
 // it's the same thing as anything else
-// TODO: Use its own PSO for complete independent control?
-// TODO: Fix the render to use the correct rendering
-// TODO: Put all the necessary device stuff from Game.cpp into here
-// TODO: Remove all applewin video rendering from Game
-// TODO: Allow toggling of the applewin video display.
-//			If not in game, the BG shouldn't display and nothing else should (in game.cpp)
-//			If in game, here display a curtain bg over the relorded UI before displaying the video
-// TODO: Put a nice border around the video
 
 // below because "The declaration of a static data member in its class definition is not a definition"
 AppleWinDXVideo* AppleWinDXVideo::s_instance;

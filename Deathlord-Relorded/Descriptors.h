@@ -17,13 +17,17 @@ constexpr XMVECTORF32 VColorShadow = { { { 0.f, 0.f, 0.f, 0.33333f } } };
 
 enum class RTDescriptors	// Render Targets
 {
-	Offscreen,
+	Offscreen1,
+	Offscreen2,
+	Offscreen3,
 	Count
 };
 
 enum class TextureDescriptors
 {
-	OffscreenTexture,
+	OffscreenTexture1,
+	OffscreenTexture2,
+	OffscreenTexture3,
 	MainBackground,
 	MainBackgroundLayerTop,
 	DLRLLoadingScreen,
