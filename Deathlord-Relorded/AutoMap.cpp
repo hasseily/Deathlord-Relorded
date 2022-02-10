@@ -15,17 +15,11 @@ AutoMap* AutoMap::s_instance;
 // In main
 extern std::unique_ptr<Game>* GetGamePtr();
 
-// This is used for any animated sprite to accelerate or slow its framerate (so one doesn't have to build 30 frames!)
-// TODO: Make it dynamically calculated based on frame rate
-#ifdef _DEBUG
-constexpr UINT STROBESLOWAVATAR = 2;
-constexpr UINT STROBESLOWELEMENT = 8;
-constexpr UINT STROBESLOWHIDDEN = 4;
-#else
-constexpr UINT STROBESLOWAVATAR = 6;
-constexpr UINT STROBESLOWELEMENT = 24;
-constexpr UINT STROBESLOWHIDDEN = 12;
-#endif
+// This is used for any animated sprite to accelerate or slow its framerate (so one doesn't have to build 30 frames)
+// This is crude compared to the way the animations class does it, but it can be kept simple
+constexpr UINT STROBESLOWAVATAR = MAX_RENDERED_FRAMES_PER_SECOND * 6 / 30;
+constexpr UINT STROBESLOWELEMENT = MAX_RENDERED_FRAMES_PER_SECOND * 24 / 30;
+constexpr UINT STROBESLOWHIDDEN = MAX_RENDERED_FRAMES_PER_SECOND * 4 / 30;
 
 constexpr UINT8 TILEID_REDRAW = 0xFF;			// when we see this nonexistent tile id we automatically redraw the tile
 
@@ -64,6 +58,8 @@ std::string m_cursor(1, 0x7B);
 int m_numStepsInMap = 0;	// Number of steps taken on this map
 int m_lastFoodSteps = 0;	// Steps when food was acquired last
 constexpr UINT FOODFORAGINGSTEPS = 32;	// Number of steps to forage for 1 food / char
+
+constexpr RECT RECT_SPRITE_CURSOR = { 0, 288, 32, 324 };
 
 void AutoMap::Initialize()
 {
@@ -686,6 +682,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 			InitializeCurrentMapInfo();
 
 		float mapScale = (float)MAP_WIDTH_IN_VIEWPORT / (float)(MAP_WIDTH * PNGTW);
+		XMFLOAT2 avatarPosInMap = {-1,-1};	// don't show if negative pos
 
 		// These will be set to the correct sprite sheet and rect for each tile
 		TextureDescriptors curr_texDesc;
@@ -972,7 +969,8 @@ ELEMENT_TILES_GENERAL:
 						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
 							GetTextureSize(m_monsterSpriteSheet.Get()), overlayPosInMap, &avatarRect,
 							Colors::White, 0.f, _origin,
-							mapScale * AVATARSTROBE[(m_avatarStrobeIdx / STROBESLOWAVATAR) % AVATARSTROBECT]);
+							mapScale);
+						avatarPosInMap = overlayPosInMap;
 					}
 					break;
 				}
@@ -1006,6 +1004,16 @@ ELEMENT_TILES_GENERAL:
 				}
 			}
 		}
+
+		// Draw the cursor on the avatar
+		if (avatarPosInMap.x >= 0)
+		{
+			spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapHiddenSpriteSheet),
+				GetTextureSize(m_autoMapSpriteSheet.Get()), avatarPosInMap, &RECT_SPRITE_CURSOR,
+				Colors::White, 0.f, { (RECT_SPRITE_CURSOR.right - RECT_SPRITE_CURSOR.left) / 2.f, (RECT_SPRITE_CURSOR.bottom - RECT_SPRITE_CURSOR.top) / 2.f },
+				mapScale * AVATARSTROBE[(m_avatarStrobeIdx / STROBESLOWAVATAR) % AVATARSTROBECT]);
+		}
+
 		++m_spriteAnimElementIdx;
 		if (m_spriteAnimElementIdx >= (ELEMENTSPRITECT * STROBESLOWELEMENT))
 			m_spriteAnimElementIdx = 0;
