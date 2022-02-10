@@ -559,13 +559,14 @@ void Game::Render()
             std::wstring pauseWStr = L"GAME PAUSED";
             float pauseScale = 5.f;
             auto pauseOrigin = r.Center(); // start with dead center
-            pauseOrigin.x -= (pauseWStr.length() * pauseScale * 5)/2;
+			auto _sSizeX = XMVectorGetX(m_spriteFonts.at(FontDescriptors::FontDLRegular)->MeasureString(pauseWStr.c_str(), false)) * pauseScale;
+            pauseOrigin.x -= _sSizeX /2;
             pauseOrigin.y -= pauseScale * 14 / 2;
 			m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
 			m_spriteBatch->Begin(commandList, m_states->LinearClamp(), SpriteSortMode_Deferred);
-			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pauseWStr.c_str(),
+			m_spriteFonts.at(FontDescriptors::FontDLRegular)->DrawString(m_spriteBatch.get(), pauseWStr.c_str(),
                 pauseOrigin - Vector2(pauseScale/2, pauseScale/2), Colors::Black, 0.f, m_vector2Zero, pauseScale);
-			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pauseWStr.c_str(),
+			m_spriteFonts.at(FontDescriptors::FontDLRegular)->DrawString(m_spriteBatch.get(), pauseWStr.c_str(),
                 pauseOrigin, Colors::OrangeRed, 0.f, m_vector2Zero, pauseScale);
             m_spriteBatch->End();
         }
