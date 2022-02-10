@@ -83,7 +83,6 @@ bool g_isInBattle = false;
 bool g_isDead = false;
 bool g_wantsToSave = true;  // DISABLED. It can corrupt saved games
 int g_debugLogInstructions = 0;    // Tapping "End" key logs the next 100,000 instructions
-float Game::m_clientFrameScale = 1.f;
 
 Game::Game() noexcept(false)
 {
@@ -145,7 +144,6 @@ void Game::Initialize(HWND window)
 	EmulatorRepeatInitialization();
 
     shouldRender = true;
-    m_clientFrameScale = 1.f;
 
     m_deviceResources->CreateDeviceResources();
     CreateDeviceDependentResources();
@@ -266,33 +264,21 @@ void Game::Update(DX::StepTimer const& timer)
     if (g_isInGameTransition)
     {
 		// If in transition from pre-game to game, only show the transition screen
-		// And wait for keypress
         SetSendKeystrokesToAppleWin(false);
-		if (kbTracker.pressed.Space)
-		{
-			g_isInGameTransition = false;
-			SetSendKeystrokesToAppleWin(true);
-			return;
-		}
-        if (g_hasBeenIdleOnce)
-        {
-            // The game is in a state where we can play it!
-            // Let's switch to the game
-            if (kbTracker.pressed.Space)
-            {
-                g_isInGameTransition = false;
-                SetSendKeystrokesToAppleWin(true);
-                return;
-            }
-        }
         return;
     }
+	else
+	{
+		SetSendKeystrokesToAppleWin(true);
+	}
 
 	if (g_isInGameMap)
 	{
 
+#ifdef _DEBUG
 		if (kbTracker.pressed.Delete)  // TODO: REMOVE
 			m_gameOverOverlay->ToggleOverlay();
+#endif
 
         if (m_gameOverOverlay->IsOverlayDisplayed())
         {
@@ -427,17 +413,6 @@ void Game::Render()
             m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DLRLLoadingScreen), mmTexSize,
                 r, nullptr, Colors::White, 0.f, XMFLOAT2());
 
-            if (g_hasBeenIdleOnce)
-            {
-				// If the game is ready, draw the "press space"
-				FontDescriptors _fontD = ((tickOfLastRender / 10000000) % 2 ? FontDescriptors::FontDLRegular : FontDescriptors::FontDLInverse);
-                auto _sSize = m_spriteFonts.at(FontDescriptors::FontDLRegular)->MeasureString(s_pressSpace.c_str(), false);
-				float _sX = _scRect.Center().x - (XMVectorGetX(_sSize) / 2.f);
-				float _sY = 950.f;
-				m_spriteFonts.at(_fontD)->DrawString(m_spriteBatch.get(), s_pressSpace.c_str(),
-                    { _sX, _sY }, Colors::AntiqueWhite, 0.f, m_vector2Zero, 1.f);
-            }
-
 			m_spriteBatch->End();
         }
 	    else if (!g_isInGameMap)
@@ -496,8 +471,41 @@ void Game::Render()
         }
         else
         {
+
+			// Draw autoMap using the second offscreen render target
+			m_offscreenTexture2->BeginScene(commandList);
+			auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen2);
+			commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
+			commandList->ClearRenderTargetView(rtvDescriptor, Colors::Black, 0, nullptr);
+
+			auto mmOrigin = Vector2(r.x + 361.f, r.y + 10.f);
+			RECT mapRectInViewport = {
+				mmOrigin.x,
+				mmOrigin.y,
+				mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
+				mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
+			};
+
+			m_autoMap->DrawAutoMap(m_spriteBatch, m_states.get(), &mapRectInViewport);
+			// End drawing autoMap
+
+			// now draw the hidden layer around the player if he's allowed to see it
+			// inside the original Deathlord viewport
+			m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
+
+			// and postprocess the map, sending it into m_offscreenTexture1
+			// At this point we're working on m_offscreenTexture1
+			PostProcessMap(commandList);
+
+			// Now draw everything else that's in the main viewport
+			// We use the same vp, primitivebatch and spriteBatch for all.
+			// Only the main automap area was different due to its special handling of vp and scissors
+
 			m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
-			m_spriteBatch->Begin(commandList, m_states->LinearClamp(), SpriteSortMode_Deferred);
+			m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(clientRect.left, clientRect.right, clientRect.bottom, clientRect.top, 0, 1));
+			m_dxtEffectTriangles->Apply(commandList);
+			m_primitiveBatchTriangles->Begin(commandList);
+			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
 
 			// Draw the game background
 			auto mmBGTexSize = GetTextureSize(m_gameTextureBG.Get());
@@ -508,46 +516,13 @@ void Game::Render()
 #if _DEBUG
 			char pcbuf[4000];
 			//    snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %I64x : %I64x", g_debug_video_field, g_debug_video_data);
-			snprintf(pcbuf, sizeof(pcbuf), "%.2d FPS , %6.0f usec/frame - Time: %6.2f\n", 
-                m_timer.GetFramesPerSecond(), 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds());
+			snprintf(pcbuf, sizeof(pcbuf), "%.2d FPS , %6.0f usec/frame - Time: %6.2f\n",
+				m_timer.GetFramesPerSecond(), 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds());
 			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
 				{ 11.f, 11.f }, Colors::Black, 0.f, m_vector2Zero, 1.f);
 			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
 				{ 10.f, 10.f }, Colors::OrangeRed, 0.f, m_vector2Zero, 1.f);
 #endif // _DEBUG
-			m_spriteBatch->End();
-
-			// Now draw autoMap using the second offscreen render target
-			m_offscreenTexture2->BeginScene(commandList);
-			auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen2);
-			commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
-
-			auto mmOrigin = Vector2(r.x + 361.f, r.y + 10.f);
-			RECT mapRectInViewport = {
-				mmOrigin.x,
-				mmOrigin.y,
-				mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
-				mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
-			};
-			m_autoMap->DrawAutoMap(m_spriteBatch, m_states.get(), &mapRectInViewport);
-			// End drawing autoMap
-
-			// now draw the hidden layer around the player if he's allowed to see it
-			// inside the original Deathlord viewport
-			m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
-
-			// and postprocess the map, combining it with the first offscreen texture
-			// back into m_offscreenTexture2. At this point we're working on m_offscreenTexture2
-			PostProcessMap(commandList);
-
-            // Now draw everything else that's in the main viewport
-            // We use the same vp, primitivebatch and spriteBatch for all.
-            // Only the main automap area was different due to its special handling of vp and scissors
-			D3D12_VIEWPORT vp = GetCurrentViewport();
-			m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(clientRect.left, clientRect.right, clientRect.bottom, clientRect.top, 0, 1));
-			m_dxtEffectTriangles->Apply(commandList);
-			m_primitiveBatchTriangles->Begin(commandList);
-			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
 
 			m_partyLayout->Render(r, m_spriteBatch.get());
             m_minimap->Render(r, m_spriteBatch.get());
@@ -600,8 +575,7 @@ void Game::Render()
         // Offscreen postprocessing
 		if (m_offscreenTexture1->GetCurrentState() == D3D12_RESOURCE_STATE_RENDER_TARGET)
 			m_offscreenTexture1->EndScene(commandList);
-		if (m_offscreenTexture2->GetCurrentState() == D3D12_RESOURCE_STATE_RENDER_TARGET)
-			m_offscreenTexture2->EndScene(commandList);
+
         PostProcess(commandList);
 
 		// Show the new frame.
@@ -620,10 +594,8 @@ void Game::PostProcessMap(ID3D12GraphicsCommandList* commandList)
 	auto vp = m_deviceResources->GetScreenViewport();
 	{
 		// apply postprocessing on the map
-		// OffscreenTexture2 -> OffscreenTexture3
-		m_offscreenTexture3->BeginScene(commandList);
-		auto renderTarget = m_offscreenTexture3->GetResource();
-		auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen3);
+		// OffscreenTexture2 -> OffscreenTexture1
+		auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen1);
 		commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
 		commandList->RSSetViewports(1, &vp);
 		// Determine if the leader character has a certain status
@@ -644,26 +616,15 @@ void Game::PostProcessMap(ID3D12GraphicsCommandList* commandList)
 			m_postProcessCopy->Process(commandList);
 			// another way to do the above (no speed difference):
 //			auto offscreenTarget = m_offscreenTexture2->GetResource();
-//
+//			auto renderTarget = m_offscreenTexture1->GetResource();
 //			m_offscreenTexture2->TransitionTo(commandList, D3D12_RESOURCE_STATE_COPY_SOURCE);
-//			m_offscreenTexture3->TransitionTo(commandList, D3D12_RESOURCE_STATE_COPY_DEST);
+//			m_offscreenTexture1->TransitionTo(commandList, D3D12_RESOURCE_STATE_COPY_DEST);
 //			commandList->CopyResource(renderTarget, offscreenTarget);
-//			m_offscreenTexture2->TransitionTo(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET);
-//			m_offscreenTexture3->TransitionTo(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET);
+//			m_offscreenTexture2->TransitionTo(commandList, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+//			m_offscreenTexture1->TransitionTo(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		}
-		m_offscreenTexture3->EndScene(commandList);
-	}
-	{
-		// Now merge the post-processed map with the main game offscreen render
-		// into OffscreenTexture2
-		// OffscreenTexture1 + OffscreenTexture3 -> OffscreenTexture2
-		auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen2);
-		commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
-		commandList->RSSetViewports(1, &vp);
-		m_postProcessMerge->SetSourceTexture(m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture1));
-		m_postProcessMerge->SetSourceTexture2(m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture3));
-		m_postProcessMerge->SetMergeParameters(1.f, 1.f);   // add them
-		m_postProcessMerge->Process(commandList);
+		if (m_offscreenTexture2->GetCurrentState() == D3D12_RESOURCE_STATE_RENDER_TARGET)
+			m_offscreenTexture2->EndScene(commandList);
 	}
 }
 
@@ -672,10 +633,10 @@ void Game::PostProcess(ID3D12GraphicsCommandList* commandList)
 	auto vp = m_deviceResources->GetScreenViewport();
     if (g_isInGameMap)
 	{
-		// OffscreenTexture2 -> framebuffer
+		// OffscreenTexture1 -> framebuffer
 		PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"In-Game PostProcess");
 		auto renderTarget = m_deviceResources->GetRenderTarget();
-		auto offscreenTarget = m_offscreenTexture2->GetResource();
+		auto offscreenTarget = m_offscreenTexture1->GetResource();
 		auto rtvDescriptor = m_deviceResources->GetRenderTargetView();
 		commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, nullptr);
 		commandList->RSSetViewports(1, &vp);
@@ -728,6 +689,10 @@ void Game::Clear()
 
     // Clear the views.
 	// we redraw every frame completely every time
+	// The offscreen tex 2 is cleared right before drawing the map
+	// The offscreen tex 3 is never cleared because
+	//	1. it's not used right now
+	//  2. it'll be used as a render target that will be filled
 	auto dsvDescriptor = m_deviceResources->GetDepthStencilView();
     //auto rtvDescriptor = m_deviceResources->GetRenderTargetView();	// using offscreen textures instead
 	auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen1);
@@ -740,16 +705,6 @@ void Game::Clear()
 
 	m_offscreenTexture1->TransitionTo(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	commandList->ClearRenderTargetView(rtvDescriptor, Colors::Black, 0, nullptr);
-
-	rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen2);
-	commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &dsvDescriptor);
-	m_offscreenTexture2->TransitionTo(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	commandList->ClearRenderTargetView(rtvDescriptor, Colors::Black, 0, nullptr);	
- //   
- //   rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen3);
-	//commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &dsvDescriptor);
-	//m_offscreenTexture3->TransitionTo(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	//commandList->ClearRenderTargetView(rtvDescriptor, Colors::Black, 0, nullptr);
 
     commandList->ClearDepthStencilView(dsvDescriptor, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 

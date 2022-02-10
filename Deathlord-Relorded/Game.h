@@ -102,7 +102,6 @@ public:
 
     // Accessors
     SimpleMath::Rectangle GetDrawRectangle();
-    float GetFrameScale() { return m_clientFrameScale; };
     SpriteFont* GetSpriteFontAtIndex(FontDescriptors fontIndex);
     // TODO: Either don't allow these accessors, or change them to return the underlying pointer
     std::shared_ptr<DirectX::SpriteBatch> GetSpriteBatch() { return m_spriteBatch; };
@@ -135,8 +134,6 @@ private:
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
 
-	static float m_clientFrameScale;    // TODO: unused
-
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
@@ -155,9 +152,9 @@ private:
 
     // Offscreen rendering
     std::unique_ptr<DirectX::DescriptorHeap> m_renderDescriptors;
-    std::unique_ptr<DX::RenderTexture> m_offscreenTexture1;
-	std::unique_ptr<DX::RenderTexture> m_offscreenTexture2;
-	std::unique_ptr<DX::RenderTexture> m_offscreenTexture3;
+    std::unique_ptr<DX::RenderTexture> m_offscreenTexture1; // main work texture
+	std::unique_ptr<DX::RenderTexture> m_offscreenTexture2; // used by the automap
+	std::unique_ptr<DX::RenderTexture> m_offscreenTexture3; // unused for now
     std::unique_ptr<BasicPostProcess> m_postProcessBlur;
 	std::unique_ptr<BasicPostProcess> m_postProcessCopy;
 	std::unique_ptr<DualPostProcess> m_postProcessMerge;
