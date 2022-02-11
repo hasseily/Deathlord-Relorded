@@ -14,6 +14,7 @@ public:
 	void Render(SimpleMath::Rectangle r);
 
 	int m_monstersKilled = 0;
+	float m_transitionTime;   // in seconds
 
 	// public singleton code
 	static GameOverOverlay* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,
@@ -41,9 +42,9 @@ private:
 	GameOverOverlay(std::unique_ptr<DX::DeviceResources>& deviceResources,
 		std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)
 	{
-		m_deviceResources = deviceResources.get();
-		m_resourceDescriptors = resourceDescriptors.get();
 		Initialize();
+		// m_deviceResources = deviceResources.get();
+		m_resourceDescriptors = resourceDescriptors.get();
 	}
 
 };

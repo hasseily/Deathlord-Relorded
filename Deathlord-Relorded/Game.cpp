@@ -280,7 +280,7 @@ void Game::Update(DX::StepTimer const& timer)
 			m_gameOverOverlay->ToggleOverlay();
 #endif
 
-        if (m_gameOverOverlay->IsOverlayDisplayed())
+        if (m_gameOverOverlay->ShouldRenderOverlay())
         {
             m_gameOverOverlay->Update();
             return;
@@ -549,7 +549,10 @@ void Game::Render()
 			if (m_a2Video->IsApple2VideoDisplayed())
 				m_a2Video->Render(SimpleMath::Rectangle(clientRect), m_uploadBatch.get());
 
-            m_gameOverOverlay->Render(SimpleMath::Rectangle(clientRect));
+			// And the game over overlay is even more unique
+			// We'll make it render with a special spritebatch
+			// and animate its appearance via shaders
+			m_gameOverOverlay->Render(SimpleMath::Rectangle(clientRect));
 
         }   // end if !g_isInGameMap
 
@@ -877,24 +880,6 @@ void Game::CreateDeviceDependentResources()
     // Now initialize the pieces of the UI, and create the resources
 	m_states = std::make_unique<CommonStates>(device);
 
-    m_autoMap = AutoMap::GetInstance(m_deviceResources, m_resourceDescriptors);
-    m_autoMap->CreateDeviceDependentResources(m_uploadBatch.get());
-    m_textOutput = TextOutput::GetInstance(m_deviceResources, m_resourceDescriptors);
-	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
-    m_invOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
-	m_battleOverlay = BattleOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
-	m_battleOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
-	m_gameOverOverlay = GameOverOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
-    m_gameOverOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
-    m_a2Video = AppleWinDXVideo::GetInstance(m_deviceResources, m_resourceDescriptors);
-    m_a2Video->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
-    m_minimap = MiniMap::GetInstance(m_deviceResources, m_resourceDescriptors);
-	m_minimap->CreateDeviceDependentResources(m_uploadBatch.get());
-	m_daytime = Daytime::GetInstance(m_deviceResources, m_resourceDescriptors);
-	m_daytime->CreateDeviceDependentResources(m_uploadBatch.get());
-	m_partyLayout = PartyLayout::GetInstance(m_deviceResources, m_resourceDescriptors);
-    m_partyLayout->CreateDeviceDependentResources(m_uploadBatch.get());
-
     // Do the sprite batches.
 	auto sampler = m_states->LinearWrap();
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
@@ -922,6 +907,24 @@ void Game::CreateDeviceDependentResources()
 	m_postProcessBlur = std::make_unique<BasicPostProcess>(device, rtState, BasicPostProcess::BloomBlur);
 	m_postProcessCopy = std::make_unique<BasicPostProcess>(device, rtState, BasicPostProcess::Copy);
 	m_postProcessMerge = std::make_unique<DualPostProcess>(device, rtState, DualPostProcess::Merge);
+
+	m_autoMap = AutoMap::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_autoMap->CreateDeviceDependentResources(m_uploadBatch.get());
+	m_textOutput = TextOutput::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_invOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
+	m_battleOverlay = BattleOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_battleOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
+	m_gameOverOverlay = GameOverOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_gameOverOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
+	m_a2Video = AppleWinDXVideo::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_a2Video->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
+	m_minimap = MiniMap::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_minimap->CreateDeviceDependentResources(m_uploadBatch.get());
+	m_daytime = Daytime::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_daytime->CreateDeviceDependentResources(m_uploadBatch.get());
+	m_partyLayout = PartyLayout::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_partyLayout->CreateDeviceDependentResources(m_uploadBatch.get());
 
     auto uploadResourcesFinished = m_uploadBatch->End(command_queue);
     uploadResourcesFinished.wait();

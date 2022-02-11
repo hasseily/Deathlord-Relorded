@@ -41,17 +41,15 @@ wchar_t m_bufDied[30];
 #pragma region main
 void BattleOverlay::Initialize()
 {
-	bIsDisplayed = false;
-	bShouldDisplay = false;
+	Overlay::Initialize();
 	bShouldBlockKeystrokes = false;
-	m_currentRect = { 0,0,0,0 };
 	m_width = 600;
 	m_height = 600;
 	m_spritesheetDescriptor = TextureDescriptors::BattleOverlaySpriteSheet;
 	m_spritesheetPath = L"Assets/BattleOverlaySpriteSheet.png";
 	m_type = OverlayType::Bordered;
 
-	m_animTextManager = AnimTextManager::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_animTextManager = AnimTextManager::GetInstance(m_deviceResources.get(), m_resourceDescriptors);
 	m_activeActor = 0xFF;
 }
 
@@ -229,11 +227,11 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 {
 	if (!bShouldDisplay)
 	{
-		if (bIsDisplayed)
+		if (m_state == OverlayState::Displayed)
 		{
 			// just kill the overlay, it shouldn't be here.
 			// Don't bother animating it
-			bIsDisplayed = false;
+			m_state = OverlayState::Hidden;
 			m_enemyHPIsSet = false;
 			m_enemyMaxHP = 0x01;
 		}
@@ -241,13 +239,16 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 	}
 	
 	// Now check if we should animate the display as it appears
-	if (!bIsDisplayed)
+	if (!(m_state == OverlayState::Displayed))
 	{
 		// Show "FIGHT!" animation
 		if (m_animationTransition == nullptr)
 		{
 			m_animationTransition = std::make_unique<AnimationBattleTransition>(m_resourceDescriptors, GetTextureSize(m_overlaySpriteSheet.Get()));
 		}
+		// No animation for inventory overlay showing up
+		// m_state = OverlayState::TransitionIn;
+		m_state = OverlayState::Displayed;
 	}
 
 	Overlay::PreRender(r);

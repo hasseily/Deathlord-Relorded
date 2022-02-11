@@ -16,6 +16,9 @@
     <Filter Include="Assets">
       <UniqueIdentifier>{23d72d6f-0b61-491b-b19b-0655462f0a0c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{6bb1c083-aff9-4efc-ac49-09436b671dbb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DeviceResources.cpp">
@@ -426,6 +429,9 @@
       <Filter>Assets</Filter>
     </None>
     <None Include="AnimationBattle" />
+    <None Include="Shaders\SpriteShader.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc">
@@ -504,11 +510,20 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Assets\PixelShader.hlsl">
-      <Filter>Assets</Filter>
+    <FxCompile Include="Shaders\DualPostProcessVS.hlsl">
+      <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Assets\VertexShader.hlsl">
-      <Filter>Assets</Filter>
+    <FxCompile Include="Shaders\InterferencePS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\VertexShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PixelShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\SpriteDefaultVS.hlsl">
+      <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

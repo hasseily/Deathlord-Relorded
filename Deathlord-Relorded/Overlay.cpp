@@ -12,16 +12,33 @@ using namespace std;
 extern std::unique_ptr<Game>* GetGamePtr();
 extern void SetSendKeystrokesToAppleWin(bool shouldSend);
 
+enum RootParameterIndex
+{
+	TextureSRV,
+	ConstantBuffer,
+	Texture2SRV,
+	MyConstantBuffer,
+};
+
 #pragma region main
 void Overlay::Initialize()
 {
-	bIsDisplayed = false;
+	m_state = OverlayState::Hidden;
+	auto gamePtr = GetGamePtr();
+	m_state = OverlayState::Hidden;
 	bShouldDisplay = false;
 	m_currentRect = { 0,0,0,0 };
 	m_width = 600;
 	m_height = 600;
-	//m_spritesheetDescriptor = TextureDescriptors::DLRLGameOver;
-	//m_spritesheetPath = L"Assets/SpriteSheet.png";
+	m_shaderParameters.barThickness = 0.005f;
+	m_shaderParameters.deltaT = 0;
+	m_shaderParameters.maxInterference = 3.5f;
+
+	m_deviceResources = std::make_unique<DX::DeviceResources>(
+		DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_D32_FLOAT, 2, 
+		D3D_FEATURE_LEVEL_11_0, DX::DeviceResources::c_AllowTearing);
+	m_deviceResources->CreateDeviceResources();
+
 }
 
 void Overlay::ShowOverlay()
@@ -45,8 +62,16 @@ void Overlay::ToggleOverlay()
 
 bool Overlay::IsOverlayDisplayed()
 {
-	return bIsDisplayed;
+
+	return (m_state == OverlayState::Displayed);
 }
+
+
+bool Overlay::ShouldRenderOverlay()
+{
+	return bShouldDisplay;
+}
+
 #pragma endregion
 
 
@@ -63,6 +88,18 @@ void Overlay::Update()
 void Overlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states)
 {
 	auto device = m_deviceResources->GetD3DDevice();
+
+	// Check Shader Model 6 support
+	D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { D3D_SHADER_MODEL_6_0 };
+	if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel)))
+		|| (shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_0))
+	{
+#ifdef _DEBUG
+		OutputDebugStringA("ERROR: Shader Model 6.0 is not supported!\n");
+#endif
+		throw std::runtime_error("Shader Model 6.0 is not supported!");
+	}
+
 	DX::ThrowIfFailed(
 		CreateWICTextureFromFile(device, *resourceUpload, m_spritesheetPath.c_str(),
 			m_overlaySpriteSheet.ReleaseAndGetAddressOf()));
@@ -85,16 +122,33 @@ void Overlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 	m_primitiveBatch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
 
 	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
+	auto vsBlob = DX::ReadData(L"DualPostProcessVS.cso");
+	DX::ThrowIfFailed(
+		device->CreateRootSignature(0, vsBlob.data(), vsBlob.size(),
+			IID_PPV_ARGS(m_rootSig.ReleaseAndGetAddressOf())));
+	spd.customRootSignature = m_rootSig.Get();
+	spd.customVertexShader = { vsBlob.data(), vsBlob.size() };
+	auto blob = DX::ReadData(L"InterferencePS.cso");
+	spd.customPixelShader = { blob.data(), blob.size() };
 	m_spriteBatch = std::make_unique<SpriteBatch>(device, *resourceUpload, spd);
 	m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
+
+	// Create a default root sig to reset to it after having used our shader
+	vsBlob = DX::ReadData(L"SpriteDefaultVS.cso");
+	DX::ThrowIfFailed(
+		device->CreateRootSignature(0, vsBlob.data(), vsBlob.size(),
+			IID_PPV_ARGS(m_rootSigDefault.ReleaseAndGetAddressOf())));
 }
 
 void Overlay::OnDeviceLost()
 {
+	m_shaderParamsResource.Reset();
 	m_overlaySpriteSheet.Reset();
 	m_spriteBatch.reset();
 	m_primitiveBatch.reset();
 	m_dxtEffect.reset();
+	m_rootSig.Reset();
+	m_rootSigDefault.Reset();
 }
 
 #pragma endregion
@@ -107,19 +161,20 @@ void Overlay::Render(SimpleMath::Rectangle r)
 
 	if (!bShouldDisplay)
 	{
-		if (bIsDisplayed)
+		if (m_state == OverlayState::Displayed)
 		{
 			// Remove overlay
 			// Optionally trigger removal animation
-			bIsDisplayed = false;
+			m_state = OverlayState::Hidden;
 		}
 		return;
 	}
 
 	// Optionally trigger display animation
-	if (!bIsDisplayed)
+	if (m_state != OverlayState::Displayed)
 	{
-
+		// m_state = OverlayState::TransitionIn;
+		m_state = OverlayState::Displayed;
 	}
 	PreRender(r);
 	// Here do child rendering
@@ -137,7 +192,32 @@ void Overlay::PreRender(SimpleMath::Rectangle r)
 	m_currentRect.bottom = _overlayCenter.y + mmBGTexSize.y / 2;
 
 	// Now draw
-	auto commandList = m_deviceResources->GetCommandList();
+	// TODO: Have 2 sprite batches.
+	// One is regular for when not in transition
+	// One is with the shader when in transition
+
+	// TODO: Try to do it with a new command list
+	// See if it gets rid of the SetGraphicsRootDescriptorTable bug.
+	// Make a brand new command list and apply the m_rootSig to it.
+	DX::ThrowIfFailed(
+		m_deviceResources->GetD3DDevice()->CreateCommandAllocator(
+			D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator))
+	);
+
+	DX::ThrowIfFailed(
+		m_deviceResources->GetD3DDevice()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
+			m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)
+			)
+	);
+	auto commandList = m_commandList.Get();
+	auto gamePtr = GetGamePtr();
+	commandList->SetGraphicsRootSignature(m_rootSig.Get());
+	m_shaderParamsResource = (*gamePtr)->GetGraphicsMemory()->AllocateConstant(m_shaderParameters);
+	commandList->SetGraphicsRootConstantBufferView(RootParameterIndex::MyConstantBuffer,
+		m_shaderParamsResource.GpuAddress());
+	auto secondTex = m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::OffscreenTexture2);
+	commandList->SetGraphicsRootDescriptorTable(RootParameterIndex::Texture2SRV, secondTex);
+
 	m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(
 		r.x, r.x + r.width,
 		r.y + r.height, r.y, 0, 1));
@@ -180,7 +260,9 @@ void Overlay::PostRender(SimpleMath::Rectangle r)
 	// Finish up
 	m_primitiveBatch->End();
 	m_spriteBatch->End();
-	bIsDisplayed = true;
+	m_commandList->Close();
+	// auto commandList = m_deviceResources->GetCommandList();
+	// commandList->SetGraphicsRootSignature(m_rootSigDefault.Get());
 }
 
 #pragma endregion

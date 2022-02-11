@@ -68,10 +68,8 @@ inline int PaddingToCenterString(UINT8 maxStringLength, UINT8 stringLength)
 #pragma region main
 void InvOverlay::Initialize()
 {
-	bIsDisplayed = false;
-	bShouldDisplay = false;
+	Overlay::Initialize();
 	bShouldBlockKeystrokes = true;
-	m_currentRect = { 0,0,0,0 };
 	m_width = 1150;
 	m_height = 500;
 	m_spritesheetDescriptor = TextureDescriptors::InvOverlaySpriteSheet;
@@ -94,7 +92,7 @@ void InvOverlay::Update()
 
 void InvOverlay::MousePosInPixels(int x, int y)
 {
-	if (!bIsDisplayed)
+	if (!(m_state == OverlayState::Displayed))
 		return;
 	Vector2 mousePoint(x, y);
 
@@ -137,7 +135,7 @@ void InvOverlay::MousePosInPixels(int x, int y)
 
 void InvOverlay::LeftMouseButtonClicked(int x, int y)
 {
-	if (!bIsDisplayed)
+	if (!(m_state == OverlayState::Displayed))
 		return;
 	Vector2 mousePoint(x, y);
 
@@ -209,19 +207,21 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 {
 	if (!bShouldDisplay)
 	{
-		if (bIsDisplayed)
+		if (m_state == OverlayState::Displayed)
 		{
 			// Kill the overlay, it shouldn't be here.
 			// Don't bother animating it
-			bIsDisplayed = false;
+			m_state = OverlayState::Hidden;
 		}
 		return;
 	}
 
 	// Now check if we should animate the display as it appears
-	if (!bIsDisplayed)
+	if (!(m_state == OverlayState::Displayed))
 	{
 		// No animation for inventory overlay showing up
+		// m_state = OverlayState::TransitionIn;
+		m_state = OverlayState::Displayed;
 	}
 
 	Overlay::PreRender(r);

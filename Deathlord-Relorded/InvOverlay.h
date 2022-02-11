@@ -60,9 +60,9 @@ private:
 	InvOverlay(std::unique_ptr<DX::DeviceResources>& deviceResources,
 		std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)
 	{
-		m_deviceResources = deviceResources.get();
-		m_resourceDescriptors = resourceDescriptors.get();
 		Initialize();
+		// m_deviceResources = deviceResources.get();
+		m_resourceDescriptors = resourceDescriptors.get();
 	}
 
 };

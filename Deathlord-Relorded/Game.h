@@ -103,8 +103,8 @@ public:
     // Accessors
     SimpleMath::Rectangle GetDrawRectangle();
     SpriteFont* GetSpriteFontAtIndex(FontDescriptors fontIndex);
-    // TODO: Either don't allow these accessors, or change them to return the underlying pointer
-    std::shared_ptr<DirectX::SpriteBatch> GetSpriteBatch() { return m_spriteBatch; };
+    DirectX::GraphicsMemory* GetGraphicsMemory() { return m_graphicsMemory.get(); };
+    DirectX::DescriptorHeap* GetRenderDescriptors() { return m_renderDescriptors.get(); };
 
     // Properties
 	bool shouldRender;

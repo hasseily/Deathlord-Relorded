@@ -59,13 +59,13 @@ const std::array<std::wstring, 10> m_verbs =
 // In main
 extern std::unique_ptr<Game>* GetGamePtr();
 
+static float startTime = 0.f;
+
 #pragma region main
 void GameOverOverlay::Initialize()
 {
-	bIsDisplayed = false;
-	bShouldDisplay = false;
+	Overlay::Initialize();
 	bShouldBlockKeystrokes = false;
-	m_currentRect = { 0,0,0,0 };
 	m_width = 1000;
 	m_height = 800;
 	m_spritesheetDescriptor = TextureDescriptors::DLRLGameOver;
@@ -83,7 +83,63 @@ void GameOverOverlay::Initialize()
 // Update the state based on the game's data
 void GameOverOverlay::Update()
 {
+	if (bShouldDisplay && (m_state != OverlayState::Displayed))
+	{
+		auto gamePtr = GetGamePtr();
+		auto timer = (*gamePtr)->m_timer;
+		auto totalTime = static_cast<float>(timer.GetTotalSeconds());
 
+		// If animation hasn't started, update data and start animation
+		if (m_state != OverlayState::TransitionIn)
+		{
+			startTime = totalTime;
+			m_state = OverlayState::TransitionIn;
+
+			wchar_t _buf[500];
+
+			if (MemGetMainPtr(MEM_BATTLE_MONSTER_INDEX)[0] != 0xFF)		// killed by a monster
+			{
+				auto _enemyName = StringFromMemory(MONSTER_CURR_NAME, 20);
+				if (_enemyName.size() > 2)
+				{
+					auto _enemyThac0 = MemGetMainPtr(MONSTER_CURR_THAC0)[0];
+					auto _verb = m_verbs.at(rand() % m_verbs.size());
+					auto _f = m_adjectives.find(_enemyThac0);
+					while (_f == m_adjectives.end())
+					{
+						--_enemyThac0;
+						_f = m_adjectives.find(_enemyThac0);
+					}
+					swprintf_s(_buf, L"The %s %s %s your party.", m_adjectives.find(_enemyThac0)->second.c_str(), _enemyName.c_str(), _verb.c_str());
+				}
+				else
+				{
+					swprintf_s(_buf, L"Your party is six feet under. Permanently.");
+				}
+			}
+			else
+			{
+				swprintf_s(_buf, L"Deathlord hates you.");
+			}
+			m_line1 = std::wstring(_buf);
+			swprintf_s(_buf, L"You have defeated %d enemies in this playthrough.", m_monstersKilled);
+			m_line2 = std::wstring(_buf);
+			m_line3 = std::wstring(L"Press Alt-R to Reboot.");
+		}
+
+		if (startTime > 0)
+		{
+			if ((totalTime - startTime) > m_transitionTime)		// Check if animation ended
+			{
+				m_state = OverlayState::Displayed;
+				m_shaderParameters.deltaT = 1.f;
+			}
+			else
+			{
+				m_shaderParameters.deltaT = abs(sin(totalTime));
+			}
+		}
+	}
 }
 
 #pragma endregion
@@ -94,48 +150,13 @@ void GameOverOverlay::Render(SimpleMath::Rectangle r)
 {
 	if (!bShouldDisplay)
 	{
-		if (bIsDisplayed)
+		if (m_state == OverlayState::Displayed)
 		{
 			// just kill the overlay, it shouldn't be here.
 			// Don't bother animating it
-			bIsDisplayed = false;
+			m_state = OverlayState::Hidden;
 		}
 		return;
-	}
-
-	// Now check if we should animate the display as it appears
-	if (!bIsDisplayed)
-	{
-		wchar_t _buf[500];
-
-		if (MemGetMainPtr(MEM_BATTLE_MONSTER_INDEX)[0] != 0xFF)		// killed by a monster
-		{
-			auto _enemyName = StringFromMemory(MONSTER_CURR_NAME, 20);
-			if (_enemyName.size() > 2)
-			{
-				auto _enemyThac0 = MemGetMainPtr(MONSTER_CURR_THAC0)[0];
-				auto _verb = m_verbs.at(rand() % m_verbs.size());
-				auto _f = m_adjectives.find(_enemyThac0);
-				while (_f == m_adjectives.end())
-				{
-					--_enemyThac0;
-					_f = m_adjectives.find(_enemyThac0);
-				}
-				swprintf_s(_buf, L"The %s %s %s your party.", m_adjectives.find(_enemyThac0)->second.c_str(), _enemyName.c_str(), _verb.c_str());
-			}
-			else
-			{
-				swprintf_s(_buf, L"Your party is six feet under. Permanently.");
-			}
-		}
-		else
-		{
-			swprintf_s(_buf, L"Deathlord hates you.");
-		}
-		m_line1 = std::wstring(_buf);
-		swprintf_s(_buf, L"You have defeated %d enemies in this playthrough.", m_monstersKilled);
-		m_line2 = std::wstring(_buf);
-		m_line3 = std::wstring(L"Press Alt-R to Reboot.");
 	}
 
 	Overlay::PreRender(r);
@@ -168,7 +189,6 @@ void GameOverOverlay::Render(SimpleMath::Rectangle r)
 	font->DrawString(m_spriteBatch.get(), m_line3.c_str(), { _sX, _sY + 80 }, Colors::AntiqueWhite, 0.f, Vector2(XMVectorGetX(_sSize) / 2.f, 0), 1.f);
 
 	/////////// End display text below ///////////
-
 
 	Overlay::PostRender(r);
 
