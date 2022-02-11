@@ -49,7 +49,7 @@ void BattleOverlay::Initialize()
 	m_spritesheetPath = L"Assets/BattleOverlaySpriteSheet.png";
 	m_type = OverlayType::Bordered;
 
-	m_animTextManager = AnimTextManager::GetInstance(m_deviceResources.get(), m_resourceDescriptors);
+	m_animTextManager = AnimTextManager::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_activeActor = 0xFF;
 }
 

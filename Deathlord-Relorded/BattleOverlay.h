@@ -50,7 +50,7 @@ private:
 		std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)
 	{
 		Initialize();
-		// m_deviceResources = deviceResources.get();
+		m_deviceResources = deviceResources.get();
 		m_resourceDescriptors = resourceDescriptors.get();
 	}
 

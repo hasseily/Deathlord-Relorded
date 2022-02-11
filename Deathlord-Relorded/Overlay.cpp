@@ -33,12 +33,6 @@ void Overlay::Initialize()
 	m_shaderParameters.barThickness = 0.005f;
 	m_shaderParameters.deltaT = 0;
 	m_shaderParameters.maxInterference = 3.5f;
-
-	m_deviceResources = std::make_unique<DX::DeviceResources>(
-		DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_D32_FLOAT, 2, 
-		D3D_FEATURE_LEVEL_11_0, DX::DeviceResources::c_AllowTearing);
-	m_deviceResources->CreateDeviceResources();
-
 }
 
 void Overlay::ShowOverlay()
@@ -133,11 +127,14 @@ void Overlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 	m_spriteBatch = std::make_unique<SpriteBatch>(device, *resourceUpload, spd);
 	m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
 
+	/*
+	* Not necessary since we use this spritebatch only for the overlays
 	// Create a default root sig to reset to it after having used our shader
 	vsBlob = DX::ReadData(L"SpriteDefaultVS.cso");
 	DX::ThrowIfFailed(
 		device->CreateRootSignature(0, vsBlob.data(), vsBlob.size(),
 			IID_PPV_ARGS(m_rootSigDefault.ReleaseAndGetAddressOf())));
+	*/
 }
 
 void Overlay::OnDeviceLost()
@@ -196,21 +193,9 @@ void Overlay::PreRender(SimpleMath::Rectangle r)
 	// One is regular for when not in transition
 	// One is with the shader when in transition
 
-	// TODO: Try to do it with a new command list
-	// See if it gets rid of the SetGraphicsRootDescriptorTable bug.
-	// Make a brand new command list and apply the m_rootSig to it.
-	DX::ThrowIfFailed(
-		m_deviceResources->GetD3DDevice()->CreateCommandAllocator(
-			D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator))
-	);
-
-	DX::ThrowIfFailed(
-		m_deviceResources->GetD3DDevice()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
-			m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)
-			)
-	);
-	auto commandList = m_commandList.Get();
+	auto commandList = m_deviceResources->GetCommandList();
 	auto gamePtr = GetGamePtr();
+
 	commandList->SetGraphicsRootSignature(m_rootSig.Get());
 	m_shaderParamsResource = (*gamePtr)->GetGraphicsMemory()->AllocateConstant(m_shaderParameters);
 	commandList->SetGraphicsRootConstantBufferView(RootParameterIndex::MyConstantBuffer,
@@ -260,9 +245,8 @@ void Overlay::PostRender(SimpleMath::Rectangle r)
 	// Finish up
 	m_primitiveBatch->End();
 	m_spriteBatch->End();
-	m_commandList->Close();
-	// auto commandList = m_deviceResources->GetCommandList();
-	// commandList->SetGraphicsRootSignature(m_rootSigDefault.Get());
+	auto commandList = m_deviceResources->GetCommandList();
+	commandList->SetGraphicsRootSignature(m_rootSigDefault.Get());
 }
 
 #pragma endregion

@@ -69,7 +69,7 @@ protected:
 	std::wstring m_spritesheetPath;
 	VS_INTERFERENCE_PARAMETERS m_shaderParameters;
 
-	std::unique_ptr<DX::DeviceResources> m_deviceResources;
+	DX::DeviceResources* m_deviceResources;
 	DescriptorHeap* m_resourceDescriptors;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_overlaySpriteSheet;
 	// It's totally independent, and uses its own DTX pieces

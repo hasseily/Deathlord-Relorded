@@ -888,6 +888,36 @@ void Game::CreateDeviceDependentResources()
 	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
 	m_spriteBatch = std::make_unique<SpriteBatch>(device, *m_uploadBatch.get(), spd);
 
+	/// <summary>
+	/// Set up PrimitiveBatch to draw the lines and triangles for sidebars and inventory
+	/// https://github.com/microsoft/DirectXTK12/wiki/PrimitiveBatch
+	/// </summary>
+	/// 
+	EffectPipelineStateDescription epdLines(
+		&VertexPositionColor::InputLayout,
+		CommonStates::Opaque,
+		CommonStates::DepthDefault,
+		CommonStates::CullCounterClockwise,
+		rtState,
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
+	m_dxtEffectLines = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdLines);
+	m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
+	m_primitiveBatchLines = std::make_shared<PrimitiveBatch<VertexPositionColor>>(device);
+	EffectPipelineStateDescription epdTriangles(
+		&VertexPositionColor::InputLayout,
+		CommonStates::Opaque,
+		CommonStates::DepthDefault,
+		CommonStates::CullCounterClockwise,
+		rtState,
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+	m_dxtEffectTriangles = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdTriangles);
+	m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
+	m_primitiveBatchTriangles = std::make_shared<PrimitiveBatch<VertexPositionColor>>(device);
+
+	/// <summary>
+	/// Finish
+	/// </summary>
+
     // offscreen rendering and postprocessing
 	m_renderDescriptors = std::make_unique<DescriptorHeap>(device,
 		D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
@@ -928,37 +958,6 @@ void Game::CreateDeviceDependentResources()
 
     auto uploadResourcesFinished = m_uploadBatch->End(command_queue);
     uploadResourcesFinished.wait();
-
-
-    /// <summary>
-    /// Set up PrimitiveBatch to draw the lines and triangles for sidebars and inventory
-    /// https://github.com/microsoft/DirectXTK12/wiki/PrimitiveBatch
-    /// </summary>
-    /// 
-    EffectPipelineStateDescription epdLines(
-        &VertexPositionColor::InputLayout,
-        CommonStates::Opaque,
-        CommonStates::DepthDefault,
-        CommonStates::CullCounterClockwise,
-        rtState,
-        D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
-    m_dxtEffectLines = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdLines);
-    m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
-	m_primitiveBatchLines = std::make_shared<PrimitiveBatch<VertexPositionColor>>(device);
-	EffectPipelineStateDescription epdTriangles(
-		&VertexPositionColor::InputLayout,
-		CommonStates::Opaque,
-		CommonStates::DepthDefault,
-		CommonStates::CullCounterClockwise,
-		rtState,
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
-	m_dxtEffectTriangles = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdTriangles);
-    m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
-	m_primitiveBatchTriangles = std::make_shared<PrimitiveBatch<VertexPositionColor>>(device);
-
-    /// <summary>
-    /// Finish
-    /// </summary>
 
     // Wait until assets have been uploaded to the GPU.
     m_deviceResources->WaitForGpu();
