@@ -252,15 +252,6 @@ void Game::Update(DX::StepTimer const& timer)
 	UINT8* memPtr = MemGetMainPtr(0);
 	g_isInGameMap = (memPtr[MAP_IS_IN_GAME_MAP] == 0xE5);	// when not in game map, that area is all zeros
 
-    if (g_isDead)
-    {
-        // Call up the dead class singleton
-        // and tell it we died
-        // It will know if we're already dead and do nothing, or will initiate the game over screen
-        m_gameOverOverlay->ShowOverlay();
-        return;
-    }
-
     if (g_isInGameTransition)
     {
 		// If in transition from pre-game to game, only show the transition screen
@@ -276,10 +267,12 @@ void Game::Update(DX::StepTimer const& timer)
 	{
 
 #ifdef _DEBUG
-		if (kbTracker.pressed.Delete)  // TODO: REMOVE
+		if (kbTracker.pressed.F8)  // TODO: REMOVE
 			m_gameOverOverlay->ToggleOverlay();
 #endif
-
+		if (g_isDead)
+			m_gameOverOverlay->ShowOverlay();
+		
         if (m_gameOverOverlay->ShouldRenderOverlay())
         {
             m_gameOverOverlay->Update();
