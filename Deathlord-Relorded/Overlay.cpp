@@ -12,20 +12,20 @@ using namespace std;
 extern std::unique_ptr<Game>* GetGamePtr();
 extern void SetSendKeystrokesToAppleWin(bool shouldSend);
 
-enum RootParameterIndex
+enum class OverlayRootParameterIndex
 {
 	TextureSRV,
 	ConstantBuffer,
-	Texture2SRV,
 	MyConstantBuffer,
+	Count
 };
 
 #pragma region main
 void Overlay::Initialize()
 {
-	m_state = OverlayState::Hidden;
+	m_overlayState = OverlayState::Hidden;
 	auto gamePtr = GetGamePtr();
-	m_state = OverlayState::Hidden;
+	m_overlayState = OverlayState::Hidden;
 	bShouldDisplay = false;
 	m_currentRect = { 0,0,0,0 };
 	m_width = 600;
@@ -57,7 +57,7 @@ void Overlay::ToggleOverlay()
 bool Overlay::IsOverlayDisplayed()
 {
 
-	return (m_state == OverlayState::Displayed);
+	return (m_overlayState == OverlayState::Displayed);
 }
 
 
@@ -82,6 +82,7 @@ void Overlay::Update()
 void Overlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states)
 {
 	auto device = m_deviceResources->GetD3DDevice();
+	m_states = states;
 
 	// Check Shader Model 6 support
 	D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { D3D_SHADER_MODEL_6_0 };
@@ -102,7 +103,6 @@ void Overlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 
 	// Create the DTX pieces
 
-	auto sampler = states->LinearWrap();
 	RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
 
 	EffectPipelineStateDescription epdTriangles(
@@ -115,8 +115,8 @@ void Overlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 	m_dxtEffect = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdTriangles);
 	m_primitiveBatch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(device);
 
-	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
-	auto vsBlob = DX::ReadData(L"DualPostProcessVS.cso");
+	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, nullptr);
+	auto vsBlob = DX::ReadData(L"SinglePostProcessVS.cso");
 	DX::ThrowIfFailed(
 		device->CreateRootSignature(0, vsBlob.data(), vsBlob.size(),
 			IID_PPV_ARGS(m_rootSig.ReleaseAndGetAddressOf())));
@@ -124,28 +124,19 @@ void Overlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 	spd.customVertexShader = { vsBlob.data(), vsBlob.size() };
 	auto blob = DX::ReadData(L"InterferencePS.cso");
 	spd.customPixelShader = { blob.data(), blob.size() };
-	m_spriteBatch = std::make_unique<SpriteBatch>(device, *resourceUpload, spd);
-	m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
+	m_overlaySB = std::make_unique<SpriteBatch>(device, *resourceUpload, spd);
+	m_overlaySB->SetViewport(m_deviceResources->GetScreenViewport());
 
-	/*
-	* Not necessary since we use this spritebatch only for the overlays
-	// Create a default root sig to reset to it after having used our shader
-	vsBlob = DX::ReadData(L"SpriteDefaultVS.cso");
-	DX::ThrowIfFailed(
-		device->CreateRootSignature(0, vsBlob.data(), vsBlob.size(),
-			IID_PPV_ARGS(m_rootSigDefault.ReleaseAndGetAddressOf())));
-	*/
 }
 
 void Overlay::OnDeviceLost()
 {
 	m_shaderParamsResource.Reset();
 	m_overlaySpriteSheet.Reset();
-	m_spriteBatch.reset();
+	m_overlaySB.reset();
 	m_primitiveBatch.reset();
 	m_dxtEffect.reset();
 	m_rootSig.Reset();
-	m_rootSigDefault.Reset();
 }
 
 #pragma endregion
@@ -158,20 +149,20 @@ void Overlay::Render(SimpleMath::Rectangle r)
 
 	if (!bShouldDisplay)
 	{
-		if (m_state == OverlayState::Displayed)
+		if (m_overlayState == OverlayState::Displayed)
 		{
 			// Remove overlay
 			// Optionally trigger removal animation
-			m_state = OverlayState::Hidden;
+			m_overlayState = OverlayState::Hidden;
 		}
 		return;
 	}
 
 	// Optionally trigger display animation
-	if (m_state != OverlayState::Displayed)
+	if (m_overlayState != OverlayState::Displayed)
 	{
 		// m_state = OverlayState::TransitionIn;
-		m_state = OverlayState::Displayed;
+		m_overlayState = OverlayState::Displayed;
 	}
 	PreRender(r);
 	// Here do child rendering
@@ -189,27 +180,24 @@ void Overlay::PreRender(SimpleMath::Rectangle r)
 	m_currentRect.bottom = _overlayCenter.y + mmBGTexSize.y / 2;
 
 	// Now draw
-	// TODO: Have 2 sprite batches.
-	// One is regular for when not in transition
-	// One is with the shader when in transition
 
 	auto commandList = m_deviceResources->GetCommandList();
 	auto gamePtr = GetGamePtr();
 
+	// Now set the command list data
 	commandList->SetGraphicsRootSignature(m_rootSig.Get());
 	m_shaderParamsResource = (*gamePtr)->GetGraphicsMemory()->AllocateConstant(m_shaderParameters);
-	commandList->SetGraphicsRootConstantBufferView(RootParameterIndex::MyConstantBuffer,
+	commandList->SetGraphicsRootConstantBufferView((int)OverlayRootParameterIndex::MyConstantBuffer,
 		m_shaderParamsResource.GpuAddress());
-	auto secondTex = m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::OffscreenTexture2);
-	commandList->SetGraphicsRootDescriptorTable(RootParameterIndex::Texture2SRV, secondTex);
+
 
 	m_dxtEffect->SetProjection(XMMatrixOrthographicOffCenterRH(
 		r.x, r.x + r.width,
 		r.y + r.height, r.y, 0, 1));
 	m_dxtEffect->Apply(commandList);
-	m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
+	m_overlaySB->SetViewport(m_deviceResources->GetScreenViewport());
 	m_primitiveBatch->Begin(commandList);
-	m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
+	m_overlaySB->Begin(commandList, SpriteSortMode_Deferred);
 
 	if (m_curtainColor.w != 0.f)		// Draw a screen curtain to partially/fully hide the underlying rendering
 	{
@@ -244,9 +232,7 @@ void Overlay::PostRender(SimpleMath::Rectangle r)
 {
 	// Finish up
 	m_primitiveBatch->End();
-	m_spriteBatch->End();
-	auto commandList = m_deviceResources->GetCommandList();
-	commandList->SetGraphicsRootSignature(m_rootSigDefault.Get());
+	m_overlaySB->End();
 }
 
 #pragma endregion

@@ -59,7 +59,7 @@ protected:
 
 	OverlayType m_type = OverlayType::Bare;
 	bool bShouldDisplay;
-	OverlayState m_state;
+	OverlayState m_overlayState;
 	bool bShouldBlockKeystrokes = false;
 	RECT m_currentRect;	// Rect of the overlay
 	int m_width;
@@ -70,14 +70,14 @@ protected:
 	VS_INTERFERENCE_PARAMETERS m_shaderParameters;
 
 	DX::DeviceResources* m_deviceResources;
+	CommonStates* m_states;
 	DescriptorHeap* m_resourceDescriptors;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_overlaySpriteSheet;
 	// It's totally independent, and uses its own DTX pieces
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSig;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSigDefault;
-	std::unique_ptr<SpriteBatch>m_spriteBatch;
+	std::unique_ptr<SpriteBatch>m_overlaySB;
 	std::unique_ptr<PrimitiveBatch<VertexPositionColor>>m_primitiveBatch;
 	std::unique_ptr<BasicEffect> m_dxtEffect;
 	DirectX::GraphicsResource m_shaderParamsResource;

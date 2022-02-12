@@ -83,17 +83,17 @@ void GameOverOverlay::Initialize()
 // Update the state based on the game's data
 void GameOverOverlay::Update()
 {
-	if (bShouldDisplay && (m_state != OverlayState::Displayed))
+	if (bShouldDisplay && (m_overlayState != OverlayState::Displayed))
 	{
 		auto gamePtr = GetGamePtr();
 		auto timer = (*gamePtr)->m_timer;
 		auto totalTime = static_cast<float>(timer.GetTotalSeconds());
 
 		// If animation hasn't started, update data and start animation
-		if (m_state != OverlayState::TransitionIn)
+		if (m_overlayState != OverlayState::TransitionIn)
 		{
 			startTime = totalTime;
-			m_state = OverlayState::TransitionIn;
+			m_overlayState = OverlayState::TransitionIn;
 
 			wchar_t _buf[500];
 
@@ -131,7 +131,7 @@ void GameOverOverlay::Update()
 		{
 			if ((totalTime - startTime) > m_transitionTime)		// Check if animation ended
 			{
-				m_state = OverlayState::Displayed;
+				m_overlayState = OverlayState::Displayed;
 				m_shaderParameters.deltaT = 1.f;
 			}
 			else
@@ -150,11 +150,11 @@ void GameOverOverlay::Render(SimpleMath::Rectangle r)
 {
 	if (!bShouldDisplay)
 	{
-		if (m_state == OverlayState::Displayed)
+		if (m_overlayState == OverlayState::Displayed)
 		{
 			// just kill the overlay, it shouldn't be here.
 			// Don't bother animating it
-			m_state = OverlayState::Hidden;
+			m_overlayState = OverlayState::Hidden;
 		}
 		return;
 	}
@@ -172,7 +172,7 @@ void GameOverOverlay::Render(SimpleMath::Rectangle r)
 		_winCenter.x + _texCenter.x,			// right
 		_winCenter.y + _texCenter.y - 100		// bottom
 	};
-	m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor), _spriteSheetSize, texRect);
+	m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor), _spriteSheetSize, texRect);
 
 	/////////// Display the text below ///////////
 	auto gamePtr = GetGamePtr();
@@ -182,11 +182,11 @@ void GameOverOverlay::Render(SimpleMath::Rectangle r)
 	float _sY = texRect.bottom + 50;
 
 	_sSize = font->MeasureString(m_line1.c_str(), false);
-	font->DrawString(m_spriteBatch.get(), m_line1.c_str(), { _sX, _sY }, Colors::AntiqueWhite, 0.f, Vector2(XMVectorGetX(_sSize) / 2.f, 0), 1.f);
+	font->DrawString(m_overlaySB.get(), m_line1.c_str(), { _sX, _sY }, Colors::AntiqueWhite, 0.f, Vector2(XMVectorGetX(_sSize) / 2.f, 0), 1.f);
 	_sSize = font->MeasureString(m_line2.c_str(), false);
-	font->DrawString(m_spriteBatch.get(), m_line2.c_str(), { _sX, _sY + 20 }, Colors::AntiqueWhite, 0.f, Vector2(XMVectorGetX(_sSize) / 2.f, 0), 1.f);
+	font->DrawString(m_overlaySB.get(), m_line2.c_str(), { _sX, _sY + 20 }, Colors::AntiqueWhite, 0.f, Vector2(XMVectorGetX(_sSize) / 2.f, 0), 1.f);
 	_sSize = font->MeasureString(m_line3.c_str(), false);
-	font->DrawString(m_spriteBatch.get(), m_line3.c_str(), { _sX, _sY + 80 }, Colors::AntiqueWhite, 0.f, Vector2(XMVectorGetX(_sSize) / 2.f, 0), 1.f);
+	font->DrawString(m_overlaySB.get(), m_line3.c_str(), { _sX, _sY + 80 }, Colors::AntiqueWhite, 0.f, Vector2(XMVectorGetX(_sSize) / 2.f, 0), 1.f);
 
 	/////////// End display text below ///////////
 

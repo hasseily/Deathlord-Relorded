@@ -227,11 +227,11 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 {
 	if (!bShouldDisplay)
 	{
-		if (m_state == OverlayState::Displayed)
+		if (m_overlayState == OverlayState::Displayed)
 		{
 			// just kill the overlay, it shouldn't be here.
 			// Don't bother animating it
-			m_state = OverlayState::Hidden;
+			m_overlayState = OverlayState::Hidden;
 			m_enemyHPIsSet = false;
 			m_enemyMaxHP = 0x01;
 		}
@@ -239,7 +239,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 	}
 	
 	// Now check if we should animate the display as it appears
-	if (!(m_state == OverlayState::Displayed))
+	if (!(m_overlayState == OverlayState::Displayed))
 	{
 		// Show "FIGHT!" animation
 		if (m_animationTransition == nullptr)
@@ -248,7 +248,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 		}
 		// No animation for inventory overlay showing up
 		// m_state = OverlayState::TransitionIn;
-		m_state = OverlayState::Displayed;
+		m_overlayState = OverlayState::Displayed;
 	}
 
 	Overlay::PreRender(r);
@@ -287,12 +287,12 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 			// Draw the cursor on the active sprite
 			if ((i == m_activeActor) && i < 9)	// don't bother with any enemy above 3rd
 			{
-				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
+				m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
 					_battleSpriteSheetSize, Vector2(_animRect.x - 2, _animRect.y - 2), &RECT_SPRITE_CURSOR,
 					(i < 6 ? Colors::White : Colors::Red), 0.f, XMFLOAT2(), 1.0f);
 			}
 			// Render the animated sprites
-			_anim->Render(m_spriteBatch.get(), &m_currentRect);
+			_anim->Render(m_overlaySB.get(), &m_currentRect);
 			// Draw the health and power bars
 			SimpleMath::Rectangle _healthBarR(_animRect);
 			_healthBarR.y += _animRect.height + 2;
@@ -307,7 +307,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 					SimpleMath::Rectangle _powerBarR(_healthBarR);
 					_powerBarR.y += _healthBarR.height + 2;
 					_powerBarR.width = _animRect.width * MemGetMainPtr(PARTY_POWER_START)[i] / MemGetMainPtr(PARTY_POWER_MAX_START)[i];
-					m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
+					m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
 						_battleSpriteSheetSize, (RECT)_powerBarR, &(RECT)_barRect, Colors::Blue, 0.f, XMFLOAT2());
 				}
 			}
@@ -317,7 +317,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 				int _maxHPUsed = (_mMonsterHPDisplay > m_enemyMaxHP ? _mMonsterHPDisplay : m_enemyMaxHP);
 				_healthBarR.width = _animRect.width * MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6] / _maxHPUsed;
 			}
-			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
+			m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
 				_battleSpriteSheetSize, (RECT)_healthBarR, &(RECT)_barRect, Colors::Red, 0.f, XMFLOAT2());
 		}
 	}
@@ -325,7 +325,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 	// Draw the battle transition animation if necessary
 	if (m_animationTransition != nullptr)
 	{
-		m_animationTransition->Render(m_spriteBatch.get(), &m_currentRect);
+		m_animationTransition->Render(m_overlaySB.get(), &m_currentRect);
 		if (m_animationTransition->IsFinished())
 			m_animationTransition = nullptr;
 	}

@@ -525,6 +525,9 @@
     <FxCompile Include="Shaders\SpriteDefaultVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\SinglePostProcessVS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="Profiles\Grid Cartographer Profiles\Deathlord Companion.xml">

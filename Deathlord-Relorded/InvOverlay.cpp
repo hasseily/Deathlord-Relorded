@@ -92,7 +92,7 @@ void InvOverlay::Update()
 
 void InvOverlay::MousePosInPixels(int x, int y)
 {
-	if (!(m_state == OverlayState::Displayed))
+	if (!(m_overlayState == OverlayState::Displayed))
 		return;
 	Vector2 mousePoint(x, y);
 
@@ -135,7 +135,7 @@ void InvOverlay::MousePosInPixels(int x, int y)
 
 void InvOverlay::LeftMouseButtonClicked(int x, int y)
 {
-	if (!(m_state == OverlayState::Displayed))
+	if (!(m_overlayState == OverlayState::Displayed))
 		return;
 	Vector2 mousePoint(x, y);
 
@@ -207,21 +207,21 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 {
 	if (!bShouldDisplay)
 	{
-		if (m_state == OverlayState::Displayed)
+		if (m_overlayState == OverlayState::Displayed)
 		{
 			// Kill the overlay, it shouldn't be here.
 			// Don't bother animating it
-			m_state = OverlayState::Hidden;
+			m_overlayState = OverlayState::Hidden;
 		}
 		return;
 	}
 
 	// Now check if we should animate the display as it appears
-	if (!(m_state == OverlayState::Displayed))
+	if (!(m_overlayState == OverlayState::Displayed))
 	{
 		// No animation for inventory overlay showing up
 		// m_state = OverlayState::TransitionIn;
-		m_state = OverlayState::Displayed;
+		m_overlayState = OverlayState::Displayed;
 	}
 
 	Overlay::PreRender(r);
@@ -330,7 +330,7 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 			);
 		}
 		// Draw tab string
-		font->DrawString(m_spriteBatch.get(), _str.c_str(),
+		font->DrawString(m_overlaySB.get(), _str.c_str(),
 			Vector2(invSlotBegin + stringHalfSpacing, invSlotsOriginY),
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		invSlotBegin = invSlotEnd;
@@ -356,7 +356,7 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 		sprintf_s(_invhBuf, 200, "%-20s   %s", "Name", "TH0   AC   Special");
 
 	}
-	font->DrawString(m_spriteBatch.get(), _invhBuf,
+	font->DrawString(m_overlaySB.get(), _invhBuf,
 		Vector2(invSlotsOriginX, invSlotsOriginY + 40),
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 	///// End Draw Inventory Headers
@@ -372,30 +372,30 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 		int memberLeft = 28 *(memberClass % 8);
 		int memberTop = 32 *(memberClass / 8);
 		RECT memberSpriteRect = { memberLeft, memberTop, memberLeft + 28, memberTop + 32 };
-		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+		m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 			mmSSTextureSize, XMFLOAT2(xCol + (memberColWidth - 28)/2, yCol), &memberSpriteRect, Colors::White, 0.f, XMFLOAT2());
 		// Then draw the member name, class, race and AC
 		yCol += 32 + 5;
 		_bufStr = StringFromMemory(PARTY_NAME_START + (iMember * 0x09), maxGlyphs);
 		_bufStr = ltrim(rtrim(_bufStr));
-		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
+		font->DrawString(m_overlaySB.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
 		_bufStr = NameOfClass((DeathlordClasses)memberClass, true);
-		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
+		font->DrawString(m_overlaySB.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
 		UINT8 memberRace = MemGetMainPtr(PARTY_RACE_START)[iMember];
 		_bufStr = NameOfRace((DeathlordRaces)memberRace, true);
-		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
+		font->DrawString(m_overlaySB.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
 		UINT8 memberArmor = MemGetMainPtr(PARTY_ARMORCLASS_START)[iMember];
 		_bufStr = L"AC " + std::to_wstring((int)10 - memberArmor);
-		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
+		font->DrawString(m_overlaySB.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 
@@ -420,7 +420,7 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 		default:
 			_bufStr = L"FISTS";
 		}
-		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
+		font->DrawString(m_overlaySB.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 
@@ -437,23 +437,23 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 	if (_currentItems == _maxStashItems)
 	{
 		_bufStr = L"FULL";
-		font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
+		font->DrawString(m_overlaySB.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			VColorAmber, 0.f, Vector2(0.f, 0.f), 1.f);
 	}
 	yCol -= glyphHeight + 10 + 2;
 	_bufStr = std::to_wstring(_currentItems) + L" / " + std::to_wstring(_maxStashItems);
-	font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
+	font->DrawString(m_overlaySB.get(), _bufStr.c_str(),
 		Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 	yCol -= glyphHeight + 2;
 	_bufStr = L"STASH";
-	font->DrawString(m_spriteBatch.get(), _bufStr.c_str(),
+	font->DrawString(m_overlaySB.get(), _bufStr.c_str(),
 		Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 	// Finally draw the icon
 	yCol -= spRectStash.bottom - spRectStash.top + 5;
-	m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+	m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 		mmSSTextureSize, XMFLOAT2(xCol + (memberColWidth - 28*2) / 2, yCol), &spRectStash, Colors::White, 0.f, XMFLOAT2());
 	///// End Draw Column Headers (stash)
 
@@ -621,7 +621,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 			swprintf_s(_spBuf, 200, L"%-20s   %+d    %+d   %s",
 				item->name.c_str(), item->thaco, -1 * item->ac, item->special.c_str());
 	}
-	font->DrawString(m_spriteBatch.get(), _spBuf,
+	font->DrawString(m_overlaySB.get(), _spBuf,
 		Vector2(xPos, yPos),
 		Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 	// Finished drawing the item info. Now draw the equipped status
@@ -631,16 +631,16 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 	auto mmSSTextureSize = GetTextureSize(m_overlaySpriteSheet.Get());
 	for (UINT8 i = 0; i < DEATHLORD_PARTY_SIZE; i++)
 	{
-		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+		m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 			mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvEmpty, Colors::White, 0.f, XMFLOAT2());
 		RECT rectSprite = spRectInvEmpty;
 		if (pItemInstance->owner == i)
 		{
 			if (pItemInstance->equipped)
-				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+				m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 					mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvWorn, Colors::White, 0.f, XMFLOAT2());
 			else
-				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+				m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 					mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
 		}
 		else // set up highlighting to do something with the button when the item not equipped for this party member
@@ -655,10 +655,10 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 					(DeathlordClasses)MemGetMainPtr(PARTY_CLASS_START)[i],
 					(DeathlordRaces)MemGetMainPtr(PARTY_RACE_START)[i])
 					)
-					m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+					m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 						mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvWorn, Colors::White, 0.f, XMFLOAT2());
 				else
-					m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+					m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 						mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
 			}
 		}
@@ -675,7 +675,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 	}
 	// Now the stash
 	_xPos += verticalBarWidth;	// the width of the vertical bar
-	m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+	m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 		mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvEmpty, Colors::White, 0.f, XMFLOAT2());
 
 	EquipInteractableRect _aEIR;
@@ -690,7 +690,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 	{
 		if (pItemInstance->owner == i)
 		{
-			m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+			m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 				mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
 			_xPos += 40;
 			// Here draw the open trash when highlighted, otherwise closed trash
@@ -700,10 +700,10 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 			isHighlighted = isHighlighted && (highlightedRect.eMember == i);
 			isHighlighted = isHighlighted && highlightedRect.isTrash;
 			if (isHighlighted)
-				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+				m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 					mmSSTextureSize, XMFLOAT2(_xPos, yPos - 5), &spRectTrashOpen, Colors::White, 0.f, XMFLOAT2());
 			else
-				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+				m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 					mmSSTextureSize, XMFLOAT2(_xPos, yPos - 5), &spRectTrashClosed, Colors::White, 0.f, XMFLOAT2());
 			// And tell the system we have a trash button
 			EquipInteractableRect _aTrashIR;
@@ -725,7 +725,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 			isHighlighted = isHighlighted && (highlightedRect.eMember == DEATHLORD_PARTY_SIZE);
 			if (isHighlighted)
 			{
-				m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
+				m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 					mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvCarried, Colors::White, 0.f, XMFLOAT2());
 			}
 		}
