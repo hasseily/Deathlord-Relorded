@@ -73,6 +73,10 @@ void GameOverOverlay::Initialize()
 	m_type = OverlayType::Bare;
 	m_curtainColor = ColorCurtain;
 
+	m_shaderParameters.barThickness = 0.01f;
+	m_shaderParameters.maxInterference = 3.5f;
+	m_transitionTime = 2.0f;
+
 	m_monstersKilled = 0;
 	m_scale = 1.f;
 }
@@ -132,11 +136,13 @@ void GameOverOverlay::Update()
 			if ((totalTime - startTime) > m_transitionTime)		// Check if animation ended
 			{
 				m_overlayState = OverlayState::Displayed;
+				m_shaderParameters.maxInterference = 0.f;
 				m_shaderParameters.deltaT = 1.f;
 			}
 			else
 			{
-				m_shaderParameters.deltaT = abs(sin(totalTime));
+				m_shaderParameters.deltaT = (totalTime - startTime) / m_transitionTime;
+				m_shaderParameters.maxInterference = (1 - m_shaderParameters.deltaT) * 5.f;
 			}
 		}
 	}

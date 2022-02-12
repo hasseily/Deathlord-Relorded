@@ -32,7 +32,7 @@ void Overlay::Initialize()
 	m_height = 600;
 	m_shaderParameters.barThickness = 0.005f;
 	m_shaderParameters.deltaT = 0;
-	m_shaderParameters.maxInterference = 3.5f;
+	m_shaderParameters.maxInterference = 0.f;
 }
 
 void Overlay::ShowOverlay()
