@@ -32,6 +32,7 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 	// TODO: Should not rely on the gamePtr for fonts?
 	auto gamePtr = GetGamePtr();
 	auto fontsRegular = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular);
+	auto fontsInverse = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLInverse);
 
 	// Render everything on the wood plank: Party name, Module string...
 	// All centered in the plank.
@@ -55,10 +56,21 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 	_plankMinY += 20;
 
 	// Render Keypress string
-	// TODO: Get the length of the string and align it to the center bottom of the map
-	//		 with a popup window
-	fontsRegular->DrawString(spriteBatch, m_strKeypress.c_str(),
-		{ r.x + 850.f, r.y + 900.f }, Colors::White, 0.f, Vector2(), 2.f);
+	// Make sure it's not pure spaces otherwise the inverse font will show
+	if (m_strKeypress.find_first_not_of(' ') != string::npos)
+	{
+		auto _totalTicks = (*gamePtr)->GetTotalTicks();
+		auto _halfsec = _totalTicks / 10000000;
+		_sSize = fontsRegular->MeasureString(m_strKeypress.c_str(), false);
+		float _kpScale = 1.0f;
+		if (_halfsec % 2)
+			fontsRegular->DrawString(spriteBatch, m_strKeypress.c_str(),
+				{ r.x + 1412.f - _kpScale * (XMVectorGetX(_sSize) / 2.f), r.y + 990.f }, Colors::AntiqueWhite, 0.f, Vector2(), _kpScale);
+		else
+			fontsInverse->DrawString(spriteBatch, m_strKeypress.c_str(),
+				{ r.x + 1412.f - _kpScale * (XMVectorGetX(_sSize) / 2.f), r.y + 990.f }, Colors::AntiqueWhite, 0.f, Vector2(), _kpScale);
+	}
+
 	// Render Billboard
 	float yInc = 0.f;
 	for each (auto bbLine in m_vBillboard)
