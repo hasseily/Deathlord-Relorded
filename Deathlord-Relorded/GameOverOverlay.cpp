@@ -73,7 +73,7 @@ void GameOverOverlay::Initialize()
 	m_type = OverlayType::Bare;
 	m_curtainColor = ColorCurtain;
 
-	m_shaderParameters.barThickness = 0.04f;
+	m_shaderParameters.barThickness = 0.003f;
 	m_shaderParameters.maxInterference = 3.5f;
 	m_transitionTime = 1.0f;
 
@@ -185,7 +185,7 @@ void GameOverOverlay::Render(SimpleMath::Rectangle r)
 	auto font = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular);
 	XMVECTOR _sSize;
 	float _sX = _winCenter.x;
-	float _sY = texRect.bottom + 50;
+	float _sY = _winCenter.y + 200;
 
 	_sSize = font->MeasureString(m_line1.c_str(), false);
 	font->DrawString(m_overlaySB.get(), m_line1.c_str(), { _sX, _sY }, Colors::AntiqueWhite, 0.f, Vector2(XMVectorGetX(_sSize) / 2.f, 0), 1.f);

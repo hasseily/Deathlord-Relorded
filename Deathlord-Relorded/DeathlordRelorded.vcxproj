@@ -409,7 +409,7 @@
     <Image Include="emulator\resources\icon1.ico" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\InterferencePS.hlsl">
+    <FxCompile Include="Shaders\NoisolpxePS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>

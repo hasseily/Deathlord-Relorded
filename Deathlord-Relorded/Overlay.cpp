@@ -122,7 +122,7 @@ void Overlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 			IID_PPV_ARGS(m_rootSig.ReleaseAndGetAddressOf())));
 	spd.customRootSignature = m_rootSig.Get();
 	spd.customVertexShader = { vsBlob.data(), vsBlob.size() };
-	auto blob = DX::ReadData(L"InterferencePS.cso");
+	auto blob = DX::ReadData(L"NoisolpxePS.cso");		// (reverse explosion)
 	spd.customPixelShader = { blob.data(), blob.size() };
 	m_overlaySB = std::make_unique<SpriteBatch>(device, *resourceUpload, spd);
 	m_overlaySB->SetViewport(m_deviceResources->GetScreenViewport());
@@ -199,33 +199,40 @@ void Overlay::PreRender(SimpleMath::Rectangle r)
 	m_primitiveBatch->Begin(commandList);
 	m_overlaySB->Begin(commandList, SpriteSortMode_Deferred);
 
-	if (m_curtainColor.w != 0.f)		// Draw a screen curtain to partially/fully hide the underlying rendering
+	if (m_overlayState == OverlayState::Displayed)
 	{
-		m_primitiveBatch->DrawQuad(
-			VertexPositionColor(XMFLOAT3(r.x, r.y, 0), m_curtainColor),
-			VertexPositionColor(XMFLOAT3(r.x + r.width, r.y, 0), m_curtainColor),
-			VertexPositionColor(XMFLOAT3(r.x + r.width, r.y + r.height, 0), m_curtainColor),
-			VertexPositionColor(XMFLOAT3(r.x, r.y + r.height, 0), m_curtainColor)
-		);
+		// Don't display curtain and border until the whole thing is displayed.
+		// It adds to the impact
+
+		if (m_curtainColor.w != 0.f)		// Draw a screen curtain to partially/fully hide the underlying rendering
+		{
+			m_primitiveBatch->DrawQuad(
+				VertexPositionColor(XMFLOAT3(r.x, r.y, 0), m_curtainColor),
+				VertexPositionColor(XMFLOAT3(r.x + r.width, r.y, 0), m_curtainColor),
+				VertexPositionColor(XMFLOAT3(r.x + r.width, r.y + r.height, 0), m_curtainColor),
+				VertexPositionColor(XMFLOAT3(r.x, r.y + r.height, 0), m_curtainColor)
+			);
+		}
+
+		if (m_type == OverlayType::Bordered)
+		{
+			///// Begin Draw Border (2 quads, the black one 10px smaller per side for a 5px thickness
+			m_primitiveBatch->DrawQuad(
+				VertexPositionColor(XMFLOAT3(m_currentRect.left, m_currentRect.top, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(m_currentRect.right, m_currentRect.top, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(m_currentRect.right, m_currentRect.bottom, 0), ColorAmber),
+				VertexPositionColor(XMFLOAT3(m_currentRect.left, m_currentRect.bottom, 0), ColorAmber)
+			);
+			m_primitiveBatch->DrawQuad(
+				VertexPositionColor(XMFLOAT3(m_currentRect.left + 5, m_currentRect.top + 5, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(m_currentRect.right - 5, m_currentRect.top + 5, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(m_currentRect.right - 5, m_currentRect.bottom - 5, 0), static_cast<XMFLOAT4>(Colors::Black)),
+				VertexPositionColor(XMFLOAT3(m_currentRect.left + 5, m_currentRect.bottom - 5, 0), static_cast<XMFLOAT4>(Colors::Black))
+			);
+			///// End Draw Border
+		}
 	}
 
-	if (m_type == OverlayType::Bordered)
-	{
-		///// Begin Draw Border (2 quads, the black one 10px smaller per side for a 5px thickness
-		m_primitiveBatch->DrawQuad(
-			VertexPositionColor(XMFLOAT3(m_currentRect.left, m_currentRect.top, 0), ColorAmber),
-			VertexPositionColor(XMFLOAT3(m_currentRect.right, m_currentRect.top, 0), ColorAmber),
-			VertexPositionColor(XMFLOAT3(m_currentRect.right, m_currentRect.bottom, 0), ColorAmber),
-			VertexPositionColor(XMFLOAT3(m_currentRect.left, m_currentRect.bottom, 0), ColorAmber)
-		);
-		m_primitiveBatch->DrawQuad(
-			VertexPositionColor(XMFLOAT3(m_currentRect.left + 5, m_currentRect.top + 5, 0), static_cast<XMFLOAT4>(Colors::Black)),
-			VertexPositionColor(XMFLOAT3(m_currentRect.right - 5, m_currentRect.top + 5, 0), static_cast<XMFLOAT4>(Colors::Black)),
-			VertexPositionColor(XMFLOAT3(m_currentRect.right - 5, m_currentRect.bottom - 5, 0), static_cast<XMFLOAT4>(Colors::Black)),
-			VertexPositionColor(XMFLOAT3(m_currentRect.left + 5, m_currentRect.bottom - 5, 0), static_cast<XMFLOAT4>(Colors::Black))
-		);
-		///// End Draw Border
-	}
 }
 
 void Overlay::PostRender(SimpleMath::Rectangle r)

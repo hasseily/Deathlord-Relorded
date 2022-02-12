@@ -513,7 +513,7 @@
     <FxCompile Include="Shaders\DualPostProcessVS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\InterferencePS.hlsl">
+    <FxCompile Include="Shaders\NoisolpxePS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\VertexShader.hlsl">

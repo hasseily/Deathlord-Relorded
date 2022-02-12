@@ -12,11 +12,16 @@ float4 main(float4 color : COLOR0, float2 texCoord : TEXCOORD0) : SV_Target0
         float4 color = StartTexture.Sample(TextureSampler, texCoord);
         return color;
     }
-    int yBlock = texCoord.y / barThickness;
+    int xBlock = texCoord.x / barThickness;
+    int yBlock = texCoord.y / (barThickness * 1.6f);
     // float4 endF4 = EndTexture.Sample(TextureSampler, texCoord);
     float xTranslate = maxInterference * (1.f - deltaT) * sin(deltaT * yBlock * 3.145926f);
+    float yTranslate = maxInterference * (1.f - deltaT) * sin(deltaT * xBlock * 3.145926f);
     float newX = texCoord.x + xTranslate;
-    float4 startF4 = StartTexture.Sample(TextureSampler, texCoord);
+    float newY = texCoord.y + yTranslate;
     texCoord.x = newX;
-    return StartTexture.Sample(TextureSampler, texCoord);
+    texCoord.y = newY;
+    float4 color4 = StartTexture.Sample(TextureSampler, texCoord);
+    color4[3] = color4[3] * sin(deltaT);
+    return color4;
 }
