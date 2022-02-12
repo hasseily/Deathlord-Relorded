@@ -14,7 +14,7 @@ float4 main(float4 color : COLOR0, float2 texCoord : TEXCOORD0) : SV_Target0
     }
     int yBlock = texCoord.y / barThickness;
     // float4 endF4 = EndTexture.Sample(TextureSampler, texCoord);
-    float xTranslate = maxInterference * sin(yBlock * 10) * (1.f - deltaT);
+    float xTranslate = maxInterference * (1.f - deltaT) * sin(deltaT * yBlock * 3.145926f);
     float newX = texCoord.x + xTranslate;
     float4 startF4 = StartTexture.Sample(TextureSampler, texCoord);
     texCoord.x = newX;
