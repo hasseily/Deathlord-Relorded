@@ -7,10 +7,10 @@ sampler TextureSampler : register(s0);
 [RootSignature(SinglePostProcessRS)]
 float4 main(float4 color : COLOR0, float2 texCoord : TEXCOORD0) : SV_Target0
 {
+    float4 texColor = StartTexture.Sample(TextureSampler, texCoord);
     if (maxInterference == 0)
     {
-        float4 color = StartTexture.Sample(TextureSampler, texCoord);
-        return color;
+        return (texColor * color);
     }
     int xBlock = texCoord.x / barThickness;
     int yBlock = texCoord.y / (barThickness * 1.6f);
@@ -21,7 +21,6 @@ float4 main(float4 color : COLOR0, float2 texCoord : TEXCOORD0) : SV_Target0
     float newY = texCoord.y + yTranslate;
     texCoord.x = newX;
     texCoord.y = newY;
-    float4 color4 = StartTexture.Sample(TextureSampler, texCoord);
-    color4[3] = color4[3] * sin(deltaT);
-    return color4;
+    texColor[3] = texColor[3] * sin(deltaT);
+    return texColor;
 }
