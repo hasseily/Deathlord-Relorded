@@ -276,7 +276,8 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 
 	// Draw the party and monsters
 	auto _battleSpriteSheetSize = GetTextureSize(m_overlaySpriteSheet.Get());
-	SimpleMath::Rectangle _barRect(0, 0, 28, 5);
+	SimpleMath::Rectangle _barRectRed(0, 0, 28, 5);
+	SimpleMath::Rectangle _barRectBlue(0, 5, 28, 5);
 	AnimationBattleChar* _anim;
 	for (int i = 0; i < TOTAL_SPRITES; i++)
 	{
@@ -308,7 +309,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 					_powerBarR.y += _healthBarR.height + 2;
 					_powerBarR.width = _animRect.width * MemGetMainPtr(PARTY_POWER_START)[i] / MemGetMainPtr(PARTY_POWER_MAX_START)[i];
 					m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
-						_battleSpriteSheetSize, (RECT)_powerBarR, &(RECT)_barRect, Colors::Blue, 0.f, XMFLOAT2());
+						_battleSpriteSheetSize, (RECT)_powerBarR, &(RECT)_barRectBlue, Colors::White, 0.f, XMFLOAT2());
 				}
 			}
 			else // monsters
@@ -318,7 +319,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 				_healthBarR.width = _animRect.width * MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6] / _maxHPUsed;
 			}
 			m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
-				_battleSpriteSheetSize, (RECT)_healthBarR, &(RECT)_barRect, Colors::Red, 0.f, XMFLOAT2());
+				_battleSpriteSheetSize, (RECT)_healthBarR, &(RECT)_barRectRed, Colors::White, 0.f, XMFLOAT2());
 		}
 	}
 
