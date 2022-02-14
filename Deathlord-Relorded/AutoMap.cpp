@@ -276,7 +276,7 @@ void AutoMap::CalculateLOS()
 		return;
 	int _centerX = (m_avatarPosition.x * FBTW) + FBTW / 2;
 	int _centerY = (m_avatarPosition.y * FBTH) + FBTH / 2;
-	for (double f = 0; f < 3.141592 * 2; f += 0.01) {
+	for (double f = 0; f < 3.141592 * 2; f += 0.002) {
 		x = int(range * FBTW * cos(f)) + _centerX;
 		y = int(range * FBTH * sin(f)) + _centerY;
 		DrawLine(_centerX, _centerY, x, y);
