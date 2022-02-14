@@ -506,10 +506,9 @@ void Game::Render()
 				r, nullptr, Colors::White, 0.f, XMFLOAT2());
 			// End drawing the game background
 
-#if _DEBUG
+#if 1
 			char pcbuf[4000];
-			//    snprintf(pcbuf, sizeof(pcbuf), "DEBUG: %I64x : %I64x", g_debug_video_field, g_debug_video_data);
-			snprintf(pcbuf, sizeof(pcbuf), "%.2d FPS , %6.0f usec/frame - Time: %6.2f\n",
+			snprintf(pcbuf, sizeof(pcbuf), "PRERELEASE: %.2d FPS , %6.0f usec/frame - Time: %6.2f\n",
 				m_timer.GetFramesPerSecond(), 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds());
 			m_spriteFonts.at(FontDescriptors::FontA2Regular)->DrawString(m_spriteBatch.get(), pcbuf,
 				{ 11.f, 11.f }, Colors::Black, 0.f, m_vector2Zero, 1.f);
