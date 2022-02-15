@@ -296,9 +296,15 @@ SWITCH_GAMEMAP:
 				}
 				break;
 			}
-			case PC_INVERSE_CHAR:
-				bIsInverseChar = true;
-				[[fallthrough]];
+			case PC_INVERSE_LINE:
+			{
+				// This inverses an existing line in the billboard area
+				// Used for merchant inventory
+				if (!__textOutput)
+					__textOutput = TextOutput::GetInstance();
+				__textOutput->InverseLineInBillboard(7 - regs.a);
+				break;
+			}
 			case PC_PRINT_CHAR:
 			{
 				// First check if it's the topright area. If so, do nothing. We don't need to display changes
@@ -307,7 +313,7 @@ SWITCH_GAMEMAP:
 					break;
 
 				unsigned int _glyph = regs.a;
-#ifdef _DEBUG
+#ifdef _DEBUGXXX
 				char _bufPrint[200];
 				sprintf_s(_bufPrint, 200, "%c/%2X (%2X) == XOrig: %2d, YOrig: %2d, X:%2d, Y:%2d, Width: %2d, Height %2d\n",
 					ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F], regs.a, MemGetMainPtr(MEM_PRINT_INVERSE)[0] || bIsInverseChar,

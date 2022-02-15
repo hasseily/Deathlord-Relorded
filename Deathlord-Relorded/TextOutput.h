@@ -76,6 +76,9 @@ public:
 	// Clears the billboard area
 	void ClearBillboard();
 
+	// Inverses a char in the billboard area
+	void InverseLineInBillboard(UINT8 line);
+
 	// Determines which area we're in
 	TextWindows AreaForCoordinates(UINT8 xStart, UINT8 xEnd, UINT8 yStart, UINT8 yEnd);
 

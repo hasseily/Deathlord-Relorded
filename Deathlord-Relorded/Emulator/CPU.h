@@ -62,7 +62,7 @@
 												// if A is $0B, it's the last line of the billboard that scrolls (in battle)
 												// It scrolls many times on the billboard, probably for each line
 #define PC_PRINT_CHAR				0x532D		// Prints a char on screen using: AF is active Y, AE is active X, AB is width, AC is height, AD is original X (for line-feed), AA is original Y
-#define PC_INVERSE_CHAR				0x53FF		// Inverses an existing char (or un-inverses it). Used in some menu routines.
+#define PC_INVERSE_LINE				0x53EB		// Inverses an existing line (or un-inverses it). Used in some menu routines. (7-A) holds the line number to invert.
 #define PC_PRINT_CLEAR_AREA			0x52BC		// Clears a print area. Coordinates are in 0xAA-0xAD
 
 // Battle module

@@ -271,7 +271,8 @@ void TextOutput::PrintCharToKeypress(unsigned char ch, UINT8 X, bool bInverse)
 {
 	// The module string is updated on a char by char basis
 	// Replace a single character at a time
-	m_strKeypress.replace(X - PRINT_CHAR_X_KEYPRESS_BEGIN, 1, 1, ConvertChar(ch));
+	if (m_strKeypress.size() > (X - PRINT_CHAR_X_KEYPRESS_BEGIN))
+		m_strKeypress.replace(X - PRINT_CHAR_X_KEYPRESS_BEGIN, 1, 1, ConvertChar(ch));
 	m_XKeypress = X;
 }
 
@@ -293,6 +294,14 @@ void TextOutput::PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool b
 
 	m_XBillboard = X;
 	m_YBillboard = Y;
+}
+
+void TextOutput::InverseLineInBillboard(UINT8 line)
+{
+	if (m_vBillboard.at(line).second == FontDescriptors::FontDLRegular)
+		m_vBillboard.at(line).second = FontDescriptors::FontDLInverse;
+	else
+		m_vBillboard.at(line).second = FontDescriptors::FontDLRegular;
 }
 
 void TextOutput::PrintCharToLog(unsigned char ch, UINT8 X, bool bInverse)
