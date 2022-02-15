@@ -79,7 +79,8 @@ void Overlay::Update()
 #pragma endregion
 
 #pragma region D3D stuff
-void Overlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states)
+void Overlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, 
+	CommonStates* states, const wchar_t* pixelShaderName)
 {
 	auto device = m_deviceResources->GetD3DDevice();
 	m_states = states;
@@ -122,7 +123,7 @@ void Overlay::CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload
 			IID_PPV_ARGS(m_rootSig.ReleaseAndGetAddressOf())));
 	spd.customRootSignature = m_rootSig.Get();
 	spd.customVertexShader = { vsBlob.data(), vsBlob.size() };
-	auto blob = DX::ReadData(L"NoisolpxePS.cso");		// (reverse explosion)
+	auto blob = DX::ReadData(pixelShaderName);
 	spd.customPixelShader = { blob.data(), blob.size() };
 	m_overlaySB = std::make_unique<SpriteBatch>(device, *resourceUpload, spd);
 	m_overlaySB->SetViewport(m_deviceResources->GetScreenViewport());

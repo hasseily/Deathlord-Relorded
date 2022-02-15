@@ -172,6 +172,4 @@ private:
 
     // The main game texture background
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_gameTextureBG;
-    // Loading screen
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_DLRLLoadingScreen;
 };

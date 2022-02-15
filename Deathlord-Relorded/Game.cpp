@@ -16,6 +16,7 @@
 #include "InvOverlay.h"
 #include "BattleOverlay.h"
 #include "GameOverOverlay.h"
+#include "GameLoadingOverlay.h"
 #include "TextOutput.h"
 #include "AppleWinDXVideo.h"
 #include "MiniMap.h"
@@ -50,6 +51,7 @@ static std::shared_ptr<DeathlordHacks>m_dlHacks;
 static InvOverlay* m_invOverlay;
 static BattleOverlay* m_battleOverlay;
 static GameOverOverlay* m_gameOverOverlay;
+static GameLoadingOverlay* m_gameLoadingOverlay;
 static TextOutput* m_textOutput;
 static AutoMap* m_autoMap;
 static AppleWinDXVideo* m_a2Video;
@@ -64,8 +66,6 @@ static std::wstring last_logged_line;
 static UINT64 tickOfLastRender = 0;
 
 static std::wstring s_hourglass = std::wstring(1, '\u005B'); // horizontal bar that will spin
-static std::wstring s_pressSpace = std::wstring(L"PRESS SPACE");
-
 
 static Vector2 m_vector2Zero = { 0.f, 0.f };
 
@@ -77,8 +77,8 @@ NonVolatile g_nonVolatile;
 bool g_isInGameMap = false;
 StartMenuState g_startMenuState = StartMenuState::Booting;
 int g_rerollCount = 0;  // Number of rerolls in char attributes creation
-bool g_isInGameTransition = false;  // Before being in game map
 bool g_hasBeenIdleOnce = false;
+bool g_isInGameTransition = false;  // Before being in game map
 bool g_isInBattle = false;
 bool g_isDead = false;
 bool g_wantsToSave = true;  // DISABLED. It can corrupt saved games
@@ -257,12 +257,14 @@ void Game::Update(DX::StepTimer const& timer)
 		// If in transition from pre-game to game, only show the transition screen
 		if (g_isInGameMap && kbTracker.pressed.Space)
 		{
+			m_gameLoadingOverlay->HideOverlay();
 			g_isInGameTransition = false;
-			SetSendKeystrokesToAppleWin(true);
+			g_nAppMode = AppMode_e::MODE_RUNNING;
 		}
 		else
 		{
-			SetSendKeystrokesToAppleWin(false);
+			m_gameLoadingOverlay->ShowOverlay();
+			m_gameLoadingOverlay->Update();
 			return;
 		}
     }
@@ -406,28 +408,7 @@ void Game::Render()
         if (g_isInGameTransition)
         {
             // In between pre-game and game
-            m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
-            m_spriteBatch->Begin(commandList, m_states->LinearClamp(), SpriteSortMode_Deferred);
-
-            // Draw the game background
-            auto mmTexSize = GetTextureSize(m_DLRLLoadingScreen.Get());
-            m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DLRLLoadingScreen), mmTexSize,
-                r, nullptr, Colors::White, 0.f, XMFLOAT2());
-
-			if (g_isInGameMap)
-			{
-				FontDescriptors _fd;
-				if (((tickOfLastRender / 10000000) % 2) == 0)
-					_fd = FontDescriptors::FontDLRegular;
-				else
-					_fd = FontDescriptors::FontDLInverse;
-				auto _sSize = m_spriteFonts.at(_fd)->MeasureString(s_pressSpace.c_str(), false);
-				float _sX = _scRect.Center().x - XMVectorGetX(_sSize)/2;
-				float _sY = _scRect.Center().y + 400;
-				m_spriteFonts.at(_fd)->DrawString(m_spriteBatch.get(),
-					s_pressSpace.c_str(), { _sX, _sY }, Colors::AntiqueWhite, 0.f, Vector2(), 1.f);
-			}
-			m_spriteBatch->End();
+			m_gameLoadingOverlay->Render(_scRect);
         }
 	    else if (!g_isInGameMap)
 		{
@@ -570,7 +551,8 @@ void Game::Render()
         }   // end if !g_isInGameMap
 
         // Now check if the game is paused and display an overlay
-        if (g_nAppMode == AppMode_e::MODE_PAUSED)
+		// Unless we're in the game loading screen
+        if (g_nAppMode == AppMode_e::MODE_PAUSED && (!g_isInGameTransition))
         {
             std::wstring pauseWStr = L"GAME PAUSED";
             float pauseScale = 5.f;
@@ -855,13 +837,6 @@ void Game::CreateDeviceDependentResources()
 
     m_uploadBatch->Begin();
 
-	// Upload the transition loading screen
-	DX::ThrowIfFailed(
-		CreateWICTextureFromFile(device, *m_uploadBatch, L"Assets/DLRL_Loading_Screen.png",
-            m_DLRLLoadingScreen.ReleaseAndGetAddressOf()));
-	CreateShaderResourceView(device, m_DLRLLoadingScreen.Get(),
-		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::DLRLLoadingScreen));
-
     // Upload the background of the main window
 	DX::ThrowIfFailed(
 		CreateWICTextureFromFile(device, *m_uploadBatch, L"Assets/Background_Relorded.png",
@@ -960,6 +935,8 @@ void Game::CreateDeviceDependentResources()
 	m_battleOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
 	m_gameOverOverlay = GameOverOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_gameOverOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
+	m_gameLoadingOverlay = GameLoadingOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_gameLoadingOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get(), L"InterferencePS.cso");
 	m_a2Video = AppleWinDXVideo::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_a2Video->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
 	m_minimap = MiniMap::GetInstance(m_deviceResources, m_resourceDescriptors);
@@ -997,12 +974,14 @@ void Game::OnDeviceLost()
     }
     m_autoMap->OnDeviceLost();
 	m_invOverlay->OnDeviceLost();
+	m_battleOverlay->OnDeviceLost();
+	m_gameOverOverlay->OnDeviceLost();
+	m_gameLoadingOverlay->OnDeviceLost();
 	m_a2Video->OnDeviceLost();
 	m_minimap->OnDeviceLost();
 	m_daytime->OnDeviceLost();
 	m_partyLayout->OnDeviceLost();
 
-	m_DLRLLoadingScreen.Reset();
 	m_gameTextureBG.Reset();
     m_states.reset();
     m_spriteBatch.reset();

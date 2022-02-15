@@ -33,7 +33,7 @@ enum class OverlayState
 	TransitionOut
 };
 
-class Overlay\
+class Overlay
 {
 public:
 	void Render(SimpleMath::Rectangle r);	// To override
@@ -43,7 +43,8 @@ public:
 	bool ShouldRenderOverlay();
 	bool IsOverlayDisplayed();
 	void Update();
-	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, CommonStates* states);
+	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload, 
+		CommonStates* states, const wchar_t* pixelShaderName = L"NoisolpxePS.cso");		// (reverse explosion)
 	void OnDeviceLost();
 
 
