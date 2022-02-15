@@ -305,7 +305,6 @@
     <ClInclude Include="TilesetCreator.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="AnimationBattle" />
     <None Include="Assets\a2-12pt-bold.spritefont">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>

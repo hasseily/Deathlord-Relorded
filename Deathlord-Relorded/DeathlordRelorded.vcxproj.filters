@@ -434,7 +434,6 @@
     <None Include="Assets\dlfont-12pt.spritefont">
       <Filter>Assets</Filter>
     </None>
-    <None Include="AnimationBattle" />
     <None Include="Shaders\SpriteShader.hlsli">
       <Filter>Shaders</Filter>
     </None>
