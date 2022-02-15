@@ -81,7 +81,7 @@
 #define PC_BATTLE_CHAR_DID_DMG		0xA9FA		// Character inflicted some damage. Don't know amount yet.
 #define PC_BATTLE_CHAR_HAS_KILLED	0xA8C2		// Character has killed enemy, Enemy is in X, damage in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_HAS_BANISHED	0x7B53		// Enemy was banished (hard kill, no check for HP). Enemy is in X, but 1-based!
-#define PC_BATTLE_CHAR_HAS_HEALED	0x785B		// Char in PARTY_CURRENT_CHAR_POS will heal char in X amount of A in high byte, and Y in low byte
+#define PC_BATTLE_CHAR_HAS_HEALED	0x785B		// Char in PARTY_CURRENT_CHAR_POS will heal char in X amount in 0x6C (low byte) and 0x7845 (high byte)
 #define PC_BATTLE_CHAR_END_ATK		0xAB49		// End of a single char attack. The damage is in A and also in MEM_DAMAGE_AMOUNT
 #define PC_BATTLE_CHAR_END_TURN		0xA886		// Char has exhausted all attack. Move on to next char
 #define PC_BATTLE_ENEMY_BEGIN_TURN	0xA50C		// Enemy start turn. Enemy # is in X (before it's stored in MEM_BATTLE_ENEMY_INDEX)
@@ -98,6 +98,8 @@
 #define MEM_ENEMY_DMG_AMOUNT		0x6068		// Enemy's damage to player at X
 #define MEM_ENEMY_COUNT				0x52		// Number of enemies
 #define MEM_ENEMY_HP_START			0xAFAA		// Array of HPs for all enemies. Use MEM_ENEMY_COUNT to know the length
+#define MEM_BATTLE_CHAR_HEAL_LO		0x6C		// Healing value low byte
+#define MEM_BATTLE_CHAR_HEAL_HI		0x7845		// Healing value high byte
 #define MEM_BATTLE_MONSTER_INDEX	0xFC23		// Index of the monster we're fighting, index into GAMEMAP_ARRAY_MONSTER_ID. FF is empty
 #define MEM_BATTLE_ENEMY_INDEX		0xA574		// Index of the monster instance who is attacking
 #define PC_BATTLE_CALC_NUM_ENEMY1	0x5200		// JSR (jump table) to calculate # of enemies. Returns at 0xA2AC with enemy ct in X.
