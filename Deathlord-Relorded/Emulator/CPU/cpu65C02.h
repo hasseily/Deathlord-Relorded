@@ -43,6 +43,7 @@ static TextOutput* __textOutput;
 static bool hasTriedInsertingScenarii = false;
 static bool shouldReroll = false;
 static regsrec __rollRegs;
+static bool bIsInverseChar = false;
 
 static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 {
@@ -296,6 +297,7 @@ SWITCH_GAMEMAP:
 				break;
 			}
 			case PC_INVERSE_CHAR:
+				bIsInverseChar = true;
 				[[fallthrough]];
 			case PC_PRINT_CHAR:
 			{
@@ -305,10 +307,10 @@ SWITCH_GAMEMAP:
 					break;
 
 				unsigned int _glyph = regs.a;
-#ifdef _DEBUG_XXX
+#ifdef _DEBUG
 				char _bufPrint[200];
 				sprintf_s(_bufPrint, 200, "%c/%2X (%2X) == XOrig: %2d, YOrig: %2d, X:%2d, Y:%2d, Width: %2d, Height %2d\n",
-					ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F], regs.a, MemGetMainPtr(MEM_PRINT_INVERSE)[0],
+					ARRAY_DEATHLORD_CHARSET[_glyph & 0x7F], regs.a, MemGetMainPtr(MEM_PRINT_INVERSE)[0] || bIsInverseChar,
 					MemGetMainPtr(MEM_PRINT_X_ORIGIN)[0], MemGetMainPtr(MEM_PRINT_Y_ORIGIN)[0],
 					MemGetMainPtr(MEM_PRINT_X)[0], MemGetMainPtr(MEM_PRINT_Y)[0],
 					MemGetMainPtr(MEM_PRINT_WIDTH)[0], MemGetMainPtr(MEM_PRINT_HEIGHT)[0]);
@@ -322,8 +324,9 @@ SWITCH_GAMEMAP:
 				);
 				__textOutput->PrintCharRaw(_glyph, tw,
 					MemGetMainPtr(MEM_PRINT_X)[0], MemGetMainPtr(MEM_PRINT_Y)[0],
-					MemGetMainPtr(MEM_PRINT_INVERSE)[0]);
+					MemGetMainPtr(MEM_PRINT_INVERSE)[0] || bIsInverseChar);
 
+				bIsInverseChar = false;
 				break;
 			}
 			case PC_PRINT_CLEAR_AREA:
