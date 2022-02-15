@@ -617,6 +617,7 @@ SWITCH_GAMEMAP:
 			}
 			case PC_PROMPT_INSERT_SCENARIOS:
 			{
+				g_isInGameTransition = false;
 				g_startMenuState = StartMenuState::PromptScenarios;
 				if (!hasTriedInsertingScenarii)
 				{
