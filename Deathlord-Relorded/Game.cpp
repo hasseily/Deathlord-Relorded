@@ -255,8 +255,16 @@ void Game::Update(DX::StepTimer const& timer)
     if (g_isInGameTransition)
     {
 		// If in transition from pre-game to game, only show the transition screen
-        SetSendKeystrokesToAppleWin(false);
-        return;
+		if (g_isInGameMap && kbTracker.pressed.Space)
+		{
+			g_isInGameTransition = false;
+			SetSendKeystrokesToAppleWin(true);
+		}
+		else
+		{
+			SetSendKeystrokesToAppleWin(false);
+			return;
+		}
     }
 	else
 	{
@@ -406,6 +414,19 @@ void Game::Render()
             m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::DLRLLoadingScreen), mmTexSize,
                 r, nullptr, Colors::White, 0.f, XMFLOAT2());
 
+			if (g_isInGameMap)
+			{
+				FontDescriptors _fd;
+				if (((tickOfLastRender / 10000000) % 2) == 0)
+					_fd = FontDescriptors::FontDLRegular;
+				else
+					_fd = FontDescriptors::FontDLInverse;
+				auto _sSize = m_spriteFonts.at(_fd)->MeasureString(s_pressSpace.c_str(), false);
+				float _sX = _scRect.Center().x - XMVectorGetX(_sSize)/2;
+				float _sY = _scRect.Center().y + 400;
+				m_spriteFonts.at(_fd)->DrawString(m_spriteBatch.get(),
+					s_pressSpace.c_str(), { _sX, _sY }, Colors::AntiqueWhite, 0.f, Vector2(), 1.f);
+			}
 			m_spriteBatch->End();
         }
 	    else if (!g_isInGameMap)
