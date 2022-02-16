@@ -466,27 +466,31 @@ void Game::Render()
         }
         else
         {
+			// Only redraw the map if not in battle and not paused. Since the map is the only thing drawn in m_offscreenTexture2,
+			// we can just copy over the existing texture inside PostProcessMap and it'll be the last drawn map we had.
+			if ((!m_battleOverlay->IsOverlayDisplayed()) && (g_nAppMode != AppMode_e::MODE_PAUSED))
+			{
+				// Draw autoMap using the second offscreen render target
+				m_offscreenTexture2->BeginScene(commandList);
+				auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen2);
+				commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
+				commandList->ClearRenderTargetView(rtvDescriptor, Colors::Black, 0, nullptr);
 
-			// Draw autoMap using the second offscreen render target
-			m_offscreenTexture2->BeginScene(commandList);
-			auto rtvDescriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen2);
-			commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
-			commandList->ClearRenderTargetView(rtvDescriptor, Colors::Black, 0, nullptr);
+				auto mmOrigin = Vector2(r.x + 361.f, r.y + 10.f);
+				RECT mapRectInViewport = {
+					mmOrigin.x,
+					mmOrigin.y,
+					mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
+					mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
+				};
 
-			auto mmOrigin = Vector2(r.x + 361.f, r.y + 10.f);
-			RECT mapRectInViewport = {
-				mmOrigin.x,
-				mmOrigin.y,
-				mmOrigin.x + MAP_WIDTH_IN_VIEWPORT,
-				mmOrigin.y + MAP_WIDTH_IN_VIEWPORT * PNGTH / PNGTW
-			};
+				m_autoMap->DrawAutoMap(m_spriteBatch, m_states.get(), &mapRectInViewport);
+				// End drawing autoMap
 
-			m_autoMap->DrawAutoMap(m_spriteBatch, m_states.get(), &mapRectInViewport);
-			// End drawing autoMap
-
-			// now draw the hidden layer around the player if he's allowed to see it
-			// inside the original Deathlord viewport
-			m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
+				// now draw the hidden layer around the player if he's allowed to see it
+				// inside the original Deathlord viewport
+				m_autoMap->ConditionallyDisplayHiddenLayerAroundPlayer(m_spriteBatch, m_states.get());
+			}
 
 			// and postprocess the map, sending it into m_offscreenTexture1
 			// At this point we're working on m_offscreenTexture1
