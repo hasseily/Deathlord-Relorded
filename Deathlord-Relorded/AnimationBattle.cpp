@@ -35,6 +35,7 @@ AnimationBattleChar::AnimationBattleChar(DescriptorHeap* resourceDescriptors,
 	m_monsterId = 1;
 	m_health = 1;
 	m_power = 0;
+	m_state = AnimationBattleState::idle;
 	b_isParty = false;
 	b_isFinished = false;	// is never set to true, defaults to idle animation
 	// There's only a single frame rectangle
