@@ -599,6 +599,8 @@ void CpuReset()
 // Cpu65C02 will check at the end of the routine if it needs to stop via isForcingACCalculation
 void ExecuteDeathlordArmorClassRoutine()
 {
+	if (isForcingACCalculation)
+		return;
 	regsrec regs_orig = regs;
 	regs.pc = PC_RECALC_ARMORCLASS_BEGIN;
 	isForcingACCalculation = true;
