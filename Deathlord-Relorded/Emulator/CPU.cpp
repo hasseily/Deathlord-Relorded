@@ -601,12 +601,12 @@ void ExecuteDeathlordArmorClassRoutine()
 {
 	if (isForcingACCalculation)
 		return;
+	isForcingACCalculation = true;
 	regsrec regs_orig = regs;
 	regs.pc = PC_RECALC_ARMORCLASS_BEGIN;
-	isForcingACCalculation = true;
 	// Routine will never use up so many cycles
 	// and will exit at PC_RECALC_ARMORCLASS_END
 	Cpu65C02(10000, false);
-	isForcingACCalculation = false;
 	regs = regs_orig;
+	isForcingACCalculation = false;
 }
