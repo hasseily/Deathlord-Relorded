@@ -17,9 +17,9 @@ extern std::unique_ptr<Game>* GetGamePtr();
 
 // This is used for any animated sprite to accelerate or slow its framerate (so one doesn't have to build 30 frames)
 // This is crude compared to the way the animations class does it, but it can be kept simple
-constexpr UINT STROBESLOWAVATAR = MAX_RENDERED_FRAMES_PER_SECOND * 6 / 30;
-constexpr UINT STROBESLOWELEMENT = MAX_RENDERED_FRAMES_PER_SECOND * 24 / 30;
-constexpr UINT STROBESLOWHIDDEN = MAX_RENDERED_FRAMES_PER_SECOND * 4 / 30;
+constexpr UINT STROBESLOWAVATAR = MAX(1, MAX_RENDERED_FRAMES_PER_SECOND * 6 / 30);
+constexpr UINT STROBESLOWELEMENT = MAX(1, MAX_RENDERED_FRAMES_PER_SECOND * 24 / 30);
+constexpr UINT STROBESLOWHIDDEN = MAX(1, MAX_RENDERED_FRAMES_PER_SECOND * 4 / 30);
 
 constexpr UINT8 TILEID_REDRAW = 0xFF;			// when we see this nonexistent tile id we automatically redraw the tile
 
