@@ -602,7 +602,13 @@ void Game::PostProcessMap(ID3D12GraphicsCommandList* commandList)
 		commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, &m_deviceResources->GetDepthStencilView());
 		commandList->RSSetViewports(1, &vp);
 		// Determine if the leader character has a certain status
-		UINT8 _mStatus = MemGetMainPtr(PARTY_STATUS_START)[MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0]];
+
+		UINT8 _mCurrentChar = MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0];
+		// If _mCurrentChar == 0xFF it could be after casting a spell in battle
+		if (_mCurrentChar >= DEATHLORD_PARTY_SIZE)
+			goto NOPOSTPROCESSING;
+
+		UINT8 _mStatus = MemGetMainPtr(PARTY_STATUS_START)[_mCurrentChar];
 		if (_mStatus & (UINT8)DeathlordCharStatus::ILL)
 		{	// blur if ILL
 			m_postProcessBlur->SetSourceTexture(
@@ -613,6 +619,7 @@ void Game::PostProcessMap(ID3D12GraphicsCommandList* commandList)
 		}
 		else
 		{	// do nothing
+NOPOSTPROCESSING:
 			m_postProcessCopy->SetSourceTexture(
 				m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture2),
 				m_offscreenTexture2->GetResource());
