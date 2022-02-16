@@ -24,7 +24,7 @@ void TextOutput::Initialize()
 	m_strModule = wstring();
 	m_strModule.append(PRINT_CHAR_X_MODULE_LENGTH, ' ');	// Intialize to a specific length
 	// WARNING: Never shorten m_strModule
-	m_strKeypress = wstring();
+	m_strKeypress = wstring(PRINT_CHAR_X_KEYPRESS_LENGTH, ' ');
 }
 
 void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
@@ -65,10 +65,10 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 		float _kpScale = 1.0f;
 		if (_halfsec % 2)
 			fontsRegular->DrawString(spriteBatch, m_strKeypress.c_str(),
-				{ r.x + 1412.f - _kpScale * (XMVectorGetX(_sSize) / 2.f), r.y + 990.f }, Colors::AntiqueWhite, 0.f, Vector2(), _kpScale);
+				{ r.x + 1412.f - _kpScale * (XMVectorGetX(_sSize) / 2.f), r.y + 815.f }, Colors::AntiqueWhite, 0.f, Vector2(), _kpScale);
 		else
 			fontsInverse->DrawString(spriteBatch, m_strKeypress.c_str(),
-				{ r.x + 1412.f - _kpScale * (XMVectorGetX(_sSize) / 2.f), r.y + 990.f }, Colors::AntiqueWhite, 0.f, Vector2(), _kpScale);
+				{ r.x + 1412.f - _kpScale * (XMVectorGetX(_sSize) / 2.f), r.y + 815.f }, Colors::AntiqueWhite, 0.f, Vector2(), _kpScale);
 	}
 
 	// Render Billboard
@@ -76,18 +76,20 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 	for each (auto bbLine in m_vBillboard)
 	{
 		(*gamePtr)->GetSpriteFontAtIndex(bbLine.second)->DrawString(spriteBatch, bbLine.first.c_str(),
-			{ r.x + 1287.f, r.y + 930.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
+			{ r.x + 1287.f, r.y + 994.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
 		yInc -= 18;
 	}
+
+	// Render Log
 	yInc = 0.f;
 	size_t _lineIdx = 0;
 	for each (auto logLine in m_vLog)
 	{
 		if (_lineIdx == 0)	// Emboss the input line
 			(*gamePtr)->GetSpriteFontAtIndex(logLine.second)->DrawString(spriteBatch, logLine.first.c_str(),
-				{ r.x + 1299.f, r.y + 704.f + yInc }, Colors::DarkBlue, 0.f, Vector2(), 1.f);
+				{ r.x + 1299.f, r.y + 757.f + yInc }, Colors::DarkBlue, 0.f, Vector2(), 1.f);
 		(*gamePtr)->GetSpriteFontAtIndex(logLine.second)->DrawString(spriteBatch, logLine.first.c_str(),
-			{ r.x + 1298.f, r.y + 702.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
+			{ r.x + 1298.f, r.y + 755.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
 		_lineIdx++;
 		yInc -= 18;
 	}
