@@ -9,9 +9,9 @@ AnimationTextFloating::AnimationTextFloating(DescriptorHeap* resourceDescriptors
 	m_resourceDescriptors = resourceDescriptors;
 	m_renderOrigin = centeredOrigin;
 	m_renderCurrent = m_renderOrigin;
-	m_tickFrameLength = std::vector<size_t>{ TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS,
-											 TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS,
-											 TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, };
+	m_tickFrameLength = std::vector<size_t>{ TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, TICKS_15FPS,
+											 TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, TICKS_15FPS,
+											 TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, TICKS_15FPS, };
 	m_nextFrameTick = m_tickFrameLength[0];
 	m_currentFrame = 0;
 	b_isFinished = false;
@@ -76,7 +76,7 @@ void AnimationTextFloating::Render(SpriteBatch* spriteBatch)
 		}
 		m_nextFrameTick = m_tickFrameLength[m_currentFrame] + tick;
 		m_color = { {{ m_color[0], m_color[1], m_color[2], 1 - ((float)m_currentFrame / m_tickFrameLength.size()) }} };
-		m_renderCurrent.x += (rand() % 4) - 2;		// sway sideways up to 2 pixels for next frame
+		m_renderCurrent.x += (rand() % 4) - 1;		// sway sideways up to 2 pixels for next frame
 		m_renderCurrent.y -= 3;
 	}
 
