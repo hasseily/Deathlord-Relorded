@@ -527,10 +527,10 @@ void Game::Render()
 			// End drawing everything else that's in the main viewport
 
             // Draw now the overlays, each is independent
-            // The inventory overlay
-			m_invOverlay->Render(SimpleMath::Rectangle(clientRect));
 			// The battle overlay
 			m_battleOverlay->Render(SimpleMath::Rectangle(clientRect));
+			// The inventory overlay
+			m_invOverlay->Render(SimpleMath::Rectangle(clientRect));
 
             // and the floating text animations
             // TODO: Really have to figure out how to reduce the sprite batch begin/end calls
