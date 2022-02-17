@@ -36,7 +36,7 @@ void GameLoadingOverlay::Initialize()
 
 	m_shaderParameters.barThickness = 0.01f;
 	m_shaderParameters.maxInterference = 2.5f;
-	m_transitionTime = 1.5f;
+	m_transitionTime = 1.0f;
 
 	m_scale = 1.f;
 }
@@ -122,16 +122,19 @@ void GameLoadingOverlay::Render(SimpleMath::Rectangle r)
 		// Pause the game emulator
 		g_nAppMode = AppMode_e::MODE_PAUSED;
 
-		/////////// Display the text below ///////////
-		auto gamePtr = GetGamePtr();
-		auto font = (*gamePtr)->GetSpriteFontAtIndex(_fd);
-		auto _sSize = font->MeasureString(s_pressSpace.c_str(), false);
-		float _sX = _winCenter.x;
-		float _sY = _winCenter.y + 400;
+		if (m_overlayState == OverlayState::Displayed)
+		{
+			/////////// Display the text below ///////////
+			auto gamePtr = GetGamePtr();
+			auto font = (*gamePtr)->GetSpriteFontAtIndex(_fd);
+			auto _sSize = font->MeasureString(s_pressSpace.c_str(), false);
+			float _sX = _winCenter.x;
+			float _sY = _winCenter.y + 400;
 
-		font->DrawString(m_overlaySB.get(), s_pressSpace.c_str(), { _sX, _sY },
-			Colors::AntiqueWhite, 0.f, Vector2(XMVectorGetX(_sSize) / 2.f, 0), 1.f);
-		/////////// End display text below ///////////
+			font->DrawString(m_overlaySB.get(), s_pressSpace.c_str(), { _sX, _sY },
+				Colors::AntiqueWhite, 0.f, Vector2(XMVectorGetX(_sSize) / 2.f, 0), 1.f);
+			/////////// End display text below ///////////
+		}
 	}
 
 	Overlay::PostRender(r);
