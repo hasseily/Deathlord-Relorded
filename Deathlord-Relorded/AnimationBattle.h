@@ -17,6 +17,12 @@ enum class AnimationBattleState
 	died
 };
 
+enum class CharacterBattleStatus
+{
+	healthy = 0,
+	disabled
+};
+
 class AnimationBattleChar : public Animation
 {
 public:
@@ -31,6 +37,7 @@ public:
 	UINT16 m_health;							// Amount of health
 	UINT8 m_power;								// Amount of power for magic users in party
 	AnimationBattleState m_state;				// Type of animation that will play based on state
+	UINT8 m_turnsDisabled;						// # of turns enemy is disabled (0 for active)
 	bool b_isParty;								// is a party member (not a monster)
 	XMUINT2 m_battleSpriteSheetSize;			// battle spritesheet
 };

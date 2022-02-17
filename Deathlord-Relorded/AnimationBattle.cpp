@@ -28,6 +28,8 @@ AnimationBattleChar::AnimationBattleChar(DescriptorHeap* resourceDescriptors,
 {
 	m_resourceDescriptors = resourceDescriptors;
 	m_spriteSheetSize = monsterSpriteSheetSize;
+	auto gamePtr = GetGamePtr();
+	m_font = (*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontDLRegular);
 	m_battleSpriteSheetSize = battleSpriteSheetSize;
 	m_nextFrameTick = SIZE_T_MAX;
 	m_tickFrameLength = std::vector<size_t>{ TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS, TICKS_30FPS };
@@ -36,6 +38,7 @@ AnimationBattleChar::AnimationBattleChar(DescriptorHeap* resourceDescriptors,
 	m_health = 1;
 	m_power = 0;
 	m_state = AnimationBattleState::idle;
+	m_turnsDisabled = 0;
 	b_isParty = false;
 	b_isFinished = false;	// is never set to true, defaults to idle animation
 	// There's only a single frame rectangle
@@ -106,12 +109,18 @@ void AnimationBattleChar::Render(SpriteBatch* spriteBatch, RECT* overlayRect)
 		_origin.x = (FBTW / 2) * (1 - _scale);
 		_origin.y = (FBTH / 2) * (1 - _scale);
 	}
+	auto _spriteColor = Colors::White;
+	if (m_turnsDisabled > 0)
+		_spriteColor = { { { 0.3f, 0.3f, 0.3f, 1.000000000f } } };
 	m_renderRectangle.x = m_renderCurrent.x + overlayOrigin.x + _origin.x;
 	m_renderRectangle.y = m_renderCurrent.y + overlayOrigin.y + _origin.y;
 	m_renderRectangle.width = m_frameRectangles.at(0).width * _scale;
 	m_renderRectangle.height = m_frameRectangles.at(0).height * _scale;
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapMonsterSpriteSheet),
-		m_spriteSheetSize, (RECT)m_renderRectangle, &(RECT)m_frameRectangles.at(0), Colors::White, 0.f, XMFLOAT2());
+		m_spriteSheetSize, (RECT)m_renderRectangle, &(RECT)m_frameRectangles.at(0), _spriteColor, 0.f, XMFLOAT2());
+	if (m_turnsDisabled > 0)
+		m_font->DrawString(spriteBatch, std::to_wstring(m_turnsDisabled).c_str(),
+			Vector2(m_renderCurrent.x + overlayOrigin.x, m_renderCurrent.y + overlayOrigin.y), Colors::Gray, 0.f, { 0,0 }, 1.f);
 	
 	// Finalize
 	auto gamePtr = GetGamePtr();

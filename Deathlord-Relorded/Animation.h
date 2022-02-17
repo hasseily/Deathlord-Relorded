@@ -31,6 +31,8 @@ public:
 	virtual void Render(SpriteBatch* spriteBatch, RECT* overlayRect) = 0;
 	virtual ~Animation() {};
 
+	DirectX::SpriteFont* m_font;
+
 protected:
 	size_t m_nextFrameTick;		// Tick after which we should swap to the next frame
 	int m_currentFrame;

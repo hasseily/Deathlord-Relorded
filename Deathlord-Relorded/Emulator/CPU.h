@@ -97,6 +97,7 @@
 #define MEM_DAMAGE_AMOUNT			0x67		// Damage amount of the last attack
 #define MEM_ENEMY_DMG_AMOUNT		0x6068		// Enemy's damage to player at X
 #define MEM_ENEMY_COUNT				0x52		// Number of enemies
+#define MEM_ENEMY_DISABLED_START	0xAF8A		// Array of disabled/sleep turns remaining for each enemy. Use MEM_ENEMY_COUNT for length. 0 is awake.
 #define MEM_ENEMY_HP_START			0xAFAA		// Array of HPs for all enemies. Use MEM_ENEMY_COUNT to know the length
 #define MEM_BATTLE_CHAR_HEAL_LO		0x6C		// Healing value low byte
 #define MEM_BATTLE_CHAR_HEAL_HI		0x7845		// Healing value high byte

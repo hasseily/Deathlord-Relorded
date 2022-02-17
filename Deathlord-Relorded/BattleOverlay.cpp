@@ -293,13 +293,15 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 					(i < 6 ? Colors::White : Colors::Red), 0.f, XMFLOAT2(), 1.0f);
 			}
 			// Render the animated sprites
-			_anim->Render(m_overlaySB.get(), &m_currentRect);
-			// Draw the health and power bars
+
+			// Draw the animated sprites, health and power bars
+			_anim->m_turnsDisabled = 0;
 			SimpleMath::Rectangle _healthBarR(_animRect);
 			_healthBarR.y += _animRect.height + 2;
 			_healthBarR.height = 5;
 			if (i < 6)	// party
 			{
+				_anim->Render(m_overlaySB.get(), &m_currentRect);
 				UINT16 _mHealth = MemGetMainPtr(PARTY_HEALTH_LOBYTE_START)[i] + ((UINT16)MemGetMainPtr(PARTY_HEALTH_HIBYTE_START)[i] << 8);
 				UINT16 _mHealthMax = MemGetMainPtr(PARTY_HEALTH_MAX_LOBYTE_START)[i] + ((UINT16)MemGetMainPtr(PARTY_HEALTH_MAX_HIBYTE_START)[i] << 8);
 				_healthBarR.width = _animRect.width * _mHealth / _mHealthMax;
@@ -314,6 +316,8 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 			}
 			else // monsters
 			{
+				_anim->m_turnsDisabled = MemGetMainPtr(MEM_ENEMY_DISABLED_START)[i - 6];
+				_anim->Render(m_overlaySB.get(), &m_currentRect);
 				UINT8 _mMonsterHPDisplay = MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6];
 				int _maxHPUsed = (_mMonsterHPDisplay > m_enemyMaxHP ? _mMonsterHPDisplay : m_enemyMaxHP);
 				_healthBarR.width = _animRect.width * MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6] / _maxHPUsed;
