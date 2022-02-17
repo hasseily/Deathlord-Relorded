@@ -11,6 +11,7 @@ extern std::unique_ptr<Game>* GetGamePtr();
 PartyLayout* PartyLayout::s_instance;
 
 InvManager* m_invMgr;
+static auto m_levelupColor = Colors::DarkOrange;
 
 void PartyLayout::Initialize()
 {
@@ -43,6 +44,14 @@ void PartyLayout::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBa
 {
 	if (!g_hasBeenIdleOnce)
 		return;
+
+	// For levelup color pulsing
+	auto gamePtr = GetGamePtr();
+	auto timer = (*gamePtr)->m_timer;
+	auto inc = sin(timer.GetTotalSeconds() * 5) / 10;
+	m_levelupColor.f[0] = Colors::DarkOrange.f[0] + inc;
+	m_levelupColor.f[1] = Colors::DarkOrange.f[1] + inc;
+
 	m_invMgr = InvManager::GetInstance();
 	for (UINT8 i = 0; i < m_partySize; i++)
 	{
@@ -164,19 +173,22 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 
 	///// Draw stuff to the right of the portrait
 	Vector2 _mLevelOrigin(originX + PARTY_LAYOUT_WIDTH - 14*4 - _pad, _mNameOrigin.y);
-	//if (MemGetMainPtr(PARTY_LEVELPLUS_START)[member] > 0)
+	auto _lvlColor = VColorText;
+	if (MemGetMainPtr(PARTY_LEVELPLUS_START)[member] > 0)
+	{
 		swprintf_s(_buf, _bufsize, L"%02d+%d", MemGetMainPtr(PARTY_LEVEL_START)[member],
 			MemGetMainPtr(PARTY_LEVELPLUS_START)[member]);
-	//else
-	//	swprintf_s(_buf, _bufsize, L"%02d", MemGetMainPtr(PARTY_LEVEL_START)[member]);
-	auto _mLevelColor = VColorText;
-	if (MemGetMainPtr(PARTY_LEVELPLUS_START)[member] > 0)
-		_mLevelColor = Colors::DarkOrange;
+		_lvlColor = m_levelupColor;
+	}
+	else
+	{
+		swprintf_s(_buf, _bufsize, L"  %02d ", MemGetMainPtr(PARTY_LEVEL_START)[member]);
+	}
 	//fontDL->DrawString(spriteBatch, _buf, { _mLevelOrigin.x - 1.f, _mLevelOrigin.y - 1.f }, Colors::Black, 0.f, Vector2(), 1.f);
 	//fontDL->DrawString(spriteBatch, _buf, { _mLevelOrigin.x - 1.f, _mLevelOrigin.y + 1.f }, Colors::Black, 0.f, Vector2(), 1.f);
 	//fontDL->DrawString(spriteBatch, _buf, { _mLevelOrigin.x + 1.f, _mLevelOrigin.y - 1.f }, Colors::Black, 0.f, Vector2(), 1.f);
 	fontDL->DrawString(spriteBatch, _buf, { _mLevelOrigin.x + 1.f, _mLevelOrigin.y + 1.f }, Colors::Black, 0.f, Vector2(), 1.f);
-	fontDL->DrawString(spriteBatch, _buf, _mLevelOrigin, _mLevelColor, 0.f, Vector2(), 1.f);
+	fontDL->DrawString(spriteBatch, _buf, _mLevelOrigin, _lvlColor, 0.f, Vector2(), 1.f);
 	//
 	Vector2 _mHealthOrigin(_mNameOrigin.x, _mNameOrigin.y + 22);
 	UINT16 _mHealth = MemGetMainPtr(PARTY_HEALTH_LOBYTE_START)[member] + ((UINT16)MemGetMainPtr(PARTY_HEALTH_HIBYTE_START)[member] << 8);
