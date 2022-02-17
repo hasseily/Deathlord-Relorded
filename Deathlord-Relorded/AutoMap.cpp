@@ -353,6 +353,10 @@ bool AutoMap::UpdateLOSRadius()
 			m_LOSRadius = MemGetMainPtr(MAP_VISIBILITY_RADIUS)[0];
 		}
 	}
+	// It should never be less than the original game
+	// This also takes care of using torches or light spells
+	if (m_LOSRadius < MemGetMainPtr(MAP_VISIBILITY_RADIUS)[0])
+		m_LOSRadius = MemGetMainPtr(MAP_VISIBILITY_RADIUS)[0];
 	return (_oldRadius != m_LOSRadius);
 }
 
