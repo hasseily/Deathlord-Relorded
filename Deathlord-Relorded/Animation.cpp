@@ -24,7 +24,9 @@ void Animation::StopAnimation()
 
 void Animation::ResumeAnimation()
 {
-	m_nextFrameTick = SIZE_T_MAX;
+	auto gamePtr = GetGamePtr();
+	auto tick = (*gamePtr)->GetTotalTicks();
+	m_nextFrameTick = tick + m_tickFrameLength[m_currentFrame];
 }
 
 #pragma endregion
