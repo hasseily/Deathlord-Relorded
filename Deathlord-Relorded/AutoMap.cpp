@@ -410,157 +410,6 @@ UINT8 AutoMap::StaticTileIdAtMapPosition(UINT8 x, UINT8 y)
 	return MemGetMainPtr(GAMEMAP_START_MEM)[x + y * MAP_WIDTH];
 }
 
-void AutoMap::ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states)
-{
-	if (!g_isInGameMap)
-		return;
-	if (PlayerIsOverland())	// Don't do anything if we're in the overland
-		return;
-
-	std::shared_ptr<DeathlordHacks>hw = GetDeathlordHacks();
-	BYTE* tilesVisibleAroundAvatar = MemGetMainPtr(GAMEMAP_START_CURRENT_TILELIST);
-	XMFLOAT2 spriteOrigin(0, 0);
-	UINT32 fbBorderLeft = GetFrameBufferBorderWidth();	// these are additional shifts to make the tiles align
-	UINT32 fbBorderTop = GetFrameBufferBorderHeight() + 16;	// these are additional shifts to make the tiles align
-	float mapScale = 1.f;
-
-	auto commandList = m_deviceResources->GetCommandList();
-	spriteBatch->Begin(commandList, states->LinearWrap(), DirectX::SpriteSortMode_Deferred);
-
-	for (UINT8 j = 3; j < 6; j++)	// rows
-	{
-		for (UINT8 i = 3; i < 6; i++)	// columns
-		{
-			UINT32 tilePosX = m_avatarPosition.x - 4 + i;
-			UINT32 tilePosY = m_avatarPosition.y - 4 + j;
-			if ((tilePosX >= MAP_WIDTH) || (tilePosY >= MAP_HEIGHT)) // outside the map (no need to check < 0, it'll roll over as a UINT32)
-				continue;
-
-			if ((i == 4) && (j == 4))	//player tile. Always enable the hidden layer there, but don't draw it over the player icon
-			{
-				// Move the visibility bit to the hidden position, and OR it with the value in the vector.
-				// If the user ever sees the hidden info, it stays "seen"
-				m_FogOfWarTiles[tilePosX + tilePosY * MAP_WIDTH] |= (1 << (UINT8)FogOfWarMarkers::Hidden);
-				continue;
-			}
-
-			// Now look at the tiles around the player
-			XMFLOAT2 tilePosInMap(
-				fbBorderLeft + i * FBTW,
-				fbBorderTop + j * FBTH
-			);
-			int mapPos = i + j * 9;	// the actual viewport map is 9x9 although we only look at the 8 tiles around the avatar
-			{
-				XMUINT2 _tileSheetPos(0, 0);
-				RECT _tileSheetRect;
-				bool _hasOverlay = false;
-
-				// all tiles are animated. Start the strobe for each tile independently, so that it looks a bit better on the map
-				_tileSheetPos.x = ((m_spriteAnimHiddenIdx / STROBESLOWHIDDEN) + mapPos) % HIDDENSPRITECT;
-				switch (tilesVisibleAroundAvatar[mapPos])
-				{
-				case 0x2a:	// weapon chest
-					_tileSheetPos.y = 1;
-					if (PartyHasClass(DeathlordClasses::Thief))
-						_hasOverlay = true;
-					break;
-				case 0x2b:	// armor chest
-					_tileSheetPos.y = 2;
-					if (PartyHasClass(DeathlordClasses::Thief))
-						_hasOverlay = true;
-					break;
-				case 0xc6:	// water poison
-					_tileSheetPos.y = 3;
-					if (PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Druid))
-						_hasOverlay = true;
-					if (PartyHasClass(DeathlordClasses::Barbarian))
-						_hasOverlay = true;
-					break;
-				case 0x76:	// water bonus! "Z"-drink it and hope for the best!
-					_tileSheetPos.y = 0;
-					if (PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Druid))
-						_hasOverlay = true;
-					if (PartyHasClass(DeathlordClasses::Barbarian))
-						_hasOverlay = true;
-					break;
-				case 0x7e:	// pit
-					_tileSheetPos.y = 4;
-					if (PartyLeaderIsOfClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
-						_hasOverlay = true;
-					if (PartyLeaderIsOfRace(DeathlordRaces::DarkElf))
-						_hasOverlay = true;
-					break;
-				case 0xce:	// chute / teleporter
-					_tileSheetPos.y = 5;
-					if (PartyHasClass(DeathlordClasses::Illusionist))
-						_hasOverlay = true;
-					break;
-				case 0x02:	// illusiory wall
-					_tileSheetPos.y = 7;
-					if (PartyHasClass(DeathlordClasses::Illusionist))
-						_hasOverlay = true;
-					break;
-				case 0x05:	// illusiory Rock
-					_tileSheetPos.y = 7;
-					if (PartyHasClass(DeathlordClasses::Illusionist))
-						_hasOverlay = true;
-					break;
-				case 0x57:	// hidden door
-					_tileSheetPos.y = 8;
-					if (PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
-						_hasOverlay = true;
-					if (PartyHasRace(DeathlordRaces::DarkElf))
-						_hasOverlay = true;
-					break;
-				case 0x7F:	// interesting tombstone
-					[[fallthrough]];
-				case 0x50:	// interesting dark tile
-					[[fallthrough]];
-				case 0x85:	// interesting trees/bushes. No idea what this is
-					_tileSheetPos.y = 0;
-					if (PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
-						_hasOverlay = true;
-					if (PartyHasRace(DeathlordRaces::DarkElf))
-						_hasOverlay = true;
-					break;
-				case 0x37:	// jar unopened
-					[[fallthrough]];
-				case 0x39:	// coffin unopened	(could have a vampire or gold or nothing in it)
-					[[fallthrough]];
-				case 0x3b:	// chest unopened
-					[[fallthrough]];
-				case 0x3d:	// coffer unopened
-					_tileSheetPos.y = 0;
-					_hasOverlay = true;
-					break;
-				default:
-					_hasOverlay = false;
-					break;
-				}
-
-				if (_hasOverlay)	// draw the overlay if it exists
-				{
-					_tileSheetRect =
-					{
-						((UINT16)_tileSheetPos.x) * FBTW,
-						((UINT16)_tileSheetPos.y) * FBTH,
-						((UINT16)(_tileSheetPos.x + 1)) * FBTW,
-						((UINT16)(_tileSheetPos.y + 1)) * FBTH
-					};
-					// draw it on the game's original viewport area
-					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapHiddenSpriteSheet), GetTextureSize(m_autoMapSpriteSheet.Get()),
-						tilePosInMap, &_tileSheetRect, Colors::White, 0.f, spriteOrigin, mapScale);
-
-					// Move the visibility bit to the hidden position, and OR it with the value in the vector.
-					// If the user ever sees the hidden info, it stays "seen"
-					m_FogOfWarTiles[tilePosX + tilePosY * MAP_WIDTH] |= (1 << (UINT8)FogOfWarMarkers::Hidden);
-				}
-			}
-		}
-	}
-	spriteBatch->End();
-}
-
 #pragma warning(pop)
 
 void AutoMap::CreateNewTileSpriteMap()
@@ -861,10 +710,9 @@ ELEMENT_TILES_GENERAL:
 					hasSeenHidden = true;
 				}
 				
-				// The below shows the hidden items in the non-overland map,
-				// either when the player has encountered them, or when the player has enabled this cheat
-				if ((g_nonVolatile.showHidden || hasSeenHidden)
-					&& !PlayerIsOverland())
+				// The below shows the hidden items in the non-overland map
+				//if ((g_nonVolatile.showHidden || hasSeenHidden)
+				if (!PlayerIsOverland())
 				{
 					XMUINT2 _tileSheetPos(0, 0);
 					RECT _tileSheetRect;
@@ -876,36 +724,67 @@ ELEMENT_TILES_GENERAL:
 					{
 					case 0x2A:	// weapon chest
 						_tileSheetPos.y = 1;
+						if (PartyHasClass(DeathlordClasses::Thief))
+							hasSeenHidden = true;
 						break;
 					case 0x2B:	// armor chest
 						_tileSheetPos.y = 2;
+						if (PartyHasClass(DeathlordClasses::Thief))
+							hasSeenHidden = true;
 						break;
 					case 0xC6:	// water poison
 						_tileSheetPos.y = 3;
+						if (PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Druid))
+							hasSeenHidden = true;
+						if (PartyHasClass(DeathlordClasses::Barbarian))
+							hasSeenHidden = true;
+						break;
+					case 0x76:	// water bonus! "Z"-drink it and hope for the best!
+						_tileSheetPos.y = 0;
+						if (PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Druid))
+							hasSeenHidden = true;
+						if (PartyHasClass(DeathlordClasses::Barbarian))
+							hasSeenHidden = true;
 						break;
 					case 0x7E:	// pit
 						_tileSheetPos.y = 4;
+						if (PartyLeaderIsOfClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
+							hasSeenHidden = true;
+						if (PartyLeaderIsOfRace(DeathlordRaces::DarkElf))
+							hasSeenHidden = true;
 						break;
 					case 0xCE:	// chute / teleporter
 						_tileSheetPos.y = 5;
+						if (PartyHasClass(DeathlordClasses::Illusionist))
+							hasSeenHidden = true;
 						break;
 					case 0x02:	// illusiory wall
 						_tileSheetPos.y = 7;
+						if (PartyHasClass(DeathlordClasses::Illusionist))
+							hasSeenHidden = true;
 						break;
 					case 0x05:	// illusiory Rock
 						_tileSheetPos.y = 7;
+						if (PartyHasClass(DeathlordClasses::Illusionist))
+							hasSeenHidden = true;
 						break;
 					case 0x57:	// hidden door
 						_tileSheetPos.y = 8;
+						if (PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
+							hasSeenHidden = true;
+						if (PartyHasRace(DeathlordRaces::DarkElf))
+							hasSeenHidden = true;
 						break;
 					case 0x7F:	// interesting tombstone
 						[[fallthrough]];
 					case 0x50:	// interesting dark tile
 						[[fallthrough]];
 					case 0x85:	// interesting trees/bushes. No idea what this is
-						[[fallthrough]];
-					case 0x76:	// water bonus! "Z"-drink it and hope for the best!
-						[[fallthrough]];
+						_tileSheetPos.y = 0;
+						if (PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
+							hasSeenHidden = true;
+						if (PartyHasRace(DeathlordRaces::DarkElf))
+							hasSeenHidden = true;
 					case 0x37:	// jar unopened
 						[[fallthrough]];
 					case 0x39:	// coffin unopened	(could have a vampire or gold or nothing in it)
@@ -914,12 +793,13 @@ ELEMENT_TILES_GENERAL:
 						[[fallthrough]];
 					case 0x3D:	// coffer unopened
 						_tileSheetPos.y = 0;
+						hasSeenHidden = true;
 						break;
 					default:
 						_hasOverlay = false;
 						break;
 					}
-					if (_hasOverlay)	// draw the overlay if it exists
+					if (_hasOverlay && hasSeenHidden)	// draw the overlay if it exists and was found
 					{
 						_tileSheetRect =
 						{

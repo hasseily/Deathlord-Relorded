@@ -100,7 +100,7 @@ enum class PartyIconType	// What to draw on the party icon tile
 /// Finally, the automapper should provide the player's X/Y position on that map
 /// 
 /// PS:
-/// There's ConditionallyDisplayHiddenLayerAroundPlayer() which will display the layer of pits, illusions...
+/// The renderer will display the layer of pits, illusions...
 /// based on the composition of the party, when the party is 1 tile away from it. For example, thieves and 
 /// rangers will see pits and hidden doors
 
@@ -114,7 +114,6 @@ public:
 	void ForceRedrawMapArea();
 	void CalcTileVisibility(bool force = false);
 	void ShouldCalcTileVisibility();	// Ask to recalc tile visibility on next update
-	void ConditionallyDisplayHiddenLayerAroundPlayer(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states);
 	void CreateNewTileSpriteMap();	// Obsolete. Disabled
 	void SaveCurrentMapInfo();
 	void InitializeCurrentMapInfo();
