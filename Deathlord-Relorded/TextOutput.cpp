@@ -182,13 +182,18 @@ void TextOutput::ScrollWindow(TextWindows tw)
 	}
 }
 
-void TextOutput::ClearLog()
+void TextOutput::ScrollLog()
 {
 	// This is generally called when starting a battle
 	// For now let's just scroll a bit to give some space
 	ScrollWindow(TextWindows::Log);
 	ScrollWindow(TextWindows::Log);
 	ScrollWindow(TextWindows::Log);
+}
+
+void TextOutput::ClearLog()
+{
+	m_vLog.clear();
 }
 
 void TextOutput::ClearBillboard()

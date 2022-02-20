@@ -99,6 +99,7 @@ public:
 
     // Other methods
     UINT64 GetTotalTicks(); // Total ticks since start of program
+    void PrepareForReboot(); // Request to reboot the game, clear stuff
 
     // Accessors
     SimpleMath::Rectangle GetDrawRectangle();

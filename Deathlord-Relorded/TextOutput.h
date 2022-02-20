@@ -70,7 +70,10 @@ public:
 	// Call it to scroll a specific window
 	void ScrollWindow(TextWindows tw);
 
-	// Clears the log area (generally for a fight)
+	// Scrolls the log area a few lines (generally for a fight)
+	void ScrollLog();
+
+	// Clear the log (for a reboot)
 	void ClearLog();
 
 	// Clears the billboard area

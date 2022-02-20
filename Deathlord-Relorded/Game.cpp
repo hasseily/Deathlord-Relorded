@@ -166,6 +166,13 @@ UINT64 Game::GetTotalTicks()
     return m_timer.GetTotalTicks();
 }
 
+void Game::PrepareForReboot()
+{
+	m_textOutput->ClearBillboard();
+	m_textOutput->ClearLog();
+	m_gameOverOverlay->Initialize();
+}
+
 #pragma region Others
 
 // Returns the rectangle in which to draw in the window.

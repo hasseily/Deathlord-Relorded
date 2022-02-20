@@ -362,7 +362,7 @@ SWITCH_GAMEMAP:
 				if (!__textOutput)
 					__textOutput = TextOutput::GetInstance();
 				if (regs.a == 0x03)
-					__textOutput->ClearLog();
+					__textOutput->ScrollLog();
 				else
 					__textOutput->ClearBillboard();
 #ifdef _DEBUGXXX
