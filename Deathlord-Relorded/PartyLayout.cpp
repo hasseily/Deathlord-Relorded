@@ -135,7 +135,7 @@ void PartyLayout::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBa
 		}
 		auto _animRot = m_animSpriteManager->CreateRotatingAnimation(TextureDescriptors::PartyLayoutSpriteSheet,
 			GetTextureSize(m_partyLayoutSpriteSheet.Get()), Vector2(28 * 2, 32 * 2), Vector2(0, 32), Vector2(26, 32),
-			100, 1.f, 
+			15, 1.f, 
 			Vector2(r.x + PARTY_LAYOUT_X[memberAttr.first] + xval, 
 					r.y + PARTY_LAYOUT_Y[memberAttr.first] + yval));
 		_animRot->m_tint = { {{ 0.f, 1.f, 0.f, 0.9f }} };
