@@ -331,10 +331,10 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	Vector2 _mAttrOrigin(_mClassOrigin.x, _mClassOrigin.y + 18);
 	swprintf_s(_buf, _bufsize, L"STR:%02d INT:%02d\n\nCON:%02d DEX:%02d\n\nSIZ:%02d CHA %02d",
 		MemGetMainPtr(PARTY_ATTR_STR_START)[member],
-		MemGetMainPtr(PARTY_ATTR_CON_START)[member],
-		MemGetMainPtr(PARTY_ATTR_SIZ_START)[member],
 		MemGetMainPtr(PARTY_ATTR_INT_START)[member],
+		MemGetMainPtr(PARTY_ATTR_CON_START)[member],
 		MemGetMainPtr(PARTY_ATTR_DEX_START)[member],
+		MemGetMainPtr(PARTY_ATTR_SIZ_START)[member],
 		MemGetMainPtr(PARTY_ATTR_CHA_START)[member]
 		);
 	fontDL->DrawString(spriteBatch, _buf, _mAttrOrigin, VColorText, 0.f, Vector2(), _fScale);
