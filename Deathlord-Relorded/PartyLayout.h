@@ -1,6 +1,7 @@
 #pragma once
 #include "DeviceResources.h"
 #include "Descriptors.h"
+#include "DeathlordHacks.h"
 #include <array>
 
 using namespace DirectX;
@@ -32,6 +33,8 @@ public:
 	void OnDeviceLost();
 	void SetPartySize(UINT8 size);
 	UINT8 GetPartySize();
+	void LevelUpIncremented(UINT8 member);
+	void AttributeIncreased(UINT8 member, DeathlordAttributes attr);
 
 	// Properties
 

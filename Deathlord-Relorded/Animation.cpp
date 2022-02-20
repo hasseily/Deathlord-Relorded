@@ -10,9 +10,19 @@ void Animation::SetRenderOrigin(SimpleMath::Vector2 origin)
 	m_renderCurrent = origin;
 }
 
+void Animation::SetFrameCount(int frameCount, int frameLength)
+{
+	m_frameCount = frameCount;
+	m_tickFrameLength.clear();
+	for (size_t i = 0; i < frameCount; i++)
+	{
+		m_tickFrameLength.emplace_back(frameLength);
+	}
+}
+
 void Animation::StartAnimation()
 {
-	m_frameCount = 0;
+	m_currentFrame = 0;
 	ResumeAnimation();
 	return;
 }

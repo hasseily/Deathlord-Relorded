@@ -27,11 +27,13 @@ public:
 		return m_renderRectangle;
 	};
 	bool IsFinished() { return b_isFinished; };
+	void SetFrameCount(int frameCount, int frameLength = TICKS_30FPS);
 	virtual void Update() = 0;
 	virtual void Render(SpriteBatch* spriteBatch, RECT* overlayRect) = 0;
 	virtual ~Animation() {};
 
 	DirectX::SpriteFont* m_font;
+	size_t m_loopsRemaining;	// # of iterations of all the frames to do
 
 protected:
 	size_t m_nextFrameTick;		// Tick after which we should swap to the next frame

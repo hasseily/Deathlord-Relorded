@@ -2,6 +2,10 @@
 
 using namespace DirectX;
 
+#ifndef M_PI
+#define M_PI	3.14159265358979323846
+#endif
+
 constexpr XMFLOAT4 ColorText = { 1.f, 1.f, 1.f, 0.700000000f };
 constexpr XMVECTORF32 VColorText = { { { 1.f, 1.f, 1.f, 0.700000000f } } };
 constexpr XMFLOAT4 ColorAmber = { 0.5f, 0.2f, 0.f, 1.000000000f };

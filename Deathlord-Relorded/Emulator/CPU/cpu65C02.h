@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "InvManager.h"
 #include "AutoMap.h"
 #include "BattleOverlay.h"
+#include "PartyLayout.h"
 #include "resource.h"
 #include <string>
 //===========================================================================
@@ -422,6 +423,39 @@ SWITCH_GAMEMAP:
 			{
 				CYC(2); // BCS uses 2 cycles;
 				regs.pc = _origPC + 2;	// Jump to the next instruction, disregard the branch
+
+				// regs.y has the char # getting the stat increase.
+				// The stat is in 0xA0-0xA1, in indirect mode. 0xA1 is the high byte
+				// (which doesn't matter) and 0xA0 is the low byte of the 6-byte array of the
+				// chosen attribute. The first attribute is STR at 0xFD72.
+				DeathlordAttributes _da;
+				switch (MemGetMainPtr(0xA0)[0])
+				{
+					case 0x72:
+						_da = DeathlordAttributes::xSTR;
+						break;
+					case 0x78:
+						_da = DeathlordAttributes::xCON;
+						break;
+					case 0x7E:
+						_da = DeathlordAttributes::xSIZ;
+						break;
+					case 0x84:
+						_da = DeathlordAttributes::xINT;
+						break;
+					case 0x8A:
+						_da = DeathlordAttributes::xDEX;
+						break;
+					case 0x90:
+						_da = DeathlordAttributes::xCHA;
+						break;
+					case 0x9C:
+						_da = DeathlordAttributes::xPOW;
+						break;
+				}
+				PartyLayout* _pl = PartyLayout::GetInstance();
+				if (_pl)
+					_pl->AttributeIncreased(regs.y, _da);
 				break;
 			}
 
@@ -553,6 +587,15 @@ SWITCH_GAMEMAP:
 				// The enemy HP array has just been filled. Tell that to the battle overlay.
 				g_isInBattle = true;
 				BattleOverlay::GetInstance()->BattleEnemyHPIsSet();
+				break;
+			}
+			case PC_CHAR_INC_LEVELUP:
+			{
+				// Here the levelup "+" just got incremented
+				// Trigger an animation to get the player to focus on it
+				PartyLayout* _pl = PartyLayout::GetInstance();
+				if (_pl)
+					_pl->LevelUpIncremented(regs.x);
 				break;
 			}
 			case PC_INCREMENT_LEVEL:

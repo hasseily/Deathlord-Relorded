@@ -3,6 +3,7 @@
 #include "DeathlordHacks.h"
 #include "Game.h"
 #include "InvManager.h"
+#include "AnimSpriteManager.h"
 #include <algorithm>
 
 extern std::unique_ptr<Game>* GetGamePtr();
@@ -12,11 +13,26 @@ PartyLayout* PartyLayout::s_instance;
 
 InvManager* m_invMgr;
 static auto m_levelupColor = Colors::DarkOrange;
+// if a member has leveled up (when rendering, do animation)
+static std::array<bool, 6>m_incLevelUp = { false, false, false, false, false, false };
+// if an attribute has increased, add a pair <member, attr> for later animation during rendering
+static auto m_incAttributes = std::vector<std::pair<int, DeathlordAttributes>>();
+AnimSpriteManager* m_animSpriteManager;
 
 void PartyLayout::Initialize()
 {
+	m_animSpriteManager = AnimSpriteManager::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_partySize = 6;
 	m_currentLeader = 0;
+	// For testing animations:
+	// m_incLevelUp[0] = true;
+	//m_incAttributes.push_back(pair<int, DeathlordAttributes>(0, DeathlordAttributes::xSTR));
+	//m_incAttributes.push_back(pair<int, DeathlordAttributes>(1, DeathlordAttributes::xCON));
+	//m_incAttributes.push_back(pair<int, DeathlordAttributes>(2, DeathlordAttributes::xSIZ));
+	//m_incAttributes.push_back(pair<int, DeathlordAttributes>(3, DeathlordAttributes::xDEX));
+	//m_incAttributes.push_back(pair<int, DeathlordAttributes>(4, DeathlordAttributes::xINT));
+	//m_incAttributes.push_back(pair<int, DeathlordAttributes>(5, DeathlordAttributes::xCHA));
+	//m_incAttributes.push_back(pair<int, DeathlordAttributes>(0, DeathlordAttributes::xPOW));
 }
 
 void PartyLayout::SetPartySize(UINT8 size)
@@ -28,6 +44,17 @@ void PartyLayout::SetPartySize(UINT8 size)
 UINT8 PartyLayout::GetPartySize()
 {
 	return m_partySize;
+}
+
+void PartyLayout::LevelUpIncremented(UINT8 member)
+{
+	if (member < 6)
+		m_incLevelUp[member] = true;
+}
+
+void PartyLayout::AttributeIncreased(UINT8 member, DeathlordAttributes attr)
+{
+	m_incAttributes.push_back(std::pair<int, DeathlordAttributes>(member, attr));
 }
 
 bool PartyLayout::Update(UINT8 leader)
@@ -66,6 +93,58 @@ void PartyLayout::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBa
 	{
 		RenderMemberTopLayer(i, spriteBatch, r.x + PARTY_LAYOUT_X[i], r.y + PARTY_LAYOUT_Y[i]);
 	}
+
+	// And finally, render the animations for any increased attributes
+	for each (auto memberAttr in m_incAttributes)
+	{
+		int xval;
+		int yval;
+		switch (memberAttr.second)
+		{
+		case DeathlordAttributes::xSTR:
+			xval = 37;
+			yval = 154;
+			break;
+		case DeathlordAttributes::xCON:
+			xval = 37;
+			yval = 170;
+			break;
+		case DeathlordAttributes::xSIZ:
+			xval = 37;
+			yval = 186;
+			break;
+		case DeathlordAttributes::xINT:
+			xval = 86;
+			yval = 154;
+			break;
+		case DeathlordAttributes::xDEX:
+			xval = 86;
+			yval = 170;
+			break;
+		case DeathlordAttributes::xCHA:
+			xval = 86;
+			yval = 186;
+			break;
+		case DeathlordAttributes::xPOW:
+			xval = 208;
+			yval = 55;
+			break;
+		default:
+			continue;
+			break;
+		}
+		auto _animRot = m_animSpriteManager->CreateRotatingAnimation(TextureDescriptors::PartyLayoutSpriteSheet,
+			GetTextureSize(m_partyLayoutSpriteSheet.Get()), Vector2(28 * 2, 32 * 2), Vector2(0, 32), Vector2(26, 32),
+			100, 1.f, 
+			Vector2(r.x + PARTY_LAYOUT_X[memberAttr.first] + xval, 
+					r.y + PARTY_LAYOUT_Y[memberAttr.first] + yval));
+		_animRot->m_tint = { {{ 0.f, 1.f, 0.f, 0.9f }} };
+		if (memberAttr.second == DeathlordAttributes::xPOW)
+			_animRot->m_scale = 1.f;
+		else
+			_animRot->m_scale = 0.5f;
+	}
+	m_incAttributes.clear();
 }
 
 void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, UINT16 originX, UINT16 originY)
@@ -179,6 +258,23 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 		swprintf_s(_buf, _bufsize, L"%02d+%d", MemGetMainPtr(PARTY_LEVEL_START)[member],
 			MemGetMainPtr(PARTY_LEVELPLUS_START)[member]);
 		_lvlColor = m_levelupColor;
+		// Show an animation if the player just levelled up
+		if (m_incLevelUp[member])
+		{
+			auto _anim = m_animSpriteManager->CreateAnimation(TextureDescriptors::PartyLayoutSpriteSheet,
+				GetTextureSize(m_partyLayoutSpriteSheet.Get()), Vector2(28, 32), Vector2(0, 0),
+				15, _mLevelOrigin + Vector2(30, -16));
+			_anim->m_loopsRemaining = 3;
+			_anim->SetTotalAnimationLength(1.5f);
+
+			auto _animRot = m_animSpriteManager->CreateRotatingAnimation(TextureDescriptors::PartyLayoutSpriteSheet,
+				GetTextureSize(m_partyLayoutSpriteSheet.Get()), Vector2(28*2, 32*2), Vector2(0, 32), Vector2(26, 32),
+				15, 1.f, _mLevelOrigin + Vector2(45, 8));
+			_animRot->m_tint = { {{ 0.f, 1.f, 0.f, 0.9f }} };
+			_animRot->m_scale = 0.8f;
+
+			m_incLevelUp[member] = false;
+		}
 	}
 	else
 	{

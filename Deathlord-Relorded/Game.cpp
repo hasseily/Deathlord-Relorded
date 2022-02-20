@@ -23,6 +23,7 @@
 #include "Daytime.h"
 #include "PartyLayout.h"
 #include "AnimTextManager.h"
+#include "AnimSpriteManager.h"
 #include <vector>
 #include <string>
 #include <map>
@@ -59,6 +60,7 @@ static Daytime* m_daytime;
 static MiniMap* m_minimap;
 static PartyLayout* m_partyLayout;
 static AnimTextManager* m_animTextManager;
+static AnimSpriteManager* m_animSpriteManager;
 
 AppMode_e m_previousAppMode = AppMode_e::MODE_UNKNOWN;
 
@@ -154,6 +156,7 @@ void Game::Initialize(HWND window)
     CreateWindowSizeDependentResources();
 
     m_animTextManager = AnimTextManager::GetInstance(m_deviceResources.get(), m_resourceDescriptors.get());
+	m_animSpriteManager = AnimSpriteManager::GetInstance(m_deviceResources.get(), m_resourceDescriptors.get());
 	m_trigger = MemoryTriggers::GetInstance(&m_timer);
 	m_trigger->PollMapSetCurrentValues();
 }
@@ -536,10 +539,11 @@ void Game::Render()
 			// The inventory overlay
 			m_invOverlay->Render(SimpleMath::Rectangle(clientRect));
 
-            // and the floating text animations
+            // and the animations
             // TODO: Really have to figure out how to reduce the sprite batch begin/end calls
 			m_spriteBatch->Begin(commandList, SpriteSortMode_Deferred);
-            m_animTextManager->RenderAnimations(m_spriteBatch.get());
+            m_animSpriteManager->RenderAnimations(m_spriteBatch.get());
+			m_animTextManager->RenderAnimations(m_spriteBatch.get());
 			m_spriteBatch->End();
 
             // The apple2 video is unique and independent

@@ -183,7 +183,10 @@
   <ItemGroup>
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="AnimationBattle.cpp" />
+    <ClCompile Include="AnimationSprite.cpp" />
+    <ClCompile Include="AnimationSpriteRotating.cpp" />
     <ClCompile Include="AnimationTextFloating.cpp" />
+    <ClCompile Include="AnimSpriteManager.cpp" />
     <ClCompile Include="AnimTextManager.cpp" />
     <ClCompile Include="AppleWinDXVideo.cpp" />
     <ClCompile Include="AutoMap.cpp" />
@@ -238,7 +241,10 @@
   <ItemGroup>
     <ClInclude Include="Animation.h" />
     <ClInclude Include="AnimationBattle.h" />
+    <ClInclude Include="AnimationSprite.h" />
+    <ClInclude Include="AnimationSpriteRotating.h" />
     <ClInclude Include="AnimationTextFloating.h" />
+    <ClInclude Include="AnimSpriteManager.h" />
     <ClInclude Include="AnimTextManager.h" />
     <ClInclude Include="AppleWinDXVideo.h" />
     <ClInclude Include="ATGColors.h" />

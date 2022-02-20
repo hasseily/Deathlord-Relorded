@@ -46,6 +46,7 @@
 #define PC_LEVELUP_CHECK			0xF563		// At academy, when "buying" level, if A is 0, does not level up.
 #define PC_PICKLOCK_CHECK			0x938C		// Beginning of the lockpick routine. NOP the instruction at 93CD and set 93D0 to 0x66 to succeed 100% of the time
 #define PC_ALL_CHARS_DEAD			0x880C		// "ALL PLYRS OUT". Everyone's dead, time to reload from a backup!
+#define PC_CHAR_INC_LEVELUP			0xA361		// Increments char (in X) levelup
 
 #define PC_MAP_KEY_PRESS			0x5893		// A key has been pressed when on the map, value is in A (could be movement, spell choice...)
 #define SP_MAP_KEY_PRESS_1			0xCB		// Last 2 bytes in stack pointer when waiting for keystroke in menu list only

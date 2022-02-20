@@ -40,7 +40,8 @@ AnimationBattleChar::AnimationBattleChar(DescriptorHeap* resourceDescriptors,
 	m_state = AnimationBattleState::idle;
 	m_turnsDisabled = 0;
 	b_isParty = false;
-	b_isFinished = false;	// is never set to true, defaults to idle animation
+	b_isFinished = false;	 // never set to true
+	m_loopsRemaining = SIZE_T_MAX; // runs infinitely, defaults to idle animation
 	// There's only a single frame rectangle
 	// the frame will be rendered at different positions based on hit, miss, attack
 	m_frameRectangles = std::vector<SimpleMath::Rectangle>();
@@ -159,6 +160,7 @@ AnimationBattleTransition::AnimationBattleTransition(DescriptorHeap* resourceDes
 	m_scale = std::vector<float>{ 
 											.4f, .6f, .8f, 1.f, 1.25f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f };
 	m_frameCount = m_tickFrameLength.size();
+	m_loopsRemaining = 1;
 	m_currentFrame = 0;
 	b_isFinished = false;
 	// There's only a single frame rectangle
@@ -192,7 +194,11 @@ void AnimationBattleTransition::Render(SpriteBatch* spriteBatch, RECT* overlayRe
 		m_currentFrame = (m_currentFrame + 1) % m_frameCount;
 		m_nextFrameTick = m_tickFrameLength[m_currentFrame] + tick;
 		if (m_currentFrame == (m_frameCount - 1))
-			b_isFinished = true;
+		{
+			--m_loopsRemaining;
+			if (m_loopsRemaining == 0)
+				b_isFinished = true;
+		}
 	}
 }
 #pragma endregion AnimationBattleTransition
