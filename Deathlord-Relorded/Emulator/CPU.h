@@ -32,7 +32,7 @@
 #define PC_END_DRAWING_TILES		0x586A		// After all the drawing is done and the LOS is updated. $300-350 contains the map
 #define PC_CHECK_REAR_ATTACK		0xA7EF		// BCS after CMP that checks for the rear rank not allowed to attack
 #define PC_CHECK_SEARCH_SUCCESS		0x9428		// BCS after CMP that checks success of search
-#define PC_ENEMY_ACTION_DRAIN		0xAB19		// BCS: Always branch to avoid level drain. This option makes the enemy skip the turn without feedback
+#define PC_ENEMY_ACTION_DRAIN		0xAAE5		// BEQ: Don't branch to avoid level drain.
 #define PC_MAGIC_WATER_EFFECT		0xB707		// Set X register to 0 to always branch to stat +1
 #define PC_STAT_INCREASE_CEILING	0xB7A3		// BCS: Don't branch to remove the max 18 of the stat increase from magic water
 #define PC_CHAR_HP_LOSS				0x54B8		// It sets A to 01 (lo byte) and Y to 00 (hi byte), which is the amount we'll drop HP by because of starvation, toxicity, etc... when calling subroutine 0x605D. X has the char position.

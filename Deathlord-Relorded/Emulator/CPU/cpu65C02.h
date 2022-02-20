@@ -402,18 +402,10 @@ SWITCH_GAMEMAP:
 			}
 			case PC_ENEMY_ACTION_DRAIN:
 			{
-				CYC(2); // BCS uses 2 cycles;
-				regs.pc = regs.pc + 2 + MemGetMainPtr(regs.pc + 1)[0];	// Always branch to the new instruction
+				CYC(2); // BEQ uses 2 cycles;
+				regs.pc = _origPC + 2;	// Jump to the next instruction, disregard the branch
 				break;
 			}
-			/*	Another option for removing level drain. This one makes the level drain always miss, and is earlier in the process
-			case PC_ENEMY_ACTION_DRAIN2:
-			{
-				CYC(2); // BCS uses 2 cycles;
-				regs.pc = regs.pc + 2 + MemGetMainPtr(regs.pc + 1)[0];	// Always branch to the new instruction
-				break;
-			}
-			*/
 			case PC_MAGIC_WATER_EFFECT:
 			{
 				regs.x = 0;		// always choose stat increase
