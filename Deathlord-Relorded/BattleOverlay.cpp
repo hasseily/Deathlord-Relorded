@@ -304,7 +304,10 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 				_anim->Render(m_overlaySB.get(), &m_currentRect);
 				UINT16 _mHealth = MemGetMainPtr(PARTY_HEALTH_LOBYTE_START)[i] + ((UINT16)MemGetMainPtr(PARTY_HEALTH_HIBYTE_START)[i] << 8);
 				UINT16 _mHealthMax = MemGetMainPtr(PARTY_HEALTH_MAX_LOBYTE_START)[i] + ((UINT16)MemGetMainPtr(PARTY_HEALTH_MAX_HIBYTE_START)[i] << 8);
-				_healthBarR.width = _animRect.width * _mHealth / _mHealthMax;
+				if (_mHealthMax > 0)	// Possible that max health == 0 from some enemy death spells
+					_healthBarR.width = _animRect.width * _mHealth / _mHealthMax;
+				else
+					_healthBarR.width = 0;
 				if (MemGetMainPtr(PARTY_MAGIC_USER_TYPE_START)[i] != 0xFF)	// magic user
 				{
 					SimpleMath::Rectangle _powerBarR(_healthBarR);
