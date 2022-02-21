@@ -225,7 +225,6 @@
     <ClCompile Include="InvOverlay.cpp" />
     <ClCompile Include="LogWindow.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="MemoryTriggers.cpp" />
     <ClCompile Include="MiniMap.cpp" />
     <ClCompile Include="NonVolatile.cpp" />
     <ClCompile Include="Overlay.cpp" />
@@ -293,7 +292,6 @@
     <ClInclude Include="InvOverlay.h" />
     <ClInclude Include="libyaml\win32\config.h" />
     <ClInclude Include="LogWindow.h" />
-    <ClInclude Include="MemoryTriggers.h" />
     <ClInclude Include="MiniMap.h" />
     <ClInclude Include="NonVolatile.h" />
     <ClInclude Include="Overlay.h" />

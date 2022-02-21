@@ -120,9 +120,6 @@
     <ClCompile Include="TilesetCreator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MemoryTriggers.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="AutoMap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -327,9 +324,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TilesetCreator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MemoryTriggers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AutoMap.h">

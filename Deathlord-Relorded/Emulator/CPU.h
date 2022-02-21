@@ -27,7 +27,9 @@
 #define PC_WAIT_FOR_KEYPRESS		0x540B		// Waits for a keypress
 #define PC_DECREMENT_TIMER			0x621F		// routine to decrement a timer before it makes the player "wait" and pass a turn
 #define PC_TRANSIT_OUT_OVERLAND		0xE8F4		// routine that gets the player into a dungeon or town
-#define PC_TRANSIT_IN_OVERLAND		0xEF0A		// routine that gets the player back in the overland
+#define PC_TRANSIT_OUT_TOWN			0xEF0A		// routine that gets the player back in the overland from town.
+#define PC_TRANSIT_OUT_DUNGEON		0xB175		// routine that gets the player back in the overland from a dungeon.
+#define PC_CHANGE_FLOOR				0xB13C		// New floor is in X, old floor is in MAP_FLOOR
 #define PC_BEGIN_DRAWING_TILES		0x5931		// Beginning of the tiles drawing routine on the main screen. $300-350 contains the "current" map, $351-3A0 contains the "new" map
 #define PC_END_DRAWING_TILES		0x586A		// After all the drawing is done and the LOS is updated. $300-350 contains the map
 #define PC_CHECK_REAR_ATTACK		0xA7EF		// BCS after CMP that checks for the rear rank not allowed to attack

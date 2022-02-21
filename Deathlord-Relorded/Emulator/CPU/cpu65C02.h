@@ -23,7 +23,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include "LogWindow.h"
-#include "MemoryTriggers.h"	// trigger the memory polling upon passing time because we know the state is safe
 #include "DeathlordHacks.h"
 #include "TextOutput.h"
 #include "InvManager.h"
@@ -185,18 +184,17 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 SWITCH_GAMEMAP:
 			switch (_origPC)
 			{
-			case PC_TRANSIT_IN_OVERLAND:
-				// Starting transit between maps, either from the overland or into the overland
+			case PC_CHANGE_FLOOR:
+				[[fallthrough]];
+			case PC_TRANSIT_OUT_DUNGEON:
+				[[fallthrough]];
+			case PC_TRANSIT_OUT_TOWN:
 				[[fallthrough]];
 			case PC_TRANSIT_OUT_OVERLAND:
 			{
-				// OutputDebugStringA("STARTED TRANSITION\n");
+				// Starting transit between maps or floors
 				auto aM = AutoMap::GetInstance();
 				aM->SetShowTransition(true);
-				// The FINISH_TRANSITION trigger will only run after the game is back in the player wait loop
-				// There used to be instead a PARSE_TILES trigger but that's now obsolete
-				auto memT = MemoryTriggers::GetInstance();
-				memT->DelayedTriggerInsert(DelayedTriggersFunction::FINISH_TRANSITION, 100);
 				break;
 			}
 			case PC_MAP_KEY_PRESS:
@@ -248,15 +246,14 @@ SWITCH_GAMEMAP:
 			}
 			case PC_DECREMENT_TIMER:
 			{
-				// Process memory triggers every time the game processes the turn pass decrement timer
 				// We know here that we're in a safe place to parse the video screen, etc...
-				// And we know we're not in battle
-				// And furthermore we disable that timer because who in his right mind wants turns to pass when not doing anything?
+				// And we know we're not in battle and we know transitions have ended
+				// And furthermore we disable that timer because who in his right mind wants
+				// turns to pass when not doing anything?
 				g_isInBattle = false;
-				auto memT = MemoryTriggers::GetInstance();
+				auto aM = AutoMap::GetInstance();
+				aM->SetShowTransition(false);
 				g_hasBeenIdleOnce = true;
-				if (memT != NULL)
-					memT->Process();
 				
 				CYC(6);		// NOP 6 cycles. The DEC instruction takes 6 cycles
 				regs.pc = _origPC + 3;

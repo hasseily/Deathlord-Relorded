@@ -8,7 +8,6 @@
 #include "Keyboard.h"
 #include "Emulator/AppleWin.h"
 #include "Emulator/Video.h"
-#include "MemoryTriggers.h"
 #include "LogWindow.h"
 #include "SpellWindow.h"
 #include "TilesetCreator.h"
@@ -71,7 +70,6 @@ static std::wstring s_hourglass = std::wstring(1, '\u005B'); // horizontal bar t
 
 static Vector2 m_vector2Zero = { 0.f, 0.f };
 
-static MemoryTriggers* m_trigger;
 UINT64	g_debug_video_field = 0;
 UINT64	g_debug_video_data = 0;
 NonVolatile g_nonVolatile;
@@ -157,8 +155,6 @@ void Game::Initialize(HWND window)
 
     m_animTextManager = AnimTextManager::GetInstance(m_deviceResources.get(), m_resourceDescriptors.get());
 	m_animSpriteManager = AnimSpriteManager::GetInstance(m_deviceResources.get(), m_resourceDescriptors.get());
-	m_trigger = MemoryTriggers::GetInstance(&m_timer);
-	m_trigger->PollMapSetCurrentValues();
 }
 
 UINT64 Game::GetTotalTicks()
@@ -342,10 +338,8 @@ void Game::Update(DX::StepTimer const& timer)
     }
 
     auto autoMap = AutoMap::GetInstance();
-    auto memTriggers = MemoryTriggers::GetInstance();
     if (g_isInGameMap && (autoMap != NULL))
     {
-		memTriggers->PollKeyMemoryLocations();  // But not the avatar XY
         autoMap->CalcTileVisibility();          // Won't trigger unless the game cpu65C02.h has requested it
     }
     m_minimap->Update(memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
