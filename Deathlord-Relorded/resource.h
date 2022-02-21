@@ -105,6 +105,8 @@
 #define ID_AUTOMAP_ERASE                32852
 #define ID_COMPANION_SPELLWINDOW        32856
 #define ID_AUTOMAP_REMOVEFOG            32857
+#define ID_RELORDED_INVENTORY           32858
+#define ID_RELORDED_ORIGINALINTERFACE   32859
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -113,7 +115,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        152
-#define _APS_NEXT_COMMAND_VALUE         32858
+#define _APS_NEXT_COMMAND_VALUE         32860
 #define _APS_NEXT_CONTROL_VALUE         1009
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

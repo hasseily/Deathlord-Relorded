@@ -20,6 +20,7 @@
 #include "AutoMap.h"
 #include "TilesetCreator.h"
 #include "InvOverlay.h"
+#include "AppleWinDXVideo.h"
 // For WinPixGpuCapture
 #include <filesystem>
 #include <shlobj.h>
@@ -154,8 +155,8 @@ void UpdateMenuBarStatus(HWND hwnd)
 	HMENU relordedMenu = GetSubMenu(topMenu, 2);	// Relorded menu
 	HMENU videoMenu = GetSubMenu(emuMenu, 10);
 	HMENU volumeMenu = GetSubMenu(emuMenu, 11);
-	HMENU autoMapMenu = GetSubMenu(relordedMenu, 0);
-	HMENU logMenu = GetSubMenu(relordedMenu, 2);
+	HMENU autoMapMenu = GetSubMenu(relordedMenu, 3);
+	HMENU logMenu = GetSubMenu(relordedMenu, 5);
 
 	CheckMenuRadioItem(videoMenu, 0, 3, g_nonVolatile.video, MF_BYPOSITION);
 	CheckMenuRadioItem(volumeMenu, 0, 4, g_nonVolatile.volumeSpeaker, MF_BYPOSITION);
@@ -179,7 +180,11 @@ void UpdateMenuBarStatus(HWND hwnd)
 		MF_BYCOMMAND | (g_nonVolatile.showSpells ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(logMenu, ID_LOGWINDOW_ALSOLOGCOMBAT,
 		MF_BYCOMMAND | (g_nonVolatile.logCombat ? MF_CHECKED : MF_UNCHECKED));
-	
+	CheckMenuItem(relordedMenu, ID_RELORDED_INVENTORY,
+		MF_BYCOMMAND | (InvOverlay::GetInstance()->IsOverlayDisplayed() ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(relordedMenu, ID_RELORDED_ORIGINALINTERFACE,
+		MF_BYCOMMAND | (AppleWinDXVideo::GetInstance()->IsApple2VideoDisplayed() ? MF_CHECKED : MF_UNCHECKED));
+
 	ApplyNonVolatileConfig();
 }
 
@@ -319,6 +324,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 						DispatchMessage(&msg);
 					}
 				}
+				UpdateMenuBarStatus(hwnd);
 			}
 			else
 			{
@@ -685,77 +691,62 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_VIDEO_IDEALIZED:
 			g_nonVolatile.video = 0;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_VIDEO_MONITOR:
 			g_nonVolatile.video = 1;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_VIDEO_COMPOSITEMONITOR:
 			g_nonVolatile.video = 2;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_VIDEO_TVSCREEN:
 			g_nonVolatile.video = 3;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_VIDEO_INCREMENT:
 			g_nonVolatile.video = (g_nonVolatile.video + 1) % 4;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_VOLUME_OFF:
 			g_nonVolatile.volumeSpeaker = 0;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_VOLUME_25:
 			g_nonVolatile.volumeSpeaker = 1;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_VOLUME_50:
 			g_nonVolatile.volumeSpeaker = 2;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_VOLUME_75:
 			g_nonVolatile.volumeSpeaker = 3;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_VOLUME_100:
 			g_nonVolatile.volumeSpeaker = 4;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_VIDEO_SCANLINES:
 			g_nonVolatile.scanlines = !g_nonVolatile.scanlines;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_EMULATOR_GAMELINK:
 			g_nonVolatile.useGameLink = !g_nonVolatile.useGameLink;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_REMOVEFOG:
 			g_nonVolatile.removeFog = !g_nonVolatile.removeFog;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_SHOWFOOTSTEPS:
 			g_nonVolatile.showFootsteps = !g_nonVolatile.showFootsteps;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_SHOWHIDDEN:
 			g_nonVolatile.showHidden = !g_nonVolatile.showHidden;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_DISPLAYFULL:
 			if (g_nonVolatile.mapQuadrant == AutoMapQuadrant::All)
@@ -764,23 +755,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				g_nonVolatile.mapQuadrant = AutoMapQuadrant::All;
 			else
 				g_nonVolatile.mapQuadrant = AutoMapQuadrant::All;
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_DISPLAYTOPLEFTQUADRANT:
 			g_nonVolatile.mapQuadrant = AutoMapQuadrant::TopLeft;
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_DISPLAYTOPRIGHTQUADRANT:
 			g_nonVolatile.mapQuadrant = AutoMapQuadrant::TopRight;
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_DISPLAYBOTTOMLEFTQUADRANT:
 			g_nonVolatile.mapQuadrant = AutoMapQuadrant::BottomLeft;
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_DISPLAYBOTTOMRIGHTQUADRANT:
 			g_nonVolatile.mapQuadrant = AutoMapQuadrant::BottomRight;
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_AUTOMAP_ERASE:
 			if (MessageBox(HWND_TOP, TEXT("Are you sure you want to erase all knowledge of this map?\nFootsteps and seen tiles will be forgotten.\n"), TEXT("Erase Map Knowledge"), MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SYSTEMMODAL) == IDYES)
@@ -795,13 +781,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				game->MenuToggleSpellWindow();
 			}
-			UpdateMenuBarStatus(hWnd);
 			break;
 		}
 		case ID_LOGWINDOW_ALSOLOGCOMBAT:
 			g_nonVolatile.logCombat = !g_nonVolatile.logCombat;
 			g_nonVolatile.SaveToDisk();
-			UpdateMenuBarStatus(hWnd);
 			break;
 		case ID_LOGWINDOW_SHOW:
 		{
@@ -828,6 +812,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_COMPANION_HACKS:
 			game->MenuToggleHacksWindow();
 			break;
+		case ID_RELORDED_INVENTORY:
+		{
+			InvOverlay::GetInstance()->ToggleOverlay();
+			break;
+		}
+		case ID_RELORDED_ORIGINALINTERFACE:
+		{
+			AppleWinDXVideo::GetInstance()->ToggleApple2Video();
+			break;
+		}
 		case IDM_ABOUT:
 			DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 			break;
