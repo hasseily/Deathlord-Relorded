@@ -567,17 +567,22 @@ SWITCH_GAMEMAP:
 				}
 				break;
 			}
+			case PC_BATTLE_GET_ENEMY_ID:
+			{
+				g_isInBattle = true;
+				BattleOverlay::GetInstance()->SetMonsterId(regs.a);
+				break;
+			}
 			case PC_BATTLE_AMBUSH:
 				[[fallthrough]];
 			case PC_BATTLE_ENTER:	// Doesn't work in dungeons
 			{
-				g_isInBattle = true;
+				g_isInBattle = true;	// not strictily necessary as PC_BATTLE_GET_ENEMY_ID now puts us in battle mode
 				break;
 			}
 			case PC_BATTLE_ENEMY_HP_SET: // Works everywhere, including dungeons
 			{
 				// The enemy HP array has just been filled. Tell that to the battle overlay.
-				g_isInBattle = true;
 				BattleOverlay::GetInstance()->BattleEnemyHPIsSet();
 				break;
 			}

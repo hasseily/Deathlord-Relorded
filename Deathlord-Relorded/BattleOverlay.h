@@ -8,6 +8,7 @@ using namespace DirectX::SimpleMath;
 class BattleOverlay	: public Overlay
 {
 public:
+	void SetMonsterId(UINT8 monsterId);
 	void SetActiveActor(UINT8 actorNumber);
 	void BattleEnemyHPIsSet();	// call this from PC_BATTLE_ENEMY_HP_SET to grab the MEM_ENEMY_HP_START
 	void SpriteBeginAttack(UINT8 charPosition);

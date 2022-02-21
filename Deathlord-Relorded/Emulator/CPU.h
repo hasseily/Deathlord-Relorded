@@ -74,6 +74,7 @@
 #define PC_BATTLE_ENEMY_HP_SET		0xA2D1		// Point where the MEM_ENEMY_HP_START is filled in at the start of the battle
 #define MEM_BATTLE_GOLD_LO			0x009A		// Gold at end of battle Low Byte
 #define MEM_BATTLE_GOLD_HI			0x009B		// Gold at end of battle High Byte
+#define PC_BATTLE_GET_ENEMY_ID		0xA244		// The current enemy ID was just calculated, and it is in A
 #define PC_BATTLE_HAS_GOLD			0x8EAA		// The previous instruction at 0x8EA7 branches away if A > mem(0x8F55+X). It's a % chance of loot based on enemy type
 #define PC_BATTLE_DISPLAY_GOLD		0x8EDF		// Start of the gold display routine 0x8EDF prints the number, 0x8EE2-0x8EF1 prints " gold pieces!"
 #define PC_BATTLE_CHAR_BEGIN_TURN	0x5C0B		// Char start turn. Char # is in X (before it's stored in PARTY_CURRENT_CHAR_POS)

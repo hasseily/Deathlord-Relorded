@@ -51,6 +51,12 @@ void BattleOverlay::Initialize()
 
 	m_animTextManager = AnimTextManager::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_activeActor = 0xFF;
+	m_monsterId = 0xFF;
+}
+
+void BattleOverlay::SetMonsterId(UINT8 monsterId)
+{
+	m_monsterId = monsterId;
 }
 
 void BattleOverlay::BattleEnemyHPIsSet()
@@ -151,34 +157,34 @@ void BattleOverlay::Update()
 {
 	// Ensure that we have a sprite animation for every active actor in this battle
 	
-	// First figure out what monster we're fighting
-	// There is double-dereferencing going on.
-	// First get the index of the monster for the fight.
-	// It's an index into the list of instanced monsters in the map
-	UINT8 _mIndex = MemGetMainPtr(MEM_BATTLE_MONSTER_INDEX)[0];
-	if (_mIndex == 0xFF)	// No monster, no battle
-	{
-		// This is after the end of the battle
-		// during the post battle looting
-		return;
-	}
+	//// First figure out what monster we're fighting
+	//// There is double-dereferencing going on.
+	//// First get the index of the monster for the fight.
+	//// It's an index into the list of instanced monsters in the map
+	//UINT8 _mIndex = MemGetMainPtr(MEM_BATTLE_MONSTER_INDEX)[0];
+	//if (_mIndex == 0xFF)	// No monster, no battle
+	//{
+	//	// This is after the end of the battle
+	//	// during the post battle looting
+	//	return;
+	//}
 
-	// Second, dereference into the array of tiles in the map
-	// where the monster tiles start at 0x40
-	// Now we have the tile index of the type of monster we're fighting.
-	if (MemGetMainPtr(MAP_TYPE)[0] == (int)MapType::Dungeon)
-	{
-		_mIndex = MemGetMainPtr(DUNGEON_ARRAY_MONSTER_ID)[_mIndex] - 0x40;
+	//// Second, dereference into the array of tiles in the map
+	//// where the monster tiles start at 0x40
+	//// Now we have the tile index of the type of monster we're fighting.
+	//if (MemGetMainPtr(MAP_TYPE)[0] == (int)MapType::Dungeon)
+	//{
+	//	_mIndex = MemGetMainPtr(DUNGEON_ARRAY_MONSTER_ID)[_mIndex] - 0x40;
 
-	}
-	else
-	{
-		_mIndex = MemGetMainPtr(OVERLAND_ARRAY_MONSTER_ID)[_mIndex] - 0x40;
-	}
-	// And FINALLY, look for the mapping of monsters to tiles for this specific map
-	// and go back into it
-	_mIndex = MemGetMainPtr(GAMEMAP_START_MONSTERS_IN_LEVEL_IDX)[_mIndex];
-	// We could cache this dereferencing, but it really doesn't matter
+	//}
+	//else
+	//{
+	//	_mIndex = MemGetMainPtr(OVERLAND_ARRAY_MONSTER_ID)[_mIndex] - 0x40;
+	//}
+	//// And FINALLY, look for the mapping of monsters to tiles for this specific map
+	//// and go back into it
+	//_mIndex = MemGetMainPtr(GAMEMAP_START_MONSTERS_IN_LEVEL_IDX)[_mIndex];
+	//// We could cache this dereferencing, but it really doesn't matter
 
 	// Fill animations correctly
 	UINT8 _enemyCount = MemGetMainPtr(MEM_ENEMY_COUNT)[0];
@@ -211,7 +217,7 @@ void BattleOverlay::Update()
 		}
 		else // This is the id of the monster in the global monster sheet
 		{
-			_anim->m_monsterId = _mIndex;
+			_anim->m_monsterId = m_monsterId;
 			_anim->b_isParty = false;
 			_anim->m_health = MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6];
 			_anim->m_power = 0;
