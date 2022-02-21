@@ -181,7 +181,7 @@ void UpdateMenuBarStatus(HWND hwnd)
 	CheckMenuItem(logMenu, ID_LOGWINDOW_ALSOLOGCOMBAT,
 		MF_BYCOMMAND | (g_nonVolatile.logCombat ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(relordedMenu, ID_RELORDED_INVENTORY,
-		MF_BYCOMMAND | (InvOverlay::GetInstance()->IsOverlayDisplayed() ? MF_CHECKED : MF_UNCHECKED));
+		MF_BYCOMMAND | (InvOverlay::GetInstance()->ShouldRenderOverlay() ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(relordedMenu, ID_RELORDED_ORIGINALINTERFACE,
 		MF_BYCOMMAND | (AppleWinDXVideo::GetInstance()->IsApple2VideoDisplayed() ? MF_CHECKED : MF_UNCHECKED));
 
@@ -324,7 +324,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 						DispatchMessage(&msg);
 					}
 				}
-				UpdateMenuBarStatus(hwnd);
+				// UpdateMenuBarStatus(hwnd);
 			}
 			else
 			{
@@ -831,6 +831,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
+		UpdateMenuBarStatus(hWnd);
 	}
 	break;
 
