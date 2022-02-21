@@ -44,6 +44,7 @@ static bool hasTriedInsertingScenarii = false;
 static bool shouldReroll = false;
 static regsrec __rollRegs;
 static bool bIsInverseChar = false;
+static bool bShouldRedrawTiles = false;
 
 static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 {
@@ -242,6 +243,7 @@ SWITCH_GAMEMAP:
 					if (_theKey == 'I' || _theKey == 'J' || _theKey == 'K' || _theKey == 'M')
 						regs.a = '^' + 0x80;
 				}
+				bShouldRedrawTiles = true;	// Could have opened a door or anything else.
 				break;
 			}
 			case PC_DECREMENT_TIMER:
@@ -254,7 +256,7 @@ SWITCH_GAMEMAP:
 				auto aM = AutoMap::GetInstance();
 				aM->SetShowTransition(false);
 				g_hasBeenIdleOnce = true;
-				
+
 				CYC(6);		// NOP 6 cycles. The DEC instruction takes 6 cycles
 				regs.pc = _origPC + 3;
 				goto AFTERFETCH;
@@ -273,8 +275,15 @@ SWITCH_GAMEMAP:
 			}
 			case PC_END_DRAWING_TILES:
 			{
-				auto aM = AutoMap::GetInstance();
-				aM->ShouldCalcTileVisibility();
+				// We used to calculate tile visibility here all the time, but it's overkill.
+				// We only calc tile visibility now when player moves or visibility range changes (in AutoMap.cpp)
+				// or here if the player has it a key in PC_MAP_KEY_PRESS
+				if (bShouldRedrawTiles)
+				{
+					auto aM = AutoMap::GetInstance();
+					aM->ShouldCalcTileVisibility();
+					bShouldRedrawTiles = false;
+				}
 				break;
 			}
 			case PC_SCROLL_WINDOW:

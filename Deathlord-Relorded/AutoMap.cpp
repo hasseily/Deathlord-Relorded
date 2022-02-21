@@ -125,18 +125,17 @@ std::string AutoMap::GetCurrentMapUniqueName()
 
 void AutoMap::InitializeCurrentMapInfo()
 {
-	if (m_currentMapUniqueName == "")
+	m_currentMapUniqueName = GetCurrentMapUniqueName();
+	auto markers = g_nonVolatile.fogOfWarMarkers[m_currentMapUniqueName];
+	if (markers.size() < MAP_LENGTH)
 	{
-		m_currentMapUniqueName = GetCurrentMapUniqueName();
-		auto markers = g_nonVolatile.fogOfWarMarkers[m_currentMapUniqueName];
-		if (markers.size() < MAP_LENGTH)
-		{
-			// Incorrect size, it was probably just initialized to a 0 size
-			// reset it
-			markers.resize(MAP_LENGTH, 0);
-		}
-		m_FogOfWarTiles = markers;
+		// Incorrect size, it was probably just initialized to a 0 size
+		// reset it
+		markers.resize(MAP_LENGTH, 0);
 	}
+	m_FogOfWarTiles = markers;
+	m_avatarPosition.x = 0xFF;	// fake, will trigger update
+	m_avatarPosition.y = 0xFF;	// fake
 }
 
 void AutoMap::SetShowTransition(bool showTransition)
@@ -366,9 +365,9 @@ void AutoMap::ShouldCalcTileVisibility()
 
 void AutoMap::CalcTileVisibility(bool force)
 {
-	UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
-	UpdateLOSRadius();
-	if (force || m_shouldCalcTileVisibility)
+	bool _posUpdated = UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
+	bool _radiusUpdated = UpdateLOSRadius();
+	if (force || _posUpdated || _radiusUpdated || m_shouldCalcTileVisibility)
 		CalculateLOS();
 	m_shouldCalcTileVisibility = false;
 }
