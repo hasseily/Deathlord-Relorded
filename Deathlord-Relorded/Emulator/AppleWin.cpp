@@ -194,11 +194,7 @@ void ContinueExecution(void)
 	const DWORD uCyclesToExecute = (g_nAppMode == AppMode_e::MODE_RUNNING) ? uCyclesToExecuteWithFeedback
 		/* AppMode_e::MODE_STEPPING */ : 0;
 
-	bool bVideoUpdate = AppleWinDXVideo::GetInstance()->IsApple2VideoDisplayed();
-	if (bVideoUpdate)
-	{
-		bVideoUpdate = AppleWinDXVideo::GetInstance()->IsApple2VideoDisplayed();
-	}
+	const bool bVideoUpdate = (!g_isInGameMap || AppleWinDXVideo::GetInstance()->IsApple2VideoDisplayed());
 	const DWORD uActualCyclesExecuted = CpuExecute(uCyclesToExecute, bVideoUpdate);
 	g_dwCyclesThisFrame += uActualCyclesExecuted;
 
