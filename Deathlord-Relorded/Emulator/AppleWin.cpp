@@ -47,6 +47,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "NTSC.h"
 #include "../resource.h"
 #include "../Game.h"
+#include "../AppleWinDXVideo.h"
 
 // In main
 extern std::unique_ptr<Game>* GetGamePtr();
@@ -55,7 +56,8 @@ RemoteControlManager g_RemoteControlMgr;
 
 eApple2Type	g_Apple2Type = A2TYPE_APPLE2EENHANCED;
 
-bool      g_bFullSpeed = false;
+bool	g_bFullSpeed = false;
+Game*	m_gamePtr;
 
 //=================================================
 
@@ -192,7 +194,11 @@ void ContinueExecution(void)
 	const DWORD uCyclesToExecute = (g_nAppMode == AppMode_e::MODE_RUNNING) ? uCyclesToExecuteWithFeedback
 		/* AppMode_e::MODE_STEPPING */ : 0;
 
-	const bool bVideoUpdate = !g_bFullSpeed;
+	bool bVideoUpdate = AppleWinDXVideo::GetInstance()->IsApple2VideoDisplayed();
+	if (bVideoUpdate)
+	{
+		bVideoUpdate = AppleWinDXVideo::GetInstance()->IsApple2VideoDisplayed();
+	}
 	const DWORD uActualCyclesExecuted = CpuExecute(uCyclesToExecute, bVideoUpdate);
 	g_dwCyclesThisFrame += uActualCyclesExecuted;
 
@@ -414,6 +420,7 @@ void EmulatorSetSpeed(UINT8 speed)
 void EmulatorOneTimeInitialization(HWND window)
 {
 	g_hFrameWindow = window;
+	m_gamePtr = GetGamePtr()->get();
 	DSInit(g_hFrameWindow);
 	g_bSysClkOK = SysClk_InitTimer();
 	MB_Initialize();
@@ -514,7 +521,6 @@ bool DiskActivity()
 // DO INITIALIZATION THAT MUST BE REPEATED FOR A RESTART
 void EmulatorRepeatInitialization()
 {
-
 	if (!VideoInitialize())
 	{
 		MessageBox(g_hFrameWindow, L"Fatal Error: Can't initialize Apple video memory!.", L"Alert", MB_ICONASTERISK | MB_OK);
@@ -553,6 +559,5 @@ void EmulatorReboot()
 	SetActiveCpu(GetMainCpu());
 	EmulatorRepeatInitialization();
 	SoundCore_SetFade(FADE_NONE);
-	auto gamePtr = GetGamePtr();
-	(*gamePtr)->PrepareForReboot();
+	m_gamePtr->PrepareForReboot();
 }
