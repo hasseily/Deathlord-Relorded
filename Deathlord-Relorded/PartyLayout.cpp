@@ -201,26 +201,31 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 		_mPortraitOrigin.y + PARTY_PORTRAIT_HEIGHT - 4 - 16);
 	if (_mStatus & (UINT8)DeathlordCharStatus::STV)
 	{
+		fontDL->DrawString(spriteBatch, L"STV", _mStatusOrigin, Colors::Black, 0.f, Vector2(), 1.0f);
 		fontDLInverse->DrawString(spriteBatch, L"STV", _mStatusOrigin, Colors::Yellow, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 	if (_mStatus & (UINT8)DeathlordCharStatus::TOX)
 	{
+		fontDL->DrawString(spriteBatch, L"TOX", _mStatusOrigin, Colors::Black, 0.f, Vector2(), 1.0f);
 		fontDLInverse->DrawString(spriteBatch, L"TOX", _mStatusOrigin, Colors::Yellow, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 	if (_mStatus & (UINT8)DeathlordCharStatus::ILL)
 	{
+		fontDL->DrawString(spriteBatch, L"ILL", _mStatusOrigin, Colors::Black, 0.f, Vector2(), 1.0f);
 		fontDLInverse->DrawString(spriteBatch, L"ILL", _mStatusOrigin, Colors::Yellow, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 	if (_mStatus & (UINT8)DeathlordCharStatus::PAR)
 	{
+		fontDL->DrawString(spriteBatch, L"PAR", _mStatusOrigin, Colors::Black, 0.f, Vector2(), 1.0f);
 		fontDLInverse->DrawString(spriteBatch, L"PAR", _mStatusOrigin, Colors::Red, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 	if (_mStatus & (UINT8)DeathlordCharStatus::STN)
 	{
+		fontDL->DrawString(spriteBatch, L"STN", _mStatusOrigin, Colors::Black, 0.f, Vector2(), 1.0f);
 		fontDLInverse->DrawString(spriteBatch, L"STN", _mStatusOrigin, Colors::Red, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
@@ -228,11 +233,13 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	// and complain the game has a bug
 	if (_mStatus & (UINT8)DeathlordCharStatus::RIP)
 	{
+		fontDL->DrawString(spriteBatch, L"RIP", _mStatusOrigin, Colors::Black, 0.f, Vector2(), 1.0f);
 		fontDLInverse->DrawString(spriteBatch, L"RIP", _mStatusOrigin, Colors::Red, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 	if (_mStatus & (UINT8)DeathlordCharStatus::RIP2)
 	{
+		fontDL->DrawString(spriteBatch, L"RIP", _mStatusOrigin, Colors::Black, 0.f, Vector2(), 1.0f);
 		fontDLInverse->DrawString(spriteBatch, L"RIP", _mStatusOrigin, Colors::Red, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
