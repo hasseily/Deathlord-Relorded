@@ -50,6 +50,13 @@
 #define PC_ALL_CHARS_DEAD			0x880C		// "ALL PLYRS OUT". Everyone's dead, time to reload from a backup!
 #define PC_CHAR_INC_LEVELUP			0xA361		// Increments char (in X) levelup
 
+// Food and Gold
+#define PC_CHECK_MAX_FOOD_BUY		0xF417		// Does 2 food checks: BCS overflow at 0xF415, then CMP #$65 here, checks char's total food is less than 100
+#define PC_CHAR_INC_FOOD			0xF433		// STA (food+purchased food) into PARTY_FOOD_START for char in Y
+#define PC_POOL_GOLD_BEGIN			0x74D1		// Start (somewhat) of the pooling gold routine. A has who to pool to.
+#define PC_POOL_GOLD_END			0x7538		// End of the pooling gold routine
+#define PC_BATTLE_GIVE_GOLD_BEGIN	0x8EF5		// Beginning of area where the game assigns gold to current char (X)
+
 #define PC_MAP_KEY_PRESS			0x5893		// A key has been pressed when on the map, value is in A (could be movement, spell choice...)
 #define SP_MAP_KEY_PRESS_1			0xCB		// Last 2 bytes in stack pointer when waiting for keystroke in menu list only
 #define SP_MAP_KEY_PRESS_2			0x57		// Last 2 bytes in stack pointer when waiting for keystroke in menu list only

@@ -657,6 +657,186 @@ SWITCH_GAMEMAP:
 					return uExecutedCycles;
 				break;
 			}
+			case PC_CHECK_MAX_FOOD_BUY:
+			{
+				// In PC_CHAR_INC_FOOD we distribute the bought food
+				// Here we need to change the check to allow for the lesser of
+				// 255 food or (100 * DEATHLORD_PARTY_SIZE - totalFood)
+				// We can only allow for 1 byte of food, but it can't be more than
+				// whatever more food the party can carry
+				// 
+				// Note: The previous instruction is a BCS check on the overflow
+				// of adding the new food to the current food for the char.
+				// We can't do much about this unless we rewrite the whole routine,
+				// therefore the player can only buy as much as (0xFF - char's food)
+				// every time.
+				// The second check is a CMP on 100 which we'll change
+
+				int _totalFood = 0;
+				auto _foodPtr = MemGetMainPtr(PARTY_FOOD_START);
+				// Get all the party food and reset each char's rations to 0
+				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				{
+					_totalFood += _foodPtr[i];
+					_foodPtr[i] = 0;
+				}
+				// Give max rations to other members, and the rest to the leader
+				UINT8 _memb = 0;
+				UINT8 _membersFull = 0;
+				int _remainingFood = _totalFood;
+				UINT8 _f;
+				while (true)
+				{
+					if (_membersFull == (DEATHLORD_PARTY_SIZE - 1))	// the rest is full
+					{
+						_foodPtr[regs.y] = _remainingFood;
+						break;
+					}
+					while (true)
+					{
+						if (_remainingFood == 0)
+							_membersFull = DEATHLORD_PARTY_SIZE - 1;
+						if (_membersFull == (DEATHLORD_PARTY_SIZE - 1))
+							break;
+						++_memb;
+						_memb = _memb % DEATHLORD_PARTY_SIZE;
+						if (_memb == regs.y)
+							continue;
+						_f = _foodPtr[_memb];
+						if (_f < 100)
+						{
+							_foodPtr[_memb] = _f + 1;
+							--_remainingFood;
+							if (_f == 99)
+								++_membersFull;
+						}
+
+					}
+				}
+				// TODO: This is not working well. We need to hook into when the player is buying food
+				// before it asks "How Many?" and move as much food as possible away from the current char
+				// which will put enough space for the player to buy up to 100 food.
+
+				// Not relevant:
+				// UINT32 _allowedFood = MIN(254, (100 * (int)DEATHLORD_PARTY_SIZE) - _totalFood);
+				// Now set the CMP value to this
+				// MemGetMainPtr(PC_CHECK_MAX_FOOD_BUY)[1] = (UINT8)_allowedFood + 1;
+				break;
+			}
+			case PC_CHAR_INC_FOOD:
+			{
+				// Let's distribute the food to everyone if possible
+				auto _foodPtr = MemGetMainPtr(PARTY_FOOD_START);
+				_foodPtr[regs.y] = regs.a;	// Do the STA first.
+				int _totalFood = 0;		// then calc all the food and redistribute
+				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				{
+					_totalFood += _foodPtr[i];
+				}
+				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				{
+					_foodPtr[i] = _totalFood / DEATHLORD_PARTY_SIZE;
+				}
+				// remaining food goes to hungry fighters
+				UINT8 _remainingFood = _totalFood % DEATHLORD_PARTY_SIZE;
+				for (size_t i = 0; i < _remainingFood; i++)
+				{
+					_foodPtr[i] = _foodPtr[i] + 1;
+				}
+				CYC(5); // This STA (0x99) uses 5 cycles;
+				regs.pc = _origPC + 3;	// Jump to after the STA
+				break;
+			}
+			case PC_POOL_GOLD_BEGIN:
+			{
+				// Request to pool gold to char in regs.a
+				// We completely bypass the routine and handle it ourselves
+				// Max gold per person is 10,000
+				if (DEATHLORD_PARTY_SIZE == 1)		// no one to pool to or from
+					break;
+				auto _goldLoPtr = MemGetMainPtr(PARTY_GOLD_LOBYTE_START);
+				auto _goldHiPtr = MemGetMainPtr(PARTY_GOLD_HIBYTE_START);
+				int _totalGold = 0;
+				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				{
+					_totalGold = (UINT8)_goldLoPtr[i] + (UINT8)_goldHiPtr[i] << 8;
+				}
+				// Gold to the member we want to pool to
+				int _goldToChar = MIN(10000, _totalGold);
+				_goldLoPtr[regs.a] = static_cast<UINT8>(_goldToChar);
+				_goldHiPtr[regs.a] = static_cast<UINT8>(_goldToChar >> 8);
+				_totalGold -= _goldToChar;
+				// Gold to the other members
+				int _memberGold = _totalGold / (DEATHLORD_PARTY_SIZE - 1);
+				UINT8 _memberGoldLo = static_cast<UINT8>(_memberGold);
+				UINT8 _memberGoldHi = static_cast<UINT8>(_memberGold >> 8);
+				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				{
+					if (i == regs.a)
+						continue;
+					_goldLoPtr[i] = _memberGoldLo;
+					_goldHiPtr[i] = _memberGoldHi;
+				}
+				// deal with the remainder (not that it matters, it's at most 5 gold)
+				_totalGold -= _memberGold * (DEATHLORD_PARTY_SIZE - 1);
+				UINT8 _memb = 0;
+				while (_totalGold > 0)
+				{
+					++_memb;
+					_memb = _memb % DEATHLORD_PARTY_SIZE;	// shouldn't be necessary
+					if (_memb == regs.a)
+						continue;
+					if (_goldLoPtr[_memb] == UINT8_MAX)
+					{
+						_goldLoPtr[_memb] = 0;
+						_goldHiPtr[_memb] += 1;
+					}
+					else
+					{
+						_goldLoPtr[_memb] += 1;
+					}
+					--_totalGold;
+				}
+				// Skip to the RTS
+				regs.pc = PC_POOL_GOLD_END;
+				break;
+			}
+			case PC_BATTLE_GIVE_GOLD_BEGIN:
+			{
+				// Here we're going to take some gold as necessary
+				// from the current char at regs.x and give it to others
+				// and let the game give the battle gold to the current char
+				// to avoid wasting it if it goes over 10,000 gold;
+				auto _goldLoPtr = MemGetMainPtr(PARTY_GOLD_LOBYTE_START);
+				auto _goldHiPtr = MemGetMainPtr(PARTY_GOLD_HIBYTE_START);
+				int _battleGold = (UINT8)MemGetMainPtr(MEM_BATTLE_GOLD_LO)[0]
+					+ ((UINT8)MemGetMainPtr(MEM_BATTLE_GOLD_HI)[0] << 8);
+				int _currCharGold = (UINT8)_goldLoPtr[regs.x]
+					+ ((UINT8)_goldHiPtr[regs.x] << 8);
+				if ((_currCharGold + _battleGold) > 10000)
+				{
+					int _overage = _currCharGold + _battleGold - 10000;
+					UINT8 _memb = 0;
+					while (_overage > 0)
+					{
+						++_memb;
+						_memb = _memb % DEATHLORD_PARTY_SIZE;
+						if (_memb == regs.x)
+							continue;
+						if (_goldLoPtr[_memb] == UINT8_MAX)
+						{
+							_goldLoPtr[_memb] = 0;
+							_goldHiPtr[_memb] += 1;
+						}
+						else
+						{
+							_goldLoPtr[_memb] += 1;
+						}
+						--_overage;
+					}
+				}
+				break;
+			}
 			case PC_DEAD:
 				g_isDead = true;
 				break;
