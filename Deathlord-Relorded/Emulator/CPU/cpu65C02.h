@@ -802,13 +802,33 @@ SWITCH_GAMEMAP:
 					+ ((UINT8)_goldHiPtr[regs.x] << 8);
 				if ((_currCharGold + _battleGold) > 10000)
 				{
-					int _overage = _currCharGold + _battleGold - 10000;
+					// Calculate total gold apart from leader
+					// Then verify we have enough space for some of the battle gold
+					// And redistribute the max amount possible up the the battle gold amount
+					int _totalOtherGold = 0;
+					for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+					{
+						if (i == regs.x)
+							continue;
+						_totalOtherGold += (UINT8)_goldLoPtr[i] + ((UINT8)_goldHiPtr[i] << 8);
+					}
+					// how much do we need to free up from the leader?
+					int _overage = MAX(0, _currCharGold + _battleGold - 10000);
+					_overage = MIN(_overage, ((DEATHLORD_PARTY_SIZE - 1) * 10000) - _totalOtherGold);
+					// Remove the overage from the current char
+					_currCharGold -= _overage;
+					_goldHiPtr[regs.x] = static_cast<UINT8>(_currCharGold >> 8);
+					_goldLoPtr[regs.x] = static_cast<UINT8>(_currCharGold);
+					// Add it back to the rest of the members
 					UINT8 _memb = 0;
 					while (_overage > 0)
 					{
 						++_memb;
 						_memb = _memb % DEATHLORD_PARTY_SIZE;
 						if (_memb == regs.x)
+							continue;
+						// The max of 10000 is 0x2710 in hex.
+						if (_goldHiPtr[_memb] == 0x27 && _goldLoPtr[_memb] == 0x10)
 							continue;
 						if (_goldLoPtr[_memb] == UINT8_MAX)
 						{
