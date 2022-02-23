@@ -62,7 +62,7 @@ constexpr RECT RECT_SPRITE_CURSOR = { 0, 288, 32, 324 };
 
 void AutoMap::Initialize()
 {
-	bShowTransition = false;
+	bShowTransition = true;
 	m_avatarPosition = XMUINT2(0, 0);
 	m_currentMapRect = { 0,0,0,0 };
 	m_currentMapUniqueName = "";
@@ -159,6 +159,7 @@ void AutoMap::SetShowTransition(bool showTransition)
 	else
 	{
 		//OutputDebugString(L"       Ended transition!\n");
+		CalcTileVisibility(true);
 	}
 }
 
