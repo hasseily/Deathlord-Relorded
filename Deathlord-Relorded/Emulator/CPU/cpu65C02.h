@@ -657,81 +657,66 @@ SWITCH_GAMEMAP:
 					return uExecutedCycles;
 				break;
 			}
-			case PC_CHECK_MAX_FOOD_BUY:
+			case PC_BUY_FOOD:
 			{
-				// In PC_CHAR_INC_FOOD we distribute the bought food
-				// Here we need to change the check to allow for the lesser of
-				// 255 food or (100 * DEATHLORD_PARTY_SIZE - totalFood)
-				// We can only allow for 1 byte of food, but it can't be more than
-				// whatever more food the party can carry
-				// 
-				// Note: The previous instruction is a BCS check on the overflow
-				// of adding the new food to the current food for the char.
-				// We can't do much about this unless we rewrite the whole routine,
-				// therefore the player can only buy as much as (0xFF - char's food)
-				// every time.
-				// The second check is a CMP on 100 which we'll change
+				// In PC_CHAR_INC_FOOD we distribute the bought food.
+				// Here we hook into when the player is buying food
+				// right before it asks "How Many?" and move as much food 
+				// as possible away from the current char,  which will 
+				// put enough space for the player to buy up to 100 food,
+				// or whatever is left to max everyone.
 
-				int _totalFood = 0;
+				if (DEATHLORD_PARTY_SIZE == 1)		// no one to pool to or from
+					break;
 				auto _foodPtr = MemGetMainPtr(PARTY_FOOD_START);
-				// Get all the party food and reset each char's rations to 0
+				UINT8 _curChar = MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0];
+				int _totalFood = 0;
 				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
 				{
-					_totalFood += _foodPtr[i];
+					_totalFood += (UINT8)_foodPtr[i];
 					_foodPtr[i] = 0;
 				}
-				// Give max rations to other members, and the rest to the leader
-				UINT8 _memb = 0;
-				UINT8 _membersFull = 0;
-				int _remainingFood = _totalFood;
-				UINT8 _f;
-				while (true)
+
+				// Food to the member who's buying (if any)
+				if (_totalFood > (100 * (DEATHLORD_PARTY_SIZE - 1)))
 				{
-					if (_membersFull == (DEATHLORD_PARTY_SIZE - 1))	// the rest is full
-					{
-						_foodPtr[regs.y] = _remainingFood;
-						break;
-					}
-					while (true)
-					{
-						if (_remainingFood == 0)
-							_membersFull = DEATHLORD_PARTY_SIZE - 1;
-						if (_membersFull == (DEATHLORD_PARTY_SIZE - 1))
-							break;
-						++_memb;
-						_memb = _memb % DEATHLORD_PARTY_SIZE;
-						if (_memb == regs.y)
-							continue;
-						_f = _foodPtr[_memb];
-						if (_f < 100)
-						{
-							_foodPtr[_memb] = _f + 1;
-							--_remainingFood;
-							if (_f == 99)
-								++_membersFull;
-						}
-
-					}
+					_foodPtr[_curChar] = _totalFood - (100 * (DEATHLORD_PARTY_SIZE - 1));
+					_totalFood -= _foodPtr[_curChar];
 				}
-				// TODO: This is not working well. We need to hook into when the player is buying food
-				// before it asks "How Many?" and move as much food as possible away from the current char
-				// which will put enough space for the player to buy up to 100 food.
-
-				// Not relevant:
-				// UINT32 _allowedFood = MIN(254, (100 * (int)DEATHLORD_PARTY_SIZE) - _totalFood);
-				// Now set the CMP value to this
-				// MemGetMainPtr(PC_CHECK_MAX_FOOD_BUY)[1] = (UINT8)_allowedFood + 1;
+					
+				//Food for the rest of the boys AND girls
+				int _memberFood = _totalFood / (DEATHLORD_PARTY_SIZE - 1);
+				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				{
+					if (i == _curChar)
+						continue;
+					_foodPtr[i] = _memberFood;
+				}
+				// deal with the remainder
+				_totalFood -= _memberFood * (DEATHLORD_PARTY_SIZE - 1);
+				UINT8 _memb = 0;
+				while (_totalFood > 0)
+				{
+					++_memb;
+					_memb = _memb % DEATHLORD_PARTY_SIZE;	// shouldn't be necessary
+					if (_memb == _curChar)
+						continue;
+					_foodPtr[_memb] += 1;
+					--_totalFood;
+				}
 				break;
 			}
 			case PC_CHAR_INC_FOOD:
 			{
 				// Let's distribute the food to everyone if possible
+				// We're doing this after food purchase.
 				auto _foodPtr = MemGetMainPtr(PARTY_FOOD_START);
 				_foodPtr[regs.y] = regs.a;	// Do the STA first.
 				int _totalFood = 0;		// then calc all the food and redistribute
 				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
 				{
 					_totalFood += _foodPtr[i];
+					_foodPtr[i] = 0;
 				}
 				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
 				{
@@ -759,7 +744,9 @@ SWITCH_GAMEMAP:
 				int _totalGold = 0;
 				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
 				{
-					_totalGold = (UINT8)_goldLoPtr[i] + (UINT8)_goldHiPtr[i] << 8;
+					_totalGold += (UINT8)_goldLoPtr[i] + ((UINT8)_goldHiPtr[i] << 8);
+					_goldLoPtr[i] = 0;
+					_goldHiPtr[i] = 0;
 				}
 				// Gold to the member we want to pool to
 				int _goldToChar = MIN(10000, _totalGold);

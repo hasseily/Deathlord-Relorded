@@ -51,7 +51,7 @@
 #define PC_CHAR_INC_LEVELUP			0xA361		// Increments char (in X) levelup
 
 // Food and Gold
-#define PC_CHECK_MAX_FOOD_BUY		0xF417		// Does 2 food checks: BCS overflow at 0xF415, then CMP #$65 here, checks char's total food is less than 100
+#define PC_BUY_FOOD					0xF3F6		// Waits for you to specify how much food you want to buy, using PARTY_CURRENT_CHAR_POS
 #define PC_CHAR_INC_FOOD			0xF433		// STA (food+purchased food) into PARTY_FOOD_START for char in Y
 #define PC_POOL_GOLD_BEGIN			0x74D1		// Start (somewhat) of the pooling gold routine. A has who to pool to.
 #define PC_POOL_GOLD_END			0x7538		// End of the pooling gold routine
