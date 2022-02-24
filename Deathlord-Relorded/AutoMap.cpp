@@ -125,6 +125,8 @@ std::string AutoMap::GetCurrentMapUniqueName()
 
 void AutoMap::InitializeCurrentMapInfo()
 {
+	if (g_isInBattle)	// unique name is wrong in battle
+		return;
 	m_currentMapUniqueName = GetCurrentMapUniqueName();
 	auto markers = g_nonVolatile.fogOfWarMarkers[m_currentMapUniqueName];
 	if (markers.size() < MAP_LENGTH)
@@ -167,6 +169,8 @@ void AutoMap::SetShowTransition(bool showTransition)
 #pragma warning(disable : 26451)
 bool AutoMap::UpdateAvatarPositionOnAutoMap(UINT x, UINT y)
 {
+	if (g_isInBattle)
+		return false;
 	// Make sure we don't draw on the wrong map!
 	if (m_currentMapUniqueName != GetCurrentMapUniqueName())
 		InitializeCurrentMapInfo();
@@ -366,6 +370,8 @@ void AutoMap::ShouldCalcTileVisibility()
 
 void AutoMap::CalcTileVisibility(bool force)
 {
+	if (g_isInBattle)
+		return;
 	bool _posUpdated = UpdateAvatarPositionOnAutoMap(MemGetMainPtr(MAP_XPOS)[0], MemGetMainPtr(MAP_YPOS)[0]);
 	bool _radiusUpdated = UpdateLOSRadius();
 	if (force || _posUpdated || _radiusUpdated || m_shouldCalcTileVisibility)

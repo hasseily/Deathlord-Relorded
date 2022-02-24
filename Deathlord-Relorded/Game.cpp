@@ -338,11 +338,11 @@ void Game::Update(DX::StepTimer const& timer)
     }
 
     auto autoMap = AutoMap::GetInstance();
-    if (g_isInGameMap && (autoMap != NULL))
+    if (g_isInGameMap && (autoMap != NULL) && (!g_isInBattle))
     {
         autoMap->CalcTileVisibility();          // Won't trigger unless the game cpu65C02.h has requested it
+		m_minimap->Update(memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
     }
-    m_minimap->Update(memPtr[MAP_OVERLAND_X], memPtr[MAP_OVERLAND_Y]);
     m_partyLayout->Update(MemGetMainPtr(PARTY_CHAR_LEADER)[0]);
 
     PIXEndEvent();
