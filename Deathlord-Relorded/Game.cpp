@@ -512,7 +512,7 @@ void Game::Render()
 				r, nullptr, Colors::White, 0.f, XMFLOAT2());
 			// End drawing the game background
 
-#if 1
+#ifdef _DEBUG
 			char pcbuf[4000];
 			snprintf(pcbuf, sizeof(pcbuf), "PRERELEASE: %.2d FPS , %6.0f usec/frame - Time: %6.2f\n",
 				m_timer.GetFramesPerSecond(), 1000000.f / m_timer.GetFramesPerSecond(), m_timer.GetTotalSeconds());
