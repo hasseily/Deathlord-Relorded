@@ -109,6 +109,7 @@ class AutoMap	// Singleton
 public:
 	// Vector2 drawOrigin = Vector2();
 	void DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, DirectX::CommonStates* states, RECT* mapRect);
+	void Initialize();
 
 	void ClearMapArea();
 	void ForceRedrawMapArea();
@@ -164,7 +165,6 @@ private:
 		Initialize();
 	}
 
-	void Initialize();
 	bool UpdateAvatarPositionOnAutoMap(UINT x, UINT y);
 	void CalculateLOS();
 	void DrawLine(int x0, int y0, int x1, int y1);

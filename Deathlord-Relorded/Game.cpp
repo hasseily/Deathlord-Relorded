@@ -265,6 +265,8 @@ void Game::Update(DX::StepTimer const& timer)
 		{
 			m_gameLoadingOverlay->HideOverlay();
 			g_isInGameTransition = false;
+			auto autoMap = AutoMap::GetInstance();
+			autoMap->Initialize();
 			g_nAppMode = AppMode_e::MODE_RUNNING;
 		}
 		else
