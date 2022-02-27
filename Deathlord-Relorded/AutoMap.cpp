@@ -72,7 +72,7 @@ void AutoMap::Initialize()
 	m_FogOfWarTiles = std::vector<UINT8>(MAP_LENGTH, 0x00);								// states (seen, etc...)
 	m_LOSVisibilityTiles = std::vector<float>(MAP_LENGTH, 0.f);							// visibility through line of sight
 	m_bbufCurrentMapTiles = std::vector(bbCount, std::vector<UINT8>(MAP_LENGTH, 0x00));	// tile id
-	m_LOSRadius = 8;
+	m_LOSRadius = 0;
 }
 
 void AutoMap::ClearMapArea()
@@ -323,6 +323,11 @@ CONT:
 bool AutoMap::UpdateLOSRadius()
 {
 	UINT8 _oldRadius = m_LOSRadius;
+	if (g_isInGameTransition)
+	{
+		m_LOSRadius = 0;
+		return (_oldRadius != m_LOSRadius);
+	}
 	if (PlayerIsOverland())
 	{
 		// Use time-of day to determine LOS radius

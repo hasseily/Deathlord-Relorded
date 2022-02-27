@@ -98,6 +98,7 @@ void GameLoadingOverlay::Render(SimpleMath::Rectangle r)
 			// just kill the overlay, it shouldn't be here.
 			// Don't bother animating it
 			m_overlayState = OverlayState::Hidden;
+			g_isInGameTransition = true;
 		}
 		return;
 	}
