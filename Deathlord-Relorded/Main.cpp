@@ -495,8 +495,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_CHAR:			// Send to the applewin emulator
 		if (!shouldSendKeystrokesToAppleWin)
 			break;
-		// Only enable write on scenario disks when saving via 'q'
-		// This is disabled because it can corrupt save games due to autosave of town state
 		if (g_isInGameMap)
 		{
 			switch (wParam)
@@ -505,8 +503,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				//__fallthrough;
 			case 'Q':
 			{
-				// Enable read/write on the scenario disks
-				g_wantsToSave = true;
+				AutoMap* automap = AutoMap::GetInstance();
+				automap->SaveCurrentMapInfo();
 				break;
 			}
 			default:
