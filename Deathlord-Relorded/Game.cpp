@@ -166,6 +166,7 @@ void Game::PrepareForReboot()
 {
 	m_textOutput->ClearBillboard();
 	m_textOutput->ClearLog();
+	m_animSpriteManager->StopAllAnimations();
 	m_gameOverOverlay->Initialize();
 }
 

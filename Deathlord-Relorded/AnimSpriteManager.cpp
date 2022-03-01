@@ -86,3 +86,10 @@ void AnimSpriteManager::RenderAnimations(SpriteBatch* spriteBatch)
 	m_animationsRotating.erase(std::remove(m_animationsRotating.begin(), m_animationsRotating.end(), nullptr), 
 		m_animationsRotating.end());
 }
+
+void AnimSpriteManager::StopAllAnimations()
+{
+	m_animations.clear();
+	m_animationsRotating.clear();
+}
+

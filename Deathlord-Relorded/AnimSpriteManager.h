@@ -15,6 +15,7 @@ public:
 		int maxRotations, float rotationsPerSecond, Vector2 renderOrigin);
 
 	void RenderAnimations(SpriteBatch* spriteBatch);
+	void StopAllAnimations();
 
 	// public singleton code
 	static AnimSpriteManager* GetInstance(DX::DeviceResources* deviceResources, DirectX::DescriptorHeap* resourceDescriptors)
