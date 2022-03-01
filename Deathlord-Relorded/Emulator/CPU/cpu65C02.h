@@ -185,17 +185,36 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 SWITCH_GAMEMAP:
 			switch (_origPC)
 			{
-			case PC_CHANGE_FLOOR:
-				[[fallthrough]];
 			case PC_TRANSIT_OUT_DUNGEON:
 				[[fallthrough]];
 			case PC_TRANSIT_OUT_TOWN:
 				[[fallthrough]];
 			case PC_TRANSIT_OUT_OVERLAND:
+				[[fallthrough]];
+			case PC_CHANGE_FLOOR:
+				[[fallthrough]];
+			case PC_CHANGE_MAP_TYPE:
+				[[fallthrough]];
+			case PC_CLEAR_MAP:
+				[[fallthrough]];
+			case PC_CHANGE_OVERLAND_MAP:
 			{
 				// Starting transit between maps or floors
 				auto aM = AutoMap::GetInstance();
 				aM->SetShowTransition(true);
+				break;
+			}
+			case PC_MOVE_DUNGEON:
+				[[fallthrough]];
+			case PC_MOVE_OVERLAND:
+			{
+				// If the tiles we arrive at have teleports or other weird stuff on them,
+				// we should save map info as well before the player is gone from the level
+				if (regs.a > 0x4F)
+				{
+					auto aM = AutoMap::GetInstance();
+					aM->SaveCurrentMapInfo();
+				}
 				break;
 			}
 			case PC_MAP_KEY_PRESS:
@@ -1280,7 +1299,7 @@ SWITCH_GAMEMAP:
 
 			char _buf[300];
 			sprintf_s(_buf, 300, "%04X: %s  %02X%02X - %02X %02X %02X\n", _origPC, _opStr.c_str(),
-				MemGetRealMainPtr(_origPC + 1)[0], MemGetRealMainPtr(_origPC + 2)[0],
+				MemGetMainPtr(_origPC + 1)[0], MemGetMainPtr(_origPC + 2)[0],
 				regs.a, regs.x, regs.y);
 			OutputDebugStringA(_buf);
 		}

@@ -24,8 +24,12 @@
 
 // In-game
 #define PC_RNG						0x4AE0		// Random number generator
-#define PC_WAIT_FOR_KEYPRESS		0x540B		// Waits for a keypress
+#define PC_MOVE_OVERLAND			0xEFF3		// When player moves. Used to check if tile id in A is special. If so, we save the map data.
+#define PC_MOVE_DUNGEON				0xB0EB		// When player moves. Used to check if tile id in A is special. If so, we save the map data.
+#define PC_CLEAR_MAP				0x8A17		// Clears the map before a map change in dungeons
 #define PC_DECREMENT_TIMER			0x621F		// routine to decrement a timer before it makes the player "wait" and pass a turn
+#define PC_CHANGE_OVERLAND_MAP		0x82D9		// routine that changes the overland map regions
+#define PC_CHANGE_MAP_TYPE			0x8326		// routine that switches map type (overland/dungeon/town...)
 #define PC_TRANSIT_OUT_OVERLAND		0xE8F4		// routine that gets the player into a dungeon or town
 #define PC_TRANSIT_OUT_TOWN			0xEF0A		// routine that gets the player back in the overland from town.
 #define PC_TRANSIT_OUT_DUNGEON		0xB175		// routine that gets the player back in the overland from a dungeon.
