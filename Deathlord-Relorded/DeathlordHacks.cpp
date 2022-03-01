@@ -539,9 +539,8 @@ void DeathlordHacks::BackupScenarioImages()
 				return;
 			}
 		}
-		backupImageFullPath = backupsDirPath + L"\\" + imageName;
-		swprintf_s(formattedTime, 50, L"_%04d%02d%02d-%02d%02d%02d.%s", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, imageExtension.c_str());
-		backupImageFullPath.append(formattedTime);
+		swprintf_s(formattedTime, 50, L"%04d%02d%02d-%02d%02d%02d_", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+		backupImageFullPath = backupsDirPath + L"\\" + std::wstring(formattedTime) + imageName + L"." + imageExtension;
 		res = CopyFile(pathname.c_str(), backupImageFullPath.c_str(), false);
 		if (res == 0)
 		{
@@ -550,7 +549,7 @@ void DeathlordHacks::BackupScenarioImages()
 			return;
 		}
 	}
-	MessageBox(g_hFrameWindow, std::wstring(L"Successfully backed up scenario disks with postfix ").append(formattedTime).c_str(), L"Backup Successful", MB_ICONINFORMATION | MB_OK);
+	MessageBox(g_hFrameWindow, std::wstring(L"Successfully backed up scenario disks with prefix ").append(formattedTime).c_str(), L"Backup Successful", MB_ICONINFORMATION | MB_OK);
 }
 
 bool DeathlordHacks::RestoreScenarioImages()
