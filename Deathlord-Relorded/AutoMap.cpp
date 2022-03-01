@@ -781,7 +781,7 @@ ELEMENT_TILES_GENERAL:
 						if (avatarIsNextToThisTile && PartyLeaderIsOfRace(DeathlordRaces::DarkElf))
 							hasSeenHidden = true;
 						break;
-					case 0xCE:	// chute / teleporter
+					case 0xCE:	// ground with chute / teleporter
 						hasOverlay = true;
 						_tileSheetPos.y = 5;
 						if (avatarIsOnThisTile)
@@ -819,7 +819,7 @@ ELEMENT_TILES_GENERAL:
 						[[fallthrough]];
 					case 0x50:	// interesting dark tile
 						[[fallthrough]];
-					case 0x85:	// interesting trees/bushes. No idea what this is
+					case 0x85:	// interesting trees/bushes. No idea what this is. Probably a teleport
 						hasOverlay = true;
 						_tileSheetPos.y = 0;
 						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
