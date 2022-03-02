@@ -60,6 +60,9 @@ constexpr UINT FOODFORAGINGSTEPS = 32;	// Number of steps to forage for 1 food /
 
 constexpr RECT RECT_SPRITE_CURSOR = { 0, 288, 32, 324 };
 
+// Map's teleport tiles
+std::map<UINT16, bool>m_isTeleport;
+
 void AutoMap::Initialize()
 {
 	bShowTransition = true;
@@ -81,6 +84,7 @@ void AutoMap::ClearMapArea()
 		std::fill(m_bbufCurrentMapTiles[i].begin(), m_bbufCurrentMapTiles[i].end(), 0x00);
 	std::fill(m_FogOfWarTiles.begin(), m_FogOfWarTiles.end(), 0x00);
 	std::fill(m_LOSVisibilityTiles.begin(), m_LOSVisibilityTiles.end(), 0.f);
+	m_isTeleport.clear();
 }
 
 void AutoMap::ForceRedrawMapArea()
@@ -138,6 +142,16 @@ void AutoMap::InitializeCurrentMapInfo()
 	m_FogOfWarTiles = markers;
 	m_avatarPosition.x = 0xFF;	// fake, will trigger update
 	m_avatarPosition.y = 0xFF;	// fake
+	// fill the map of teleport tiles so we can easily check them
+	for (UINT8 i = 0; i < 8; i++)
+	{
+		UINT8 _tpfrx = MemGetMainPtr(MAP_TP_FR_X_START)[i];
+		if (_tpfrx != 0xFF)
+		{
+			UINT8 _tpfry = MemGetMainPtr(MAP_TP_FR_Y_START)[i];
+			m_isTeleport.insert(std::pair(_tpfrx + (_tpfry * MAP_WIDTH), true));
+		}
+	}
 }
 
 void AutoMap::SetShowTransition(bool showTransition)
@@ -840,6 +854,15 @@ ELEMENT_TILES_GENERAL:
 						break;
 					default:
 						break;
+					}
+					if (m_isTeleport.count(mapPos) > 0) // it's a teleport tile
+					{
+						hasOverlay = true;
+						_tileSheetPos.y = 5;
+						if (avatarIsOnThisTile)
+							hasSeenHidden = true;
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Illusionist))
+							hasSeenHidden = true;
 					}
 					if (hasOverlay && (hasSeenHidden || g_nonVolatile.showHidden))	// draw the overlay if it exists and was found or cheat enabled
 					{
