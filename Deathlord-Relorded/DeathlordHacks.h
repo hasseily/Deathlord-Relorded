@@ -23,6 +23,15 @@ constexpr UINT16 MAP_OVERLAND_X = 0xFC4B;				// X position of the overland subma
 constexpr UINT16 MAP_OVERLAND_Y = 0xFC4C;				// Y position of the overland submap
 constexpr UINT16 MAP_VISIBILITY_RADIUS = 0xFC05;		// Visibility radius in squares around the player
 constexpr UINT16 MAP_IS_HIDDEN = 0xFC25;				// 0 if visible, otherwise the party member number (1-BASED!) that succeeded in hiding
+// Map teleportation
+// Max of 8 teleports per map.
+// Each teleport is an index into the following arrays:
+constexpr UINT16 MAP_TP_FR_X_START = 0xA60;				// Teleport from, X value, start of array (length 8)
+constexpr UINT16 MAP_TP_FR_Y_START = 0xA68;				// Teleport from, Y value, start of array (length 8)
+constexpr UINT16 MAP_TP_TO_X_START = 0xA70;				// Teleport to, X value, start of array (length 8)
+constexpr UINT16 MAP_TP_TO_Y_START = 0xA78;				// Teleport to, Y value, start of array (length 8)
+constexpr UINT16 MAP_TP_TO_LEVEL_START = 0xA58;			// Teleport to which level? Start of array (length 8)
+
 
 // NOTE: A party size less than 6 is not supported currently
 constexpr UINT16 PARTY_PARTYSIZE = 0xFC20;				// Party size, 1-6
