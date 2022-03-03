@@ -61,7 +61,8 @@ constexpr UINT FOODFORAGINGSTEPS = 32;	// Number of steps to forage for 1 food /
 constexpr RECT RECT_SPRITE_CURSOR = { 0, 288, 32, 324 };
 
 // Map's teleport tiles
-std::map<UINT16, bool>m_isTeleport;
+std::map<UINT16, UINT8>m_isTeleportOut;
+std::map<UINT16, UINT8>m_isTeleportIn;
 
 void AutoMap::Initialize()
 {
@@ -84,7 +85,8 @@ void AutoMap::ClearMapArea()
 		std::fill(m_bbufCurrentMapTiles[i].begin(), m_bbufCurrentMapTiles[i].end(), 0x00);
 	std::fill(m_FogOfWarTiles.begin(), m_FogOfWarTiles.end(), 0x00);
 	std::fill(m_LOSVisibilityTiles.begin(), m_LOSVisibilityTiles.end(), 0.f);
-	m_isTeleport.clear();
+	m_isTeleportOut.clear();
+	m_isTeleportIn.clear();
 }
 
 void AutoMap::ForceRedrawMapArea()
@@ -149,7 +151,11 @@ void AutoMap::InitializeCurrentMapInfo()
 		if (_tpfrx != 0xFF)
 		{
 			UINT8 _tpfry = MemGetMainPtr(MAP_TP_FR_Y_START)[i];
-			m_isTeleport.insert(std::pair(_tpfrx + (_tpfry * MAP_WIDTH), true));
+			m_isTeleportOut.insert(std::pair(_tpfrx + (_tpfry * MAP_WIDTH), MemGetMainPtr(MAP_TP_TO_LEVEL_START)[i]));
+			// The "to" tiles are off by 1 on x and y
+			UINT8 _tptox = MemGetMainPtr(MAP_TP_TO_X_START)[i];
+			UINT8 _tptoy = MemGetMainPtr(MAP_TP_TO_Y_START)[i];
+			m_isTeleportIn.insert(std::pair(_tptox + (_tptoy * MAP_WIDTH), MemGetMainPtr(MAP_TP_TO_LEVEL_START)[i]));
 		}
 	}
 }
@@ -595,6 +601,7 @@ void AutoMap::DrawAutoMap(std::shared_ptr<DirectX::SpriteBatch>& spriteBatch, Di
 
 			UINT8 curr_tileId = mapMemPtr[mapPos] % 0x50;	// Right now don't consider the special bits
 			bool shouldDraw = true;
+			float _rotation = 0.f;
 			if (_tileVisibilityLevel > 0)
 			{
 				// Here decide which tiles to show!
@@ -855,7 +862,7 @@ ELEMENT_TILES_GENERAL:
 					default:
 						break;
 					}
-					if (m_isTeleport.count(mapPos) > 0) // it's a teleport tile
+					if (m_isTeleportOut.count(mapPos) > 0) // it's a teleport out tile
 					{
 						hasOverlay = true;
 						_tileSheetPos.y = 5;
@@ -863,6 +870,14 @@ ELEMENT_TILES_GENERAL:
 							hasSeenHidden = true;
 						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Illusionist))
 							hasSeenHidden = true;
+					}
+					if (m_isTeleportIn.count(mapPos) > 0)
+					{
+						hasOverlay = true;
+						_tileSheetPos.y = 5;
+						hasSeenHidden = true;
+						_rotation = 3.14592f;
+						spriteOrigin = { FBTW, FBTH };
 					}
 					if (hasOverlay && (hasSeenHidden || g_nonVolatile.showHidden))	// draw the overlay if it exists and was found or cheat enabled
 					{
@@ -874,14 +889,63 @@ ELEMENT_TILES_GENERAL:
 							((UINT16)(_tileSheetPos.y + 1)) * FBTH
 						};
 						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapHiddenSpriteSheet), GetTextureSize(m_autoMapSpriteSheet.Get()),
-							tilePosInMap, &_tileSheetRect, Colors::White, 0.f, spriteOrigin, mapScale);
+							tilePosInMap, &_tileSheetRect, Colors::White, _rotation, spriteOrigin, mapScale);
 
+						//////////////////////////////////////////////////////////////////////////
+						// Special case for the teleport text
+						//////////////////////////////////////////////////////////////////////////
+						if (m_isTeleportOut.count(mapPos) > 0)
+						{
+							// Write the teleport value
+							// Find first the position of the teleport in the list. Then display it as a letter.
+							std::string _tileTeleportVal;
+							for (UINT8 i = 0; i < 8; i++)
+							{
+								if (MemGetMainPtr(MAP_TP_FR_X_START)[i] == posX)
+								{
+									if (MemGetMainPtr(MAP_TP_FR_Y_START)[i] == posY)
+									{
+										_tileTeleportVal.append(1, 'A' + i);
+										_tileTeleportVal.append(" ");
+									}
+								}
+							}
+							(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileTeleportVal.c_str(),
+								tilePosInMap + XMFLOAT2(.5f, .5f), Colors::Black, 0.f, { 0,0 }, .5f);
+							(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileTeleportVal.c_str(),
+								tilePosInMap, Colors::Yellow, 0.f, { 0,0 }, .5f);
+						}
+						// show the teleport "in" tiles only if "show hidden"
+						if (m_isTeleportIn.count(mapPos) > 0)
+						{
+							// Write the teleport value
+							// Find first the position of the teleport in the list. Then display it as a letter.
+							std::string _tileTeleportVal;
+							for (UINT8 i = 0; i < 8; i++)
+							{
+								if (MemGetMainPtr(MAP_TP_TO_X_START)[i] == posX)
+								{
+									if (MemGetMainPtr(MAP_TP_TO_Y_START)[i] == posY)
+									{
+										_tileTeleportVal.append(1, 'a' + i);
+										_tileTeleportVal.append(" ");
+									}
+								}
+							}
+							(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileTeleportVal.c_str(),
+								tilePosInMap + XMFLOAT2(.5f, .5f), Colors::Black, 0.f, { 0,0 }, .5f);
+							(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileTeleportVal.c_str(),
+								tilePosInMap, Colors::Yellow, 0.f, { 0,0 }, .5f);
+						}
+						//////////////////////////////////////////////////////////////////////////
+						// End teleport
+						//////////////////////////////////////////////////////////////////////////
+						
 						// Move the visibility bit to the hidden position, and OR it with the value in the vector.
 						// If the user ever sees the hidden info, it stays "seen"
 						if (hasSeenHidden)
 							m_FogOfWarTiles[mapPos] |= (1 << (UINT8)FogOfWarMarkers::Hidden);
 					}
-
 #ifdef _DEBUGXXX
 					char _tileHexVal[5];
 					sprintf_s(_tileHexVal, 4, "%02x", mapMemPtr[mapPos]);
