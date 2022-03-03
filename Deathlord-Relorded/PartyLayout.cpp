@@ -371,8 +371,12 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 				fontDLInverse->DrawString(spriteBatch, L"IN HANDS",
 					{ _mInvOrigin.x + 120, _mInvOrigin.y }, Colors::Yellow, 0.f, Vector2(), _fScale);
 			else if (_item.equipped)	// equipped
-				fontDLInverse->DrawString(spriteBatch, L"EQUIPPED",
-					{ _mInvOrigin.x + 120, _mInvOrigin.y }, Colors::Green, 0.f, Vector2(), _fScale);
+				if ((int)_item.item->slot < 2)
+					fontDLInverse->DrawString(spriteBatch, L"SHEATHED",
+						{ _mInvOrigin.x + 120, _mInvOrigin.y }, Colors::Green, 0.f, Vector2(), _fScale);
+				else
+					fontDLInverse->DrawString(spriteBatch, L"EQUIPPED",
+						{ _mInvOrigin.x + 120, _mInvOrigin.y }, Colors::Green, 0.f, Vector2(), _fScale);
 			else // not equipped
 				fontDLInverse->DrawString(spriteBatch, L"UNUSABLE",
 					{ _mInvOrigin.x + 120, _mInvOrigin.y }, VColorText, 0.f, Vector2(), _fScale);
