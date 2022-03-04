@@ -906,7 +906,6 @@ ELEMENT_TILES_GENERAL:
 									if (MemGetMainPtr(MAP_TP_FR_Y_START)[i] == posY)
 									{
 										_tileTeleportVal.append(1, 'A' + i);
-										_tileTeleportVal.append(" ");
 									}
 								}
 							}
@@ -928,7 +927,6 @@ ELEMENT_TILES_GENERAL:
 									if (MemGetMainPtr(MAP_TP_TO_Y_START)[i] == posY)
 									{
 										_tileTeleportVal.append(1, 'a' + i);
-										_tileTeleportVal.append(" ");
 									}
 								}
 							}
