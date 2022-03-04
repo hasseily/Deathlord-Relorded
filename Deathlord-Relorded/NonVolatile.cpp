@@ -118,6 +118,8 @@ int NonVolatile::SaveToDisk()
 
 int NonVolatile::LoadFromDisk()
 {
+	bool shouldSaveAfterLoad = false;	// If the save game folder doesn't exist, we'll save afterwards
+
 	// Determine saved games folder
 	std::wstring savedGamesPath;
 	PWSTR path = NULL;
@@ -135,6 +137,7 @@ int NonVolatile::LoadFromDisk()
 		{
 			// The saved games dir didn't exist, load from default game dir
 			savedGamesPath = L"";
+			shouldSaveAfterLoad = true;
 		}
 	}
 
@@ -179,5 +182,7 @@ int NonVolatile::LoadFromDisk()
 	// overland sectors seen
 	sectorsSeen = nvmarkers_json["sectorsSeen"].get<std::vector<UINT8>>();
 
+	if (shouldSaveAfterLoad)
+		SaveToDisk();
 	return 0;
 }
