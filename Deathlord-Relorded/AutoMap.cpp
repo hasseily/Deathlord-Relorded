@@ -933,12 +933,12 @@ ELEMENT_TILES_GENERAL:
 								}
 							}
 							(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileTeleportVal.c_str(),
-								tilePosInMap + XMFLOAT2(.5f, .5f), Colors::Black, 0.f, { 0,0 }, .5f);
+								tilePosInMap + XMFLOAT2(.5f, .5f), Colors::Black, 0.f, { 0, - FBTH / 2 }, .5f);
 							(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileTeleportVal.c_str(),
-								tilePosInMap, Colors::Yellow, 0.f, { 0,0 }, .5f);
+								tilePosInMap, Colors::Yellow, 0.f, { 0, - FBTH / 2 }, .5f);
 						}
 						//////////////////////////////////////////////////////////////////////////
-						// End teleport
+						// End teleport text
 						//////////////////////////////////////////////////////////////////////////
 						
 						// Move the visibility bit to the hidden position, and OR it with the value in the vector.
