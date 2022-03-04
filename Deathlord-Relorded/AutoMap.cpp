@@ -862,23 +862,6 @@ ELEMENT_TILES_GENERAL:
 					default:
 						break;
 					}
-					if (m_isTeleportOut.count(mapPos) > 0) // it's a teleport out tile
-					{
-						hasOverlay = true;
-						_tileSheetPos.y = 5;
-						if (avatarIsOnThisTile)
-							hasSeenHidden = true;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Illusionist))
-							hasSeenHidden = true;
-					}
-					if (m_isTeleportIn.count(mapPos) > 0)
-					{
-						hasOverlay = true;
-						_tileSheetPos.y = 5;
-						hasSeenHidden = true;
-						_rotation = 3.14592f;
-						spriteOrigin = { FBTW, FBTH };
-					}
 					if (hasOverlay && (hasSeenHidden || g_nonVolatile.showHidden))	// draw the overlay if it exists and was found or cheat enabled
 					{
 						_tileSheetRect =
@@ -890,12 +873,35 @@ ELEMENT_TILES_GENERAL:
 						};
 						spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapHiddenSpriteSheet), GetTextureSize(m_autoMapSpriteSheet.Get()),
 							tilePosInMap, &_tileSheetRect, Colors::White, _rotation, spriteOrigin, mapScale);
+					}
 
-						//////////////////////////////////////////////////////////////////////////
-						// Special case for the teleport text
-						//////////////////////////////////////////////////////////////////////////
-						if (m_isTeleportOut.count(mapPos) > 0)
+					//////////////////////////////////////////////////////////////////////////
+					// Special case for the teleports. There can be teleports in & out
+					// on top of any type of tile.
+					//////////////////////////////////////////////////////////////////////////
+
+					//////////////////////////////////////////////////////////////////////////
+					// Teleport out
+
+					if (m_isTeleportOut.count(mapPos) > 0)
+					{
+						hasSeenHidden = false;
+						if (avatarIsOnThisTile)
+							hasSeenHidden = true;
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Illusionist))
+							hasSeenHidden = true;
+						if (hasSeenHidden || g_nonVolatile.showHidden)
 						{
+							_tileSheetPos.y = 5;
+							_tileSheetRect =
+							{
+								((UINT16)_tileSheetPos.x) * FBTW,
+								((UINT16)_tileSheetPos.y) * FBTH,
+								((UINT16)(_tileSheetPos.x + 1)) * FBTW,
+								((UINT16)(_tileSheetPos.y + 1)) * FBTH
+							};
+							spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapHiddenSpriteSheet), GetTextureSize(m_autoMapSpriteSheet.Get()),
+								tilePosInMap, &_tileSheetRect, Colors::White, _rotation, spriteOrigin, mapScale);
 							// Write the teleport value
 							// Find first the position of the teleport in the list. Then display it as a letter.
 							std::string _tileTeleportVal;
@@ -914,9 +920,30 @@ ELEMENT_TILES_GENERAL:
 							(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileTeleportVal.c_str(),
 								tilePosInMap, Colors::Yellow, 0.f, { 0,0 }, .5f);
 						}
-						// show the teleport "in" tiles only if "show hidden"
-						if (m_isTeleportIn.count(mapPos) > 0)
+					}
+
+					//////////////////////////////////////////////////////////////////////////
+					// Teleport in
+
+					if (m_isTeleportIn.count(mapPos) > 0)
+					{
+						hasSeenHidden = false;
+						if (avatarIsOnThisTile)
+							hasSeenHidden = true;
+						if (hasSeenHidden || g_nonVolatile.showHidden)
 						{
+							_rotation = 3.14592f;
+							spriteOrigin = { FBTW, FBTH };
+							_tileSheetPos.y = 5;
+							_tileSheetRect =
+							{
+								((UINT16)_tileSheetPos.x) * FBTW,
+								((UINT16)_tileSheetPos.y) * FBTH,
+								((UINT16)(_tileSheetPos.x + 1)) * FBTW,
+								((UINT16)(_tileSheetPos.y + 1)) * FBTH
+							};
+							spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapHiddenSpriteSheet), GetTextureSize(m_autoMapSpriteSheet.Get()),
+								tilePosInMap, &_tileSheetRect, Colors::White, _rotation, spriteOrigin, mapScale);
 							// Write the teleport value
 							// Find first the position of the teleport in the list. Then display it as a letter.
 							std::string _tileTeleportVal;
@@ -931,19 +958,20 @@ ELEMENT_TILES_GENERAL:
 								}
 							}
 							(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileTeleportVal.c_str(),
-								tilePosInMap + XMFLOAT2(.5f, .5f), Colors::Black, 0.f, { 0, - FBTH / 2 }, .5f);
+								tilePosInMap + XMFLOAT2(.5f, .5f), Colors::Black, 0.f, { 0, -FBTH / 2 }, .5f);
 							(*gamePtr)->GetSpriteFontAtIndex(FontDescriptors::FontA2Regular)->DrawString(spriteBatch.get(), _tileTeleportVal.c_str(),
-								tilePosInMap, Colors::Yellow, 0.f, { 0, - FBTH / 2 }, .5f);
+								tilePosInMap, Colors::Yellow, 0.f, { 0, -FBTH / 2 }, .5f);
 						}
-						//////////////////////////////////////////////////////////////////////////
-						// End teleport text
-						//////////////////////////////////////////////////////////////////////////
-						
-						// Move the visibility bit to the hidden position, and OR it with the value in the vector.
-						// If the user ever sees the hidden info, it stays "seen"
-						if (hasSeenHidden)
-							m_FogOfWarTiles[mapPos] |= (1 << (UINT8)FogOfWarMarkers::Hidden);
 					}
+					//////////////////////////////////////////////////////////////////////////
+					// End teleport
+					//////////////////////////////////////////////////////////////////////////
+					
+					// Move the visibility bit to the hidden position, and OR it with the value in the vector.
+					// If the user ever sees the hidden info, it stays "seen"
+					if (hasOverlay && hasSeenHidden)
+						m_FogOfWarTiles[mapPos] |= (1 << (UINT8)FogOfWarMarkers::Hidden);
+
 #ifdef _DEBUGXXX
 					char _tileHexVal[5];
 					sprintf_s(_tileHexVal, 4, "%02x", mapMemPtr[mapPos]);
