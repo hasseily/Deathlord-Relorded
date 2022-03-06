@@ -24,6 +24,7 @@
 // For WinPixGpuCapture
 #include <filesystem>
 #include <shlobj.h>
+#include <shellapi.h>
 
 using namespace DirectX;
 
@@ -141,6 +142,10 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			EndDialog(hDlg, LOWORD(wParam));
 			return (INT_PTR)TRUE;
+		}
+		if (LOWORD(wParam) == IDC_BUTTON_DOWNLOADDOCS)
+		{
+			ShellExecute(NULL, L"open", L"https://rikkles.itch.io/deathlord-relorded", NULL, NULL, SW_SHOWNORMAL);
 		}
 		break;
 	}

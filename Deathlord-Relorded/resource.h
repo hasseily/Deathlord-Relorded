@@ -39,6 +39,7 @@
 #define IDC_BUTTON_SPRITESAVE           1008
 #define IDC_EDIT_SPRITEMEM              1009
 #define IDC_EDIT_SPRITECT               1010
+#define IDC_BUTTON_DOWNLOADDOCS         1011
 #define ID_EMULATOR_PAUSE               32772
 #define ID_EMULATOR_RESET               32773
 #define ID_EMULATOR_SHUTDOWN            32774
@@ -116,7 +117,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        152
 #define _APS_NEXT_COMMAND_VALUE         32860
-#define _APS_NEXT_CONTROL_VALUE         1009
+#define _APS_NEXT_CONTROL_VALUE         1010
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif
