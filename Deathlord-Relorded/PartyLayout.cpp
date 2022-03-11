@@ -229,18 +229,16 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 		fontDLInverse->DrawString(spriteBatch, L"STN", _mStatusOrigin, Colors::Red, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
-	// the 2 RIP should be combined but it'd be fun to have someone get those 2 statuses (if possible)
-	// and complain the game has a bug
 	if (_mStatus & (UINT8)DeathlordCharStatus::RIP)
 	{
 		fontDL->DrawString(spriteBatch, L"RIP", _mStatusOrigin, Colors::Black, 0.f, Vector2(), 1.0f);
 		fontDLInverse->DrawString(spriteBatch, L"RIP", _mStatusOrigin, Colors::Red, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
-	if (_mStatus & (UINT8)DeathlordCharStatus::RIP2)
+	if (_mStatus & (UINT8)DeathlordCharStatus::ASH)
 	{
-		fontDL->DrawString(spriteBatch, L"RIP", _mStatusOrigin, Colors::Black, 0.f, Vector2(), 1.0f);
-		fontDLInverse->DrawString(spriteBatch, L"RIP", _mStatusOrigin, Colors::Red, 0.f, Vector2(), 1.0f);
+		fontDL->DrawString(spriteBatch, L"ASHES", _mStatusOrigin - Vector2(28,0), Colors::Black, 0.f, Vector2(), 1.0f);
+		fontDLInverse->DrawString(spriteBatch, L"ASHES", _mStatusOrigin - Vector2(28,0), Colors::DarkRed, 0.f, Vector2(), 1.0f);
 		_mStatusOrigin.y -= 17;
 	}
 

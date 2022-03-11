@@ -238,7 +238,7 @@ enum class DeathlordCharStatus
 	PAR = 0x10,		// paralyzed
 	STN = 0x20,		// stone
 	RIP = 0x40,		// 6 feet under
-	RIP2 = 0x80		// 12 feet under
+	ASH = 0x80		// 12 feet under
 };
 
 static bool PlayerIsOverland() { return MemGetMainPtr(MAP_IS_OVERLAND)[0] == 0x80; };
