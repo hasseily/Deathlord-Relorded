@@ -50,6 +50,7 @@ enum class StartMenuState
 extern StartMenuState g_startMenuState;       // State of the emulation during the start menu phase
 extern int g_rerollCount;           // Number of rerolls in char attributes creation
 extern bool g_isInGameMap;          // is the player in-game?
+extern bool g_isInEndCredits;       // did the player win the game?
 extern bool g_hasBeenIdleOnce;      // This becomes true once the game has once hit the idle loop
 extern bool g_isInBattle;           // is the player in the battle module?
 extern bool g_isDead;               // party is dead.

@@ -541,6 +541,7 @@ void EmulatorReboot()
 	g_nAppMode = AppMode_e::MODE_RUNNING;
 	g_startMenuState = StartMenuState::Booting;
 	g_isInGameMap = false;
+	g_isInEndCredits = false;
 	g_isInGameTransition = false;
 	g_hasBeenIdleOnce = false;
 	g_isInBattle = false;

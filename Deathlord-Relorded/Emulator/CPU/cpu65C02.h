@@ -866,6 +866,9 @@ SWITCH_GAMEMAP:
 			case PC_DEAD:
 				g_isDead = true;
 				break;
+			case PC_GIVE_ORB_TO_EMPEROR:
+				g_isInEndCredits = true;
+				break;
 			default:
 				break;
 			}	// switch

@@ -75,6 +75,7 @@ UINT64	g_debug_video_data = 0;
 NonVolatile g_nonVolatile;
 
 bool g_isInGameMap = false;
+bool g_isInEndCredits = false;
 StartMenuState g_startMenuState = StartMenuState::Booting;
 int g_rerollCount = 0;  // Number of rerolls in char attributes creation
 bool g_hasBeenIdleOnce = false;
@@ -274,6 +275,7 @@ void Game::Update(DX::StepTimer const& timer)
 		{
 			m_gameLoadingOverlay->ShowOverlay();
 			m_gameLoadingOverlay->Update();
+			m_a2Video->HideApple2Video();
 			return;
 		}
     }
@@ -308,6 +310,9 @@ void Game::Update(DX::StepTimer const& timer)
 
         if (kbTracker.pressed.F11)
             m_a2Video->ToggleApple2Video();
+
+		if (g_isInEndCredits)
+			m_a2Video->ShowApple2Video();	// Force showing on end credits
 	}
 #ifdef _DEBUGXXX
     // Poor man's 6502 instructions history

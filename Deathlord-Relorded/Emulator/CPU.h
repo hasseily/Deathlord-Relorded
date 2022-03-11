@@ -124,6 +124,8 @@
 
 #define PC_DEAD						0x897E		// Everyone dead. JMP that infinite loops on itself.
 
+#define PC_GIVE_ORB_TO_EMPEROR		0x9825		// Removes orb from inventory to give to the emperor, ending the game. Force visualization of the original game UI
+
 /* the JSRs right after 0xA37F are:
 0xA382: JSR 0x51EB	Redraws center right area
 0xA385: JSR 0x5162	Clears enemy sprite from map
