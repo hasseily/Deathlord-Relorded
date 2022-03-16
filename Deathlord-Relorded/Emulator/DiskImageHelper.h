@@ -48,8 +48,8 @@ struct ImageInfo
 class CImageBase
 {
 public:
-	CImageBase(void) : m_uNumTracksInImage(0), m_uVolumeNumber(DEFAULT_VOLUME_NUMBER) {}
-	virtual ~CImageBase(void) {}
+	CImageBase(void);
+	virtual ~CImageBase(void);
 
 	virtual bool Boot(ImageInfo* pImageInfo) { return false; }
 	virtual eDetectResult Detect(const LPBYTE pImage, const DWORD dwImageSize, const TCHAR* pszExt) = 0;
@@ -92,13 +92,13 @@ protected:
 	void SkewTrack (const int nTrack, const int nNumNibbles, const LPBYTE pTrackImageBuffer);
 
 public:
-	static LPBYTE ms_pWorkBuffer;
 	UINT m_uNumTracksInImage;	// Init'd by CDiskImageHelper.Detect()/GetImageForCreation() & possibly updated by IsValidImageSize()
 
 protected:
 	static BYTE ms_DiskByte[0x40];
 	static BYTE ms_SectorNumber[NUM_SECTOR_ORDERS][NUM_SECTORS];
 	BYTE m_uVolumeNumber;
+	LPBYTE m_pWorkBuffer;
 };
 
 //-------------------------------------
