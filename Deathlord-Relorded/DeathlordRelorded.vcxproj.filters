@@ -449,6 +449,9 @@
     <None Include="Shaders\SpriteShader.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include=".itch.toml">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc">
