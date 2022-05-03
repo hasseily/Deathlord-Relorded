@@ -12,7 +12,7 @@ cbuffer Parameters : register(b0)
 void main(
     inout float4 color : COLOR0,
     inout float2 texCoord : TEXCOORD0,
-    inout float4 position : SV_Position) : SV_Position
+    inout float4 position : SV_Position)
 {
     position = mul(position, MatrixTransform);
 }

@@ -28,7 +28,8 @@ static nlohmann::json nv_json = R"(
 	"video":			  0,
     "volumeSpeaker":	  2,
 	"useGameLink":        false,
-	"logCombat":		  false
+	"logCombat":		  false,
+	"noEffects":		  false
   }
 )"_json;
 
@@ -102,6 +103,7 @@ int NonVolatile::SaveToDisk()
 	nv_json["volumeSpeaker"]		= volumeSpeaker;
 	nv_json["useGameLink"]			= useGameLink;
 	nv_json["logCombat"]			= logCombat;
+	nv_json["noEffects"]			= noEffects;
 	std::ofstream out(savedGamesPath + configfilename);
 	out << std::setw(4) << nv_json << std::endl;
 	out.close();
@@ -176,6 +178,7 @@ int NonVolatile::LoadFromDisk()
 	volumeSpeaker = nv_json["volumeSpeaker"].get<int>();
 	useGameLink = nv_json["useGameLink"].get<bool>();
 	logCombat = nv_json["logCombat"].get<bool>();
+	noEffects = nv_json["noEffects"].get<bool>();
 
 	// markers
 	fogOfWarMarkers = nvmarkers_json["fogOfWarMarkers"].get<std::map<std::string, std::vector<UINT8>>>();

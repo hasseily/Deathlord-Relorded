@@ -28,6 +28,7 @@ public:
 	int volumeSpeaker = 1;
 	bool useGameLink = false;
 	bool logCombat = false;
+	bool noEffects = false;
 	AutoMapQuadrant mapQuadrant = AutoMapQuadrant::FollowPlayer;	// Not saved, always reverts to All upon restart
 
 	// Independent file containing map data:

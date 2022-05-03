@@ -617,6 +617,8 @@ void Game::PostProcessMap(ID3D12GraphicsCommandList* commandList)
 		// If _mCurrentChar == 0xFF it could be after casting a spell in battle
 		if (_mCurrentChar >= DEATHLORD_PARTY_SIZE)
 			goto NOPOSTPROCESSING;
+		if (g_nonVolatile.noEffects)
+			goto NOPOSTPROCESSING;
 
 		UINT8 _mStatus = MemGetMainPtr(PARTY_STATUS_START)[_mCurrentChar];
 		if (_mStatus & (UINT8)DeathlordCharStatus::ILL)
@@ -630,18 +632,18 @@ void Game::PostProcessMap(ID3D12GraphicsCommandList* commandList)
 		else
 		{	// do nothing
 NOPOSTPROCESSING:
-			m_postProcessCopy->SetSourceTexture(
-				m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture2),
-				m_offscreenTexture2->GetResource());
-			m_postProcessCopy->Process(commandList);
+//			m_postProcessCopy->SetSourceTexture(
+//				m_resourceDescriptors->GetGpuHandle((size_t)TextureDescriptors::OffscreenTexture2),
+//				m_offscreenTexture2->GetResource());
+//			m_postProcessCopy->Process(commandList);
 			// another way to do the above (no speed difference):
-//			auto offscreenTarget = m_offscreenTexture2->GetResource();
-//			auto renderTarget = m_offscreenTexture1->GetResource();
-//			m_offscreenTexture2->TransitionTo(commandList, D3D12_RESOURCE_STATE_COPY_SOURCE);
-//			m_offscreenTexture1->TransitionTo(commandList, D3D12_RESOURCE_STATE_COPY_DEST);
-//			commandList->CopyResource(renderTarget, offscreenTarget);
-//			m_offscreenTexture2->TransitionTo(commandList, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-//			m_offscreenTexture1->TransitionTo(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET);
+			auto offscreenTarget = m_offscreenTexture2->GetResource();
+			auto renderTarget = m_offscreenTexture1->GetResource();
+			m_offscreenTexture2->TransitionTo(commandList, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			m_offscreenTexture1->TransitionTo(commandList, D3D12_RESOURCE_STATE_COPY_DEST);
+			commandList->CopyResource(renderTarget, offscreenTarget);
+			m_offscreenTexture2->TransitionTo(commandList, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			m_offscreenTexture1->TransitionTo(commandList, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		}
 		if (m_offscreenTexture2->GetCurrentState() == D3D12_RESOURCE_STATE_RENDER_TARGET)
 			m_offscreenTexture2->EndScene(commandList);
@@ -837,14 +839,14 @@ void Game::CreateDeviceDependentResources()
     auto device = m_deviceResources->GetD3DDevice();
 
 	// Check Shader Model 6 support
-	D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { D3D_SHADER_MODEL_6_0 };
+	D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { D3D_SHADER_MODEL_5_1 };
 	if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel)))
-		|| (shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_0))
+		|| (shaderModel.HighestShaderModel < D3D_SHADER_MODEL_5_1))
 	{
 #ifdef _DEBUG
 		OutputDebugStringA("ERROR: Shader Model 6.0 is not supported!\n");
 #endif
-		throw std::runtime_error("Shader Model 6.0 is not supported!");
+		throw std::runtime_error("Shader Model 5.1 is not supported!");
 	}
 
     auto command_queue = m_deviceResources->GetCommandQueue();
