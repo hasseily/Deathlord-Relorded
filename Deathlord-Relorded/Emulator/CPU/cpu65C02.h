@@ -528,7 +528,7 @@ SWITCH_GAMEMAP:
 					avoidsDamage = true;
 					break;
 				default:
-					avoidsDamage = false;
+					avoidsDamage = false || avoidsDamage;
 					break;
 				}
 				switch ((DeathlordRaces)(MemGetMainPtr(PARTY_RACE_START)[regs.x]))
@@ -543,7 +543,7 @@ SWITCH_GAMEMAP:
 					avoidsDamage = true;
 					break;
 				default:
-					avoidsDamage = false;
+					avoidsDamage = false || avoidsDamage;
 					break;
 				}
 				if (avoidsDamage)
