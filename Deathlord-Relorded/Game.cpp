@@ -332,10 +332,26 @@ void Game::Update(DX::StepTimer const& timer)
 		if (kbTracker.pressed.Escape)       // Escape used to close the overlay
 			m_invOverlay->HideOverlay();
         m_invOverlay->Update();
-        m_invOverlay->MousePosInPixels(mo.x, mo.y);
+		// Hack for 1366x768
+		auto gamePtr = GetGamePtr();
+		float newx = mo.x;
+		float newy = mo.y;
+		if (isSmallScreen)
+		{
+			newx = newx * 1920.f / 1366.f;
+			newy = newy * 1080.f / 768.f;
+		};
+        m_invOverlay->MousePosInPixels((int)newx, (int)newy);
 		if (moTracker.leftButton == ButtonState::PRESSED)
 		{
-            m_invOverlay->LeftMouseButtonClicked(moTracker.GetLastState().x, moTracker.GetLastState().y);
+			newx = moTracker.GetLastState().x;
+			newy = moTracker.GetLastState().y;
+			if (isSmallScreen)
+			{
+				newx = newx * 1920.f / 1366.f;
+				newy = newy * 1080.f / 768.f;
+			};
+            m_invOverlay->LeftMouseButtonClicked(newx, newy);
 		}
     }
 
@@ -665,8 +681,10 @@ void Game::PostProcess(ID3D12GraphicsCommandList* commandList)
 	GetMonitorInfo(monitor, &info);
 	auto monwidth = info.rcMonitor.right - info.rcMonitor.left;
 	auto monheight = info.rcMonitor.bottom - info.rcMonitor.top;
+	isSmallScreen = false;
 	if (monwidth < 1800 || monheight < 1000)
 	{
+		isSmallScreen = true;
 		int xwidth = 1366;
 		int xheight = 768;
 

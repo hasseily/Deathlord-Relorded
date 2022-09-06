@@ -110,6 +110,7 @@ public:
 
     // Properties
 	bool shouldRender;
+    bool isSmallScreen = false;     // is it 1366x768?
 	// Rendering loop timer.
 	DX::StepTimer m_timer;
 
