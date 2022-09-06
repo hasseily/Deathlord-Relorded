@@ -156,7 +156,7 @@ private:
     std::unique_ptr<DirectX::DescriptorHeap> m_renderDescriptors;
     std::unique_ptr<DX::RenderTexture> m_offscreenTexture1; // main work texture
 	std::unique_ptr<DX::RenderTexture> m_offscreenTexture2; // used by the automap
-	std::unique_ptr<DX::RenderTexture> m_offscreenTexture3; // unused for now
+	std::unique_ptr<DX::RenderTexture> m_offscreenTexture3; // used to downscale to 1366x768
     std::unique_ptr<BasicPostProcess> m_postProcessBlur;
 	std::unique_ptr<BasicPostProcess> m_postProcessCopy;
 	std::unique_ptr<DualPostProcess> m_postProcessMerge;
