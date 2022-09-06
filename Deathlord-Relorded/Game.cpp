@@ -653,54 +653,65 @@ NOPOSTPROCESSING:
 void Game::PostProcess(ID3D12GraphicsCommandList* commandList)
 {
 	auto vp = m_deviceResources->GetScreenViewport();
-    if (g_isInGameMap)
+	auto renderTarget = m_deviceResources->GetRenderTarget();
+	// Default is offscreenTexture1.
+	// If we need to resize the output to 1366x768, we draw off1 into off3
+	// and use instead off3
+	auto offscreenTarget = m_offscreenTexture1->GetResource();
+	// Do 1366x768
+	HMONITOR monitor = MonitorFromWindow(m_window, MONITOR_DEFAULTTONEAREST);
+	MONITORINFO info;
+	info.cbSize = sizeof(MONITORINFO);
+	GetMonitorInfo(monitor, &info);
+	auto monwidth = info.rcMonitor.right - info.rcMonitor.left;
+	auto monheight = info.rcMonitor.bottom - info.rcMonitor.top;
+	if (monwidth < 1800 || monheight < 1000)
+	{
+		int xwidth = 1366;
+		int xheight = 768;
+
+		RECT drawRect = { 0, 0, xwidth, xheight };
+		m_offscreenTexture3->BeginScene(commandList);
+		auto mmTexSize = GetTextureSize(m_offscreenTexture1->GetResource());
+		auto rtvOff3Descriptor = m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen3);
+		commandList->OMSetRenderTargets(1, &rtvOff3Descriptor, FALSE, &m_deviceResources->GetDepthStencilView());
+		commandList->RSSetViewports(1, &vp);
+		m_spriteBatch->SetViewport(m_deviceResources->GetScreenViewport());
+		m_spriteBatch->Begin(commandList, m_states->LinearClamp(), SpriteSortMode_Deferred);
+		m_spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::OffscreenTexture1),
+			mmTexSize, drawRect);
+		m_spriteBatch->End();
+		m_offscreenTexture3->EndScene(commandList);
+		offscreenTarget = m_offscreenTexture3->GetResource();	// Use off3 now
+	}
+	if (g_isInGameMap)
 	{
 		// OffscreenTexture1 -> framebuffer
 		PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"In-Game PostProcess");
-		auto renderTarget = m_deviceResources->GetRenderTarget();
-		auto offscreenTarget = m_offscreenTexture1->GetResource();
-		auto rtvDescriptor = m_deviceResources->GetRenderTargetView();
-		commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, nullptr);
-		commandList->RSSetViewports(1, &vp);
-		{
-			ScopedBarrier barriers(commandList,
-				{
-					CD3DX12_RESOURCE_BARRIER::Transition(renderTarget,
-						D3D12_RESOURCE_STATE_RENDER_TARGET,
-						D3D12_RESOURCE_STATE_COPY_DEST, 0),
-					CD3DX12_RESOURCE_BARRIER::Transition(offscreenTarget,
-						D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-						D3D12_RESOURCE_STATE_COPY_SOURCE, 0)
-				});
-			commandList->CopyResource(renderTarget, offscreenTarget);
-		}
-		PIXEndEvent(commandList);
 	}
-    else
-    {   // Not in game map
-        // AppleWin already draws to the framebuffer
-        // OffscreenTexture1 -> framebuffer
+	else
+	{   // Not in game map
+		// AppleWin already draws to the framebuffer
+		// OffscreenTexture1 -> framebuffer
 
-        PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"PreGame PostProcess");
-		auto renderTarget = m_deviceResources->GetRenderTarget();
-		auto offscreenTarget = m_offscreenTexture1->GetResource();
-		auto rtvDescriptor = m_deviceResources->GetRenderTargetView();
-		commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, nullptr);
-		commandList->RSSetViewports(1, &vp);
-        {
-			ScopedBarrier barriers(commandList,
-				{
-					CD3DX12_RESOURCE_BARRIER::Transition(renderTarget,
-						D3D12_RESOURCE_STATE_RENDER_TARGET,
-						D3D12_RESOURCE_STATE_COPY_DEST, 0),
-					CD3DX12_RESOURCE_BARRIER::Transition(offscreenTarget,
-						D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-						D3D12_RESOURCE_STATE_COPY_SOURCE, 0)
-				});
-			commandList->CopyResource(renderTarget, offscreenTarget);
-        }
+		PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"PreGame PostProcess");
+	}
+	auto rtvDescriptor = m_deviceResources->GetRenderTargetView();
+	commandList->OMSetRenderTargets(1, &rtvDescriptor, FALSE, nullptr);
+	commandList->RSSetViewports(1, &vp);
+	{
+		ScopedBarrier barriers(commandList,
+			{
+				CD3DX12_RESOURCE_BARRIER::Transition(renderTarget,
+					D3D12_RESOURCE_STATE_RENDER_TARGET,
+					D3D12_RESOURCE_STATE_COPY_DEST, 0),
+				CD3DX12_RESOURCE_BARRIER::Transition(offscreenTarget,
+					D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+					D3D12_RESOURCE_STATE_COPY_SOURCE, 0)
+			});
+		commandList->CopyResource(renderTarget, offscreenTarget);
+	}
 		PIXEndEvent(commandList);
-    }
 }
 
 // Helper method to clear the back buffers.
