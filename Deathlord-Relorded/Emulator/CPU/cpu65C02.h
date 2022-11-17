@@ -1302,7 +1302,7 @@ SWITCH_GAMEMAP:
 
 			char _buf[300];
 			sprintf_s(_buf, 300, "%04X: %s  %02X%02X - %02X %02X %02X\n", _origPC, _opStr.c_str(),
-				MemGetMainPtr(_origPC + 1)[0], MemGetMainPtr(_origPC + 2)[0],
+				MemGetMainPtr(_origPC + 2)[0], MemGetMainPtr(_origPC + 1)[0],
 				regs.a, regs.x, regs.y);
 			OutputDebugStringA(_buf);
 		}
