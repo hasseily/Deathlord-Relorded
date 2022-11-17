@@ -36,6 +36,7 @@ class Daytime	// Singleton
 public:
 	// Methods
 	float TimeOfDayInFloat();
+	int MinuteDigit();		// digit of the minutes. i.e. 13:17 is 7.
 	// Call Render() at the end of the rendering stage to draw the daytime stuff
 	// r is the rectangle of the game itself
 	void Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch);

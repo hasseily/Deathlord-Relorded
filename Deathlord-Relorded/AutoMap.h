@@ -76,7 +76,8 @@ enum class PartyIconType	// What to draw on the party icon tile
 {
 	Regular = 0,
 	Boat = 1,
-	Pit = 2
+	Pit = 2,
+	Camp = 3
 };
 
 /// Summary:

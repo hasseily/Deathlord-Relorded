@@ -1029,6 +1029,23 @@ ELEMENT_TILES_GENERAL:
 				}
 				case PartyIconType::Pit:
 					break;
+				case PartyIconType::Camp:
+				{
+					// We're camping. The camping animation uses 2 tiles. We'll just use the overland tileset, they're both the same
+					// The animationg goes 1-2--1-2--. We don't bother with a real animation, we just use the game's minutes to switch
+					RECT campRect1 = { 13 * PNGTW, 3 * PNGTH, 14 * PNGTW, 4 * PNGTH };
+					RECT campRect2 = { 14 * PNGTW, 3 * PNGTH, 15 * PNGTW, 4 * PNGTH };
+					auto md = Daytime::GetInstance()->MinuteDigit();
+					RECT cR = campRect1;
+					if (md > 2 && md < 6)
+						cR = campRect2;
+					else if (md > 7 )
+						cR = campRect2;
+					spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::AutoMapOverlandTiles),
+						GetTextureSize(m_tilesOverland.Get()), tilePosInMap, &cR,
+						Colors::White, 0.f, XMFLOAT2(), mapScale);
+					break;
+				}
 				default:
 					break;
 				}
