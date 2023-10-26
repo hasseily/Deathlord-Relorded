@@ -54,7 +54,7 @@ Of special mention are the gnome's incredible dark-vision in dungeons, and the p
 
 - In dungeons and towers, if the leader, the Gnome will see at the maximum distance in the dark
 
-#### Obake (Dark Elf)
+#### Obake (Halfling)
 
 - Identifies automatically hidden doors, unique trees and tombstones
 - If the leader, identifies pits automatically
@@ -110,6 +110,7 @@ You can then return to the main menu, insert the boot disk (again via the "Emula
 - Much more information is available in battle, such as turns disabled or XP gained.
 - Brand new inventory screen accessible via `INS` or the "Relorded" menu.
 - Original interface accessible via `F11` or the "Relorded" menu. The new rules still apply. If you want to play the original game, just load up the images in the "Images" directory in your favorite Apple 2 emulator. But we have no idea why you'd want to do this unless you're a masochist.
+- Toggle with `F10` between the pseudo-Japanese words and classic English language D&D. I took the liberty to significantly change the meaning to some of them in order to better align them with their stats.
 - Cheat-sheet spell window accessible via `Alt-S` or the "Relorded" menu.
 - Some real cheats also available for those who really can't be bothered playing _correctly_.
 
