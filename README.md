@@ -25,7 +25,9 @@ This results in a game that looks retro-modern, but whose logic is encapsulated 
 
 ## Installation
 
-Grab the latest release from GitHub. Unzip it anywhere, and double click the app.
+Ideally grab it from itch.io.
+Another option is to grab the latest release from GitHub. Unzip it anywhere, and double click the app.
+Make sure you read the `DOCUMENTATION.md` file.
 
 ## Features
 
@@ -48,12 +50,13 @@ Grab the latest release from GitHub. Unzip it anywhere, and double click the app
 * Every character gets battle XP. No more having to "cast-cancel" to get XP for mages that don't want to cast spells
 * Additional XP does not reset on level up
 * Can check missing required XP when trying to level up
+* Ability to switch between pseudo-Japanese and more standard English D&D concepts
 
 Many thanks to @a2_qkumba for code analysis and @BillG for graphics.
 
 Happy retro RPG gaming, and see you on the Lost Sectors Discord server, or on the discussions here in GitHub.
 
-Rikkles, Lebanon, 2022.
+Rikkles, Lebanon, 2023.
 @RikRetro on Twitter.
 
 https://github.com/hasseily/Deathlord-Relorded
