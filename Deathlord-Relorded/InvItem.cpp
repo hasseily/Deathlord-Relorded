@@ -7,11 +7,11 @@ InvItem::InvItem()
 }
 
 InvItem::InvItem(UINT8 _id, InventorySlots _slot, UINT16 _classMask, UINT16 _raceMask,
-	std::wstring _name, INT8 _thaco, UINT8 _numAttacks,
+	std::wstring _name, std::wstring _nameEnglish, INT8 _thaco, UINT8 _numAttacks,
 	UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::wstring _special)
 {
 	Initialize(_id, _slot, _classMask, _raceMask,
-		_name, _thaco, _numAttacks,
+		_name, _nameEnglish, _thaco, _numAttacks,
 		_damageMin, _damageMax,  _ac,  _special);
 }
 
@@ -25,6 +25,7 @@ void InvItem::copyPropertiesFromItem(InvItem* item)
 	classMask = item->classMask;
 	raceMask = item->raceMask;
 	name = item->name;
+	nameEnglish = item->nameEnglish;
 	thaco = item->thaco;
 	numAttacks = item->numAttacks;
 	damageMin = item->damageMin;
@@ -47,6 +48,7 @@ void InvItem::Initialize()
 	classMask = 0;
 	raceMask = 0;
 	name = std::wstring();
+	nameEnglish = std::wstring();
 	thaco = 0;
 	numAttacks = 0;
 	damageMin = 0;
@@ -56,7 +58,7 @@ void InvItem::Initialize()
 }
 
 void InvItem::Initialize(UINT8 _id, InventorySlots _slot, UINT16 _classMask, UINT16 _raceMask,
-	std::wstring _name, INT8 _thaco, UINT8 _numAttacks,
+	std::wstring _name, std::wstring _nameEnglish, INT8 _thaco, UINT8 _numAttacks,
 	UINT8 _damageMin, UINT8 _damageMax, INT8 _ac, std::wstring _special)
 {
 	id = _id;
@@ -64,6 +66,7 @@ void InvItem::Initialize(UINT8 _id, InventorySlots _slot, UINT16 _classMask, UIN
 	classMask = _classMask;
 	raceMask = _raceMask;
 	name = _name;
+	nameEnglish = _nameEnglish;
 	thaco = _thaco;
 	numAttacks = _numAttacks;
 	damageMin = _damageMin;

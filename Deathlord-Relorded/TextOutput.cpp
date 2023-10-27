@@ -18,7 +18,9 @@ void TextOutput::Initialize()
 	UINT8 billboardLineCt = PRINT_CHAR_Y_KEYPRESS - PRINT_CHAR_Y_BILLBOARD_BEGIN;
 	for (UINT8 i = 0; i < billboardLineCt; i++)
 	{
-		m_vBillboard.push_back(pair(wstring(), FontDescriptors::FontDLRegular));
+		m_vBillboard_raw.push_back(pair(string(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '), FontDescriptors::FontDLRegular));
+		m_vBillboardString_jp.push_back(string(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '));
+		m_vBillboardString_en.push_back(string(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '));
 	}
 	m_vLog.push_back(pair(wstring(), FontDescriptors::FontDLRegular));
 	m_strModule = wstring();
@@ -73,11 +75,16 @@ void TextOutput::Render(SimpleMath::Rectangle r, SpriteBatch* spriteBatch)
 
 	// Render Billboard
 	float yInc = 0.f;
-	for each (auto bbLine in m_vBillboard)
+	auto _bb = m_vBillboardString_jp;
+	if (g_nonVolatile.englishNames)
+		_bb = m_vBillboardString_en;
+	size_t _bbindex = 0;
+	for each (auto bbLine in _bb)
 	{
-		(*gamePtr)->GetSpriteFontAtIndex(bbLine.second)->DrawString(spriteBatch, bbLine.first.c_str(),
+		(*gamePtr)->GetSpriteFontAtIndex(m_vBillboard_raw[_bbindex].second)->DrawString(spriteBatch, bbLine.c_str(),
 			{ r.x + 1287.f, r.y + 994.f + yInc }, VColorText, 0.f, Vector2(), 1.f);
 		yInc -= 18;
+		_bbindex++;
 	}
 
 	// Render Log
@@ -132,7 +139,7 @@ TextWindows TextOutput::AreaForCoordinates(UINT8 xStart, UINT8 xEnd, UINT8 yStar
 			return TextWindows::Log;
 		if (xStart >= PRINT_CHAR_X_BILLBOARD_BEGIN)
 		{
-			// Unfortunately the game pools together the everything below the party area
+			// Unfortunately the game pools together everything below the party area
 			// with the billboard. Generally we can't tell the difference
 			if (yStart == PRINT_CHAR_Y_KEYPRESS)
 				return TextWindows::Keypress;
@@ -148,7 +155,7 @@ TextWindows TextOutput::AreaForCoordinates(UINT8 xStart, UINT8 xEnd, UINT8 yStar
 
 #pragma region Deathlord printing
 
-wchar_t TextOutput::ConvertChar(unsigned char ch)
+inline wchar_t TextOutput::ConvertChar(unsigned char ch)
 {
 	// To use a regular charset, we need to convert it:
 	// return ARRAY_DEATHLORD_CHARSET[ch & 0x7F];
@@ -157,19 +164,50 @@ wchar_t TextOutput::ConvertChar(unsigned char ch)
 	return (ch & 0x7F);
 }
 
+template <typename CharType>
+inline bool TextOutput::IsEndOfToken(CharType ch) {
+	// Check if it's a token delimiter
+	// Takes any CharType, including char and wchar_t
+	return ((ch < 0x80) && (ch != ' '));
+}
+
 void TextOutput::ScrollWindow(TextWindows tw)
 {
 	switch (tw)
 	{
 	case TextWindows::Log:
+	{
+		// first convert to english before scrolling if requested
+		if (g_nonVolatile.englishNames)
+		{
+			// The text may have a bunch of spaces at the end, needs to be erased
+			if (m_vLog.size() > 0)
+			{
+				size_t lastNonSpace = m_vLog.at(0).first.find_last_not_of(L' ');
+				if (lastNonSpace != std::wstring::npos) {
+					m_vLog.at(0).first.erase(lastNonSpace + 1);
+				}
+				for (const auto& wordPair : m_wtranslations) {
+					if (m_vLog.at(0).first == wordPair.first) {
+						m_vLog.at(0).first = wordPair.second;
+						break;
+					}
+				}
+			}
+		}
 		if (m_vLog.size() > PRINT_MAX_LOG_LINES)	// log is full, erase the last line
 			m_vLog.pop_back();
 		m_vLog.insert(m_vLog.begin(), pair(wstring(PRINT_CHAR_X_LOG_LENGTH, ' '), FontDescriptors::FontPR3Regular));
 		break;
+	}
 	case TextWindows::Billboard:
 	{
-		m_vBillboard.pop_back();
-		m_vBillboard.insert(m_vBillboard.begin(), pair(wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '), FontDescriptors::FontPR3Regular));
+		m_vBillboard_raw.pop_back();
+		m_vBillboardString_jp.pop_back();
+		m_vBillboardString_en.pop_back();
+		m_vBillboard_raw.insert(m_vBillboard_raw.begin(), pair(string(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '), FontDescriptors::FontPR3Regular));
+		m_vBillboardString_jp.insert(m_vBillboardString_jp.begin(), string(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '));
+		m_vBillboardString_en.insert(m_vBillboardString_en.begin(), string(PRINT_CHAR_X_BILLBOARD_LENGTH, ' '));
 		break;
 	}
 	default:
@@ -201,8 +239,10 @@ void TextOutput::ClearBillboard()
 	UINT8 billboardLineCt = PRINT_CHAR_Y_BILLBOARD_BEGIN;
 	while (billboardLineCt <= PRINT_CHAR_Y_BILLBOARD_END)
 	{
-		m_vBillboard.at(billboardLineCt - PRINT_CHAR_Y_BILLBOARD_BEGIN).first = wstring(PRINT_CHAR_X_BILLBOARD_LENGTH, ' ');
-		m_vBillboard.at(billboardLineCt - PRINT_CHAR_Y_BILLBOARD_BEGIN).second = FontDescriptors::FontPR3Regular;
+		m_vBillboard_raw.at(billboardLineCt - PRINT_CHAR_Y_BILLBOARD_BEGIN).first = string(PRINT_CHAR_X_BILLBOARD_LENGTH, ' ');
+		m_vBillboard_raw.at(billboardLineCt - PRINT_CHAR_Y_BILLBOARD_BEGIN).second = FontDescriptors::FontPR3Regular;
+		m_vBillboardString_jp.at(billboardLineCt - PRINT_CHAR_Y_BILLBOARD_BEGIN) = string(PRINT_CHAR_X_BILLBOARD_LENGTH, ' ');
+		m_vBillboardString_en.at(billboardLineCt - PRINT_CHAR_Y_BILLBOARD_BEGIN) = string();
 		++billboardLineCt;
 	}
 }
@@ -289,26 +329,126 @@ void TextOutput::PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool b
 	// It behaves differently if in combat than not
 	// If in combat, it behaves like the log.
 	// If not in combat, it draws to each line directly
+
 	UINT8 billboardLineCt = PRINT_CHAR_Y_BILLBOARD_END - PRINT_CHAR_Y_BILLBOARD_BEGIN + 1;
 	{
 		// Behave like a billboard where the code modifies every line
-		m_vBillboard.at(PRINT_CHAR_Y_BILLBOARD_END - Y).first.replace(X - PRINT_CHAR_X_BILLBOARD_BEGIN, 1, 1, ConvertChar(ch));
+		m_vBillboard_raw.at(PRINT_CHAR_Y_BILLBOARD_END - Y).first.replace(X - PRINT_CHAR_X_BILLBOARD_BEGIN, 1, 1, ch);
 		if (bInverse)
-			m_vBillboard.at(PRINT_CHAR_Y_BILLBOARD_END - Y).second = FontDescriptors::FontDLInverse;
+			m_vBillboard_raw.at(PRINT_CHAR_Y_BILLBOARD_END - Y).second = FontDescriptors::FontDLInverse;
 		else
-			m_vBillboard.at(PRINT_CHAR_Y_BILLBOARD_END - Y).second = FontDescriptors::FontDLRegular;
+			m_vBillboard_raw.at(PRINT_CHAR_Y_BILLBOARD_END - Y).second = FontDescriptors::FontDLRegular;
+
+		// And generate the string that will be printed by default ("fake japanese")
+		m_vBillboardString_jp.at(PRINT_CHAR_Y_BILLBOARD_END - Y).replace(X - PRINT_CHAR_X_BILLBOARD_BEGIN, 1, 1, ConvertChar(ch));
 	}
 
 	m_XBillboard = X;
 	m_YBillboard = Y;
+
+	// Now let's do the english stuff
+	// Whenever a character is modified in the billboard line, we parse the whole billboard line
+	// Look for end-of-token markers, and then search for matches from the beginning of the last marker
+	// It's a lot of wasted work but the only way to reliably replace words with differing lengths
+	{
+		char _bufPrint[200];
+		auto _bbstr = m_vBillboard_raw.at(PRINT_CHAR_Y_BILLBOARD_END - Y).first;
+		auto _bbstrJP = m_vBillboardString_jp.at(PRINT_CHAR_Y_BILLBOARD_END - Y);
+		sprintf_s(_bufPrint, 200, "bbstrjp: *%s*\n", _bbstrJP.c_str());
+		OutputDebugStringA(_bufPrint);
+		auto _bbstrEN = _bbstr;
+		for (const auto& [key, value] : m_translations) {
+			size_t pos = 0;
+			while ((pos = _bbstrEN.find(key, pos)) != std::string::npos) {
+				std::string replacement = value;
+				if (replacement.size() < key.size()) {
+					replacement += std::string(key.size() - replacement.size(), ' ');
+				}
+				sprintf_s(_bufPrint, 200, "key: *%s*  replacement: *%s*\n", key.c_str(), replacement.c_str());
+				OutputDebugStringA(_bufPrint);
+
+				_bbstrEN.replace(pos, replacement.size(), replacement);
+				pos += replacement.size();  // Move the position to after the replacement
+			}
+		}
+		for (char& ch : _bbstrEN) {
+			ch = ConvertChar(ch);
+		}
+		m_vBillboardString_en.at(PRINT_CHAR_Y_BILLBOARD_END - Y) = _bbstrEN;
+	}
+
+	/*
+	if (IsEndOfToken(ch))
+	{
+		size_t startPos = 0;
+		auto _bbstr = m_vBillboard_raw.at(PRINT_CHAR_Y_BILLBOARD_END - Y).first;
+		auto _bbstrJP = m_vBillboardString_jp.at(PRINT_CHAR_Y_BILLBOARD_END - Y);
+		auto _bbstrEN = std::wstring();
+		wchar_t _convwc;	// converted wchar into the actual character
+
+		while (startPos < _bbstr.length()) {
+			// Find the next end of token (could be a 2-word token like "Toshi Bow")
+			auto it = std::find_if(_bbstr.begin() + startPos, _bbstr.end(), [this](unsigned char ch) {
+				return this->IsEndOfToken(ch);
+				});
+
+			auto foundPos = std::distance(_bbstr.begin(), it);
+			std::string word = _bbstr.substr(startPos, foundPos - startPos + 1);
+
+			char _bufPrint[200];
+			sprintf_s(_bufPrint, 200, "WORD FOUND: *%s*\n", word.c_str());
+			OutputDebugStringA(_bufPrint);
+
+			// Check if the word is in the itemNames dictionary
+			bool _didMatch = false;
+			for (const auto& wordPair : m_translations) {
+				if (word == wordPair.first) {
+					_bbstrEN += wordPair.second;
+					_didMatch = true;
+					break;
+				}
+			}
+			if (!_didMatch)
+			{
+				_bbstrEN += _bbstrJP.substr(startPos, foundPos - startPos + 1);
+			}
+
+			// Move to the next word
+			if (foundPos == _bbstr.length())
+				break;
+			startPos = foundPos + 1;
+		}
+		m_vBillboardString_en.at(PRINT_CHAR_Y_BILLBOARD_END - Y) = _bbstrEN;
+
+		// Find the start of the next word
+		_convwc = _bbstrJP[startPos];
+		while (startPos < _bbstr.length() && HA::IsDelimiter(_convwc)) {
+			// In between words, if it's a space, see if the JP and EN are different sizes
+			// In that case, either add a space to EN or don't, in order to, in the end,
+			// have the exact string sizes for both. Otherwise the merchant info won't align
+			// Things like:   DAGGER    15   may end up with too many or too few spaces
+			if (_bbstr[startPos] == ' ')
+			{
+				while (_bbstrEN.length() <= startPos)
+				{
+					_bbstrEN += L' ';
+				}
+			}
+			else {
+				_bbstrEN += _convwc;
+			}
+			startPos++;
+		}
+	}
+	*/
 }
 
 void TextOutput::InverseLineInBillboard(UINT8 line)
 {
-	if (m_vBillboard.at(line).second == FontDescriptors::FontDLRegular)
-		m_vBillboard.at(line).second = FontDescriptors::FontDLInverse;
+	if (m_vBillboard_raw.at(line).second == FontDescriptors::FontDLRegular)
+		m_vBillboard_raw.at(line).second = FontDescriptors::FontDLInverse;
 	else
-		m_vBillboard.at(line).second = FontDescriptors::FontDLRegular;
+		m_vBillboard_raw.at(line).second = FontDescriptors::FontDLRegular;
 }
 
 void TextOutput::PrintCharToLog(unsigned char ch, UINT8 X, bool bInverse)
@@ -332,6 +472,57 @@ void TextOutput::PrintWStringToLog(std::wstring ws, bool bInverse)
 		m_vLog.at(0).second = FontDescriptors::FontDLRegular;
 	m_XLog = 0;
 	ScrollWindow(TextWindows::Log);
+}
+
+void TextOutput::AddTranslation(std::wstring* jp, std::wstring* en)
+{
+	if (!jp || !en)
+		return;
+	if (jp->empty())
+		return;
+	m_wtranslations[*jp] = *en;
+	auto _key = std::string();
+	auto _val = std::string();
+	HA::ConvertWStrToStr(jp, &_key);
+	// For each character, except the last, set the high bit
+	for (size_t i = 0; i < _key.size() - 1; ++i) {
+		_key[i] |= 0x80;  // Set the high bit
+	}
+	// For the last character, remove the high bit
+	_key.back() &= 0x7F;
+
+	HA::ConvertWStrToStr(en, &_val);
+	m_translations[_key] = _val;
+
+#ifdef _DEBUG
+	for (size_t i = 0; i < _key.size() - 1; ++i) {
+		_key[i] &= 0x7F;
+	}
+	char _bufPrint[200];
+	sprintf_s(_bufPrint, 200, "Added translation *%s* : *%s*\n", _key.c_str(), _val.c_str());
+	OutputDebugStringA(_bufPrint);
+#endif
+}
+
+void TextOutput::RemoveTranslation(std::wstring* jp)
+{
+	m_wtranslations.erase(*jp);
+	auto _key = std::string();
+	HA::ConvertWStrToStr(jp, &_key);
+	// For each character, except the last, set the high bit
+	for (size_t i = 0; i < _key.size() - 1; ++i) {
+		_key[i] |= 0x80;  // Set the high bit
+	}
+	// For the last character, remove the high bit
+	_key.back() &= 0x7F;
+
+	m_translations.erase(_key);
+}
+
+void TextOutput::ClearTranslations()
+{
+	m_wtranslations.clear();
+	m_translations.clear();
 }
 
 #pragma endregion

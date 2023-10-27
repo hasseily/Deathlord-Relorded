@@ -20,7 +20,7 @@ constexpr UINT8 PRINT_CHAR_Y_PARTYNAME = 4;			// Value of Y to check for party n
 constexpr UINT8 PRINT_CHAR_X_PARTYNAME_BEGIN = 22;	// Value of X that starts the party name area
 constexpr UINT8 PRINT_CHAR_X_PARTYNAME_LENGTH = 16;	// Length of party name string
 
-constexpr UINT8 PRINT_CHAR_Y_MODULE = 13;	// Value of Y to check for right center line print (area, # of enemies)
+constexpr UINT8 PRINT_CHAR_Y_MODULE = 13;			// Value of Y to check for right center line print (area, # of enemies)
 constexpr UINT8 PRINT_CHAR_X_MODULE_BEGIN = 22;		// Value of X that starts the module area
 constexpr UINT8 PRINT_CHAR_X_MODULE_LENGTH = 10;	// Length of module string
 
@@ -93,33 +93,37 @@ public:
 	// This is used when leveling up, to give feedback on XP still needed
 	void PrintWStringToLog(std::wstring ws, bool bInverse);
 
+	// Manages translations for tokens. If the user enabled JP->EN translation,
+	// the text output will look for those tokens and convert them
+	void AddTranslation(std::wstring* jp, std::wstring* en);
+	void RemoveTranslation(std::wstring* jp);
+	void ClearTranslations();
+
 	// public singleton code
-	static TextOutput* GetInstance(std::unique_ptr<DX::DeviceResources>& deviceResources,
-		std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)
-	{
-		if (NULL == s_instance)
-			s_instance = new TextOutput(deviceResources, resourceDescriptors);
-		return s_instance;
-	}
 	static TextOutput* GetInstance()
 	{
 		if (NULL == s_instance)
-			_ASSERT(0);
+			s_instance = new TextOutput();
 		return s_instance;
 	}
 	~TextOutput()
 	{
-		m_resourceDescriptors = NULL;
-		m_deviceResources = NULL;
 	}
 private:
 	void Initialize();
 
 	static TextOutput* s_instance;
+	// Both translations maps are necessary for speed. The first is for the billboard and uses raw strings
+	// with high ascii as end of string, and the second is for the log where the text is standard and each line
+	// is considered one string. This is not idea but should work in most cases.
+	map<std::string, std::string>m_translations;		// The jp->en translations. The keys end with a high-ascii char
+	map<std::wstring, std::wstring>m_wtranslations;		// The jp->en translations as wstrings. The keys are standard ascii
 	vector<pair<wstring, XMFLOAT2>>v_linesToPrint;		// lines to print on the next render
 	wstring m_strModule;					// Line that shows "indoors", or enemies and # left when in combat
 	wstring m_strKeypress;					// The string to ask for keyboard input, as in "[SPACE]"
-	vector<pair<wstring, FontDescriptors>>m_vBillboard;	// The string for the billboard area of Deathlord (Bottom Right)
+	vector<pair<string, FontDescriptors>>m_vBillboard_raw;	// The raw Deathlord string with high ascii delimiters
+	vector<string>m_vBillboardString_jp;	// The printable string for the billboard area of Deathlord (Bottom Right)
+	vector<string>m_vBillboardString_en;	// The English translated string for the billboard area of Deathlord (Bottom Right)
 	vector<pair<wstring, FontDescriptors>>m_vLog;		// The strings for the log area of Deathlord
 	UINT8 m_XModule = 0;			// Last value of X seen for each string
 	UINT8 m_XKeypress = 0;			//		If it resets, it's a new string
@@ -128,20 +132,15 @@ private:
 	UINT8 m_XLog = 0;
 
 	wchar_t ConvertChar(unsigned char ch);
+	template <typename CharType> bool IsEndOfToken(CharType ch);
 	void PrintCharToModule(unsigned char ch, UINT8 X, bool bInverse);
 	void PrintCharToKeypress(unsigned char ch, UINT8 X, bool bInverse);
 	void PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool bInverse);
 	void PrintCharToLog(unsigned char ch, UINT8 X, bool bInverse);
 
-	TextOutput(std::unique_ptr<DX::DeviceResources>& deviceResources,
-		std::unique_ptr<DirectX::DescriptorHeap>& resourceDescriptors)
+	TextOutput()
 	{
-		m_deviceResources = deviceResources.get();
-		m_resourceDescriptors = resourceDescriptors.get();
 		Initialize();
 	}
-	DX::DeviceResources* m_deviceResources;
-	DescriptorHeap* m_resourceDescriptors;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_TextOutputSpriteSheet;
 };
 

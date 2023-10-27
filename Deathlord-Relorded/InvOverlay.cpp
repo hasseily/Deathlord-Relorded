@@ -382,7 +382,7 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
 		yCol += glyphHeight + 2;
-		_bufStr = NameOfClass((DeathlordClasses)memberClass, true);
+		_bufStr = NameOfClass((DeathlordClasses)memberClass);
 		font->DrawString(m_overlaySB.get(), _bufStr.c_str(),
 			Vector2(xCol + PaddingToCenterString(maxGlyphs, _bufStr.length()), yCol),	// center the string
 			Colors::White, 0.f, Vector2(0.f, 0.f), 1.f);
@@ -603,23 +603,26 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 	wchar_t _spBuf[200];
 	// First draw the item info
 	InvItem* item = pItemInstance->item;
+	auto itemname = item->name;
+	if (g_nonVolatile.englishNames)
+		itemname = item->nameEnglish;
 	if (item->slot < InventorySlots::Chest)
 	{
 		if (pItemInstance->charges != EMPTY_CHARGES_COUNT)
 			swprintf_s(_spBuf, 200, L"%-14s (%03d)  %+d    %dx %2d-%-2d   %+d   %s",
-				item->name.c_str(), pItemInstance->charges, item->thaco, item->numAttacks, item->damageMin, item->damageMax, -1 * item->ac, item->special.c_str());
+				itemname.c_str(), pItemInstance->charges, item->thaco, item->numAttacks, item->damageMin, item->damageMax, -1 * item->ac, item->special.c_str());
 		else
 			swprintf_s(_spBuf, 200, L"%-20s  %+d    %dx %2d-%-2d   %+d   %s",
-				item->name.c_str(), item->thaco, item->numAttacks, item->damageMin, item->damageMax, -1 * item->ac, item->special.c_str());
+				itemname.c_str(), item->thaco, item->numAttacks, item->damageMin, item->damageMax, -1 * item->ac, item->special.c_str());
 	}
 	else
 	{
 		if (pItemInstance->charges != EMPTY_CHARGES_COUNT)
 			swprintf_s(_spBuf, 200, L"%-14s (%03d)   %+d    %+d   %s",
-				item->name.c_str(), pItemInstance->charges, item->thaco, -1 * item->ac, item->special.c_str());
+				itemname.c_str(), pItemInstance->charges, item->thaco, -1 * item->ac, item->special.c_str());
 		else
 			swprintf_s(_spBuf, 200, L"%-20s   %+d    %+d   %s",
-				item->name.c_str(), item->thaco, -1 * item->ac, item->special.c_str());
+				itemname.c_str(), item->thaco, -1 * item->ac, item->special.c_str());
 	}
 	font->DrawString(m_overlaySB.get(), _spBuf,
 		Vector2(xPos, yPos),

@@ -28,5 +28,8 @@ namespace HA
 	// The polygon is defined by a series of points (XMFLOAT2)
 	bool isPointInConvexPolygon(DirectX::XMFLOAT2 aPoint, DirectX::XMFLOAT2* aClockwisePolygon, UINT8 aPolygonSides);
 
+    // Check if a character is a defined delimiter
+    bool IsDelimiter(char c);
+    bool IsDelimiter(wchar_t c);
 }
 

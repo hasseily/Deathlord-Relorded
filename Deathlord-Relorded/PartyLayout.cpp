@@ -328,7 +328,7 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	float _fScale = 0.5f;
 	Vector2 _mClassOrigin(_mPortraitOrigin.x, _mPortraitOrigin.y + PARTY_PORTRAIT_HEIGHT + 9);
 	UINT8 _mClassId = MemGetMainPtr(PARTY_CLASS_START)[member];
-	std::wstring _mClass = NameOfClass((DeathlordClasses)_mClassId, true);
+	std::wstring _mClass = NameOfClass((DeathlordClasses)_mClassId);
 	auto _sSizeX = XMVectorGetX(fontDL->MeasureString(_mClass.c_str(), false)) * _fScale;		// Take half width because we'll scale the font by 0.5
 	fontDL->DrawString(spriteBatch, _mClass.c_str(), { _mClassOrigin.x + (PARTY_PORTRAIT_WIDTH - _sSizeX) / 2, _mClassOrigin.y }, 
 		VColorText, 0.f, Vector2(), _fScale);
@@ -352,7 +352,10 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 	{
 		_sItem = L"   .............";		// length of 13 prefixed by count
 		// First set the name, with dot padding to the right
-		_sItem.replace(3, _item.item->name.size(), _item.item->name);
+		if (g_nonVolatile.englishNames)
+			_sItem.replace(3, _item.item->nameEnglish.size(), _item.item->nameEnglish);
+		else
+			_sItem.replace(3, _item.item->name.size(), _item.item->name);
 		if (_item.item->id != EMPTY_ITEM_ID)
 		{
 			if (_item.charges == 0)	// Infinite!

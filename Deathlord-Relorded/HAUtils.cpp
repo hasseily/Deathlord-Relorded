@@ -155,4 +155,15 @@ namespace HA
 		return true;
 	}
 
+	bool IsDelimiter(char c) {
+		// Define word delimiters, such as space, period, comma, etc.
+		static const std::string delimiters = " .,:;?!*";
+		return delimiters.find(c) != std::string::npos;
+	}
+
+	bool IsDelimiter(wchar_t c) {
+		// Define word delimiters, such as space, period, comma, etc.
+		static const std::wstring delimiters = L" .,:;?!*";
+		return delimiters.find(c) != std::wstring::npos;
+	}
 }

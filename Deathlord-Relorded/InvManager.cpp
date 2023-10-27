@@ -5,6 +5,10 @@
 #include <iostream>
 #include <vector>
 #include "DeathlordHacks.h"
+#include <memory>
+#include <corecrt_wctype.h>
+#include <cwctype>	// for towupper()
+#include "TextOutput.h"
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -45,6 +49,7 @@ enum class InventoryHeaders {
 	bitPea,
 	raceMask,
 	name,
+	nameEnglish,
 	thaco,
 	numAttacks,
 	damageMin,
@@ -132,6 +137,10 @@ void InvManager::Initialize()
 				try { item.name = fields.at(i); }
 				catch (const std::exception&) { hasError = true; }
 				break;
+			case InventoryHeaders::nameEnglish:
+				try { item.nameEnglish = fields.at(i); }
+				catch (const std::exception&) { hasError = true; }
+				break;
 			case InventoryHeaders::thaco:
 				try { item.thaco = stoi(fields.at(i)); }
 				catch (const std::exception&) { hasError = true; }
@@ -171,6 +180,18 @@ void InvManager::Initialize()
 		}
 		else {
 			itemList[item.id] = item;
+			// Create the translations from JP to EN, regular and uppercase
+			auto txtMgr = TextOutput::GetInstance();
+			txtMgr->AddTranslation(&item.name, &item.nameEnglish);
+			std::wstring _nJPUpper = std::wstring(item.name);
+			std::wstring _nENUpper = std::wstring(item.nameEnglish);
+			for (wchar_t& c : _nJPUpper) {
+				c = std::towupper(c);
+			}
+			for (wchar_t& c : _nENUpper) {
+				c = std::towupper(c);
+			}
+			txtMgr->AddTranslation(&_nJPUpper, &_nENUpper);
 		}
 		lineIdx++;
 	}

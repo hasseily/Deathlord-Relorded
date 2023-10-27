@@ -980,7 +980,7 @@ void Game::CreateDeviceDependentResources()
 
 	m_autoMap = AutoMap::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_autoMap->CreateDeviceDependentResources(m_uploadBatch.get());
-	m_textOutput = TextOutput::GetInstance(m_deviceResources, m_resourceDescriptors);
+	m_textOutput = TextOutput::GetInstance();
 	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_invOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
 	m_battleOverlay = BattleOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);

@@ -252,7 +252,7 @@ extern bool PartyLeaderIsOfRace(DeathlordRaces aRace);
 extern bool PartyHasClass(DeathlordClasses aClass);
 extern bool PartyHasClass(DeathlordClasses aClass1, DeathlordClasses aClass2);
 extern bool PartyHasRace(DeathlordRaces aRace);
-extern std::wstring NameOfClass(DeathlordClasses aClass, bool inJapan);
+extern std::wstring NameOfClass(DeathlordClasses aClass);
 extern std::wstring NameOfRace(DeathlordRaces aRace, bool inJapan);
 extern std::wstring StringFromMemory(UINT16 startMem, UINT8 maxLength);
 

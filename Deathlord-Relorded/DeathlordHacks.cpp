@@ -11,7 +11,10 @@
 #include "Game.h"
 #include "TilesetCreator.h"
 #include "AutoMap.h"
+#include "NonVolatile.h"
 #include <array>
+
+extern NonVolatile g_nonVolatile;
 
 const wchar_t CLASS_NAME[] = L"Deathlord Hacks Class";
 
@@ -62,7 +65,7 @@ static std::array<std::wstring, 8> DeathlordRaceNames{
 	std::wstring(L"Half-Elf"),
 	std::wstring(L"Dwarf"),
 	std::wstring(L"Gnome"),
-	std::wstring(L"Dark Elf"),
+	std::wstring(L"Halfling"),
 	std::wstring(L"Orc"),
 	std::wstring(L"Half-Orc")
 };
@@ -312,20 +315,20 @@ bool PartyHasRace(DeathlordRaces aRace)
 	return false;
 }
 
-std::wstring NameOfClass(DeathlordClasses aClass, bool inJapan)
+std::wstring NameOfClass(DeathlordClasses aClass)
 {
-	if (inJapan)
-		return DeathlordClassNamesJapan[(UINT8)aClass];
-	else
+	if (g_nonVolatile.englishNames)
 		return DeathlordClassNames[(UINT8)aClass];
+	else
+		return DeathlordClassNamesJapan[(UINT8)aClass];
 }
 
 std::wstring NameOfRace(DeathlordRaces aRace, bool inJapan)
 {
-	if (inJapan)
-		return DeathlordRaceNamesJapan[(UINT8)aRace];
-	else
+	if (g_nonVolatile.englishNames)
 		return DeathlordRaceNames[(UINT8)aRace];
+	else
+		return DeathlordRaceNamesJapan[(UINT8)aRace];
 }
 
 std::wstring StringFromMemory(UINT16 startMem, UINT8 maxLength)

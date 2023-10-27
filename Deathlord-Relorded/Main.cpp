@@ -185,6 +185,8 @@ void UpdateMenuBarStatus(HWND hwnd)
 		MF_BYCOMMAND | (g_nonVolatile.showSpells ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(logMenu, ID_LOGWINDOW_ALSOLOGCOMBAT,
 		MF_BYCOMMAND | (g_nonVolatile.logCombat ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(relordedMenu, ID_RELORDED_ENGLISHNAMES,
+		MF_BYCOMMAND | (g_nonVolatile.englishNames ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(relordedMenu, ID_RELORDED_INVENTORY,
 		MF_BYCOMMAND | (InvOverlay::GetInstance()->ShouldRenderOverlay() ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(relordedMenu, ID_RELORDED_ORIGINALINTERFACE,
@@ -823,6 +825,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_RELORDED_ORIGINALINTERFACE:
 		{
 			AppleWinDXVideo::GetInstance()->ToggleApple2Video();
+			break;
+		}
+		case ID_RELORDED_ENGLISHNAMES:
+		{
+			g_nonVolatile.englishNames = !g_nonVolatile.englishNames;
+			g_nonVolatile.SaveToDisk();
 			break;
 		}
 		case IDM_ABOUT:
