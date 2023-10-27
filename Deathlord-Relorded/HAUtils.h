@@ -19,6 +19,8 @@ namespace HA
     void ConvertStrToUpperAscii(std::string& str);
     void ConvertUpperAsciiToStr(std::string& str);
 
+    std::wstring CapitalizeFirst(std::wstring s);
+
     std::wstring GetLastErrorAsString();
     bool AlertIfError(HWND parentWindow);
 

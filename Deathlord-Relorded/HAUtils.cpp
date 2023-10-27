@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "HAUtils.h"
 
+#include <cwctype>
 #include <wincodec.h>
 #include "ReadData.h"
 #include "FindMedia.h"
@@ -97,6 +98,18 @@ namespace HA
 		for (std::string::iterator i = str.begin(); i != str.end(); i++) {
 			*i = *i - 0x80;   /* shift from upper ascii */
 		}
+	}
+
+	/* capitalize the first character of a wstring */
+	std::wstring CapitalizeFirst(std::wstring s) {
+		if (!s.empty()) {
+			s[0] = std::towupper(s[0]);  // Capitalize the first character
+
+			for (size_t i = 1; i < s.size(); ++i) {
+				s[i] = std::towlower(s[i]);  // Lowercase the rest
+			}
+		}
+		return s;
 	}
 
 	//Returns the last Win32 error, in string format. Returns an empty string if there is no error.

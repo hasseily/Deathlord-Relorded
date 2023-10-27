@@ -326,14 +326,19 @@ void PartyLayout::RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, 
 
 	// Draw bottom stuff at smaller font size
 	float _fScale = 0.5f;
-	Vector2 _mClassOrigin(_mPortraitOrigin.x, _mPortraitOrigin.y + PARTY_PORTRAIT_HEIGHT + 9);
+	Vector2 _mClassOrigin(_mPortraitOrigin.x, _mPortraitOrigin.y + PARTY_PORTRAIT_HEIGHT + 6);
 	UINT8 _mClassId = MemGetMainPtr(PARTY_CLASS_START)[member];
 	std::wstring _mClass = NameOfClass((DeathlordClasses)_mClassId);
 	auto _sSizeX = XMVectorGetX(fontDL->MeasureString(_mClass.c_str(), false)) * _fScale;		// Take half width because we'll scale the font by 0.5
 	fontDL->DrawString(spriteBatch, _mClass.c_str(), { _mClassOrigin.x + (PARTY_PORTRAIT_WIDTH - _sSizeX) / 2, _mClassOrigin.y }, 
 		VColorText, 0.f, Vector2(), _fScale);
+	UINT8 _mRaceId = MemGetMainPtr(PARTY_RACE_START)[member];
+	std::wstring _mRace = NameOfRace((DeathlordRaces)_mRaceId);
+	_sSizeX = XMVectorGetX(fontDL->MeasureString(_mRace.c_str(), false)) * _fScale;		// Take half width because we'll scale the font by 0.5
+	fontDL->DrawString(spriteBatch, _mRace.c_str(), { _mClassOrigin.x + (PARTY_PORTRAIT_WIDTH - _sSizeX) / 2, _mClassOrigin.y + 10},
+		VColorText, 0.f, Vector2(), _fScale);
 	//
-	Vector2 _mAttrOrigin(_mClassOrigin.x, _mClassOrigin.y + 18);
+	Vector2 _mAttrOrigin(_mClassOrigin.x, _mClassOrigin.y + 22);
 	swprintf_s(_buf, _bufsize, L"STR:%02d INT:%02d\n\nCON:%02d DEX:%02d\n\nSIZ:%02d CHA %02d",
 		MemGetMainPtr(PARTY_ATTR_STR_START)[member],
 		MemGetMainPtr(PARTY_ATTR_INT_START)[member],

@@ -12,6 +12,7 @@
 #include "TilesetCreator.h"
 #include "AutoMap.h"
 #include "NonVolatile.h"
+#include "TextOutput.h"
 #include <array>
 
 extern NonVolatile g_nonVolatile;
@@ -60,25 +61,25 @@ static std::array<std::wstring, 16> DeathlordClassNamesJapan{
 };
 
 static std::array<std::wstring, 8> DeathlordRaceNames{
-	std::wstring(L"Human"),
-	std::wstring(L"Elf"),
-	std::wstring(L"Half-Elf"),
-	std::wstring(L"Dwarf"),
-	std::wstring(L"Gnome"),
-	std::wstring(L"Halfling"),
-	std::wstring(L"Orc"),
-	std::wstring(L"Half-Orc")
+	std::wstring(L"HUMAN"),
+	std::wstring(L"ELF"),
+	std::wstring(L"HALF-ELF"),
+	std::wstring(L"DWARF"),
+	std::wstring(L"GNOME"),
+	std::wstring(L"HALFLING"),
+	std::wstring(L"TROLL"),
+	std::wstring(L"OGRE")
 };
 
 static std::array<std::wstring, 8> DeathlordRaceNamesJapan{
-	std::wstring(L"Human"),
-	std::wstring(L"Toshi"),
-	std::wstring(L"Nintoshi"),
-	std::wstring(L"Kobito"),
-	std::wstring(L"Gnome"),
-	std::wstring(L"Obake"),
-	std::wstring(L"Troll"),
-	std::wstring(L"Ogre")
+	std::wstring(L"HUMAN"),
+	std::wstring(L"TOSHI"),
+	std::wstring(L"NINTOSHI"),
+	std::wstring(L"KOBITO"),
+	std::wstring(L"GNOME"),
+	std::wstring(L"OBAKE"),
+	std::wstring(L"TROLL"),
+	std::wstring(L"OGRE")
 };
 
 #pragma region Static Methods
@@ -323,7 +324,7 @@ std::wstring NameOfClass(DeathlordClasses aClass)
 		return DeathlordClassNamesJapan[(UINT8)aClass];
 }
 
-std::wstring NameOfRace(DeathlordRaces aRace, bool inJapan)
+std::wstring NameOfRace(DeathlordRaces aRace)
 {
 	if (g_nonVolatile.englishNames)
 		return DeathlordRaceNames[(UINT8)aRace];
@@ -383,6 +384,26 @@ DeathlordHacks::DeathlordHacks(HINSTANCE app, HWND hMainWindow)
 		SendMessage(hdl, EM_SETLIMITTEXT, 4, 0);	// set the limit to a max of ffff
 		hdl = GetDlgItem(hwndHacks, IDC_EDIT_SPRITECT);
 		SendMessage(hdl, EM_SETLIMITTEXT, 2, 0);	// set the limit to a max of ff
+	}
+
+	auto txtMgr = TextOutput::GetInstance();
+	for (size_t i = 0; i < DeathlordRaceNamesJapan.size(); i++)
+	{
+		txtMgr->RemoveTranslation(&DeathlordRaceNamesJapan[i]);
+		txtMgr->AddTranslation(&DeathlordRaceNamesJapan[i], &DeathlordRaceNames[i]);
+		std::wstring _rjpcap = HA::CapitalizeFirst(DeathlordRaceNamesJapan[i]);
+		std::wstring _rencap = HA::CapitalizeFirst(DeathlordRaceNames[i]);
+		txtMgr->RemoveTranslation(&_rjpcap);
+		txtMgr->AddTranslation(&_rjpcap, &_rencap);
+	}
+	for (size_t i = 0; i < DeathlordClassNamesJapan.size(); i++)
+	{
+		txtMgr->RemoveTranslation(&DeathlordClassNamesJapan[i]);
+		txtMgr->AddTranslation(&DeathlordClassNamesJapan[i], &DeathlordClassNames[i]);
+		std::wstring _cjpcap = HA::CapitalizeFirst(DeathlordClassNamesJapan[i]);
+		std::wstring _cencap = HA::CapitalizeFirst(DeathlordClassNames[i]);
+		txtMgr->RemoveTranslation(&_cjpcap);
+		txtMgr->AddTranslation(&_cjpcap, &_cencap);
 	}
 }
 void DeathlordHacks::ShowHacksWindow()
