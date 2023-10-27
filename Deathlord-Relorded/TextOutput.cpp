@@ -178,6 +178,7 @@ void TextOutput::ScrollWindow(TextWindows tw)
 	case TextWindows::Log:
 	{
 		// first convert to english before scrolling if requested
+		// We assume here that the token takes up the whole row so it's easy to convert
 		if (g_nonVolatile.englishNames)
 		{
 			// The text may have a bunch of spaces at the end, needs to be erased
@@ -348,14 +349,13 @@ void TextOutput::PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool b
 
 	// Now let's do the english stuff
 	// Whenever a character is modified in the billboard line, we parse the whole billboard line
-	// Look for end-of-token markers, and then search for matches from the beginning of the last marker
 	// It's a lot of wasted work but the only way to reliably replace words with differing lengths
+	// Each token has the last character with its high bit unset (all the other chars are high-ascii
+	// If a token replacement is of a different size, we use or remove spaces for padding
 	{
-		char _bufPrint[200];
 		auto _bbstr = m_vBillboard_raw.at(PRINT_CHAR_Y_BILLBOARD_END - Y).first;
 		auto _bbstrJP = m_vBillboardString_jp.at(PRINT_CHAR_Y_BILLBOARD_END - Y);
-		sprintf_s(_bufPrint, 200, "bbstrjp: *%s*\n", _bbstrJP.c_str());
-		OutputDebugStringA(_bufPrint);
+
 		auto _bbstrEN = _bbstr;
 		for (const auto& [key, value] : m_translations) {
 			size_t pos = 0;
@@ -364,8 +364,6 @@ void TextOutput::PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool b
 				if (replacement.size() < key.size()) {
 					replacement += std::string(key.size() - replacement.size(), ' ');
 				}
-				sprintf_s(_bufPrint, 200, "key: *%s*  replacement: *%s*\n", key.c_str(), replacement.c_str());
-				OutputDebugStringA(_bufPrint);
 
 				_bbstrEN.replace(pos, replacement.size(), replacement);
 				pos += replacement.size();  // Move the position to after the replacement
@@ -376,71 +374,6 @@ void TextOutput::PrintCharToBillboard(unsigned char ch, UINT8 X, UINT8 Y, bool b
 		}
 		m_vBillboardString_en.at(PRINT_CHAR_Y_BILLBOARD_END - Y) = _bbstrEN;
 	}
-
-	/*
-	if (IsEndOfToken(ch))
-	{
-		size_t startPos = 0;
-		auto _bbstr = m_vBillboard_raw.at(PRINT_CHAR_Y_BILLBOARD_END - Y).first;
-		auto _bbstrJP = m_vBillboardString_jp.at(PRINT_CHAR_Y_BILLBOARD_END - Y);
-		auto _bbstrEN = std::wstring();
-		wchar_t _convwc;	// converted wchar into the actual character
-
-		while (startPos < _bbstr.length()) {
-			// Find the next end of token (could be a 2-word token like "Toshi Bow")
-			auto it = std::find_if(_bbstr.begin() + startPos, _bbstr.end(), [this](unsigned char ch) {
-				return this->IsEndOfToken(ch);
-				});
-
-			auto foundPos = std::distance(_bbstr.begin(), it);
-			std::string word = _bbstr.substr(startPos, foundPos - startPos + 1);
-
-			char _bufPrint[200];
-			sprintf_s(_bufPrint, 200, "WORD FOUND: *%s*\n", word.c_str());
-			OutputDebugStringA(_bufPrint);
-
-			// Check if the word is in the itemNames dictionary
-			bool _didMatch = false;
-			for (const auto& wordPair : m_translations) {
-				if (word == wordPair.first) {
-					_bbstrEN += wordPair.second;
-					_didMatch = true;
-					break;
-				}
-			}
-			if (!_didMatch)
-			{
-				_bbstrEN += _bbstrJP.substr(startPos, foundPos - startPos + 1);
-			}
-
-			// Move to the next word
-			if (foundPos == _bbstr.length())
-				break;
-			startPos = foundPos + 1;
-		}
-		m_vBillboardString_en.at(PRINT_CHAR_Y_BILLBOARD_END - Y) = _bbstrEN;
-
-		// Find the start of the next word
-		_convwc = _bbstrJP[startPos];
-		while (startPos < _bbstr.length() && HA::IsDelimiter(_convwc)) {
-			// In between words, if it's a space, see if the JP and EN are different sizes
-			// In that case, either add a space to EN or don't, in order to, in the end,
-			// have the exact string sizes for both. Otherwise the merchant info won't align
-			// Things like:   DAGGER    15   may end up with too many or too few spaces
-			if (_bbstr[startPos] == ' ')
-			{
-				while (_bbstrEN.length() <= startPos)
-				{
-					_bbstrEN += L' ';
-				}
-			}
-			else {
-				_bbstrEN += _convwc;
-			}
-			startPos++;
-		}
-	}
-	*/
 }
 
 void TextOutput::InverseLineInBillboard(UINT8 line)

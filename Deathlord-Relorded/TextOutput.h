@@ -116,7 +116,7 @@ private:
 	// Both translations maps are necessary for speed. The first is for the billboard and uses raw strings
 	// with high ascii as end of string, and the second is for the log where the text is standard and each line
 	// is considered one string. This is not idea but should work in most cases.
-	map<std::string, std::string>m_translations;		// The jp->en translations. The keys end with a high-ascii char
+	map<std::string, std::string>m_translations;		// The jp->en translations. The keys are high ascii with last char low ascii
 	map<std::wstring, std::wstring>m_wtranslations;		// The jp->en translations as wstrings. The keys are standard ascii
 	vector<pair<wstring, XMFLOAT2>>v_linesToPrint;		// lines to print on the next render
 	wstring m_strModule;					// Line that shows "indoors", or enemies and # left when in combat
