@@ -109,6 +109,7 @@
 #define ID_RELORDED_INVENTORY           32858
 #define ID_RELORDED_ORIGINALINTERFACE   32859
 #define ID_RELORDED_ENGLISHNAMES        32860
+#define ID_VIDEO_VIDEO2X                32861
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

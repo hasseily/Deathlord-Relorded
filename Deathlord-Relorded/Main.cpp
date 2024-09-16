@@ -175,6 +175,8 @@ void UpdateMenuBarStatus(HWND hwnd)
 		MF_BYCOMMAND | (g_nonVolatile.useGameLink ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(videoMenu, ID_VIDEO_SCANLINES,
 		MF_BYCOMMAND | (g_nonVolatile.scanlines ? MF_CHECKED : MF_UNCHECKED));
+	CheckMenuItem(videoMenu, ID_VIDEO_VIDEO2X,
+		MF_BYCOMMAND | (g_nonVolatile.applewinScale == 2.0f ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(autoMapMenu, ID_AUTOMAP_REMOVEFOG,
 		MF_BYCOMMAND | (g_nonVolatile.removeFog ? MF_CHECKED : MF_UNCHECKED));
 	CheckMenuItem(autoMapMenu, ID_AUTOMAP_SHOWFOOTSTEPS,
@@ -735,6 +737,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 		case ID_VIDEO_SCANLINES:
 			g_nonVolatile.scanlines = !g_nonVolatile.scanlines;
+			g_nonVolatile.SaveToDisk();
+			break;		
+		case ID_VIDEO_VIDEO2X:
+			g_nonVolatile.applewinScale = (g_nonVolatile.applewinScale == 1.0f ? 2.0f : 1.0f);
 			g_nonVolatile.SaveToDisk();
 			break;
 		case ID_EMULATOR_GAMELINK:
