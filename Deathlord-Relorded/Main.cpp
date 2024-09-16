@@ -160,8 +160,8 @@ void UpdateMenuBarStatus(HWND hwnd)
 	HMENU relordedMenu = GetSubMenu(topMenu, 2);	// Relorded menu
 	HMENU videoMenu = GetSubMenu(emuMenu, 10);
 	HMENU volumeMenu = GetSubMenu(emuMenu, 11);
-	HMENU autoMapMenu = GetSubMenu(relordedMenu, 3);
-	HMENU logMenu = GetSubMenu(relordedMenu, 5);
+	HMENU autoMapMenu = GetSubMenu(relordedMenu, 4);
+	HMENU logMenu = GetSubMenu(relordedMenu, 6);
 
 	CheckMenuRadioItem(videoMenu, 0, 3, g_nonVolatile.video, MF_BYPOSITION);
 	CheckMenuRadioItem(volumeMenu, 0, 4, g_nonVolatile.volumeSpeaker, MF_BYPOSITION);
