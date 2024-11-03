@@ -156,6 +156,8 @@ void Game::Initialize(HWND window)
 
     m_animTextManager = AnimTextManager::GetInstance(m_deviceResources.get(), m_resourceDescriptors.get());
 	m_animSpriteManager = AnimSpriteManager::GetInstance(m_deviceResources.get(), m_resourceDescriptors.get());
+
+	EmulatorLoadDefaultHDV();
 }
 
 UINT64 Game::GetTotalTicks()
@@ -484,13 +486,6 @@ void Game::Render()
             float _sY = _scRect.Center().y + (_a2VideoSize.y / 2) + 50;
 			m_spriteFonts.at(FontDescriptors::FontDLRegular)->DrawString(m_spriteBatch.get(),
                 _sMenu.c_str(), { _sX, _sY }, Colors::AntiqueWhite, 0.f, Vector2(), 1.f);
-			// Display loading/writing status
-			if (DiskActivity())
-			{
-				m_spriteFonts.at(FontDescriptors::FontDLRegular)->DrawString(m_spriteBatch.get(),
-					s_hourglass.c_str(), { _scRect.Center().x + (_a2VideoSize.x / 2) + 50, _sY }, Colors::AntiqueWhite, ((tickOfLastRender / 100000) % 32) / 10.f,
-					Vector2(7, 8), 1.f);
-			}
 			m_spriteBatch->End();
         }
         else

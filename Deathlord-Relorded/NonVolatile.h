@@ -13,9 +13,7 @@ enum class AutoMapQuadrant
 class NonVolatile
 {
 public:
-	std::wstring diskBootPath;
-	std::wstring diskScenAPath;
-	std::wstring diskScenBPath;
+	std::wstring hdvPath;
 	int speed = 1;
 	float applewinScale = 1.0f;
 	bool scanlines = false;

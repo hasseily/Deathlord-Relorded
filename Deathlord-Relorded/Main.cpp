@@ -11,10 +11,9 @@
 #include "LogWindow.h"
 #include "SpellWindow.h"
 #include "Emulator/AppleWin.h"
-#include "Emulator/CardManager.h"
-#include "Emulator/Disk.h"
 #include "Emulator/SoundCore.h"
 #include "Emulator/Keyboard.h"
+#include "Emulator/Harddisk.h"
 #include "Emulator/RGBMonitor.h"
 #include "DeathlordHacks.h"
 #include "AutoMap.h"
@@ -554,82 +553,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// Parse the menu selections:
 		switch (wmId)
 		{
-		case ID_SCENARIOS_BACKUP:
+		case ID_GAME_BACKUP:
 		{
-			g_dlHacks->BackupScenarioImages();
+			g_dlHacks->BackupGameImage();
 			break;
 		}
-		case ID_SCENARIOS_RESTORE:
+		case ID_GAME_RESTORE:
 		{
-			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-
-			diskCard.EjectDisk(DRIVE_1);
-			diskCard.EjectDisk(DRIVE_2);
-			if (g_dlHacks->RestoreScenarioImages())
+			if (g_dlHacks->RestoreGameImage())
 			{
-				MessageBox(hWnd, L"Scenario disks restored from backup. The system will now reboot. Please stand by.", L"Restore completed", MB_ICONINFORMATION | MB_OK);
+				MessageBox(hWnd, L"Game image restored from backup. The system will now reboot. Please stand by.", L"Restore completed", MB_ICONINFORMATION | MB_OK);
 				PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_RESET, 1);
 			}
 			else
 			{
-				MessageBox(hWnd, L"Scenario disks were not restored. Drives are empty.", L"Restore failed", MB_ICONWARNING | MB_OK);
+				MessageBox(hWnd, L"Game image was not restored.", L"Restore failed", MB_ICONWARNING | MB_OK);
 			}
 			break;
 		}
-		case ID_EMULATOR_SELECTDISKBOOT:
+		case ID_EMULATOR_INSERTINTOHD:
 		{
-			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			if (diskCard.UserSelectNewDiskImage(DRIVE_1, &g_nonVolatile.diskBootPath, L"Select Deathlord Boot Disk Image"))
-				diskCard.SaveLastDiskImage(FLOPPY_BOOT);
-			break;
-		}
-		case ID_EMULATOR_SELECTSCENARIOA:
-		{
-			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			if (diskCard.UserSelectNewDiskImage(DRIVE_1, &g_nonVolatile.diskScenAPath, L"Select Deathlord Scenario A Disk Image"))
-				diskCard.SaveLastDiskImage(FLOPPY_SCENA);
-			break;
-		}
-		case ID_EMULATOR_SELECTSCENARIOB:
-		{
-			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			if (diskCard.UserSelectNewDiskImage(DRIVE_2, &g_nonVolatile.diskScenBPath, L"Select Deathlord Scenario B Disk Image"))
-				diskCard.SaveLastDiskImage(FLOPPY_SCENB);
-			break;
-		}
-		case ID_EMULATOR_INSERTBOOTDISK:
-		{
-			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			diskCard.EjectDisk(DRIVE_2);
-			ImageError_e bRes = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskBootPath.c_str(), false, false);
-			if (bRes != eIMAGE_ERROR_NONE)
-			{
-				if (diskCard.UserSelectNewDiskImage(DRIVE_1, &g_nonVolatile.diskBootPath, L"Select Deathlord Boot Disk"))
-					diskCard.SaveLastDiskImage(FLOPPY_BOOT);
-			}
-			break;
-		}
-		case ID_EMULATOR_INSERTSCENARIODISKS:
-		{
-			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			ImageError_e res = diskCard.InsertDisk(DRIVE_1, g_nonVolatile.diskScenAPath.c_str(), false, false);
-			if (res != eIMAGE_ERROR_NONE)
-				MessageBox(hWnd, L"Could not insert Scenario A. Please make sure you've selected a correct image.", L"Alert", MB_ICONASTERISK | MB_OK);
-			res = diskCard.InsertDisk(DRIVE_2, g_nonVolatile.diskScenBPath.c_str(), false, false);
-			if (res != eIMAGE_ERROR_NONE)
-				MessageBox(hWnd, L"Could not insert Scenario B. Please make sure you've selected a correct image.", L"Alert", MB_ICONASTERISK | MB_OK);
-			break;
-		}
-		case ID_EMULATOR_INSERTINTODISK1:
-		{
-			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			diskCard.UserSelectNewDiskImage(DRIVE_1, &g_nonVolatile.diskBootPath, L"Select Image to Insert into Disk 1");
-			break;
-		}
-		case ID_EMULATOR_INSERTINTODISK2:
-		{
-			Disk2InterfaceCard& diskCard = dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6));
-			diskCard.UserSelectNewDiskImage(DRIVE_2, &g_nonVolatile.diskBootPath, L"Select Image to Insert into Disk 2");
+			HD_Insert(HARDDISK_1, g_nonVolatile.hdvPath);
 			break;
 		}
 
@@ -670,7 +614,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					{
 						// Uncheck the pause in all cases
 						CheckMenuItem(GetSubMenu(GetMenu(hWnd), 1), ID_EMULATOR_PAUSE, MF_BYCOMMAND | MF_UNCHECKED);
-						PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_INSERTBOOTDISK, 1);
+						PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_INSERTINTOHD, 1);
 						EmulatorReboot();
 						Spkr_Demute();
 						MB_Demute();
@@ -685,7 +629,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				{
 					// Uncheck the pause
 					CheckMenuItem(GetSubMenu(GetMenu(hWnd), 1), ID_EMULATOR_PAUSE, MF_BYCOMMAND | MF_UNCHECKED);
-					PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_INSERTBOOTDISK, 1);
+					PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_INSERTINTOHD, 1);
 					EmulatorReboot();
 					Spkr_Demute();
 					MB_Demute();

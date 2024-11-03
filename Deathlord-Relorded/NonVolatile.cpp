@@ -15,10 +15,7 @@ namespace fs = std::filesystem;
 
 static nlohmann::json nv_json = R"(
   {
-    "hdvPath":			  "",
-    "diskBootPath":		  "Images\\Deathlord - Disk 1, Side A Boot disk.woz",
-    "diskScenAPath":	  "Images\\Deathlord Scenario A.nib",
-    "diskScenBPath":	  "Images\\Deathlord Scenario B.nib",
+    "hdvPath":			  "Images\\Deathlord PRODOS.po",
     "applewinScale":	  1.0,
 	"scanlines":		  true,
 	"removeFog":		  false,
@@ -64,36 +61,18 @@ int NonVolatile::SaveToDisk()
 		savedGamesPath.append(L"\\Deathlord Relorded\\");
 		CoTaskMemFree(path);
 
-		auto _dbfn = fs::path(diskBootPath).filename().wstring();
+		auto _dbfn = fs::path(hdvPath).filename().wstring();
 		if (!FileExists((savedGamesPath + _dbfn).c_str()))
 		{
-			CopyFile(diskBootPath.c_str(), (savedGamesPath + _dbfn).c_str(), true);
-			diskBootPath = savedGamesPath + _dbfn;
-		}
-		auto _safn = fs::path(diskScenAPath).filename().wstring();
-		if (!FileExists((savedGamesPath + _safn).c_str()))
-		{
-			CopyFile(diskScenAPath.c_str(), (savedGamesPath + _safn).c_str(), true);
-			diskScenAPath = savedGamesPath + _safn;
-		}
-		auto _sbfn = fs::path(diskScenBPath).filename().wstring();
-		if (!FileExists((savedGamesPath + _sbfn).c_str()))
-		{
-			CopyFile(diskScenBPath.c_str(), (savedGamesPath + _sbfn).c_str(), true);
-			diskScenBPath = savedGamesPath + _sbfn;
+			CopyFile(hdvPath.c_str(), (savedGamesPath + _dbfn).c_str(), true);
+			hdvPath = savedGamesPath + _dbfn;
 		}
 	}
 
-	std::string sDiskBootPath;
-	std::string sDiskScenAPath;
-	std::string sDiskScenBPath;
-	HA::ConvertWStrToStr(&diskBootPath, &sDiskBootPath);
-	HA::ConvertWStrToStr(&diskScenAPath, &sDiskScenAPath);
-	HA::ConvertWStrToStr(&diskScenBPath, &sDiskScenBPath);
+	std::string sHdvPath;
+	HA::ConvertWStrToStr(&hdvPath, &sHdvPath);
 
-	nv_json["diskBootPath"]			= sDiskBootPath;
-	nv_json["diskScenAPath"]		= sDiskScenAPath;
-	nv_json["diskScenBPath"]		= sDiskScenBPath;
+	nv_json["hdvPath"]				= sHdvPath;
 	nv_json["applewinScale"]		= applewinScale;
 	nv_json["scanlines"]			= scanlines;
 	nv_json["removeFog"]			= removeFog;
@@ -163,12 +142,8 @@ int NonVolatile::LoadFromDisk()
 		nvmarkers_json.merge_patch(j);
 	}
 
-	std::string _diskBootPath = nv_json["diskBootPath"].get<std::string>();
-	HA::ConvertStrToWStr(&_diskBootPath, &diskBootPath);
-	std::string _diskScenAPath = nv_json["diskScenAPath"].get<std::string>();
-	HA::ConvertStrToWStr(&_diskScenAPath, &diskScenAPath);
-	std::string _diskScenBPath = nv_json["diskScenBPath"].get<std::string>();
-	HA::ConvertStrToWStr(&_diskScenBPath, &diskScenBPath);
+	std::string _hdvPath = nv_json["hdvPath"].get<std::string>();
+	HA::ConvertStrToWStr(&_hdvPath, &hdvPath);
 
 	applewinScale = nv_json["applewinScale"].get<float>();
 	scanlines = nv_json["scanlines"].get<bool>();

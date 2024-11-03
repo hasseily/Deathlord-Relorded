@@ -891,27 +891,6 @@ SWITCH_GAMEMAP:
 					g_startMenuState = StartMenuState::Menu;
 				break;
 			}
-			case PC_PROMPT_USE_2_DRIVES:
-			{
-				regs.pc = 0x8738;	// Bypass the 2 drives prompt (use 2 drives)
-				hasTriedInsertingScenarii = false;
-				break;
-			}
-			case PC_PROMPT_INSERT_SCENARIOS:
-			{
-				g_isInGameTransition = false;
-				g_startMenuState = StartMenuState::PromptScenarios;
-				if (!hasTriedInsertingScenarii)
-				{
-					// let's auto-insert scenarii
-					CYC(6); // JSR (0x20) uses 6 cycles;
-					regs.pc = _origPC + 3;	// Skip to the next instruction
-					// Synchronously insert scenarii
-					SendMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_INSERTSCENARIODISKS, 1);
-					hasTriedInsertingScenarii = true;
-				}
-				break;
-			}
 			case PC_SCENARIOS_ARE_IN_DRIVES:
 			{
 				g_isInGameTransition = true;

@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "CardManager.h"
 #include "CPU.h"
 #include "DiskImage.h"
-#include "Disk.h"
+#include "Harddisk.h"
 #include "Keyboard.h"
 #include "Joystick.h"
 #include "LanguageCard.h"
@@ -150,8 +150,7 @@ void ContinueExecution(void)
 	const double fExecutionPeriodClks = g_fCurrentCLK6502 * ((double)nExecutionPeriodUsec / fUsecPerSec);
 
 	const bool bWasFullSpeed = g_bFullSpeed;
-	g_bFullSpeed = (g_dwSpeed == SPEED_MAX ||
-		dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).IsConditionForFullSpeed() && !Spkr_IsActive() && !MB_IsActive());
+	g_bFullSpeed = (g_dwSpeed == SPEED_MAX);
 
 	if (g_bFullSpeed)
 	{
@@ -198,7 +197,6 @@ void ContinueExecution(void)
 	const DWORD uActualCyclesExecuted = CpuExecute(uCyclesToExecute, bVideoUpdate);
 	g_dwCyclesThisFrame += uActualCyclesExecuted;
 
-	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).UpdateDriveState(uActualCyclesExecuted);
 	JoyUpdateButtonLatch(nExecutionPeriodUsec);	// Button latch time is independent of CPU clock frequency
 	MB_PeriodicUpdate(uActualCyclesExecuted);
 
@@ -425,6 +423,7 @@ void EmulatorOneTimeInitialization(HWND window)
 	// Deathlord doesn't support Mockingboard
 	//GetCardMgr().Insert(SLOT4, CT_MockingboardC);
 	//GetCardMgr().Insert(SLOT5, CT_MockingboardC);
+	HD_SetEnabled(true);
 
 	RGB_SetVideocard(Video7_SL7, 15, 0);
 	SetVideoType(VT_COLOR_IDEALIZED);
@@ -501,19 +500,6 @@ void ApplyNonVolatileConfig()
 	MB_Demute();
 }
 
-bool DiskActivity()
-{
-	Disk_Status_e _s1 = DISK_STATUS_OFF;
-	Disk_Status_e _s2 = DISK_STATUS_OFF;
-
-	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).GetLightStatus(&_s1, &_s2);
-	if (_s1 != DISK_STATUS_OFF)
-		return true;
-	if (_s2 != DISK_STATUS_OFF)
-		return true;
-	return false;
-}
-
 // DO INITIALIZATION THAT MUST BE REPEATED FOR A RESTART
 void EmulatorRepeatInitialization()
 {
@@ -525,8 +511,6 @@ void EmulatorRepeatInitialization()
 	ApplyNonVolatileConfig();
 	// Always keep the game speed at normal. It's only the disk access that matters.
 	EmulatorSetSpeed(1);
-	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).SetEnhanceDisk(true);
-	PostMessageW(g_hFrameWindow, WM_COMMAND, (WPARAM)ID_EMULATOR_INSERTBOOTDISK, 1);
 
 	// Init palette color
 	VideoSwitchVideocardPalette(RGB_GetVideocard(), GetVideoType());
@@ -534,6 +518,16 @@ void EmulatorRepeatInitialization()
 	MemInitialize();
 	SoundCore_TweakVolumes();
 	VideoRedrawScreen();
+}
+
+void EmulatorLoadDefaultHDV()
+{
+	bool bRes = HD_Insert(HARDDISK_1, g_nonVolatile.hdvPath.c_str());
+	if (!bRes)
+	{
+		HD_Select(HARDDISK_1);
+		return;
+	}
 }
 
 void EmulatorReboot()
@@ -552,7 +546,6 @@ void EmulatorReboot()
 	KeybReset();
 	MB_Reset();
 	SpkrReset();
-	dynamic_cast<Disk2InterfaceCard&>(GetCardMgr().GetRef(SLOT6)).Reset(true);
 	SetActiveCpu(GetMainCpu());
 	EmulatorRepeatInitialization();
 	SoundCore_SetFade(FADE_NONE);

@@ -105,15 +105,6 @@
     <ClCompile Include="remotecontrol\RemoteControlManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Emulator\Disk.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Emulator\Disk2CardManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Emulator\DiskFormatTrack.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DeathlordHacks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -184,6 +175,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AnimationSpriteRotating.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Emulator\Harddisk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -305,16 +299,7 @@
     <ClInclude Include="remotecontrol\RemoteControlManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Emulator\Disk2CardManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Emulator\DiskFormatTrack.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Emulator\DiskLog.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Emulator\Disk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="libyaml\win32\config.h">
@@ -395,6 +380,9 @@
     <ClInclude Include="AnimationSpriteRotating.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Emulator\Harddisk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="emulator\cpu\cpu_general.inl">
@@ -417,9 +405,6 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="Emulator\Resources\Mockingboard-D.rom">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Emulator\Resources\DISK2.rom">
       <Filter>Resource Files</Filter>
     </None>
     <None Include="Assets\a2-12pt-italic.spritefont">

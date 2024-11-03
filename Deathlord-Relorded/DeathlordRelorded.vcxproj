@@ -133,7 +133,7 @@
     <ClCompile>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <WarningLevel>Level4</WarningLevel>
-      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -158,7 +158,7 @@
       <WarningLevel>Level4</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -181,7 +181,10 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Animation.cpp" />
+    <ClCompile Include="Animation.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="AnimationBattle.cpp" />
     <ClCompile Include="AnimationSprite.cpp" />
     <ClCompile Include="AnimationSpriteRotating.cpp" />
@@ -198,11 +201,9 @@
     <ClCompile Include="emulator\AY8910.cpp" />
     <ClCompile Include="emulator\CardManager.cpp" />
     <ClCompile Include="emulator\CPU.cpp" />
-    <ClCompile Include="Emulator\Disk.cpp" />
-    <ClCompile Include="Emulator\Disk2CardManager.cpp" />
-    <ClCompile Include="Emulator\DiskFormatTrack.cpp" />
     <ClCompile Include="emulator\DiskImage.cpp" />
     <ClCompile Include="emulator\DiskImageHelper.cpp" />
+    <ClCompile Include="Emulator\Harddisk.cpp" />
     <ClCompile Include="emulator\Joystick.cpp" />
     <ClCompile Include="emulator\Keyboard.cpp" />
     <ClCompile Include="emulator\LanguageCard.cpp" />
@@ -261,13 +262,11 @@
     <ClInclude Include="emulator\Common.h" />
     <ClInclude Include="emulator\CPU.h" />
     <ClInclude Include="emulator\cpu\cpu65C02.h" />
-    <ClInclude Include="Emulator\Disk.h" />
-    <ClInclude Include="Emulator\Disk2CardManager.h" />
     <ClInclude Include="emulator\DiskDefs.h" />
-    <ClInclude Include="Emulator\DiskFormatTrack.h" />
     <ClInclude Include="emulator\DiskImage.h" />
     <ClInclude Include="emulator\DiskImageHelper.h" />
     <ClInclude Include="Emulator\DiskLog.h" />
+    <ClInclude Include="Emulator\Harddisk.h" />
     <ClInclude Include="emulator\Joystick.h" />
     <ClInclude Include="emulator\Keyboard.h" />
     <ClInclude Include="emulator\LanguageCard.h" />
@@ -353,7 +352,6 @@
     <None Include="Emulator\Resources\Apple2e_Enhanced.rom">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
     </None>
-    <None Include="Emulator\Resources\DISK2.rom" />
     <None Include="emulator\resources\Hddrvr.bin" />
     <None Include="Emulator\Resources\Mockingboard-D.rom">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>

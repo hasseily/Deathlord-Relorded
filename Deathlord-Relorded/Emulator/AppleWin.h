@@ -31,12 +31,11 @@ UINT GetFrameBufferBorderHeight();
 void ApplyNonVolatileConfig();
 void EmulatorOneTimeInitialization(HWND window);
 void EmulatorRepeatInitialization();
+void EmulatorLoadDefaultHDV();
 void EmulatorReboot();
 void EmulatorMessageLoopProcessing();
 UINT8 EmulatorGetSpeed();
 void EmulatorSetSpeed(UINT8 speed);
-
-bool DiskActivity();	// Returns true if disk drives are active
 
 void UseClockMultiplier(double clockMultiplier);
 
