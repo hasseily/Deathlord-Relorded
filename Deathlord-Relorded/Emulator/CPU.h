@@ -8,7 +8,7 @@
 // Research by rikkles and qkumba
 
 // Pre-game (main menu, boot disk)
-#define PC_SCENARIOS_ARE_IN_DRIVES	0x8463		// At this PC, the scenarii are in the drives and validated
+#define PC_SCENARIOS_ARE_IN_DRIVES	0x845C		// At this PC, the scenarii are in the drives and validated
 #define PC_CHECK_KEYPRESS_TITLE		0x1D47		// Check for keypress on title screen to go to menu ("Play a Game...")
 #define PC_CHECK_KEYPRESS_MENU		0x1C19		// Checks for 'U', 'C', 'P'
 #define PC_CHAR_MANAGEMENT_KEYPRESS	0x7C0A		// Check if key was pressed in the character management option menus

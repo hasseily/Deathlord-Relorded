@@ -9,7 +9,6 @@
 /// </summary>
 /// 
 
-constexpr UINT8 DEATHLORD_PARTY_SIZE = 6;				// DLRL DOES NOT SUPPORT A PARTY SIZE NOT 6!!!!
 constexpr UINT8 DEATHLORD_INVENTORY_SLOTS = 8;
 
 constexpr UINT16 MAP_IS_IN_GAME_MAP = 0xFCE0;			// If set to 0xE5, player is in-game and not on title screen or utilities

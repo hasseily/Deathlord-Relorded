@@ -26,7 +26,6 @@ static InventorySlots selectedSlot = InventorySlots::Melee;
 static InventorySlots highlightedSlot = InventorySlots::TOTAL;	// No highlight by default
 static EquipInteractableRect highlightedRect;	// Rect that is currently highlighted
 static EquipInteractableRect nohighlightsRect;	// When there are no highlights, highlightedRect == nohighlightsRect
-static UINT8 partySize = 6;			// Also defined in InvManager.cpp
 
 // Drawing layout
 static RECT innerRect;
@@ -35,6 +34,7 @@ static UINT8 glyphHeight = 16;
 static UINT8 invRowSpacing = 14;		// Spacing between rows of the inventory
 static UINT8 verticalBarWidth = 8;		// Added width of vertical bar between members and stash
 static int widthTabsArea = 515;			// Width the left tabs area
+static UINT8 maxPartySize = 6;
 
 // InvOverlay sprite sheet rectangles
 // It is split into 4 rows of 8 columns of 28x32 pixels
@@ -88,6 +88,7 @@ void InvOverlay::Initialize()
 void InvOverlay::Update()
 {
 	m_invRows = invMgr->AllInventoryInSlot(selectedSlot);
+	m_partySize = MemGetMainPtr(PARTY_PARTYSIZE)[0];
 }
 
 void InvOverlay::MousePosInPixels(int x, int y)
@@ -112,7 +113,7 @@ void InvOverlay::MousePosInPixels(int x, int y)
 	{
 		if (eiRect.eRect.Contains(mousePoint))
 		{
-			if (eiRect.eMember >= DEATHLORD_PARTY_SIZE)	// it's the stash
+			if (eiRect.eMember >= m_partySize)	// it's the stash
 			{
 				// check if it's full. If so, don't highlight
 				if (invMgr->StashSlotCount(selectedSlot) >= STASH_MAX_ITEMS_PER_SLOT)
@@ -155,9 +156,9 @@ void InvOverlay::LeftMouseButtonClicked(int x, int y)
 		if (eiRect.eRect.Contains(mousePoint))
 		{
 			InvInstance* _invI = &m_invRows.at(eiRect.eRow);
-			if (eiRect.eMember < DEATHLORD_PARTY_SIZE)	// give to a person
+			if (eiRect.eMember < m_partySize)	// give to a person
 			{
-				if (_invI->owner < DEATHLORD_PARTY_SIZE)
+				if (_invI->owner < m_partySize)
 				{
 					invMgr->ExchangeBetweeenPartyMembers(
 						_invI->owner,
@@ -169,7 +170,7 @@ void InvOverlay::LeftMouseButtonClicked(int x, int y)
 				{
 					// exchange stash->person
 					invMgr->SwapStashWithPartyMember(
-						_invI->owner - DEATHLORD_PARTY_SIZE,	// the stash slot
+						_invI->owner - m_partySize,	// the stash slot
 						eiRect.eMember,
 						selectedSlot
 					);
@@ -187,7 +188,7 @@ void InvOverlay::LeftMouseButtonClicked(int x, int y)
 	{
 		if (trashiRect.eRect.Contains(mousePoint))
 		{
-			invMgr->DeleteItem(selectedSlot, trashiRect.eMember - DEATHLORD_PARTY_SIZE);
+			invMgr->DeleteItem(selectedSlot, trashiRect.eMember - m_partySize);
 			goto ENDLEFTCLICK;
 		}
 	}
@@ -215,6 +216,7 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 		}
 		return;
 	}
+	this->Update();
 
 	// Now check if we should animate the display as it appears
 	if (!(m_overlayState == OverlayState::Displayed))
@@ -364,7 +366,7 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 	///// Begin Draw Column Headers (party members)
 	int xCol = innerRect.left + widthTabsArea;		// x value at start of column drawing
 	int yCol = innerRect.top;						// y value of the start of drawing
-	for (size_t iMember = 0; iMember < partySize; iMember++)
+	for (size_t iMember = 0; iMember < m_partySize; iMember++)
 	{
 		yCol = innerRect.top;
 		// First draw the class icon in the center of the column
@@ -479,8 +481,8 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 	// _xPos0 is the x pos of the rects of the first party member
 	int _xPos0 = innerRect.left + widthTabsArea + (memberColWidth / 2) - (spRectInvEmpty.right - spRectInvEmpty.left) / 2;
 	// And the stash x pos is
-	int _xPosStash = _xPos0 + memberColWidth * DEATHLORD_PARTY_SIZE + 20;
-	if (highlightedRect.eMember < DEATHLORD_PARTY_SIZE)	// give to a person
+	int _xPosStash = _xPos0 + memberColWidth * maxPartySize + 20;
+	if (highlightedRect.eMember < m_partySize)	// give to a person
 	{
 		// Figure out the other person/stash that will be impacted by the move
 		bool noOtherItem = false;
@@ -494,7 +496,7 @@ void InvOverlay::Render(SimpleMath::Rectangle r)
 		{
 			_otherFromRect = RectOfOwnerOfItemInstance(_otherInvI);
 		}
-		if (_invI->owner < DEATHLORD_PARTY_SIZE)
+		if (_invI->owner < m_partySize)
 		{
 			// From a person to a person (_invI->owner to highlighted and vice versa, 2 lines)
 			// First the item we clicked on
@@ -576,7 +578,7 @@ EquipInteractableRect InvOverlay::RectOfOwnerOfItemInstance(InvInstance& pItemIn
 	if (pItemInstance.item == NULL)
 		return EquipInteractableRect();
 	std::vector<EquipInteractableRect> _vec;
-	pItemInstance.owner < DEATHLORD_PARTY_SIZE ? _vec = v_eIRects : _vec = v_trashIRects;
+	pItemInstance.owner < m_partySize ? _vec = v_eIRects : _vec = v_trashIRects;
 	for each (auto _eiRect in _vec)
 	{
 		if ((_eiRect.eMember == pItemInstance.owner) && (_eiRect.eRow == pItemInstance.row))
@@ -632,7 +634,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 	// The next ones will just be shifted by memberColWidth
 	int _xPos = innerRect.left + widthTabsArea + (memberColWidth / 2) - (spRectInvEmpty.right - spRectInvEmpty.left) / 2;
 	auto mmSSTextureSize = GetTextureSize(m_overlaySpriteSheet.Get());
-	for (UINT8 i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+	for (UINT8 i = 0; i < m_partySize; i++)
 	{
 		m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 			mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvEmpty, Colors::White, 0.f, XMFLOAT2());
@@ -677,6 +679,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 		_xPos += memberColWidth;
 	}
 	// Now the stash
+	_xPos += memberColWidth * (maxPartySize - m_partySize);	// in case the party isn't full
 	_xPos += verticalBarWidth;	// the width of the vertical bar
 	m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),
 		mmSSTextureSize, XMFLOAT2(_xPos, yPos), &spRectInvEmpty, Colors::White, 0.f, XMFLOAT2());
@@ -686,10 +689,10 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 	_aEIR.eRow = m_currentItemInstance;
 	_aEIR.eItemId = pItemInstance->item->id;
 	_aEIR.eSlot = pItemInstance->item->slot;
-	_aEIR.eMember = DEATHLORD_PARTY_SIZE;	// The "member" is the stash
+	_aEIR.eMember = maxPartySize;	// The "member" is the stash
 	_aEIR.isTrash = false;
 	v_eIRects.push_back(_aEIR);
-	for (UINT8 i = DEATHLORD_PARTY_SIZE; i < (DEATHLORD_PARTY_SIZE + STASH_MAX_ITEMS_PER_SLOT); i++)
+	for (UINT8 i = maxPartySize; i < (maxPartySize + STASH_MAX_ITEMS_PER_SLOT); i++)
 	{
 		if (pItemInstance->owner == i)
 		{
@@ -725,7 +728,7 @@ void InvOverlay::DrawItem(InvInstance* pItemInstance, DirectX::SpriteFont* font,
 			bool isHighlighted = true;
 			isHighlighted = isHighlighted && (highlightedRect.eSlot == pItemInstance->item->slot);
 			isHighlighted = isHighlighted && (highlightedRect.eRow == m_currentItemInstance);
-			isHighlighted = isHighlighted && (highlightedRect.eMember == DEATHLORD_PARTY_SIZE);
+			isHighlighted = isHighlighted && (highlightedRect.eMember == maxPartySize);
 			if (isHighlighted)
 			{
 				m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::InvOverlaySpriteSheet),

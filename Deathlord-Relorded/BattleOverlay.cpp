@@ -25,9 +25,8 @@ extern std::unique_ptr<Game>* GetGamePtr();
 
 constexpr RECT RECT_SPRITE_CURSOR = { 0, 200, 32, 236};
 
-constexpr int TOTAL_SPRITES = 6 + 32;
 AnimTextManager* m_animTextManager;
-auto m_animations = std::array<std::unique_ptr<AnimationBattleChar>, TOTAL_SPRITES>();
+auto m_animations = std::array<std::unique_ptr<AnimationBattleChar>, 6 + 32>();	// Party + max enemies
 auto m_animationTransition = std::unique_ptr<AnimationBattleTransition>();
 int m_enemyMaxHP = 0x01;	// The highest HP of the monsters we're facing. Every monster will have its health bar relative to this
 bool m_enemyHPIsSet = false;
@@ -130,7 +129,7 @@ void BattleOverlay::SpriteIsHealed(UINT8 charPosition, UINT16 healingAmount)
 void BattleOverlay::SpriteDied(UINT8 charPosition)
 {
 	// track the number of enemies killed
-	if (charPosition >= 6)
+	if (charPosition >= m_partySize)
 	{
 		GameOverOverlay* _goo = GameOverOverlay::GetInstance();
 		_goo->m_monstersKilled++;
@@ -187,13 +186,15 @@ void BattleOverlay::Update()
 	//// We could cache this dereferencing, but it really doesn't matter
 
 	// Fill animations correctly
+	auto _totalSprites = m_partySize + 32;
 	UINT8 _enemyCount = MemGetMainPtr(MEM_ENEMY_COUNT)[0];
 	auto _animSpriteSheetSize = GetTextureSize(AutoMap::GetInstance()->GetMonsterSpriteSheet());
 	auto _battleSpriteSheetSize = GetTextureSize(m_overlaySpriteSheet.Get());
 	AnimationBattleChar* _anim;
-	for (int i = 0; i < TOTAL_SPRITES; i++)
+	UINT8 _animPosition;
+	for (int i = 0; i < _totalSprites; i++)
 	{
-		if (i >= (6 + _enemyCount))		// Clear unused animations
+		if (i >= (m_partySize + _enemyCount))		// Clear unused animations
 		{
 			m_animations[i] = nullptr;
 			continue;
@@ -201,10 +202,12 @@ void BattleOverlay::Update()
 		_anim = m_animations[i].get();
 		if (_anim == nullptr)
 		{
-			m_animations[i] = std::make_unique<AnimationBattleChar>(m_resourceDescriptors, _animSpriteSheetSize, i, _battleSpriteSheetSize);
+			// For animations, make sure that monsters always start at position 6 in the battle layout
+			_animPosition = (i < m_partySize ? i : (6 + i - m_partySize));
+			m_animations[i] = std::make_unique<AnimationBattleChar>(m_resourceDescriptors, _animSpriteSheetSize, _animPosition, _battleSpriteSheetSize);
 			_anim = m_animations[i].get();
 		}
-		if (i < 6)	// party
+		if (i < m_partySize)	// party
 		{
 			_anim->m_monsterId = MemGetMainPtr(PARTY_CLASS_START)[i];
 			_anim->b_isParty = true;
@@ -219,7 +222,7 @@ void BattleOverlay::Update()
 		{
 			_anim->m_monsterId = m_monsterId;
 			_anim->b_isParty = false;
-			_anim->m_health = MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6];
+			_anim->m_health = MemGetMainPtr(MEM_ENEMY_HP_START)[i - m_partySize];
 			_anim->m_power = 0;
 		}
 	}
@@ -244,6 +247,8 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 		return;
 	}
 	
+	m_partySize = MemGetMainPtr(PARTY_PARTYSIZE)[0];
+
 	// Now check if we should animate the display as it appears
 	if (!(m_overlayState == OverlayState::Displayed))
 	{
@@ -285,18 +290,19 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 	SimpleMath::Rectangle _barRectRed(0, 0, 28, 5);
 	SimpleMath::Rectangle _barRectBlue(0, 5, 28, 5);
 	AnimationBattleChar* _anim;
-	for (int i = 0; i < TOTAL_SPRITES; i++)
+	auto _totalSprites = m_partySize + 32;
+	for (int i = 0; i < _totalSprites; i++)
 	{
 		_anim = m_animations[i].get();
 		if (_anim != nullptr)
 		{
 			auto _animRect = _anim->CurrentFrameRectangle();
 			// Draw the cursor on the active sprite
-			if ((i == m_activeActor) && i < 9)	// don't bother with any enemy above 3rd
+			if ((i == m_activeActor) && i < (m_partySize + 3))	// don't bother with any enemy above 3rd
 			{
 				m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
 					_battleSpriteSheetSize, Vector2(_animRect.x - 2, _animRect.y - 2), &RECT_SPRITE_CURSOR,
-					(i < 6 ? Colors::White : Colors::Red), 0.f, XMFLOAT2(), 1.0f);
+					(i < m_partySize ? Colors::White : Colors::Red), 0.f, XMFLOAT2(), 1.0f);
 			}
 			// Render the animated sprites
 
@@ -305,7 +311,7 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 			SimpleMath::Rectangle _healthBarR(_animRect);
 			_healthBarR.y += _animRect.height + 2;
 			_healthBarR.height = 5;
-			if (i < 6)	// party
+			if (i < m_partySize)	// party
 			{
 				_anim->Render(m_overlaySB.get(), &m_currentRect);
 				UINT16 _mHealth = MemGetMainPtr(PARTY_HEALTH_LOBYTE_START)[i] + ((UINT16)MemGetMainPtr(PARTY_HEALTH_HIBYTE_START)[i] << 8);
@@ -325,11 +331,11 @@ void BattleOverlay::Render(SimpleMath::Rectangle r)
 			}
 			else // monsters
 			{
-				_anim->m_turnsDisabled = MemGetMainPtr(MEM_ENEMY_DISABLED_START)[i - 6];
+				_anim->m_turnsDisabled = MemGetMainPtr(MEM_ENEMY_DISABLED_START)[i - m_partySize];
 				_anim->Render(m_overlaySB.get(), &m_currentRect);
-				UINT8 _mMonsterHPDisplay = MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6];
+				UINT8 _mMonsterHPDisplay = MemGetMainPtr(MEM_ENEMY_HP_START)[i - m_partySize];
 				int _maxHPUsed = (_mMonsterHPDisplay > m_enemyMaxHP ? _mMonsterHPDisplay : m_enemyMaxHP);
-				_healthBarR.width = _animRect.width * MemGetMainPtr(MEM_ENEMY_HP_START)[i - 6] / _maxHPUsed;
+				_healthBarR.width = _animRect.width * MemGetMainPtr(MEM_ENEMY_HP_START)[i - m_partySize] / _maxHPUsed;
 			}
 			m_overlaySB->Draw(m_resourceDescriptors->GetGpuHandle((int)m_spritesheetDescriptor),
 				_battleSpriteSheetSize, (RECT)_healthBarR, &(RECT)_barRectRed, Colors::White, 0.f, XMFLOAT2());

@@ -31,7 +31,6 @@ public:
 	void Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBatch);
 	void CreateDeviceDependentResources(ResourceUploadBatch* resourceUpload);
 	void OnDeviceLost();
-	void SetPartySize(UINT8 size);
 	UINT8 GetPartySize();
 	void LevelUpIncremented(UINT8 member);
 	void AttributeIncreased(UINT8 member, DeathlordAttributes attr);
@@ -72,7 +71,6 @@ private:
 	void RenderMember(UINT8 member, DirectX::SpriteBatch* spriteBatch, UINT16 originX, UINT16 originY);
 	void RenderMemberTopLayer(UINT8 member, DirectX::SpriteBatch* spriteBatch, UINT16 originX, UINT16 originY);
 
-	UINT8 m_partySize;
 	UINT8 m_currentLeader;
 
 	DX::DeviceResources* m_deviceResources;

@@ -22,7 +22,6 @@ AnimSpriteManager* m_animSpriteManager;
 void PartyLayout::Initialize()
 {
 	m_animSpriteManager = AnimSpriteManager::GetInstance(m_deviceResources, m_resourceDescriptors);
-	m_partySize = 6;
 	m_currentLeader = 0;
 	// For testing animations:
 	// m_incLevelUp[0] = true;
@@ -35,15 +34,9 @@ void PartyLayout::Initialize()
 	//m_incAttributes.push_back(pair<int, DeathlordAttributes>(0, DeathlordAttributes::xPOW));
 }
 
-void PartyLayout::SetPartySize(UINT8 size)
-{
-	if (size < 7)
-		m_partySize = size;
-}
-
 UINT8 PartyLayout::GetPartySize()
 {
-	return m_partySize;
+	return MemGetMainPtr(PARTY_PARTYSIZE)[0];
 }
 
 void PartyLayout::LevelUpIncremented(UINT8 member)
@@ -79,8 +72,9 @@ void PartyLayout::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBa
 	m_levelupColor.f[0] = Colors::DarkOrange.f[0] + inc;
 	m_levelupColor.f[1] = Colors::DarkOrange.f[1] + inc;
 
+	auto partySize = GetPartySize();
 	m_invMgr = InvManager::GetInstance();
-	for (UINT8 i = 0; i < m_partySize; i++)
+	for (UINT8 i = 0; i < partySize; i++)
 	{
 		RenderMember(i, spriteBatch, r.x + PARTY_LAYOUT_X[i], r.y + PARTY_LAYOUT_Y[i]);
 	}
@@ -89,7 +83,7 @@ void PartyLayout::Render(SimpleMath::Rectangle r, DirectX::SpriteBatch* spriteBa
 	spriteBatch->Draw(m_resourceDescriptors->GetGpuHandle((int)TextureDescriptors::MainBackgroundLayerTop), bgltTexSize,
 		Vector2(r.x, r.y));
 	// And the final dynamic layer
-	for (UINT8 i = 0; i < m_partySize; i++)
+	for (UINT8 i = 0; i < partySize; i++)
 	{
 		RenderMemberTopLayer(i, spriteBatch, r.x + PARTY_LAYOUT_X[i], r.y + PARTY_LAYOUT_Y[i]);
 	}

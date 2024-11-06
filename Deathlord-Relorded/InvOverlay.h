@@ -54,6 +54,7 @@ private:
 	std::vector<EquipInteractableRect>v_eIRects;		// equipment interactable buttons
 	std::vector<EquipInteractableRect>v_trashIRects;	// equipment trash buttons
 	UINT8 m_currentItemInstance;	// Row in use
+	UINT8 m_partySize;
 
 	static InvOverlay* s_instance;
 

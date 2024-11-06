@@ -44,6 +44,7 @@ private:
 
 	UINT8 m_monsterId;	// ID of the monster being fought in the main monster spritesheet
 	UINT8 m_activeActor;	// Currently active actor (Below 6, it's a party member. 6 or above, it's a monster)
+	UINT8 m_partySize;
 
 	static BattleOverlay* s_instance;
 

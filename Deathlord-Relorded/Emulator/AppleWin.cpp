@@ -509,8 +509,8 @@ void EmulatorRepeatInitialization()
 	}
 
 	ApplyNonVolatileConfig();
-	// Always keep the game speed at normal. It's only the disk access that matters.
-	EmulatorSetSpeed(1);
+	// Set the game speed to pretty fast until we reach the initial screen
+	EmulatorSetSpeed(2);
 
 	// Init palette color
 	VideoSwitchVideocardPalette(RGB_GetVideocard(), GetVideoType());

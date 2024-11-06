@@ -256,7 +256,7 @@ void InvManager::SwapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosit
 {
 	if (stashPosition >= STASH_MAX_ITEMS_PER_SLOT)
 		return;
-	if (memberPosition >= DEATHLORD_PARTY_SIZE)
+	if (memberPosition >= MemGetMainPtr(PARTY_PARTYSIZE)[0])
 		return;
 	if ((UINT8)memberSlot >= DEATHLORD_INVENTORY_SLOTS)
 		return;
@@ -278,9 +278,9 @@ void InvManager::SwapStashWithPartyMember(UINT8 stashPosition, UINT8 memberPosit
 
 void InvManager::ExchangeBetweeenPartyMembers(UINT8 m1Position, UINT8 m2Position, InventorySlots mSlot)
 {
-	if (m1Position >= DEATHLORD_PARTY_SIZE)
+	if (m1Position >= MemGetMainPtr(PARTY_PARTYSIZE)[0])
 		return;
-	if (m2Position >= DEATHLORD_PARTY_SIZE)
+	if (m2Position >= MemGetMainPtr(PARTY_PARTYSIZE)[0])
 		return;
 	if ((UINT8)mSlot >= DEATHLORD_INVENTORY_SLOTS)
 		return;
@@ -307,7 +307,7 @@ std::vector<InvInstance> InvManager::AllInventoryInSlot(InventorySlots slot)
 	std::vector<InvInstance> _currentInventory;
 	int extraId = 0;	// extraidentifier to properly sort items with the same id
 	// Get the party inventory for this slot
-	for (UINT8 i = 0; i < (DEATHLORD_PARTY_SIZE); i++)
+	for (UINT8 i = 0; i < (MemGetMainPtr(PARTY_PARTYSIZE)[0]); i++)
 	{
 		UINT16 idMemSlot = PARTY_INVENTORY_START + i * 0x20 + (UINT8)slot;
 		UINT8 itemId = MemGetMainPtr(idMemSlot)[0];
@@ -335,7 +335,7 @@ std::vector<InvInstance> InvManager::AllInventoryInSlot(InventorySlots slot)
 		_inst.extraIdentifier = extraId;
 		_inst.item = &itemList[theItem->first];
 		_inst.charges = theItem->second;
-		_inst.owner = DEATHLORD_PARTY_SIZE + i;
+		_inst.owner = MemGetMainPtr(PARTY_PARTYSIZE)[0] + i;
 		_inst.equipped = false;
 		_currentInventory.push_back(_inst);
 		++extraId;
@@ -354,7 +354,7 @@ std::vector<InvInstance> InvManager::AllInventoryInSlot(InventorySlots slot)
 std::vector<InvInstance> InvManager::AllInventoryForMember(UINT8 member)
 {
 	std::vector<InvInstance> _currentInventory;
-	if (member >= DEATHLORD_PARTY_SIZE)
+	if (member >= MemGetMainPtr(PARTY_PARTYSIZE)[0])
 		return _currentInventory;
 	for (UINT8 i = 0; i < (DEATHLORD_INVENTORY_SLOTS); i++)
 	{

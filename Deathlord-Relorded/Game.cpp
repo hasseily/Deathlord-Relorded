@@ -333,7 +333,6 @@ void Game::Update(DX::StepTimer const& timer)
     {
 		if (kbTracker.pressed.Escape)       // Escape used to close the overlay
 			m_invOverlay->HideOverlay();
-        m_invOverlay->Update();
 		// Hack for 1366x768
 		auto gamePtr = GetGamePtr();
 		float newx = mo.x;
@@ -455,6 +454,7 @@ void Game::Render()
                 break;
             case StartMenuState::Title:
 				_sMenu = L"Press any key";
+				EmulatorSetSpeed(1);
                 break;
             case StartMenuState::Menu:
                 _sMenu = L"Choose 'U', 'C', or 'P' to continue";
@@ -626,7 +626,7 @@ void Game::PostProcessMap(ID3D12GraphicsCommandList* commandList)
 
 		UINT8 _mCurrentChar = MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0];
 		// If _mCurrentChar == 0xFF it could be after casting a spell in battle
-		if (_mCurrentChar >= DEATHLORD_PARTY_SIZE)
+		if (_mCurrentChar >= MemGetMainPtr(PARTY_PARTYSIZE)[0])
 			goto NOPOSTPROCESSING;
 		if (g_nonVolatile.noEffects)
 			goto NOPOSTPROCESSING;

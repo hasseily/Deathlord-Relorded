@@ -73,6 +73,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 		///  START DEATHLORD HOOKS
 
 		WORD _origPC = regs.pc;
+		auto _partySize = MemGetMainPtr(PARTY_PARTYSIZE)[0];
 		if (g_isInBattle)
 		{
 			// Start with battle module
@@ -87,12 +88,12 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			}
 			case PC_BATTLE_ENEMY_BEGIN_TURN:
 			{
-				BattleOverlay::GetInstance()->SetActiveActor(regs.x + 6);
+				BattleOverlay::GetInstance()->SetActiveActor(regs.x + _partySize);
 				break;
 			}
 			case PC_BATTLE_ENEMY_BEGIN_ATK:
 			{
-				BattleOverlay::GetInstance()->SpriteBeginAttack(6 + MemGetMainPtr(MEM_BATTLE_ENEMY_INDEX)[0]);
+				BattleOverlay::GetInstance()->SpriteBeginAttack(_partySize + MemGetMainPtr(MEM_BATTLE_ENEMY_INDEX)[0]);
 				break;
 			}
 			case PC_BATTLE_CHAR_BEGIN_ATK:
@@ -113,17 +114,17 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 			}
 			case PC_BATTLE_CHAR_HAS_HIT:
 			{
-				BattleOverlay::GetInstance()->SpriteIsHit(regs.x + 6, regs.a);
+				BattleOverlay::GetInstance()->SpriteIsHit(regs.x + _partySize, regs.a);
 				break;
 			}
 			case PC_BATTLE_CHAR_HAS_KILLED:
 			{
-				BattleOverlay::GetInstance()->SpriteDied(regs.x + 6);
+				BattleOverlay::GetInstance()->SpriteDied(regs.x + _partySize);
 				break;
 			}
 			case PC_BATTLE_CHAR_HAS_BANISHED:
 			{
-				BattleOverlay::GetInstance()->SpriteDied(regs.x + 6 - 1);	// 1-based!
+				BattleOverlay::GetInstance()->SpriteDied(regs.x + _partySize - 1);	// 1-based!
 				break;
 			}
 			case PC_BATTLE_CHAR_HAS_HEALED:
@@ -149,14 +150,14 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 				// in a random way: start with a random char and go down, rolling over as necessary
 
 				// First, make sure everyone in the battle gets XP
-				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				for (size_t i = 0; i < _partySize; i++)
 				{
 					MemGetMainPtr(MEM_BATTLE_GETXP_START)[i] = 1;
 				}
 				UINT16 _battleXP = (MemGetMainPtr(0xAFEF)[0] << 8) + MemGetMainPtr(0xAFEE)[0];
-				if (_battleXP < DEATHLORD_PARTY_SIZE) // overflow, some members won't get XP
+				if (_battleXP < _partySize) // overflow, some members won't get XP
 				{
-					UINT8 _currCharForXP = rand() % DEATHLORD_PARTY_SIZE;
+					UINT8 _currCharForXP = rand() % _partySize;
 					while (_battleXP > 1)	// allocate every time 1 XP to a random char
 					{
 						UINT8 _xpHi = MemGetMainPtr(PARTY_XP_HIBYTE_START)[_currCharForXP];
@@ -164,7 +165,7 @@ static DWORD Cpu65C02(DWORD uTotalCycles, const bool bVideoUpdate)
 						if (_xpLo == UINT8_MAX)
 							MemGetMainPtr(PARTY_XP_HIBYTE_START)[_currCharForXP] = _xpHi + 1;
 						MemGetMainPtr(PARTY_XP_LOBYTE_START)[_currCharForXP] = _xpLo + 1;
-						_currCharForXP = (_currCharForXP + 1) % DEATHLORD_PARTY_SIZE;
+						_currCharForXP = (_currCharForXP + 1) % _partySize;
 						--_battleXP;
 					}
 					// There's now a single XP left, let the game allocate it to the last char and exit
@@ -685,39 +686,39 @@ SWITCH_GAMEMAP:
 				// put enough space for the player to buy up to 100 food,
 				// or whatever is left to max everyone.
 
-				if (DEATHLORD_PARTY_SIZE == 1)		// no one to pool to or from
+				if (_partySize == 1)		// no one to pool to or from
 					break;
 				auto _foodPtr = MemGetMainPtr(PARTY_FOOD_START);
 				UINT8 _curChar = MemGetMainPtr(PARTY_CURRENT_CHAR_POS)[0];
 				int _totalFood = 0;
-				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				for (size_t i = 0; i < _partySize; i++)
 				{
 					_totalFood += (UINT8)_foodPtr[i];
 					_foodPtr[i] = 0;
 				}
 
 				// Food to the member who's buying (if any)
-				if (_totalFood > (100 * (DEATHLORD_PARTY_SIZE - 1)))
+				if (_totalFood > (100 * (_partySize - 1)))
 				{
-					_foodPtr[_curChar] = _totalFood - (100 * (DEATHLORD_PARTY_SIZE - 1));
+					_foodPtr[_curChar] = _totalFood - (100 * (_partySize - 1));
 					_totalFood -= _foodPtr[_curChar];
 				}
 					
 				//Food for the rest of the boys AND girls
-				int _memberFood = _totalFood / (DEATHLORD_PARTY_SIZE - 1);
-				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				int _memberFood = _totalFood / (_partySize - 1);
+				for (size_t i = 0; i < _partySize; i++)
 				{
 					if (i == _curChar)
 						continue;
 					_foodPtr[i] = _memberFood;
 				}
 				// deal with the remainder
-				_totalFood -= _memberFood * (DEATHLORD_PARTY_SIZE - 1);
+				_totalFood -= _memberFood * (_partySize - 1);
 				UINT8 _memb = 0;
 				while (_totalFood > 0)
 				{
 					++_memb;
-					_memb = _memb % DEATHLORD_PARTY_SIZE;	// shouldn't be necessary
+					_memb = _memb % _partySize;	// shouldn't be necessary
 					if (_memb == _curChar)
 						continue;
 					_foodPtr[_memb] += 1;
@@ -732,17 +733,17 @@ SWITCH_GAMEMAP:
 				auto _foodPtr = MemGetMainPtr(PARTY_FOOD_START);
 				_foodPtr[regs.y] = regs.a;	// Do the STA first.
 				int _totalFood = 0;		// then calc all the food and redistribute
-				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				for (size_t i = 0; i < _partySize; i++)
 				{
 					_totalFood += _foodPtr[i];
 					_foodPtr[i] = 0;
 				}
-				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				for (size_t i = 0; i < _partySize; i++)
 				{
-					_foodPtr[i] = _totalFood / DEATHLORD_PARTY_SIZE;
+					_foodPtr[i] = _totalFood / _partySize;
 				}
 				// remaining food goes to hungry fighters
-				UINT8 _remainingFood = _totalFood % DEATHLORD_PARTY_SIZE;
+				UINT8 _remainingFood = _totalFood % _partySize;
 				for (size_t i = 0; i < _remainingFood; i++)
 				{
 					_foodPtr[i] = _foodPtr[i] + 1;
@@ -756,12 +757,12 @@ SWITCH_GAMEMAP:
 				// Request to pool gold to char in regs.a
 				// We completely bypass the routine and handle it ourselves
 				// Max gold per person is 10,000
-				if (DEATHLORD_PARTY_SIZE == 1)		// no one to pool to or from
+				if (_partySize == 1)		// no one to pool to or from
 					break;
 				auto _goldLoPtr = MemGetMainPtr(PARTY_GOLD_LOBYTE_START);
 				auto _goldHiPtr = MemGetMainPtr(PARTY_GOLD_HIBYTE_START);
 				int _totalGold = 0;
-				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				for (size_t i = 0; i < _partySize; i++)
 				{
 					_totalGold += (UINT8)_goldLoPtr[i] + ((UINT8)_goldHiPtr[i] << 8);
 					_goldLoPtr[i] = 0;
@@ -773,10 +774,10 @@ SWITCH_GAMEMAP:
 				_goldHiPtr[regs.a] = static_cast<UINT8>(_goldToChar >> 8);
 				_totalGold -= _goldToChar;
 				// Gold to the other members
-				int _memberGold = _totalGold / (DEATHLORD_PARTY_SIZE - 1);
+				int _memberGold = _totalGold / (_partySize - 1);
 				UINT8 _memberGoldLo = static_cast<UINT8>(_memberGold);
 				UINT8 _memberGoldHi = static_cast<UINT8>(_memberGold >> 8);
-				for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+				for (size_t i = 0; i < _partySize; i++)
 				{
 					if (i == regs.a)
 						continue;
@@ -784,12 +785,12 @@ SWITCH_GAMEMAP:
 					_goldHiPtr[i] = _memberGoldHi;
 				}
 				// deal with the remainder (not that it matters, it's at most 5 gold)
-				_totalGold -= _memberGold * (DEATHLORD_PARTY_SIZE - 1);
+				_totalGold -= _memberGold * (_partySize - 1);
 				UINT8 _memb = 0;
 				while (_totalGold > 0)
 				{
 					++_memb;
-					_memb = _memb % DEATHLORD_PARTY_SIZE;	// shouldn't be necessary
+					_memb = _memb % _partySize;	// shouldn't be necessary
 					if (_memb == regs.a)
 						continue;
 					if (_goldLoPtr[_memb] == UINT8_MAX)
@@ -825,7 +826,7 @@ SWITCH_GAMEMAP:
 					// Then verify we have enough space for some of the battle gold
 					// And redistribute the max amount possible up the the battle gold amount
 					int _totalOtherGold = 0;
-					for (size_t i = 0; i < DEATHLORD_PARTY_SIZE; i++)
+					for (size_t i = 0; i < _partySize; i++)
 					{
 						if (i == regs.x)
 							continue;
@@ -833,7 +834,7 @@ SWITCH_GAMEMAP:
 					}
 					// how much do we need to free up from the leader?
 					int _overage = MAX(0, _currCharGold + _battleGold - 10000);
-					_overage = MIN(_overage, ((DEATHLORD_PARTY_SIZE - 1) * 10000) - _totalOtherGold);
+					_overage = MIN(_overage, ((_partySize - 1) * 10000) - _totalOtherGold);
 					// Remove the overage from the current char
 					_currCharGold -= _overage;
 					_goldHiPtr[regs.x] = static_cast<UINT8>(_currCharGold >> 8);
@@ -843,7 +844,7 @@ SWITCH_GAMEMAP:
 					while (_overage > 0)
 					{
 						++_memb;
-						_memb = _memb % DEATHLORD_PARTY_SIZE;
+						_memb = _memb % _partySize;
 						if (_memb == regs.x)
 							continue;
 						// The max of 10000 is 0x2710 in hex.
@@ -886,13 +887,21 @@ SWITCH_GAMEMAP:
 			case PC_CHECK_KEYPRESS_MENU:
 			{
 				if (regs.a > 0x7F)	// key was pressed
+				{
 					g_startMenuState = StartMenuState::Other;	// Could be anything, including character creation
-				else
+					if ((regs.a - 0x80) == 'P')	// User wants to play the game
+					{
+						EmulatorSetSpeed(6);	// almost instant game load
+					}
+				}
+				else {
 					g_startMenuState = StartMenuState::Menu;
+				}
 				break;
 			}
 			case PC_SCENARIOS_ARE_IN_DRIVES:
 			{
+				EmulatorSetSpeed(1);	// game should now run at normal speed
 				g_isInGameTransition = true;
 				g_startMenuState = StartMenuState::LoadingGame;
 				break;
