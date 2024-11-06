@@ -625,7 +625,7 @@ bool DeathlordHacks::RestoreGameImage()
 							return false;
 						}
 						std::wstring pathname(pszFilePathHDV);
-						std::wstring sA(L"Deathlord PRODOS_2");	// piece of "Deathlord PRODOS_2021...
+						std::wstring sA(L"Deathlord PRODOS");	// piece of "Deathlord PRODOS_2021...
 						size_t fx = pathname.find(sA);
 						if (fx == std::string::npos)
 						{

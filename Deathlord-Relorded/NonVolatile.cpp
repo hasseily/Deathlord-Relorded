@@ -15,7 +15,7 @@ namespace fs = std::filesystem;
 
 static nlohmann::json nv_json = R"(
   {
-    "hdvPath":			  "Images\\Deathlord PRODOS.po",
+    "hdvPath":			  "Images\\Deathlord PRODOS.hdv",
     "applewinScale":	  1.0,
 	"scanlines":		  true,
 	"removeFog":		  false,

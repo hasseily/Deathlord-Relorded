@@ -202,10 +202,6 @@ static void NotifyInvalidImage(const std::wstring pszImageFilename)
 
 //===========================================================================
 
-BOOL HD_Insert(const int iDrive, const std::wstring & pszImageFilename);
-
-//===========================================================================
-
 static void HD_SaveLastDiskImage(const int iDrive)
 {
 	_ASSERT(iDrive == HARDDISK_1);
@@ -309,7 +305,7 @@ void HD_Destroy(void)
 }
 
 // Pre: pszImageFilename is qualified with path
-BOOL HD_Insert(const int iDrive, const std::wstring & pszImageFilename)
+bool HD_Insert(const int iDrive, const std::wstring & pszImageFilename)
 {
 	if (pszImageFilename.empty())
 		return FALSE;
@@ -337,11 +333,10 @@ BOOL HD_Insert(const int iDrive, const std::wstring & pszImageFilename)
 			g_RemoteControlMgr.setLoadedHDInfo(g_HardDisk[iDrive].imagehandle);
 		}
 	}
-
 	return g_HardDisk[iDrive].hd_imageloaded;
 }
 
-static bool HD_SelectImage(const int drive, LPCWSTR pszFilename)
+bool HD_SelectImage(const int drive, LPCWSTR pszFilename)
 {
 	bool bRes = false;
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_DISABLE_OLE1DDE);
@@ -410,12 +405,10 @@ void HD_Unplug(const int iDrive)
 	if (g_HardDisk[iDrive].hd_imageloaded)
 	{
 		HD_CleanupDrive(iDrive);
-		// RIK BEGIN
 		if (iDrive == 0)
 		{
 			g_RemoteControlMgr.setLoadedHDInfo(NULL);
 		}
-		// RIK END
 	}
 }
 

@@ -573,7 +573,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		case ID_EMULATOR_INSERTINTOHD:
 		{
-			HD_Insert(HARDDISK_1, g_nonVolatile.hdvPath);
+			HD_SelectImage(HARDDISK_1, g_nonVolatile.hdvPath.c_str());
 			break;
 		}
 
