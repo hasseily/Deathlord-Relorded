@@ -112,7 +112,35 @@ You can then return to the main menu, insert the boot disk (again via the "Emula
 - Original interface accessible via `F11` or the "Relorded" menu. The new rules still apply. If you want to play the original game, just load up the images in the "Images" directory in your favorite Apple 2 emulator. But we have no idea why you'd want to do this unless you're a masochist.
 - Toggle with `F10` between the pseudo-Japanese words and classic English language D&D. I took the liberty to significantly change the meaning to some of them in order to better align them with their stats.
 - Cheat-sheet spell window accessible via `Alt-S` or the "Relorded" menu.
-- Some real cheats also available for those who really can't be bothered playing _correctly_.
+
+## "Hacks" window
+
+The hacks window (available in the main menu under 'Relorded') lets you modify your gaming experience to suit your playstyle and level of masochism.
+The most important is the top button that revives the whole party to full health, any time you want. Yes it's a big cheat, but you decided if you want to use it.
+Just below it is a laundry list of changes that Relorded implements to the base game, which you can selectively turn off. They are:
+
+- "Distribute Food": Automatically distributes food so that when the active character buys food, they can buy the maximum amound (100) in one shot.
+- "Distribute Gold": Automatically distributes gold when it's acquired, so that it isn't wasted if the active character has reached the 10,000 limit.
+- "Expanded Weapon Use": Changes weapon restrictions to conform to the Relorded file `assets/InventoryList.csv`.
+- "Extra Race And Class Bonuses": See the section on races and classes.
+- "Exit Pit By Moving": Exit a pit by moving in addition to using the '^' key.
+- "Fix Gold Pooling": When pooling gold, ensure that any gold above the 10,000 limit is redistributed to others and not lost.
+- "Freeze Time When Idle": Do not pass a turn when doing nothing.
+- "Keep Extra XP On Levelup": When leveling up, don't discard the extra gained XP.
+- "Magic Water Increases Stats": Magic water always increases stats instead of any random effect (including negative!).
+- "No Autosave After Death": Stops the game from autosaving upon the death of a character (perma-death).
+- "No HP Loss From Starvation": You don't lose HP when starving, but you won't heal when resting if you don't have food.
+- "No Level Drain": I hate level drain.
+- "No Stats Limit": Stats can increase without a limit. The original limits you to starting maximums.
+- "Ranged Attack For Rear Line": Rear line can used ranged weapons.
+- "Search Always Succeeds": In the original, search success is between 29% and 68% depending on the race of the party leader. See <https://github.com/hasseily/Deathlord-Relorded/wiki/Logic-for-random-checks#searching>.
+- "XP Reallocation": After battle, properly allocate XP to the whole party. The original favors the leader and doesn't give out XP to those who don't act.
+
+The next control is a slider that determines how opaque the original interface (F11) will be when viewed over the main window. If you want to play the original the way it was released in 1987, make it fully opaque. You can also press Alt-Enter to go into windowed mode and shrink the window to the size of the Apple 2 output.
+
+Further down the Hacks window is a line that allows to view the value and change a byte of the Apple 2 memory. ** DO NOT USE IT UNLESS YOU KNOW WHAT YOU'RE DOING **. It can completely mess up the game.
+
+And finally, at the bottom of the hacks window you have functionality to export map and sprite data, which is only of value to other game developers or those who are interested in the innards of the game. 
 
 Thank you for playing!
 
@@ -122,4 +150,4 @@ Please let us know your feedback on itch.io or github.
 
 <https://github.com/hasseily/Deathlord-Relorded>
 
-Rikkles, 2022.
+Rikkles, 2025.
