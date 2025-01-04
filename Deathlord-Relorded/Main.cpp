@@ -358,6 +358,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static bool s_in_sizemove = false;
 	static bool s_in_suspend = false;
 	static bool s_minimized = false;
+	static bool s_menu_visible = true; 
 
 	auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
@@ -442,10 +443,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_GETMINMAXINFO:
 		if (lParam)
 		{
-			// Set the minimum size to be the initial window width
+			// Set the minimum size to be at least the size of the original Apple screen with borders
 			auto info = reinterpret_cast<MINMAXINFO*>(lParam);
-			info->ptMinTrackSize.x = m_initialWindowWidth;
-			info->ptMinTrackSize.y = m_initialWindowHeight;
+			info->ptMinTrackSize.x = 700;
+			info->ptMinTrackSize.y = 500;
 		}
 		break;
 
@@ -486,8 +487,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 
-	case WM_INPUT:
 	case WM_MOUSEMOVE:
+		if (!s_menu_visible) {
+			// Re-activate the menu if the mouse goes to the top of the window
+			POINT cursorPos;
+			GetCursorPos(&cursorPos);
+			ScreenToClient(hWnd, &cursorPos);
+
+			if (cursorPos.y <= 10) { // Near the top of the window
+				HMENU hNewMenu = LoadMenu(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDC_DeathlordRelorded)); // Replace with your menu resource
+				SetMenu(hWnd, hNewMenu);
+				s_menu_visible = true;
+				DrawMenuBar(hWnd); // Redraw menu bar
+			}
+		}
+		[[fallthrough]];
+	case WM_INPUT:
 	case WM_LBUTTONDOWN:
 	case WM_LBUTTONUP:
 	case WM_RBUTTONDOWN:
@@ -524,9 +539,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_KEYUP:
 		Keyboard::ProcessMessage(message, wParam, lParam);
 		break;
-	case WM_KEYDOWN:		// Send to the applewin emulator
+	case WM_KEYDOWN:
 		Keyboard::ProcessMessage(message, wParam, lParam);
-		if (shouldSendKeystrokesToAppleWin)
+		if (shouldSendKeystrokesToAppleWin)		// Send to the applewin emulator
 			KeybQueueKeypress(wParam, NOT_ASCII);
 		break;
 
@@ -779,6 +794,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			g_nonVolatile.englishNames = !g_nonVolatile.englishNames;
 			g_nonVolatile.SaveToDisk();
+			break;
+		}
+		case ID_TOGGLE_TOP_MENU:
+		{
+			HMENU hMenu = GetMenu(hWnd);
+			if (hMenu && s_menu_visible) {
+				// Hide the menu
+				SetMenu(hWnd, nullptr);
+				s_menu_visible = false;
+			}
+			else {
+				// Restore the menu
+				HMENU hNewMenu = LoadMenu(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDC_DeathlordRelorded)); // Replace with your menu resource
+				SetMenu(hWnd, hNewMenu);
+				s_menu_visible = true;
+			}
+			DrawMenuBar(hWnd); // Redraw menu bar
 			break;
 		}
 		case IDM_ABOUT:

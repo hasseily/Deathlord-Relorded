@@ -81,11 +81,12 @@ void AppleWinDXVideo::Render(SimpleMath::Rectangle r,
 		_winCenter.y + _texCenter.y		// bottom
 	};
 	UINT8 borderSize = 5;
+	XMFLOAT4 _colorCurtain = { 0.f, 0.f, 0.f, g_nonVolatile.opacityF11 / 100.f };
 	m_primitiveBatch->DrawQuad(
-		VertexPositionColor(XMFLOAT3(r.x, r.y, 0), ColorCurtain),
-		VertexPositionColor(XMFLOAT3(r.x + r.width, r.y, 0), ColorCurtain),
-		VertexPositionColor(XMFLOAT3(r.x + r.width, r.y + r.height, 0), ColorCurtain),
-		VertexPositionColor(XMFLOAT3(r.x, r.y + r.height, 0), ColorCurtain)
+		VertexPositionColor(XMFLOAT3(r.x, r.y, 0), _colorCurtain),
+		VertexPositionColor(XMFLOAT3(r.x + r.width, r.y, 0), _colorCurtain),
+		VertexPositionColor(XMFLOAT3(r.x + r.width, r.y + r.height, 0), _colorCurtain),
+		VertexPositionColor(XMFLOAT3(r.x, r.y + r.height, 0), _colorCurtain)
 	);
 	m_primitiveBatch->DrawQuad(
 		VertexPositionColor(XMFLOAT3(texRect.left - borderSize, texRect.top - borderSize, 0), ColorAmber),

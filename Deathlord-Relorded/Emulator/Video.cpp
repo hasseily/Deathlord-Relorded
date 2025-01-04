@@ -126,6 +126,11 @@ static bool g_bVideoScannerNTSC = true;  // NTSC video scanning (or PAL)
 //===========================================================================
 bool VideoInitialize ()
 {
+	if (g_pFramebufferinfo != NULL)
+	{
+		VideoReinitialize();
+		return true;
+	}
 	// RESET THE VIDEO MODE SWITCHES AND THE CHARACTER SET OFFSET
 	VideoResetState();
 

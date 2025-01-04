@@ -10,12 +10,32 @@ enum class AutoMapQuadrant
 	FollowPlayer = 99
 };
 
+struct RelordedChanges {
+	bool xp_reallocation;
+	bool exit_pit_by_moving;
+	bool freeze_time_when_idle;
+	bool ranged_attack_for_rear_line;
+	bool search_always_succeeds;
+	bool no_level_drain;
+	bool magic_water_increases_stats;
+	bool no_stats_limit;
+	bool no_hp_loss_from_starvation;
+	bool extra_race_and_class_bonuses;
+	bool no_autosave_after_death;
+	bool expanded_weapon_use;
+	bool keep_extra_xp_on_levelup;
+	bool distribute_food;
+	bool fix_gold_pooling;
+	bool distribute_gold;
+};
+
 class NonVolatile
 {
 public:
 	std::wstring hdvPath;
 	int speed = 1;
 	float applewinScale = 1.0f;
+	int opacityF11 = 85;
 	bool scanlines = false;
 	bool removeFog = true;
 	bool showFootsteps = true;
@@ -39,5 +59,24 @@ public:
 	// I/O
 	int SaveToDisk();
 	int LoadFromDisk();
+
+	RelordedChanges relordedChanges = {
+		true, // xpReallocation
+		true, // exitPitByMoving
+		true, // freezeTimeWhenIdle
+		true, // rangedAttackForRearLine
+		true, // searchAlwaysSucceeds
+		true, // noLevelDrain
+		true, // magicWaterIncreasesStats
+		true, // noStatsLimit
+		true, // noHpLossFromStarvation
+		true, // extraRaceAndClassBonuses
+		true, // noAutosaveAfterDeath
+		true, // expandedWeaponUse
+		true, // keepExtraXpOnLevelup
+		true, // distributeFood
+		true, // fixGoldPooling
+		true  // distributeGold
+	};
 };
 
