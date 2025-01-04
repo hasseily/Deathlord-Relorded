@@ -19,7 +19,7 @@ namespace fs = std::filesystem;
 
 static nlohmann::json nv_json = R"(
   {
-    "hdvPath":			  "Images\\Deathlord PRODOS.hdv",
+    "hdvPath":			  "\\Images\\Deathlord PRODOS.hdv",
     "applewinScale":	  1.0,
     "opacityF11":		  85,
 	"scanlines":		  true,
@@ -63,7 +63,7 @@ int NonVolatile::SaveToDisk()
 	if (path != NULL)
 	{
 		savedGamesPath.assign(path);
-		savedGamesPath.append(L"\\Deathlord Relorded\\");
+		savedGamesPath.append(L"\\Deathlord Relorded 2\\");
 		CoTaskMemFree(path);
 
 		auto _dbfn = fs::path(hdvPath).filename().wstring();
@@ -135,7 +135,7 @@ int NonVolatile::LoadFromDisk()
 	if (path != NULL)
 	{
 		savedGamesPath.assign(path);
-		savedGamesPath.append(L"\\Deathlord Relorded\\");
+		savedGamesPath.append(L"\\Deathlord Relorded 2\\");
 		CoTaskMemFree(path);
 
 		// Try to create the save game dir. If it already exists, use it
@@ -213,7 +213,16 @@ int NonVolatile::LoadFromDisk()
 	// overland sectors seen
 	sectorsSeen = nvmarkers_json["sectorsSeen"].get<std::vector<UINT8>>();
 
+	// if there's no saved game, then assign the hdv's path to the current .exe folder
 	if (shouldSaveAfterLoad)
+	{
+		wchar_t exeFullPath[MAX_PATH] = { 0 };
+		GetModuleFileNameW(NULL, exeFullPath, MAX_PATH);
+		PathRemoveFileSpecW(exeFullPath);
+		hdvPath = exeFullPath + hdvPath;
+
 		SaveToDisk();
+		LoadFromDisk();	// reload the config from the saved game directory
+	}
 	return 0;
 }

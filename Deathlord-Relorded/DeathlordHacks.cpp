@@ -1,5 +1,5 @@
 #include "pch.h"
-#include <shobjidl_core.h> 
+#include <shobjidl_core.h>
 #include <shlobj.h>
 #include "DeathlordHacks.h"
 #include "Emulator/Memory.h"
@@ -87,7 +87,6 @@ static std::array<std::wstring, 8> DeathlordRaceNamesJapan{
 
 INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	UNREFERENCED_PARAMETER(wParam);
 	std::shared_ptr<DeathlordHacks>hw = GetDeathlordHacks();
 	switch (message)
 	{
@@ -698,6 +697,17 @@ bool DeathlordHacks::RestoreGameImage()
 	std::wstring backupImageFullPath;
 	DWORD err;
 
+	// Determine saved games folder
+	std::wstring savedGamesPath;
+	PWSTR path = NULL;
+	HRESULT r = SHGetKnownFolderPath(FOLDERID_SavedGames, KF_FLAG_CREATE, NULL, &path);
+	if (path != NULL)
+	{
+		savedGamesPath.assign(path);
+		savedGamesPath.append(L"\\Deathlord Relorded 2\\");
+		CoTaskMemFree(path);
+	}
+
 	HRESULT hr = CoInitializeEx(nullptr, COINIT_DISABLE_OLE1DDE);
 	if (SUCCEEDED(hr))
 	{
@@ -709,10 +719,22 @@ bool DeathlordHacks::RestoreGameImage()
 
 		if (SUCCEEDED(hr))
 		{
+			// Create an IShellItem that represents the saved game folder
+			// we want to open the dialog in (if possible)
+			IShellItem* pShellItemFolder = nullptr;
+			hr = SHCreateItemFromParsingName(savedGamesPath.c_str(),
+				nullptr,
+				IID_PPV_ARGS(&pShellItemFolder));
+			if (SUCCEEDED(hr))
+			{
+				pFileOpen->SetFolder(pShellItemFolder);
+				pShellItemFolder->Release();
+			}
+
 			pFileOpen->SetTitle(L"Choose game image backup");
 			COMDLG_FILTERSPEC rgSpec[] =
 			{
-				{ L"Disk Images (*.po,*.gz,*.woz,*.zip,*.2mg,*.2img,*.iie)", L"*.po;*.gz;*.woz;*.zip;*.2mg;*.2img;*.iie" },
+				{ L"Disk Images (*.po,*.hdv,*.2mg,*.2img,*.iie)", L"*.po;*.hdv;*.2mg;*.2img;*.iie" },
 				{ L"All Files", L"*.*" },
 			};
 			pFileOpen->SetFileTypes(ARRAYSIZE(rgSpec), rgSpec);
@@ -726,8 +748,8 @@ bool DeathlordHacks::RestoreGameImage()
 				if (SUCCEEDED(hr))
 				{
 					// TODO: Grab the file and its extension.
-					// Once we know both are good, remove existing scenario disks from drives
-					// and copy the backups over the existing files, overwriting them (using their filenames)
+					// Once we know both are good,
+					// copy the backup over the existing file, overwriting it
 					PWSTR pszFilePathHDV;
 					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePathHDV);
 					if (SUCCEEDED(hr))
@@ -739,19 +761,21 @@ bool DeathlordHacks::RestoreGameImage()
 							return false;
 						}
 						std::wstring pathname(pszFilePathHDV);
-						std::wstring sA(L"Deathlord PRODOS");	// piece of "Deathlord PRODOS_2021...
+						std::wstring sA(L"Deathlord PRODOS");	// piece of "2021..._Deathlord PRODOS"
 						size_t fx = pathname.find(sA);
 						if (fx == std::string::npos)
 						{
 							MessageBox(g_hFrameWindow, L"The program cannot parse the backup filename. Please leave the image filenames alone, thank you :)", L"Alert", MB_ICONASTERISK | MB_OK);
 							return false;
 						}
+						EmulatorUnloadHDV();	// otherwise it won't work, since the HDV is in use
 						if (!CopyFile(pszFilePathHDV, g_nonVolatile.hdvPath.c_str(), FALSE))
 						{
 							err = GetLastError();
 							HA::AlertIfError(g_hFrameWindow);
 							return false;
 						}
+						EmulatorLoadDefaultHDV();
 					}
 					pItem->Release();
 				}

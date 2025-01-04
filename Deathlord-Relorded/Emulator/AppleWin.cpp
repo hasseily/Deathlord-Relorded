@@ -530,6 +530,11 @@ void EmulatorLoadDefaultHDV()
 	}
 }
 
+void EmulatorUnloadHDV()
+{
+	HD_Unplug(HARDDISK_1);
+}
+
 void EmulatorReboot()
 {
 	g_nAppMode = AppMode_e::MODE_RUNNING;

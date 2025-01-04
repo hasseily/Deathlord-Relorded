@@ -32,6 +32,7 @@ void ApplyNonVolatileConfig();
 void EmulatorOneTimeInitialization(HWND window);
 void EmulatorRepeatInitialization();
 void EmulatorLoadDefaultHDV();
+void EmulatorUnloadHDV();
 void EmulatorReboot();
 void EmulatorMessageLoopProcessing();
 UINT8 EmulatorGetSpeed();
