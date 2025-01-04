@@ -1,5 +1,6 @@
 #include "pch.h"
 #include <shobjidl_core.h> 
+#include <shlobj.h>
 #include "DeathlordHacks.h"
 #include "Emulator/Memory.h"
 #include "HAUtils.h"
@@ -92,6 +93,29 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 	{
 	case WM_INITDIALOG:
 	{
+		const RelordedChanges& changes = g_nonVolatile.relordedChanges;
+		CheckDlgButton(hwndDlg, IDC_CHK_XP_REALLOCATION, changes.xp_reallocation ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_EXIT_PIT_BY_MOVING, changes.exit_pit_by_moving ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_FREEZE_TIME_WHEN_IDLE, changes.freeze_time_when_idle ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_RANGED_ATTACK_FOR_REAR_LINE, changes.ranged_attack_for_rear_line ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_SEARCH_ALWAYS_SUCCEEDS, changes.search_always_succeeds ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_NO_LEVEL_DRAIN, changes.no_level_drain ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_MAGIC_WATER_INCREASES_STATS, changes.magic_water_increases_stats ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_NO_STATS_LIMIT, changes.no_stats_limit ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_NO_HP_LOSS_FROM_STARVATION, changes.no_hp_loss_from_starvation ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_EXTRA_RACE_AND_CLASS_BONUSES, changes.extra_race_and_class_bonuses ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_NO_AUTOSAVE_AFTER_DEATH, changes.no_autosave_after_death ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_EXPANDED_WEAPON_USE, changes.expanded_weapon_use ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_KEEP_EXTRA_XP_ON_LEVELUP, changes.keep_extra_xp_on_levelup ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_DISTRIBUTE_FOOD, changes.distribute_food ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_FIX_GOLD_POOLING, changes.fix_gold_pooling ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwndDlg, IDC_CHK_DISTRIBUTE_GOLD, changes.distribute_gold ? BST_CHECKED : BST_UNCHECKED);
+
+		HWND hSlider = GetDlgItem(hwndDlg, IDC_SLIDER_F11_OPACITY);
+		SendMessage(hSlider, TBM_SETRANGE, TRUE, MAKELPARAM(0, 100)); // Range: 0 to 100
+		SendMessage(hSlider, TBM_SETTICFREQ, 10, 0); // Tick every 10 units
+		SendMessage(hSlider, TBM_SETPOS, TRUE, g_nonVolatile.opacityF11); // Start at saved value
+
 		return TRUE;
 	}
 	case WM_ACTIVATE:
@@ -106,6 +130,13 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 	{
 		hw->HideHacksWindow();
 		return false;   // don't destroy the window
+	}
+	case WM_HSCROLL: {
+		HWND hSlider = (HWND)lParam; // Handle to the slider
+		if ((HWND)lParam == GetDlgItem(hwndDlg, IDC_SLIDER_F11_OPACITY)) {
+			g_nonVolatile.opacityF11 = SendMessage(hSlider, TBM_GETPOS, 0, 0);
+		}
+		break;
 	}
 	case WM_COMMAND:
 	{
@@ -253,6 +284,88 @@ INT_PTR CALLBACK HacksProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPa
 			}
 			break;
 		}
+		//------------------------------------------------------------
+		// Handle each relordedChanges checkbox
+		//------------------------------------------------------------
+		case IDC_CHK_XP_REALLOCATION:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.xp_reallocation = (IsDlgButtonChecked(hwndDlg, IDC_CHK_XP_REALLOCATION) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_EXIT_PIT_BY_MOVING:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.exit_pit_by_moving = (IsDlgButtonChecked(hwndDlg, IDC_CHK_EXIT_PIT_BY_MOVING) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_FREEZE_TIME_WHEN_IDLE:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.freeze_time_when_idle = (IsDlgButtonChecked(hwndDlg, IDC_CHK_FREEZE_TIME_WHEN_IDLE) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_RANGED_ATTACK_FOR_REAR_LINE:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.ranged_attack_for_rear_line = (IsDlgButtonChecked(hwndDlg, IDC_CHK_RANGED_ATTACK_FOR_REAR_LINE) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_SEARCH_ALWAYS_SUCCEEDS:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.search_always_succeeds = (IsDlgButtonChecked(hwndDlg, IDC_CHK_SEARCH_ALWAYS_SUCCEEDS) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_NO_LEVEL_DRAIN:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.no_level_drain = (IsDlgButtonChecked(hwndDlg, IDC_CHK_NO_LEVEL_DRAIN) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_MAGIC_WATER_INCREASES_STATS:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.magic_water_increases_stats = (IsDlgButtonChecked(hwndDlg, IDC_CHK_MAGIC_WATER_INCREASES_STATS) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_NO_STATS_LIMIT:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.no_stats_limit = (IsDlgButtonChecked(hwndDlg, IDC_CHK_NO_STATS_LIMIT) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_NO_HP_LOSS_FROM_STARVATION:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.no_hp_loss_from_starvation = (IsDlgButtonChecked(hwndDlg, IDC_CHK_NO_HP_LOSS_FROM_STARVATION) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_EXTRA_RACE_AND_CLASS_BONUSES:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.extra_race_and_class_bonuses = (IsDlgButtonChecked(hwndDlg, IDC_CHK_EXTRA_RACE_AND_CLASS_BONUSES) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_NO_AUTOSAVE_AFTER_DEATH:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.no_autosave_after_death = (IsDlgButtonChecked(hwndDlg, IDC_CHK_NO_AUTOSAVE_AFTER_DEATH) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_EXPANDED_WEAPON_USE:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.expanded_weapon_use = (IsDlgButtonChecked(hwndDlg, IDC_CHK_EXPANDED_WEAPON_USE) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_KEEP_EXTRA_XP_ON_LEVELUP:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.keep_extra_xp_on_levelup = (IsDlgButtonChecked(hwndDlg, IDC_CHK_KEEP_EXTRA_XP_ON_LEVELUP) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_DISTRIBUTE_FOOD:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.distribute_food = (IsDlgButtonChecked(hwndDlg, IDC_CHK_DISTRIBUTE_FOOD) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_FIX_GOLD_POOLING:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.fix_gold_pooling = (IsDlgButtonChecked(hwndDlg, IDC_CHK_FIX_GOLD_POOLING) == BST_CHECKED);
+			break;
+
+		case IDC_CHK_DISTRIBUTE_GOLD:
+			if (HIWORD(wParam) == BN_CLICKED)
+				g_nonVolatile.relordedChanges.distribute_gold = (IsDlgButtonChecked(hwndDlg, IDC_CHK_DISTRIBUTE_GOLD) == BST_CHECKED);
+			break;
 		default:
 			break;
 		}
@@ -421,6 +534,7 @@ void DeathlordHacks::HideHacksWindow()
 	ShowWindow(hwndHacks, SW_HIDE);
 	CheckMenuItem(hm, ID_COMPANION_HACKS, MF_BYCOMMAND | MF_UNCHECKED);
 	isDisplayed = false;
+	g_nonVolatile.SaveToDisk();
 }
 
 bool DeathlordHacks::IsHacksWindowDisplayed()

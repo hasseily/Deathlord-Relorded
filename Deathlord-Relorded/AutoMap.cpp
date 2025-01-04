@@ -318,7 +318,7 @@ void AutoMap::DrawLine(int x0, int y0, int x1, int y1) {
 	while (t < 1.0) {
 		dx = int((1.0 - t) * x0 + t * x1);
 		dy = int((1.0 - t) * y0 + t * y1);
-		if ((dx >= MAP_WIDTH * FBTW) | (dy >= MAP_HEIGHT * FBTH) | (dx < 0) | (dy < 0))
+		if ((dx >= MAP_WIDTH * FBTW) || (dy >= MAP_HEIGHT * FBTH) || (dx < 0) || (dy < 0))
 			goto CONT;
 		if ((m_avatarPosition.x == dx / FBTW) && (m_avatarPosition.y == dy / FBTH))
 		{
@@ -372,7 +372,8 @@ bool AutoMap::UpdateLOSRadius()
 	}
 	else
 	{
-		if (PartyLeaderIsOfRace(DeathlordRaces::Gnome))
+		if (PartyLeaderIsOfRace(DeathlordRaces::Gnome) 
+			&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 		{
 			m_LOSRadius = LOS_MAX_DISTANCE;	// Gnomes get incredible LOS
 		}
@@ -767,29 +768,35 @@ ELEMENT_TILES_GENERAL:
 					case 0x2A:	// weapon chest
 						hasOverlay = true;
 						_tileSheetPos.y = 1;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Thief))
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Thief)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
 						break;
 					case 0x2B:	// armor chest
 						hasOverlay = true;
 						_tileSheetPos.y = 2;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Thief))
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Thief)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
 						break;
 					case 0xC6:	// water poison
 						hasOverlay = true;
 						_tileSheetPos.y = 3;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Druid))
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Druid)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Barbarian))
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Barbarian)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
 						break;
 					case 0x76:	// water bonus! "Z"-drink it and hope for the best!
 						hasOverlay = true;
 						_tileSheetPos.y = 0;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Druid))
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Ranger, DeathlordClasses::Druid)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Barbarian))
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Barbarian)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
 						break;
 					case 0x7E:	// pit
@@ -797,9 +804,11 @@ ELEMENT_TILES_GENERAL:
 						_tileSheetPos.y = 4;
 						if (avatarIsOnThisTile)
 							hasSeenHidden = true;
-						if (avatarIsNextToThisTile && PartyLeaderIsOfClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
+						if (avatarIsNextToThisTile && PartyLeaderIsOfClass(DeathlordClasses::Thief, DeathlordClasses::Ranger)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
-						if (avatarIsNextToThisTile && PartyLeaderIsOfRace(DeathlordRaces::DarkElf))
+						if (avatarIsNextToThisTile && PartyLeaderIsOfRace(DeathlordRaces::DarkElf)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
 						break;
 					case 0xCE:	// ground with chute / teleporter
@@ -807,7 +816,8 @@ ELEMENT_TILES_GENERAL:
 						_tileSheetPos.y = 5;
 						if (avatarIsOnThisTile)
 							hasSeenHidden = true;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Illusionist))
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Illusionist)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
 						break;
 					case 0x02:	// illusiory wall
@@ -815,7 +825,8 @@ ELEMENT_TILES_GENERAL:
 						_tileSheetPos.y = 7;
 						if (avatarIsOnThisTile)
 							hasSeenHidden = true;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Illusionist))
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Illusionist)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
 						break;
 					case 0x05:	// illusiory Rock
@@ -823,7 +834,8 @@ ELEMENT_TILES_GENERAL:
 						_tileSheetPos.y = 7;
 						if (avatarIsOnThisTile)
 							hasSeenHidden = true;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Illusionist))
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Illusionist)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
 						break;
 					case 0x57:	// hidden door
@@ -831,9 +843,11 @@ ELEMENT_TILES_GENERAL:
 						_tileSheetPos.y = 8;
 						if (avatarIsOnThisTile)
 							hasSeenHidden = true;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
-						if (avatarIsNextToThisTile && PartyHasRace(DeathlordRaces::DarkElf))
+						if (avatarIsNextToThisTile && PartyHasRace(DeathlordRaces::DarkElf)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
 						break;
 					case 0x7F:	// interesting tombstone
@@ -843,9 +857,11 @@ ELEMENT_TILES_GENERAL:
 					case 0x85:	// interesting trees/bushes. No idea what this is. Probably a teleport
 						hasOverlay = true;
 						_tileSheetPos.y = 0;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger))
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Thief, DeathlordClasses::Ranger)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
-						if (avatarIsNextToThisTile && PartyHasRace(DeathlordRaces::DarkElf))
+						if (avatarIsNextToThisTile && PartyHasRace(DeathlordRaces::DarkElf)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
 						break;
 					case 0x37:	// jar unopened
@@ -888,7 +904,8 @@ ELEMENT_TILES_GENERAL:
 						hasSeenHidden = false;
 						if (avatarIsOnThisTile)
 							hasSeenHidden = true;
-						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Illusionist))
+						if (avatarIsNextToThisTile && PartyHasClass(DeathlordClasses::Illusionist)
+							&& g_nonVolatile.relordedChanges.extra_race_and_class_bonuses)
 							hasSeenHidden = true;
 						if (hasSeenHidden || g_nonVolatile.showHidden)
 						{
