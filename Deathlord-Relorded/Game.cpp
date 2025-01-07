@@ -87,10 +87,12 @@ int g_debugLogInstructions = 0;    // Tapping "End" key logs the next 100,000 in
 
 Game::Game() noexcept(false)
 {
+	std::cout << "		Instancing NonVolatile..." << std::endl;
     g_nonVolatile = NonVolatile();
     g_textureData = {};
     GameLink::Init(false);
 
+	std::cout << "		Creating DirectX Resources..." << std::endl;
     // TODO: give option to un-vsync?
     // TODO: give option to show FPS?
 	m_deviceResources = std::make_unique<DX::DeviceResources>(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_D32_FLOAT, 2, D3D_FEATURE_LEVEL_11_0, DX::DeviceResources::c_AllowTearing);
@@ -109,6 +111,7 @@ Game::Game() noexcept(false)
     // Any time the layouts differ, a recreation of the vertex buffer is triggered
     m_previousLayout = EmulatorLayout::NONE;
     m_currentLayout = EmulatorLayout::NORMAL;
+	std::cout << "		End Game Instancing." << std::endl;
 }
 
 Game::~Game()

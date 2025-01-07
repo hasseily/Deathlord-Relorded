@@ -57,6 +57,16 @@ namespace
 	std::shared_ptr<DeathlordHacks> g_dlHacks;
 }
 
+void CreateDebugConsole()
+{
+	AllocConsole();
+	FILE* stream;
+	freopen_s(&stream, "CONOUT$", "w", stdout);
+	freopen_s(&stream, "CONOUT$", "w", stderr);
+	freopen_s(&stream, "CONIN$", "r", stdin);
+	SetConsoleTitle(TEXT("DLRL Debug Console"));
+}
+
 void ExitGame() noexcept;
 
 void SetSendKeystrokesToAppleWin(bool shouldSend)
@@ -221,36 +231,34 @@ void ToggleFullScreen(HWND hWnd)
 }
 
 // Entry point
-int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
+int main(int argc, char* argv[])
 {
+	CreateDebugConsole();
+	std::cout << "Debugging started..." << std::endl;
+
+	auto hInstance = GetModuleHandle(nullptr);
 	HWND hwnd;
 	HACCEL haccel;      // handle to accelerator table 
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
-
-#if defined(_DEBUG)
-	// Check to see if a copy of WinPixGpuCapturer.dll has already been injected into the application.
-	// This may happen if the application is launched through the PIX UI. 
-	if (GetModuleHandle(L"WinPixGpuCapturer.dll") == 0)
-	{
-		LoadLibrary(GetLatestWinPixGpuCapturerPath().c_str());
-	}
-#endif
 
 	try {
 		// Initialize global strings
 		LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
 		LoadStringW(hInstance, IDC_DeathlordRelorded, szWindowClass, MAX_LOADSTRING);
 
+		std::cout << "   XMVerifyCPUSupport check..." << std::endl;
+
 		if (!XMVerifyCPUSupport())
 			return 1;
 
+		std::cout << "   Multithreading Init..." << std::endl;
 		Microsoft::WRL::Wrappers::RoInitializeWrapper initialize(RO_INIT_MULTITHREADED);
 		if (FAILED(initialize))
 			return 1;
 
+		std::cout << "   Instancing Game..." << std::endl;
 		g_game = std::make_unique<Game>();
 
+		std::cout << "   Creating Window..." << std::endl;
 		// Register class and create window
 		{
 			// Register class
@@ -300,8 +308,11 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			g_game->Initialize(hwnd);
 
 			// create the instances of important blocks at the start
+			std::cout << "   Instancing LogWindow..." << std::endl;
 			g_logW = std::make_unique<LogWindow>(g_hInstance, hwnd);
+			std::cout << "   Instancing SpellWindow..." << std::endl;
 			g_spellW = std::make_unique<SpellWindow>(g_hInstance, hwnd);
+			std::cout << "   Instancing DeathlordHacks..." << std::endl;
 			g_dlHacks = std::make_unique<DeathlordHacks>(g_hInstance, hwnd);
 
 			// And open the spells window if necessary
@@ -310,12 +321,32 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			
 			// Game has now loaded the saved/default settings
 			// Update the menu bar with the settings
+			std::cout << "   UpdateMenuBarStatus()..." << std::endl;
 			UpdateMenuBarStatus(hwnd);
 			//ShowWindow(hwnd, nCmdShow);
+			std::cout << "   ToggleFullScreen()..." << std::endl;
+			ToggleFullScreen(hwnd);
 			ToggleFullScreen(hwnd);
 
+			HWND hwndConsole = GetConsoleWindow();
+			if (hwndConsole)
+			{
+				if (SetForegroundWindow(hwndConsole))
+				{
+					std::cout << "Console window brought to the front." << std::endl;
+				}
+				else
+				{
+					std::cerr << "Failed to bring console window to the front." << std::endl;
+				}
+			}
+			else
+			{
+				std::cerr << "Failed to get console window handle." << std::endl;
+			}
 		}
 
+		std::cout << "START MAIN LOOP" << std::endl;
 		// Main message loop
 		MSG msg = {};
 		while (WM_QUIT != msg.message)
@@ -341,13 +372,26 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			}
 		}
 
+		std::cout << "Resetting Game..." << std::endl;
 		g_game.reset();
 
+		std::cout << "EXIT" << std::endl;
+		if (hwnd)
+			DestroyWindow(hwnd);
+		// Prevent console from closing immediately
+		std::cout << "Main window closed. Press Enter to exit..." << std::endl;
+		std::cin.get();
 		return static_cast<int>(msg.wParam);
 	}
 	catch (std::runtime_error exception)
 	{
+		std::cerr << "ERROR: " << exception.what() << std::endl;
 		ExceptionHandler(exception.what());
+		if (hwnd)
+			DestroyWindow(hwnd);
+		// Prevent console from closing immediately
+		std::cerr << "Main window closed. Press Enter to exit..." << std::endl;
+		std::cin.get();
 		return 1;
 	}
 
