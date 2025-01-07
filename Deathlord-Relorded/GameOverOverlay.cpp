@@ -53,7 +53,7 @@ const std::array<std::wstring, 10> m_verbs =
 	L"buried",
 	L"slaughtered",
 	L"massacred",
-	L"ground to atomic particles"
+	L"atomized"
 };
 
 // In main
