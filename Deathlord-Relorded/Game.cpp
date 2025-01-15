@@ -128,37 +128,54 @@ Game::~Game()
 // Initialize the resources required to run.
 void Game::Initialize(HWND window)
 {
+	std::cout << "   Initializing Game Instance..." << std::endl;
+
     m_window = window;
 
 	// Use a variable timestep to give as much time to the emulator as possible
 // Then we control how often we render later in the Render() method
 // m_timer.SetTargetElapsedSeconds(1.0 / MAX_RENDERED_FRAMES_PER_SECOND);
 	m_timer.SetFixedTimeStep(false);
+	std::cout << "       SetFixedTimeStep OK..." << std::endl;
 
     m_gamePad = std::make_unique<GamePad>();
+	std::cout << "       GamePad OK..." << std::endl;
     m_keyboard = std::make_unique<Keyboard>();
+	std::cout << "       Keyboard OK..." << std::endl;
 	m_mouse = std::make_unique<Mouse>();
+	std::cout << "       Mouse OK..." << std::endl;
 
 	m_mouse->SetWindow(window);
+	std::cout << "       mouse SetWindow OK..." << std::endl;
 
     g_nonVolatile.LoadFromDisk();
+	std::cout << "       LoadFromDisk OK..." << std::endl;
 
 	// Initialize emulator
 	EmulatorOneTimeInitialization(window);
+	std::cout << "       EmulatorOneTimeInitialization OK..." << std::endl;
 	EmulatorRepeatInitialization();
+	std::cout << "       EmulatorRepeatInitialization OK..." << std::endl;
 
     shouldRender = true;
 
     m_deviceResources->CreateDeviceResources();
+	std::cout << "       DRCreateDeviceResources OK..." << std::endl;
     CreateDeviceDependentResources();
+	std::cout << "       CreateDeviceDependentResources OK..." << std::endl;
 
 	SimpleMath::Rectangle winrct = GetDrawRectangle();
 	m_deviceResources->SetWindow(window, winrct.width, winrct.height);
+	std::cout << "       SetWindow OK..." << std::endl;
     m_deviceResources->CreateWindowSizeDependentResources();
+	std::cout << "       DRCreateWindowSizeDependentResources OK..." << std::endl;
     CreateWindowSizeDependentResources();
+	std::cout << "       CreateWindowSizeDependentResources OK..." << std::endl;
 
     m_animTextManager = AnimTextManager::GetInstance(m_deviceResources.get(), m_resourceDescriptors.get());
+	std::cout << "       AnimTextManager OK..." << std::endl;
 	m_animSpriteManager = AnimSpriteManager::GetInstance(m_deviceResources.get(), m_resourceDescriptors.get());
+	std::cout << "       AnimSpriteManager OK..." << std::endl;
 }
 
 UINT64 Game::GetTotalTicks()
@@ -868,7 +885,9 @@ void Game::MenuToggleHacksWindow()
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
 {
+	std::cout << "       Creating Device Dependent Resources..." << std::endl;
     auto device = m_deviceResources->GetD3DDevice();
+	std::cout << "           GetD3DDevice OK..." << std::endl;
 
 	// Check Shader Model 6 support
 	D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { D3D_SHADER_MODEL_5_1 };
@@ -878,26 +897,37 @@ void Game::CreateDeviceDependentResources()
 #ifdef _DEBUG
 		OutputDebugStringA("ERROR: Shader Model 6.0 is not supported!\n");
 #endif
+		std::cout << "           Shader Model >= 5.1 Required! ABORTING" << std::endl;
 		throw std::runtime_error("Shader Model 5.1 is not supported!");
 	}
+	std::cout << "           CheckFeatureSupport (Shader Model >= 5.1) OK..." << std::endl;
 
     auto command_queue = m_deviceResources->GetCommandQueue();
+	std::cout << "           GetCommandQueue OK..." << std::endl;
     m_graphicsMemory = std::make_unique<GraphicsMemory>(device);
+	std::cout << "           GraphicsMemory OK..." << std::endl;
     m_uploadBatch = std::make_shared<ResourceUploadBatch>(device);
+	std::cout << "           ResourceUploadBatch OK..." << std::endl;
 
     /// <summary>
     /// Start of resource uploading to GPU
     /// </summary>
 	m_resourceDescriptors = std::make_unique<DescriptorHeap>(device, (int)TextureDescriptors::Count);
+	std::cout << "           DescriptorHeap OK..." << std::endl;
 
     m_uploadBatch->Begin();
+	std::cout << "           UploadBatch Started..." << std::endl;
 
     // Upload the background of the main window
 	DX::ThrowIfFailed(
 		CreateWICTextureFromFile(device, *m_uploadBatch, L"Assets/Background_Relorded.png",
             m_gameTextureBG.ReleaseAndGetAddressOf()));
+	std::cout << "           Background Loaded..." << std::endl;
+
 	CreateShaderResourceView(device, m_gameTextureBG.Get(),
 		m_resourceDescriptors->GetCpuHandle((int)TextureDescriptors::MainBackground));
+	std::cout << "           Background Resource View OK..." << std::endl;
+
 
     // Create the sprite fonts based on FontsAvailable
     m_spriteFonts.clear();
@@ -914,22 +944,32 @@ void Game::CreateDeviceDependentResources()
     for each (auto aFont in fontsAvailable)
     {
         DX::FindMediaFile(buff, MAX_PATH, aFont.second.c_str());
+		std::string _debugfontStr;
+		HA::ConvertWStrToStr(&aFont.second, &_debugfontStr);
+		std::cout << "           Loading font: " << _debugfontStr << std::endl;
+
 		m_spriteFonts[aFont.first] = std::make_unique<SpriteFont>(device, *m_uploadBatch, buff,
 				m_resourceDescriptors->GetCpuHandle((int)aFont.first),
 				m_resourceDescriptors->GetGpuHandle((int)aFont.first));
 		m_spriteFonts.at(aFont.first)->SetDefaultCharacter('.');
+		std::cout << "           Font loaded" << std::endl;
     }
 
     // Now initialize the pieces of the UI, and create the resources
 	m_states = std::make_unique<CommonStates>(device);
+	std::cout << "           CommonStates OK..." << std::endl;
 
     // Do the sprite batches.
 	auto sampler = m_states->LinearWrap();
     RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(), m_deviceResources->GetDepthBufferFormat());
+	std::cout << "           RenderTargetState OK..." << std::endl;
+
     // TODO: Right now spritesheets are NonPremultiplied
     // Optimize to AlphaBlend?
 	SpriteBatchPipelineStateDescription spd(rtState, &CommonStates::NonPremultiplied, nullptr, nullptr, &sampler);
 	m_spriteBatch = std::make_unique<SpriteBatch>(device, *m_uploadBatch.get(), spd);
+	std::cout << "           SpriteBatch OK..." << std::endl;
+
 
 	/// <summary>
 	/// Set up PrimitiveBatch to draw the lines and triangles for sidebars and inventory
@@ -945,7 +985,9 @@ void Game::CreateDeviceDependentResources()
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
 	m_dxtEffectLines = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdLines);
 	m_dxtEffectLines->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
+	std::cout << "           dxtEffectLines OK..." << std::endl;
 	m_primitiveBatchLines = std::make_shared<PrimitiveBatch<VertexPositionColor>>(device);
+	std::cout << "           primitiveBatchLines OK..." << std::endl;
 	EffectPipelineStateDescription epdTriangles(
 		&VertexPositionColor::InputLayout,
 		CommonStates::Opaque,
@@ -955,7 +997,9 @@ void Game::CreateDeviceDependentResources()
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 	m_dxtEffectTriangles = std::make_unique<BasicEffect>(device, EffectFlags::VertexColor, epdTriangles);
 	m_dxtEffectTriangles->SetProjection(XMMatrixOrthographicOffCenterRH(0, GetFrameBufferWidth(), GetFrameBufferHeight(), 0, 0, 1));
+	std::cout << "           dxtEffectTriangles OK..." << std::endl;
 	m_primitiveBatchTriangles = std::make_shared<PrimitiveBatch<VertexPositionColor>>(device);
+	std::cout << "           primitiveBatchTriangles OK..." << std::endl;
 
 	/// <summary>
 	/// Finish
@@ -966,6 +1010,7 @@ void Game::CreateDeviceDependentResources()
 		D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
 		(size_t)RTDescriptors::Count);
+	std::cout << "           renderDescriptors OK..." << std::endl;
 
 	m_offscreenTexture1->SetDevice(device,
 		m_resourceDescriptors->GetCpuHandle((size_t)TextureDescriptors::OffscreenTexture1),
@@ -976,37 +1021,50 @@ void Game::CreateDeviceDependentResources()
 	m_offscreenTexture3->SetDevice(device,
 		m_resourceDescriptors->GetCpuHandle((size_t)TextureDescriptors::OffscreenTexture3),
 		m_renderDescriptors->GetCpuHandle((size_t)RTDescriptors::Offscreen3));
+	std::cout << "           Offscreen Textures OK..." << std::endl;
 
 	m_postProcessBlur = std::make_unique<BasicPostProcess>(device, rtState, BasicPostProcess::BloomBlur);
 	m_postProcessCopy = std::make_unique<BasicPostProcess>(device, rtState, BasicPostProcess::Copy);
 	m_postProcessMerge = std::make_unique<DualPostProcess>(device, rtState, DualPostProcess::Merge);
+	std::cout << "           PostProcessing Effects OK..." << std::endl;
 
 	m_autoMap = AutoMap::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_autoMap->CreateDeviceDependentResources(m_uploadBatch.get());
+	std::cout << "           Automap OK..." << std::endl;
 	m_textOutput = TextOutput::GetInstance();
+	std::cout << "           TextOutput OK..." << std::endl;
 	m_invOverlay = InvOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_invOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
+	std::cout << "           InvOverlay OK..." << std::endl;
 	m_battleOverlay = BattleOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_battleOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
+	std::cout << "           BattleOverlay OK..." << std::endl;
 	m_gameOverOverlay = GameOverOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_gameOverOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
+	std::cout << "           GameOverlay OK..." << std::endl;
 	m_gameLoadingOverlay = GameLoadingOverlay::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_gameLoadingOverlay->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get(), L"InterferencePS.cso");
+	std::cout << "           GameLoadingOverlay OK..." << std::endl;
 	m_a2Video = AppleWinDXVideo::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_a2Video->CreateDeviceDependentResources(m_uploadBatch.get(), m_states.get());
+	std::cout << "           A2Video OK..." << std::endl;
 	m_minimap = MiniMap::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_minimap->CreateDeviceDependentResources(m_uploadBatch.get());
+	std::cout << "           Minimap OK..." << std::endl;
 	m_daytime = Daytime::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_daytime->CreateDeviceDependentResources(m_uploadBatch.get());
+	std::cout << "           Daytime OK..." << std::endl;
 	m_partyLayout = PartyLayout::GetInstance(m_deviceResources, m_resourceDescriptors);
 	m_partyLayout->CreateDeviceDependentResources(m_uploadBatch.get());
+	std::cout << "           PartyLayout OK..." << std::endl;
 
     auto uploadResourcesFinished = m_uploadBatch->End(command_queue);
     uploadResourcesFinished.wait();
+	std::cout << "           Finished Uploading Resources" << std::endl;
 
     // Wait until assets have been uploaded to the GPU.
     m_deviceResources->WaitForGpu();
-
+	std::cout << "           Resources Uploaded to GPU" << std::endl;
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.

@@ -276,6 +276,7 @@ int main(int argc, char* argv[])
 			if (!RegisterClassExW(&wcex))
 				return 1;
 
+			std::cout << "       RegisterClassExW OK..." << std::endl;
 			g_hInstance = hInstance; // Store instance handle in our global variable
 
 			// Create window
@@ -284,6 +285,8 @@ int main(int argc, char* argv[])
 
 			// Now need to set the size to the actual usable size
 			AdjustWindowRect(&rc, WS_OVERLAPPED | WS_SYSMENU, TRUE);
+			std::cout << "       AdjustWindowRect OK..." << std::endl;
+
 			m_initialWindowWidth = rc.right - rc.left;
 			m_initialWindowHeight = rc.bottom - rc.top;
 
@@ -296,16 +299,23 @@ int main(int argc, char* argv[])
 			if (!hwnd)
 				return 1;
 
+			std::cout << "       CreateWindowExW OK..." << std::endl;
+
 			// Set up the accelerators
 			haccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_ACCELERATOR1));
+			std::cout << "       LoadAccelerators OK..." << std::endl;
 
 			SetWindowLongPtr(hwnd, GWL_EXSTYLE, 0);	// set it to WS_EX_TOPMOST for fullscreen
+			std::cout << "       SetWindowLongPtr OK..." << std::endl;
 			WINDOWINFO wi;
 			wi.cbSize = sizeof(WINDOWINFO);
 			GetWindowInfo(hwnd, &wi);
+			std::cout << "       GetWindowInfo OK..." << std::endl;
 
 			SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(g_game.get()));
+			std::cout << "       SetWindowLongPtr OK..." << std::endl;
 			g_game->Initialize(hwnd);
+			std::cout << "   Game Initialized!..." << std::endl;
 
 			// create the instances of important blocks at the start
 			std::cout << "   Instancing LogWindow..." << std::endl;
