@@ -20,6 +20,8 @@ It will provide the critical list of commands, as well as races, classes and spe
 
 **Do read the original documentation or your experience will be problematic, to say the least!**
 
+**DEATHLORD RELORDED EXPECTS YOU TO HAVE A FULL PARTY OF 6 CHARACTERS. Anything less than a full party is neither supported nor recommended. If you launch the game and it freezes on the credits screen, then you probably do not have an active party.**
+
 For the rest, take a look below. Much has changed. For the better, we hope.
 
 ## CHARACTER CREATION
@@ -27,8 +29,6 @@ For the rest, take a look below. Much has changed. For the better, we hope.
 When you first launch the game, you will be greeted by the original interface, complete with graphical artifacts from the period. There's also a (hopefully) helpful line below the original game area that explains what can and should be pressed.
 
 Press `C` to go into character options. In general, press `ESC` to go back and exit whatever screen you're on, if you need to.
-
-**Whenever the game asks you to enter scenario or boot disks, you can go in the menu "Emulator" and select "Insert Scenarios" or "Insert Boot Disk" (or use Alt-> or Alt-<), then press `Enter`.**
 
 Using the arrow keys and `Enter`, select "Conjure a New Character". Select a race, and it will ask you if you're happy with the attributes. You most certainly will not be. So say "N", and then comes the first feature of Deathlord Relorded: an automatic roller of attributes that will stop only when the attributes found are extremely good.
 
@@ -95,7 +95,7 @@ Of special mention are the gnome's incredible dark-vision in dungeons, and the p
 
 Once you've created 6 characters, it is time to assemble a group. First, make sure you select "Disperse Existing Group" before assembling a new group.
 
-**DEATHLORD RELORDED ONLY SUPPORTS A FULL PARTY OF 6 CHARACTERS!!!!**
+**REMINDER: DEATHLORD RELORDED ONLY SUPPORTS A FULL PARTY OF 6 CHARACTERS!!!!**
 
 You can then return to the main menu, insert the boot disk (again via the "Emulator" menu at the top), and prepare to play the game.
 
@@ -142,9 +142,20 @@ Further down the Hacks window is a line that allows to view the value and change
 
 And finally, at the bottom of the hacks window you have functionality to export map and sprite data, which is only of value to other game developers or those who are interested in the innards of the game. 
 
-Thank you for playing!
+## Credits and Developer Stories
 
-Please let us know your feedback on itch.io or github.
+I, Rikkles, decided to play Deathlord because Chris Freeman of "The Lost Sectors" (check them out on YouTube and Discord) is a huge fan of Deathlord. And Chris is a walking encyclopedia of gaming knowledge, so I thought I'd have to play it. But there was no way I would have the time or the inclination to commit to the masochistic original game. That's how Deathlord Relorded came about.
+
+I was helped along the way by two incredible people who donated a significant amount of time to the project:
+- Bill Giggie (BillG) who redrew all the tiles of the original game, including the monsters. You can thank him for the vibrant colors of DLRL!
+- Peter Ferrie (Qkumba), who is so legendary in the Apple 2 retro scene that some believe he's just that, a legend. I can vouch for his existence and his unmatched ability to read code and instantly determine what it does. Qkumba helped me make sense of a number of routines in the original game, and for version 2.0 he merged the 3 diskettes of the game into one disk, removing the copy protection in the process.
+
+Speaking of copy protection, in addition to the usual physical floppy disk shenanigans, standard at the time, there's an additional delayed protection in the game that checks for code that has been tampered with. If so, it randomly converts all the monsters in a map to the DOOM GOLEM, an enemy that is far stronger than even the Deathlord, and does not otherwise exist in the game. Realizing that this protection existed was what delayed the release of version 2. But at least now we have an answer to the question of what doom golems are doing in the monster list!
+
+
+Thank you for playing, and we hope you enjoy the experience!
+
+Please let us know your feedback on itch.io or github, or in The Lost Sectors Discord.
 
 <https://rikkles.itch.io/deathlord-relorded>
 
