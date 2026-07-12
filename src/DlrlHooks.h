@@ -65,6 +65,7 @@ enum class HookEventType
     ClearText,
     AllCharactersDead,
     EndCredits,
+    StartupSplash,
     RequestSpeed,
 };
 

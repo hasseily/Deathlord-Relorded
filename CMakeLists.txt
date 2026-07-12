@@ -228,12 +228,30 @@ if(BUILD_TESTING)
                 --key-event 1900:P
                 --key-event 2300:P
                 --key-event 2800:P
+                --key-event 3500:SPACE
+                --key-event 4000:SPACE
+                --key-event 4500:SPACE
                 --window-size 1920x1080
                 --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-live-game.bmp"
         )
         set_tests_properties(sdl_live_game_smoke PROPERTIES
             LABELS "gui;visual;hdv"
             PASS_REGULAR_EXPRESSION "frames=5000 pc=\\$4AEF"
+        )
+        add_test(NAME sdl_startup_splash_smoke
+            COMMAND $<TARGET_FILE:dlrl>
+                --hdv "${DLRL_PRIVATE_HDV}"
+                --smoke-frames 4000
+                --key-event 800:X
+                --key-event 1900:P
+                --key-event 2300:P
+                --key-event 2800:P
+                --window-size 1920x1080
+                --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-startup-splash.bmp"
+        )
+        set_tests_properties(sdl_startup_splash_smoke PROPERTIES
+            LABELS "gui;visual;hdv"
+            PASS_REGULAR_EXPRESSION "DLRL startup splash: waiting for Space"
         )
     endif()
     if(DLRL_ENABLE_GUI_TESTS)

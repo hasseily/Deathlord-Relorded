@@ -57,7 +57,8 @@ supplies hook data. They divide into these externally observable areas.
 
 - two-drive prompt bypass
 - scenario-disk prompt and insertion
-- scenario validation state
+- scenario-floppy validation state (the `$845C` post-validation PC remains as
+  a presentation-only HDV checkpoint for showing the Relorded credits splash)
 - write interception using `g_wantsToSave`
 - floppy speed-up and drive-state polling
 
@@ -104,11 +105,14 @@ done merely because the game appears to boot.
   arrow/pit input, auto-reroll, all 16 configurable Relorded changes, and the
   unconditional Ninja/Monk AC fix now live in `src/DlrlHooks.cpp`.
 - `tested`: the CPU replacement ABI, idle timer suppression, movement mapping,
-  pit exit, rear ranged attacks, tile resilience, XP allocation, food/gold
-  conservation, Ninja/Monk fix, typed events, and CSV equipment rules run in
+  pit exit, the complete v2 autoroll state machine (including SDL lowercase-A
+  input, the uppercase Apple //e latch residue, and hidden full-speed mode),
+  rear ranged attacks, tile resilience, XP allocation, food/gold conservation,
+  Ninja/Monk fix, typed events, and CSV equipment rules run in
   `relorded_hooks`; HDV title/menu traps run in deterministic integration tests.
-- `removed-hdv`: every two-drive, scenario-floppy insertion/validation,
-  Disk II write interception, and floppy-speed hook.
+- `removed-hdv`: every two-drive, scenario-floppy insertion/validation action,
+  Disk II write interception, and floppy-speed hook. The action-free `$845C`
+  checkpoint is retained solely to time the Relorded credits splash.
 - `deferred-late-game-integrity`: no protection bypass has been added or needed
   for boot. The supplied 2.0.1 HDV reaches real gameplay unchanged and its hash
   is checked after tests. A possible later protection symptom in which major

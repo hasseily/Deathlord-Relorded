@@ -40,11 +40,14 @@ public:
     void SeedInventoryFixture();
     void HandleEvent(const HookEvent& event);
     void ResetText();
-    void Render(unsigned int appleFramebufferTexture, bool showAppleVideo, bool paused,
+    void Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
+                int originalInterfaceOpacity, bool paused,
                 MapViewMode mapViewMode, bool englishNames, bool battle, bool inventory,
-                bool loading, bool gameOver);
+                bool loading, bool loadingReady, bool gameOver);
     void RenderSpellWindow(bool* open);
     void RenderLogWindow(bool* open);
+    void RenderHostHint(const std::string& text, float centerX, float y,
+                        float maximumWidth) const;
     bool ConsumeInventoryChanged();
 
 private:
@@ -55,6 +58,7 @@ private:
     Texture tilesDungeon_;
     Texture monsters_;
     Texture animatedElements_;
+    Texture autoMapSprites_;
     Texture mapTexture_;
     Texture minimapSprites_;
     Texture daytimeSprites_;

@@ -229,6 +229,9 @@ CpuInstructionHookResult DlrlHooks::HandleInstruction(std::uint16_t pc)
             if (regs.a == ('P' | 0x80))
                 Emit(HookEventType::RequestSpeed, pc, -1, 6);
             break;
+        case PcStartupSplash:
+            Emit(HookEventType::StartupSplash, pc);
+            break;
         case PcCharacterEscape:
             state_.startMenu = StartMenuState::Other;
             break;
@@ -241,34 +244,41 @@ CpuInstructionHookResult DlrlHooks::HandleInstruction(std::uint16_t pc)
                 state_.startMenu = StartMenuState::Other;
                 break;
             }
-            if (state_.startMenu == StartMenuState::AttributesRerolling)
+            switch (state_.startMenu)
             {
+            case StartMenuState::AttributesRerolling:
                 regs.pc = 0x7C16;
                 break;
-            }
-            if (regs.a == ('A' | 0x80))
-            {
-                state_.rerollCount = 0;
-                state_.startMenu = StartMenuState::AttributesRerolling;
-                Ram(0xC000) = 0;
-                regs.pc = 0x7C16;
-                Emit(HookEventType::RequestSpeed, pc, -1, 6);
-            }
-            else if (regs.a == ('N' | 0x80))
-            {
+            case StartMenuState::AttributesRerollCancelled:
+            case StartMenuState::AttributesRerollDone:
+            case StartMenuState::AttributesRerollPropose:
+                if (regs.a == ('A' | 0x80))
+                {
+                    state_.rerollCount = 0;
+                    state_.startMenu = StartMenuState::AttributesRerolling;
+                    Ram(0xC000) = 0;
+                    regs.pc = 0x7C16;
+                    Emit(HookEventType::RequestSpeed, pc, -1, 6);
+                }
+                else if (regs.a == ('N' | 0x80))
+                {
+                    state_.startMenu = StartMenuState::AttributesRerollPropose;
+                    Ram(0xC000) = 0;
+                    regs.pc = 0x7C16;
+                }
+                else if (regs.a > 0x80)
+                {
+                    state_.startMenu = StartMenuState::Other;
+                    Ram(0xC000) = 0;
+                    regs.pc = 0x7C17;
+                }
+                break;
+            default:
+                // v2 deliberately ignores the current key the first time it
+                // recognizes the attribute-roll screen. A subsequent pass
+                // handles A/N through the explicit states above.
                 state_.startMenu = StartMenuState::AttributesRerollPropose;
-                Ram(0xC000) = 0;
-                regs.pc = 0x7C16;
-            }
-            else if (regs.a > 0x80)
-            {
-                state_.startMenu = StartMenuState::Other;
-                Ram(0xC000) = 0;
-                regs.pc = 0x7C17;
-            }
-            else
-            {
-                state_.startMenu = StartMenuState::AttributesRerollPropose;
+                break;
             }
             break;
         }

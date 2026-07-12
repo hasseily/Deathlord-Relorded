@@ -3,6 +3,7 @@
 #include "Emulator/CardManager.h"
 #include "Emulator/Core.h"
 #include "Emulator/Interface.h"
+#include "Emulator/Keyboard.h"
 #include "Emulator/Memory.h"
 #include "Emulator/RGBMonitor.h"
 #include "Emulator/Video.h"
@@ -35,13 +36,19 @@ int main()
     const bool videoReady = video.GetFrameBuffer() != nullptr
                          && video.GetFrameBufferWidth() > 0
                          && video.GetFrameBufferHeight() > 0;
+    KeybReset();
+    KeybSetCapsLock(true);
+    KeybQueueKeypress('a', ASCII);
+    const bool deathlordUppercase = KeybReadData() == ('A' | 0x80);
+    KeybClearStrobe();
 
-    std::printf("Apple //e core ready: RAM=%s framebuffer=%ux%u\n",
+    std::printf("Apple //e core ready: RAM=%s framebuffer=%ux%u DLRL-A=%s\n",
                 memoryReady ? "yes" : "no",
-                video.GetFrameBufferWidth(), video.GetFrameBufferHeight());
+                video.GetFrameBufferWidth(), video.GetFrameBufferHeight(),
+                deathlordUppercase ? "yes" : "no");
 
     MemDestroy();
     GetFrame().Destroy();
 
-    return memoryReady && videoReady ? 0 : 1;
+    return memoryReady && videoReady && deathlordUppercase ? 0 : 1;
 }

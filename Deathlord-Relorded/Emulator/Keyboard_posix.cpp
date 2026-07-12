@@ -8,7 +8,7 @@
 // What main.cpp actually calls on us:
 //   * KeybQueueKeypress(ascii, ASCII)   — printable + Return/Backspace/Tab/Esc
 //   * KeybQueueKeypress(vk,    NOT_ASCII) — VK_LEFT/RIGHT/UP/DOWN/DELETE etc.
-//   * KeybSetCapsLock(false) once at boot, KeybToggleCapsLock on Caps press
+//   * KeybSetCapsLock(true) once at boot, KeybToggleCapsLock on Caps press
 //   * KeybUpdateCtrlShiftStatus (called every key event — stub here)
 // The CPU side calls KeybReadData / KeybReadFlag / KeybClearStrobe via
 // the $C000 / $C010 IO handlers in Memory.cpp.

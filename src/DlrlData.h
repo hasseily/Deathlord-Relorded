@@ -91,6 +91,10 @@ constexpr std::uint16_t PcMenuKey = 0x1C19;
 constexpr std::uint16_t PcCharacterManagementKey = 0x7C0A;
 constexpr std::uint16_t PcCharacterWaitKey = 0x7A63;
 constexpr std::uint16_t PcCharacterEscape = 0x701B;
+// Presentation-only checkpoint retained from v2: the HDV has finished its
+// pre-game party/scenario validation and the Relorded credits splash can own
+// the screen while the main map loads. No floppy behavior is attached.
+constexpr std::uint16_t PcStartupSplash = 0x845C;
 
 constexpr std::uint16_t PcMoveOverland = 0xEFF3;
 constexpr std::uint16_t PcMoveDungeon = 0xB0EB;

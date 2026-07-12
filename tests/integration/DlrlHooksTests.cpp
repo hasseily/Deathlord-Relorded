@@ -8,6 +8,7 @@
 #include "Emulator/Core.h"
 #include "Emulator/CPU.h"
 #include "Emulator/Interface.h"
+#include "Emulator/Keyboard.h"
 #include "Emulator/Memory.h"
 
 #include <algorithm>
@@ -162,6 +163,56 @@ int main()
     hooks.HandleInstruction(PcMenuKey);
     Check(events.last.type == HookEventType::RequestSpeed && events.last.value == 6,
           "Play Game starts hidden loading acceleration");
+    hooks.HandleInstruction(PcStartupSplash);
+    Check(events.last.type == HookEventType::StartupSplash,
+          "validated HDV pre-game flow requests the v2 Relorded splash");
+
+    // Preserve v2's state machine literally: the first matching management
+    // pass only proposes autoroll; a later A starts it, each failed roll
+    // injects N and returns through the management routine, and the wait loop
+    // reaches the hook again with A idle rather than the synthetic key.
+    MemGetMainPtr(MapIsInGame)[0] = 0;
+    regs.sp = 0x0100;
+    MemGetMainPtr(0x0101)[0] = 0xA9;
+    MemGetMainPtr(0x0102)[0] = 0x6E;
+    MemGetMainPtr(0x00EC)[0] = 0;
+    std::fill_n(MemGetMainPtr(RaceAttributeMaximums + 1), 7, 18);
+    std::fill_n(MemGetMainPtr(CharacterCreateAttributes), 7, 8);
+    regs.a = 0;
+    hooks.HandleInstruction(PcCharacterManagementKey);
+    Check(hooks.State().startMenu == StartMenuState::AttributesRerollPropose,
+          "first attribute-screen pass proposes autoroll without consuming its key");
+    // Reproduce the real SDL/Apple //e latch sequence. Once the game clears
+    // the A strobe, v2 expects the latch to retain plain uppercase A; a
+    // lowercase residue is interpreted by the wait hook as a cancellation.
+    KeybReset();
+    KeybSetCapsLock(true);
+    KeybQueueKeypress('a', ASCII);
+    regs.a = KeybReadData();
+    KeybClearStrobe();
+    hooks.HandleInstruction(PcCharacterManagementKey);
+    Check(hooks.State().startMenu == StartMenuState::AttributesRerolling
+              && events.last.type == HookEventType::RequestSpeed
+              && events.last.value == 6,
+          "A starts v2 full-speed autoroll");
+    regs.a = KeybReadData();
+    hooks.HandleInstruction(PcCharacterWaitKey);
+    Check(hooks.State().startMenu == StartMenuState::AttributesRerolling
+              && hooks.State().rerollCount == 1 && regs.a == ('N' | 0x80),
+          "autoroll injects its first N and remains active");
+    hooks.HandleInstruction(PcCharacterManagementKey);
+    Check(regs.pc == 0x7C16,
+          "rolling state bypasses character-management input exactly like v2");
+    regs.a = 0;
+    hooks.HandleInstruction(PcCharacterWaitKey);
+    Check(hooks.State().startMenu == StartMenuState::AttributesRerolling
+              && hooks.State().rerollCount == 2 && regs.a == ('N' | 0x80),
+          "idle wait loop continues autoroll");
+    std::fill_n(MemGetMainPtr(CharacterCreateAttributes), 7, 17);
+    regs.a = 0;
+    hooks.HandleInstruction(PcCharacterWaitKey);
+    Check(hooks.State().startMenu == StartMenuState::AttributesRerollDone,
+          "autoroll stops only after all four requested attributes qualify");
     MemGetMainPtr(MapIsInGame)[0] = 0xE5;
 
     regs.pc = PcDecrementTimer;

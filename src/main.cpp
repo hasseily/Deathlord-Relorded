@@ -51,8 +51,11 @@
 namespace
 {
 
-constexpr int kWindowWidth = 1024;
-constexpr int kWindowHeight = 768;
+constexpr int kWindowWidth = 1280;
+constexpr int kWindowHeight = 900;
+constexpr float kAppleDisplayWidth = 1120.0f;
+constexpr float kAppleDisplayHeight = 768.0f;
+constexpr float kAppleHintAreaHeight = 48.0f;
 
 enum class UiFixtureMode
 {
@@ -131,10 +134,13 @@ struct AppState
     int speakerVolume = 3;
     int mockingboardVolume = 3;
     int interfaceColor = static_cast<int>(dlrl::InterfaceColor_Green);
+    int originalInterfaceOpacity = 85;
     int windowWidth = kWindowWidth;
     int windowHeight = kWindowHeight;
     int requestedSpeedIndex = -1;
     bool playLoadingAcceleration = false;
+    bool startupSplash = false;
+    bool startupSplashReady = false;
     std::mutex pendingHdvMutex;
     std::filesystem::path pendingHdv;
     std::vector<ScheduledKey> scheduledKeys;
@@ -161,6 +167,8 @@ void LoadHostSettings(AppState& state)
         state.mockingboardVolume = std::clamp(
             json.value("mockingboard_volume", state.mockingboardVolume), 0, 4);
         state.interfaceColor = std::clamp(json.value("interface_color", state.interfaceColor), 0, 2);
+        state.originalInterfaceOpacity = std::clamp(
+            json.value("original_interface_opacity", state.originalInterfaceOpacity), 0, 100);
         state.postprocessorEnabled = json.value(
             "postprocessor_enabled", state.postprocessorEnabled);
         state.showAppleVideoInGame = json.value(
@@ -217,6 +225,7 @@ void SaveSettings(const AppState& state)
         { "speaker_volume", state.speakerVolume },
         { "mockingboard_volume", state.mockingboardVolume },
         { "interface_color", state.interfaceColor },
+        { "original_interface_opacity", state.originalInterfaceOpacity },
         { "postprocessor_enabled", state.postprocessorEnabled },
         { "show_apple_video_in_game", state.showAppleVideoInGame },
         { "show_spells", state.showSpells },
@@ -320,6 +329,16 @@ void SetPaused(AppState& state, bool paused)
         Spkr_Unmute();
         GetCardMgr().GetMockingboardCardMgr().MuteControl(false);
     }
+}
+
+void DismissStartupSplash(AppState& state)
+{
+    if (!state.startupSplash || !state.startupSplashReady) return;
+    state.startupSplash = false;
+    state.startupSplashReady = false;
+    SetPaused(state, false);
+    std::puts("DLRL startup splash: dismissed with Space");
+    std::fflush(stdout);
 }
 
 void SetFullscreen(AppState& state, bool fullscreen)
@@ -465,7 +484,11 @@ bool InitEmulator(AppState& state, const std::filesystem::path& hdvPath)
     }
 
     GetFrame().VideoRedrawScreen();
-    KeybSetCapsLock(false);
+    // DLRL v2 and the original Apple II flow expect command letters in
+    // uppercase. In particular, autoroll recognizes $C1 ('A' with strobe),
+    // not lowercase $E1. NAC deliberately disabled Caps Lock for prose input;
+    // Deathlord must retain the AppleWin/v2 default instead.
+    KeybSetCapsLock(true);
     return true;
 }
 
@@ -496,6 +519,8 @@ void RebootEmulator(AppState& state)
     state.speedIndex = 4;
     state.requestedSpeedIndex = -1;
     state.playLoadingAcceleration = false;
+    state.startupSplash = false;
+    state.startupSplashReady = false;
     ApplySpeed(state);
     SetPaused(state, false);
 }
@@ -737,10 +762,11 @@ void RunEmulator(AppState& state)
         const uint64_t delta = now - state.lastTicksNs;
         cycles = static_cast<uint32_t>(
             delta * kSpeedPresets[state.speedIndex].cyclesPerSecond * 1e-9);
-        // Match the NAC host budget: leave enough room for intentional
-        // loading/reroll acceleration, while still preventing a long catch-up
-        // sprint after the host has been suspended or stopped in a debugger.
-        cycles = std::clamp(cycles, 1u, NTSC_GetCyclesPerFrame() * 16u);
+        // Autoroll's v2 speed 6 is AppleWin's unrestricted/full-speed mode.
+        // Keep the ordinary catch-up guard, but let this hidden mode consume
+        // its full 200 MHz budget while it searches for qualifying stats.
+        const uint32_t maximumFrames = state.speedIndex == 6 ? 256u : 16u;
+        cycles = std::clamp(cycles, 1u, NTSC_GetCyclesPerFrame() * maximumFrames);
     }
     state.lastTicksNs = now;
 
@@ -767,8 +793,38 @@ void ReceiveDlrlEvent(const dlrl::HookEvent& event, void* userData)
     {
         if (event.pc == dlrl::deathlord::PcMenuKey && event.value >= 6)
             BeginPlayLoadingAcceleration(state);
+        else if (event.pc == dlrl::deathlord::PcCharacterManagementKey
+                 && event.value >= 6)
+            state.requestedSpeedIndex = 6; // v2 EmulatorSetSpeed(6): full speed.
         else if (!(state.playLoadingAcceleration && event.value < 6))
             state.requestedSpeedIndex = event.value >= 6 ? 4 : 1;
+    }
+    else if (event.type == dlrl::HookEventType::StartupSplash)
+    {
+        state.startupSplash = true;
+        state.startupSplashReady = false;
+        std::puts("DLRL startup splash: pre-game validation complete");
+        std::fflush(stdout);
+    }
+}
+
+std::string StartMenuHint(const AppState& state)
+{
+    switch (state.hooks.State().startMenu)
+    {
+    case dlrl::StartMenuState::Title:
+        return "Press any key";
+    case dlrl::StartMenuState::Menu:
+        return "Choose 'U', 'C', or 'P' to continue";
+    case dlrl::StartMenuState::AttributesRerollPropose:
+        return "Press 'A' to autoroll until STR/CON/INT/DEX are all at least 1 below the maximum for the chosen race";
+    case dlrl::StartMenuState::AttributesRerolling:
+        return "Rolling attributes for STR/CON/INT/DEX >= (max-1), press almost any key to cancel";
+    case dlrl::StartMenuState::AttributesRerollDone:
+        return "Saved you rolling " + std::to_string(state.hooks.State().rerollCount)
+             + " times to get this set of attributes";
+    default:
+        return {};
     }
 }
 
@@ -876,6 +932,13 @@ void RenderAppleWindow(AppState& state)
             ImGui::MenuItem("Inventory", "Insert", &state.showInventory,
                             state.hooks.State().inGameMap || state.uiFixture);
             ImGui::MenuItem("Original Interface", "F11", &state.showAppleVideoInGame);
+            if (ImGui::BeginMenu("Original Interface Darkness"))
+            {
+                ImGui::SetNextItemWidth(180.0f);
+                ImGui::SliderInt("##OriginalInterfaceDarkness",
+                                 &state.originalInterfaceOpacity, 0, 100, "%d%%");
+                ImGui::EndMenu();
+            }
             ImGui::MenuItem("English Translation", "F10", &state.englishNames);
             ImGui::Separator();
             if (ImGui::BeginMenu("Map"))
@@ -958,7 +1021,8 @@ void RenderAppleWindow(AppState& state)
                                && state.uiFixtureMode == UiFixtureMode::Inventory;
     const bool modernPresentation = hookState.inGameMap || hookState.inBattle
                                  || hookState.inTransition || hookState.dead
-                                 || state.showInventory || state.uiFixture;
+                                 || state.showInventory || state.startupSplash
+                                 || state.uiFixture;
     if (modernPresentation)
     {
         unsigned int appleVideoTexture = state.renderer.FramebufferTexId();
@@ -978,44 +1042,55 @@ void RenderAppleWindow(AppState& state)
                 std::puts("DLRL postprocessor: modern original interface texture active");
         }
         state.modernUi.Render(appleVideoTexture,
-                              state.showAppleVideoInGame, state.paused,
+                              state.showAppleVideoInGame,
+                              state.originalInterfaceOpacity, state.paused,
                               state.mapViewMode, state.englishNames,
                               hookState.inBattle || fixtureBattle,
                               state.showInventory || fixtureInventory,
-                              hookState.inTransition || fixtureLoading,
+                              state.startupSplash || fixtureLoading,
+                              state.startupSplashReady || fixtureLoading,
                               hookState.dead || fixtureGameOver);
         if (state.modernUi.ConsumeInventoryChanged()) RecalculateArmorClasses();
     }
     else
     {
-        ImGui::SetNextWindowSize(ImVec2(660, 510), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowPos(ImVec2(182, 95), ImGuiCond_FirstUseEver);
-        if (ImGui::Begin("Apple //e"))
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        const ImVec2 appleWindowSize(kAppleDisplayWidth + 18.0f,
+                                     kAppleDisplayHeight + kAppleHintAreaHeight + 34.0f);
+        ImGui::SetNextWindowSize(appleWindowSize, ImGuiCond_Appearing);
+        ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Appearing,
+                                ImVec2(0.5f, 0.5f));
+        if (ImGui::Begin("Apple //e", nullptr, ImGuiWindowFlags_NoDocking))
         {
             const ImVec2 available = ImGui::GetContentRegionAvail();
-            const float aspect = static_cast<float>(video.GetFrameBufferWidth())
-                               / static_cast<float>(video.GetFrameBufferHeight());
-            float width = available.x;
-            float height = width / aspect;
-            if (height > available.y)
-            {
-                height = available.y;
-                width = height * aspect;
-            }
+            const std::string hint = StartMenuHint(state);
             const ImVec2 cursor = ImGui::GetCursorPos();
-            ImGui::SetCursorPos(ImVec2(cursor.x + (available.x - width) * 0.5f,
-                                      cursor.y + (available.y - height) * 0.5f));
+            ImGui::SetCursorPos(ImVec2(
+                cursor.x + (available.x - kAppleDisplayWidth) * 0.5f, cursor.y));
+            const ImVec2 imagePosition = ImGui::GetCursorScreenPos();
             auto* pp = sa2::PostProcessor::GetInstance();
             ImTextureID texture = static_cast<ImTextureID>(state.renderer.FramebufferTexId());
             if (pp->IsActive())
             {
-                pp->Render(static_cast<int>(width), static_cast<int>(height),
+                pp->Render(static_cast<int>(kAppleDisplayWidth),
+                           static_cast<int>(kAppleDisplayHeight),
                            state.renderer.FramebufferTexId(),
                            static_cast<uint32_t>(video.GetFrameBufferWidth()),
                            static_cast<uint32_t>(video.GetFrameBufferHeight()));
                 texture = static_cast<ImTextureID>(pp->GetTextureId());
             }
-            ImGui::Image(texture, ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
+            const float sourceWidth = static_cast<float>(video.GetFrameBufferWidth());
+            const float sourceHeight = static_cast<float>(video.GetFrameBufferHeight());
+            const float borderX = video.GetFrameBufferBorderWidth() / sourceWidth;
+            const float borderY = video.GetFrameBufferBorderHeight() / sourceHeight;
+            ImGui::Image(texture, ImVec2(kAppleDisplayWidth, kAppleDisplayHeight),
+                         ImVec2(borderX, 1.0f - borderY),
+                         ImVec2(1.0f - borderX, borderY));
+            if (!hint.empty())
+                state.modernUi.RenderHostHint(
+                    hint, imagePosition.x + kAppleDisplayWidth * 0.5f,
+                    imagePosition.y + kAppleDisplayHeight + 6.0f,
+                    kAppleDisplayWidth);
         }
         ImGui::End();
     }
@@ -1097,8 +1172,10 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
                 std::fprintf(stderr, "Invalid key event: %s\n", event.c_str());
                 return SDL_APP_FAILURE;
             }
-            state->scheduledKeys.push_back({std::stoi(event.substr(0, separator)),
-                                            static_cast<BYTE>(event[separator + 1])});
+            const std::string key = event.substr(separator + 1);
+            const BYTE value = key == "SPACE" ? static_cast<BYTE>(' ')
+                                                : static_cast<BYTE>(key.front());
+            state->scheduledKeys.push_back({std::stoi(event.substr(0, separator)), value});
         }
         else if (arg == "--ui-fixture-mode" && i + 1 < argc)
         {
@@ -1224,6 +1301,11 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     }
     if (event->key.key == SDLK_Q && (event->key.mod & kPrimaryModifier))
         return SDL_APP_SUCCESS;
+    if (state.startupSplash)
+    {
+        if (event->key.key == SDLK_SPACE) DismissStartupSplash(state);
+        return SDL_APP_CONTINUE;
+    }
     if ((event->key.key == SDLK_INSERT
          || (event->key.key == SDLK_I && (event->key.mod & kPrimaryModifier)))
         && (state.hooks.State().inGameMap || state.uiFixture))
@@ -1308,6 +1390,11 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         if (event.frame == state.presentedFrames)
         {
             const BYTE plain = event.key & 0x7F;
+            if (state.startupSplash)
+            {
+                if (plain == ' ') DismissStartupSplash(state);
+                continue;
+            }
             if ((plain == 'P' || plain == 'p')
                 && state.hooks.State().startMenu == dlrl::StartMenuState::Menu)
                 BeginPlayLoadingAcceleration(state);
@@ -1317,8 +1404,10 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     if (state.playLoadingAcceleration && state.hooks.State().inGameMap)
     {
         state.playLoadingAcceleration = false;
+        state.startupSplashReady = true;
         state.requestedSpeedIndex = 1;
         std::puts("DLRL internal speed: main game ready at 1x");
+        std::puts("DLRL startup splash: waiting for Space");
         std::fflush(stdout);
     }
     if (state.requestedSpeedIndex >= 0)
@@ -1327,6 +1416,8 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         state.requestedSpeedIndex = -1;
         ApplySpeed(state);
     }
+    if (state.startupSplash && state.startupSplashReady && !state.paused)
+        SetPaused(state, true);
 
     state.renderer.BeginFrame();
     if (state.hooks.State().inGameMap) state.modernUi.UpdateMapTexture();

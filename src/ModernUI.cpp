@@ -205,6 +205,8 @@ bool ModernUI::Initialize(const std::filesystem::path& assetsDir,
         assetsDir / "Tileset_Relorded_Monsters.png", true, true);
     const bool elements = animatedElements_.Load(
         assetsDir / "Tileset_Elements_Animated.png", true, true);
+    const bool autoMapSprites = autoMapSprites_.Load(
+        assetsDir / "SpriteSheet.png", true, true);
     const bool minimap = minimapSprites_.Load(assetsDir / "MinimapSpriteSheet.png", true);
     const bool daytime = daytimeSprites_.Load(
         assetsDir / "Tileset_Relorded_MoonPhases.png", true);
@@ -236,6 +238,7 @@ bool ModernUI::Initialize(const std::filesystem::path& assetsDir,
                                  deathlordCharset_.Height(), true);
     }
     ready_ = background && backgroundTop && noMap && overland && dungeon && monsters && elements
+          && autoMapSprites
           && minimap && daytime && battle && inventory && spells
           && loading && gameOver && male && female && charset && appleCharset;
     inventoryRules_ = inventoryRules;
@@ -257,6 +260,7 @@ void ModernUI::Shutdown()
     daytimeSprites_.Reset();
     minimapSprites_.Reset();
     monsters_.Reset();
+    autoMapSprites_.Reset();
     animatedElements_.Reset();
     tilesDungeon_.Reset();
     tilesOverland_.Reset();
@@ -303,6 +307,12 @@ void ModernUI::SeedVisualFixture()
     log_.push_back({"KENJI FOUND 42 GP", false});
     log_.push_back({"A HIDDEN DOOR!", true});
     log_.push_back({"PARTY ENTERS KAWAH", false});
+    for (int line = 5; line <= 32; ++line)
+    {
+        char history[19];
+        std::snprintf(history, sizeof(history), "HISTORY LINE %02d", line);
+        log_.push_back({history, false});
+    }
     billboard_[0] = {"\x7eS\x7f SEARCH", true};
     billboard_[1] = {"\x7e" "C\x7f CAST SPELL", false};
     billboard_[2] = {"\x7eI\x7f INVENTORY", false};
@@ -359,7 +369,7 @@ void ModernUI::HandleEvent(const HookEvent& event)
             longLog_.push_back(log_.front().text);
             if (longLog_.size() > 2000) longLog_.pop_front();
         }
-        if (log_.size() >= 30) log_.pop_back();
+        if (log_.size() >= 32) log_.pop_back();
         log_.push_front({std::string(18, ' '), false});
     };
     auto scrollBillboard = [&]()
@@ -437,7 +447,7 @@ void ModernUI::HandleEvent(const HookEvent& event)
             billboard_[event.value].inverse = !billboard_[event.value].inverse;
         break;
     case HookEventType::MissingXp:
-        if (log_.size() >= 30) log_.pop_back();
+        if (log_.size() >= 32) log_.pop_back();
         log_.push_front({"MISSING " + std::to_string(std::max(0, event.value)) + " XP", true});
         break;
     default:
@@ -546,9 +556,10 @@ void ModernUI::UpdateMapTexture()
     mapSignature_ = signature;
 }
 
-void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo, bool paused,
+void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
+                      int originalInterfaceOpacity, bool paused,
                       MapViewMode mapViewMode, bool englishNames, bool battle, bool inventory,
-                      bool loading, bool gameOver)
+                      bool loading, bool loadingReady, bool gameOver)
 {
     if (!ready_) return;
 
@@ -623,11 +634,24 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
         const float tileHeight = 16.0f / uvHeight;
         const float avatarScreenX = 361 + ((avatarX / 64.0f - mapUv0.x) / uvWidth) * 896;
         const float avatarScreenY = 10 + ((avatarY / 64.0f - mapUv0.y) / uvHeight) * 1024;
-        const ImVec2 avatarMin = Point(origin, scale, avatarScreenX, avatarScreenY);
-        const ImVec2 avatarMax = Point(origin, scale,
-                                       avatarScreenX + tileWidth, avatarScreenY + tileHeight);
-        draw->AddRect(avatarMin, avatarMax, IM_COL32(255, 235, 40, 255), 0.0f, 0,
-                      std::max(1.0f, 2.0f * scale));
+        // v2 used the four-corner cursor at the bottom of SpriteSheet.png,
+        // breathing through a ten-step two-second pulse around the avatar.
+        constexpr std::array<float, 10> pulse = {
+            1.13f, 1.10f, 1.05f, 1.00f, 1.00f,
+            1.00f, 1.00f, 1.05f, 1.10f, 1.13f};
+        const int pulseIndex = static_cast<int>(ImGui::GetTime() * 5.0)
+                             % static_cast<int>(pulse.size());
+        const float cursorWidth = tileWidth * (32.0f / 28.0f) * pulse[pulseIndex];
+        const float cursorHeight = tileHeight * (36.0f / 32.0f) * pulse[pulseIndex];
+        const float avatarCenterX = avatarScreenX + tileWidth * 0.5f;
+        const float avatarCenterY = avatarScreenY + tileHeight * 0.5f;
+        draw->AddImage(static_cast<ImTextureID>(autoMapSprites_.Id()),
+                       Point(origin, scale, avatarCenterX - cursorWidth * 0.5f,
+                             avatarCenterY - cursorHeight * 0.5f),
+                       Point(origin, scale, avatarCenterX + cursorWidth * 0.5f,
+                             avatarCenterY + cursorHeight * 0.5f),
+                       ImVec2(0.0f, 288.0f / 338.0f),
+                       ImVec2(32.0f / 112.0f, 324.0f / 338.0f));
     }
 
     // Day/time display: the legacy sprite sheet supplies moon phases and the
@@ -721,12 +745,31 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
                          centerX - DeathlordTextWidth(value, logicalSize) * 0.5f,
                          y, color, value, logicalSize);
     };
+    const float panelFontScale = scale >= 0.9f ? 1.0f : scale;
+    auto PanelText = [&](float x, float y, ImU32 color,
+                         const std::string& value, bool inverse = false)
+    {
+        if (value.empty()) return;
+        const ImVec2 anchor(std::floor(origin.x + x * scale),
+                            std::floor(origin.y + y * scale));
+        AddDeathlordText(draw, deathlordCharset_, anchor, panelFontScale,
+                         0, 0, color, value, 16.0f, inverse);
+    };
+    auto PanelCenteredText = [&](float centerX, float y, ImU32 color,
+                                 const std::string& value, bool inverse = false)
+    {
+        if (value.empty()) return;
+        const float width = DeathlordTextWidth(value) * panelFontScale;
+        const ImVec2 anchor(
+            std::floor(origin.x + centerX * scale - width * 0.5f),
+            std::floor(origin.y + y * scale));
+        AddDeathlordText(draw, deathlordCharset_, anchor, panelFontScale,
+                         0, 0, color, value, 16.0f, inverse);
+    };
     const ImU32 textColor = IM_COL32(225, 228, 215, 235);
     const ImU32 inverseColor = IM_COL32(255, 220, 55, 255);
     const std::string partyName = DeathlordString(PartyPartyName, 16);
-    AddDeathlordText(draw, deathlordCharset_, origin, scale,
-                     1415 - DeathlordTextWidth(partyName) * 0.5f, 37,
-                     textColor, partyName);
+    PanelCenteredText(1415, 37, textColor, partyName);
     std::string module = trimmed(module_);
     // Deathlord's terminal character in these location labels takes a
     // different print path from the ordinary character hook. Preserve v2's
@@ -734,49 +777,58 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
     if (module == "OUTDOO") module = "OUTDOOR";
     else if (module == "INDOO") module = "INDOOR";
     else if (module == "DUNGEO") module = "DUNGEON";
-    AddDeathlordText(draw, deathlordCharset_, origin, scale,
-                     1415 - DeathlordTextWidth(module) * 0.5f, 59,
-                     textColor, module);
+    PanelCenteredText(1415, 59, textColor, module);
     const std::string keypress = trimmed(keypress_);
     const bool keypressInverse = (static_cast<int>(ImGui::GetTime() * 2.0) & 1) == 0;
-    AddDeathlordText(draw, deathlordCharset_, origin, scale,
-                     1412 - DeathlordTextWidth(keypress) * 0.5f, 815,
-                     inverseColor, keypress, 16.0f, keypressInverse);
+    PanelCenteredText(1412, 815, inverseColor, keypress, keypressInverse);
 
     int lineIndex = 0;
     for (const TextLine& line : log_)
     {
-        if (lineIndex >= 30) break;
+        if (lineIndex >= 32) break;
         const std::string value = trimmed(line.text);
         if (!value.empty())
-            AddDeathlordText(draw, deathlordCharset_, origin, scale,
-                             1298, 755 - lineIndex * 18,
-                             line.inverse ? inverseColor : textColor,
-                             value, 16.0f, line.inverse);
+            PanelText(1298, 764 - lineIndex * 18,
+                      line.inverse ? inverseColor : textColor,
+                      value, line.inverse);
         ++lineIndex;
     }
     for (int index = 0; index < static_cast<int>(billboard_.size()); ++index)
     {
         const std::string value = trimmed(billboard_[index].text);
         if (!value.empty())
-            AddDeathlordText(draw, deathlordCharset_, origin, scale,
-                             1287, 994 - index * 18,
-                             billboard_[index].inverse ? inverseColor : textColor,
-                             value, 16.0f, billboard_[index].inverse);
+            PanelCenteredText(1412, 994 - index * 18,
+                              billboard_[index].inverse ? inverseColor : textColor,
+                              value, billboard_[index].inverse);
     }
-    if (showAppleVideo)
-    {
-        draw->AddImage(static_cast<ImTextureID>(appleFramebufferTexture),
-                       Point(origin, scale, 361, 208), Point(origin, scale, 1257, 835),
-                       ImVec2(0, 1), ImVec2(1, 0));
-    }
-
     const int partyCount = std::clamp<int>(MemGetMainPtr(PartySizeAddress)[0], 0, PartySize);
     const int current = MemGetMainPtr(PartyCurrentCharacter)[0];
     const ImU32 normal = IM_COL32(220, 225, 215, 235);
     const ImU32 dim = IM_COL32(165, 175, 165, 230);
     const ImU32 active = IM_COL32(255, 220, 40, 255);
     const ImU32 warning = IM_COL32(255, 105, 45, 255);
+    // Near native canvas size, keep card glyphs at a true 1x pixel grid.
+    // Scaling 16 source rows to ~15 output rows was dropping the name's top
+    // row or the power line's bottom row depending on its fractional anchor.
+    const float partyFontScale = scale >= 0.9f ? 1.0f : scale;
+    auto PartyText = [&](float x, float y, ImU32 color,
+                         const std::string& value, float logicalSize)
+    {
+        const ImVec2 anchor(std::floor(origin.x + x * scale),
+                            std::floor(origin.y + y * scale));
+        AddDeathlordText(draw, deathlordCharset_, anchor, partyFontScale,
+                         0, 0, color, value, logicalSize);
+    };
+    auto PartyCenteredText = [&](float centerX, float y, ImU32 color,
+                                 const std::string& value, float logicalSize)
+    {
+        const float width = DeathlordTextWidth(value, logicalSize) * partyFontScale;
+        const ImVec2 anchor(
+            std::floor(origin.x + centerX * scale - width * 0.5f),
+            std::floor(origin.y + y * scale));
+        AddDeathlordText(draw, deathlordCharset_, anchor, partyFontScale,
+                         0, 0, color, value, logicalSize);
+    };
     for (int member = 0; member < partyCount; ++member)
     {
         const float x = PartyX[member];
@@ -797,19 +849,33 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
             {0x02, "STV"}, {0x04, "TOX"}, {0x08, "ILL"}, {0x10, "PAR"},
             {0x20, "STN"}, {0x40, "RIP"}, {0x80, "ASHES"}
         }};
-        float statusY = y + 103;
+        // Portrait status labels remain at the atlas's exact 14x16 native
+        // pixel size at every canvas scale. Anchor them from the scaled
+        // portrait's lower-right corner, then add the v2-style readable
+        // one-pixel shadow requested for arbitrary portrait artwork.
+        float statusScreenY = std::floor(
+            origin.y + (y + 123.0f) * scale - 4.0f * scale
+            - DeathlordGlyphHeight);
         for (const auto& [mask, label] : statusLabels)
         {
             if ((status & mask) == 0) continue;
-            AddText(draw, origin, scale, x + (mask == 0x80 ? 20 : 48), statusY,
-                    mask >= 0x10 ? IM_COL32(255, 70, 40, 255)
-                                 : IM_COL32(255, 225, 40, 255), label, 16);
-            statusY -= 17;
+            const std::string value = label;
+            const float statusScreenX = std::floor(
+                origin.x + (x + 94.0f) * scale - 4.0f * scale
+                - DeathlordTextWidth(value));
+            const ImVec2 anchor(statusScreenX, statusScreenY);
+            AddDeathlordText(draw, deathlordCharset_,
+                             ImVec2(anchor.x + 1.0f, anchor.y + 1.0f), 1.0f,
+                             0, 0, IM_COL32(0, 0, 0, 255), value);
+            AddDeathlordText(draw, deathlordCharset_, anchor, 1.0f, 0, 0,
+                             mask >= 0x10 ? IM_COL32(255, 70, 40, 255)
+                                          : IM_COL32(255, 225, 40, 255),
+                             value);
+            statusScreenY -= 17.0f;
         }
 
         const ImU32 memberColor = member == current ? active : normal;
-        AddText(draw, origin, scale, x + 100, y + 5, memberColor,
-                CharacterName(member), 16);
+        PartyText(x + 100, y + 5, memberColor, CharacterName(member), 16);
         char buffer[128];
         const int levelPlus = Party(PartyLevelPlus, member);
         if (levelPlus)
@@ -817,65 +883,69 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
                           levelPlus);
         else
             std::snprintf(buffer, sizeof(buffer), "  %02d ", Party(PartyLevel, member));
-        AddText(draw, origin, scale, x + 262, y + 5,
-                levelPlus ? warning : normal, buffer, 16);
+        PartyText(x + 262, y + 5, levelPlus ? warning : normal, buffer, 16);
         std::snprintf(buffer, sizeof(buffer), "H %04d/%04d",
                       PartyWord(PartyHealthLow, PartyHealthHigh, member),
                       PartyWord(PartyHealthMaxLow, PartyHealthMaxHigh, member));
-        AddText(draw, origin, scale, x + 100, y + 27, normal, buffer, 16);
+        PartyText(x + 100, y + 27, normal, buffer, 16);
         std::snprintf(buffer, sizeof(buffer), "P %03d/%03d",
                       Party(PartyPower, member), Party(PartyPowerMax, member));
-        AddText(draw, origin, scale, x + 100, y + 49, normal, buffer, 16);
+        PartyText(x + 100, y + 49, normal, buffer, 16);
         std::snprintf(buffer, sizeof(buffer), "G %05d",
                       PartyWord(PartyGoldLow, PartyGoldHigh, member));
-        AddText(draw, origin, scale, x + 100, y + 71, normal, buffer, 16);
+        PartyText(x + 100, y + 71, normal, buffer, 16);
         std::snprintf(buffer, sizeof(buffer), "AC%+03d",
                       10 - Party(PartyArmorClass, member));
-        AddText(draw, origin, scale, x + 248, y + 71, normal, buffer, 16);
+        PartyText(x + 248, y + 71, normal, buffer, 16);
         std::snprintf(buffer, sizeof(buffer), "F %03d", Party(PartyFood, member));
-        AddText(draw, origin, scale, x + 100, y + 93,
-                Party(PartyFood, member) < 20 ? warning : normal, buffer, 16);
+        PartyText(x + 100, y + 93,
+                  Party(PartyFood, member) < 20 ? warning : normal, buffer, 16);
         std::snprintf(buffer, sizeof(buffer), "T %02d", Party(PartyTorches, member));
-        AddText(draw, origin, scale, x + 262, y + 93, normal, buffer, 16);
+        PartyText(x + 262, y + 93, normal, buffer, 16);
         const int characterClass = Party(PartyClass, member) & 0x0F;
         const int race = Party(PartyRace, member) & 0x07;
-        centeredText(x + 48, y + 129, ClassNames[characterClass], normal, 8);
-        centeredText(x + 48, y + 139, RaceNames[race], normal, 8);
+        PartyCenteredText(x + 48, y + 129, normal, ClassNames[characterClass], 8);
+        PartyCenteredText(x + 48, y + 139, normal, RaceNames[race], 8);
         std::snprintf(buffer, sizeof(buffer), "STR:%02d  INT:%02d",
                       Party(PartyStrength, member), Party(PartyIntelligence, member));
-        AddText(draw, origin, scale, x + 2, y + 151, dim, buffer, 8);
+        PartyText(x + 2, y + 151, dim, buffer, 8);
         std::snprintf(buffer, sizeof(buffer), "CON:%02d  DEX:%02d",
                       Party(PartyConstitution, member), Party(PartyDexterity, member));
-        AddText(draw, origin, scale, x + 2, y + 167, dim, buffer, 8);
+        PartyText(x + 2, y + 167, dim, buffer, 8);
         std::snprintf(buffer, sizeof(buffer), "SIZ:%02d  CHA:%02d",
                       Party(PartySizeAttribute, member), Party(PartyCharisma, member));
-        AddText(draw, origin, scale, x + 2, y + 183, dim, buffer, 8);
+        PartyText(x + 2, y + 183, dim, buffer, 8);
 
         for (int slot = 0; slot < 8; ++slot)
         {
             const BYTE* inventory = MemGetMainPtr(
                 static_cast<WORD>(PartyInventory + member * 0x20));
             const BYTE item = inventory[slot];
-            if (item == 0xFF) continue;
             const BYTE charges = inventory[slot + 8];
             std::string count = "  ";
-            if (charges == 0) count = "**";
-            else if (charges != 0xFF)
+            if (item != 0xFF && charges == 0) count = "**";
+            else if (item != 0xFF && charges != 0xFF)
             {
                 char countBuffer[8];
                 std::snprintf(countBuffer, sizeof(countBuffer), "%02d", charges);
                 count = countBuffer;
             }
-            std::string itemName = inventoryRules_
-                                 ? inventoryRules_->Name(item, englishNames) : "Unknown";
+            std::string itemName = item == 0xFF
+                                 ? std::string(13, '.')
+                                 : inventoryRules_
+                                     ? inventoryRules_->Name(item, englishNames)
+                                     : "Unknown";
             if (itemName.size() > 13) itemName.resize(13);
             itemName.resize(13, '.');
             const float itemY = y + 120 + slot * 9;
-            AddText(draw, origin, scale, x + 138, itemY, normal,
-                    count + " " + itemName, 8);
+            PartyText(x + 138, itemY, normal, count + " " + itemName, 8);
             std::string equipment;
             ImU32 equipmentColor = dim;
-            if (slot < 2 && Party(PartyWeaponReady, member) == slot)
+            if (item == 0xFF)
+            {
+                equipment.clear();
+            }
+            else if (slot < 2 && Party(PartyWeaponReady, member) == slot)
             {
                 equipment = "IN HANDS";
                 equipmentColor = active;
@@ -890,8 +960,7 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
             {
                 equipment = "UNUSABLE";
             }
-            AddText(draw, origin, scale, x + 258, itemY,
-                    equipmentColor, equipment, 8);
+            PartyText(x + 258, itemY, equipmentColor, equipment, 8);
         }
     }
 
@@ -900,8 +969,8 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
     for (int member = 0; member < partyCount; ++member)
     {
         const ImU32 memberColor = member == current ? active : normal;
-        AddText(draw, origin, scale, PartyX[member] + 1, PartyY[member] + 2,
-                memberColor, std::to_string(member + 1), 16);
+        PartyText(PartyX[member] + 1, PartyY[member] + 2,
+                  memberColor, std::to_string(member + 1), 16);
     }
 
     if (battle && !loading && !gameOver)
@@ -1378,6 +1447,34 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
         }
     }
 
+    // Match v2's F11 presentation: first hide the entire Relorded interface
+    // behind its configurable black curtain, then place a 2x borderless
+    // Apple //e display and amber frame above every normal gameplay overlay.
+    if (showAppleVideo && !loading && !gameOver)
+    {
+        const int opacity = std::clamp(originalInterfaceOpacity, 0, 100);
+        draw->AddRectFilled(origin, Point(origin, scale, CanvasWidth, CanvasHeight),
+                            IM_COL32(0, 0, 0, opacity * 255 / 100));
+        constexpr float appleWidth = 1120.0f;
+        constexpr float appleHeight = 768.0f;
+        constexpr float border = 5.0f;
+        constexpr float appleX = (CanvasWidth - appleWidth) * 0.5f;
+        constexpr float appleY = (CanvasHeight - appleHeight) * 0.5f;
+        draw->AddRectFilled(Point(origin, scale, appleX - border, appleY - border),
+                            Point(origin, scale, appleX + appleWidth + border,
+                                  appleY + appleHeight + border),
+                            IM_COL32(128, 51, 0, 255));
+        draw->AddRectFilled(Point(origin, scale, appleX, appleY),
+                            Point(origin, scale, appleX + appleWidth,
+                                  appleY + appleHeight),
+                            IM_COL32(0, 0, 0, 255));
+        draw->AddImage(static_cast<ImTextureID>(appleFramebufferTexture),
+                       Point(origin, scale, appleX, appleY),
+                       Point(origin, scale, appleX + appleWidth, appleY + appleHeight),
+                       ImVec2(20.0f / 600.0f, 1.0f - 18.0f / 420.0f),
+                       ImVec2(1.0f - 20.0f / 600.0f, 18.0f / 420.0f));
+    }
+
     // Transition and death presentation deliberately live in the same canvas
     // as the gameplay UI. Hook-driven runtime states and deterministic visual
     // fixtures therefore exercise exactly the same rendering path.
@@ -1387,8 +1484,17 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
                             IM_COL32(0, 0, 0, 255));
         draw->AddImage(static_cast<ImTextureID>(loadingScreen_.Id()), origin,
                        Point(origin, scale, CanvasWidth, CanvasHeight));
-        centeredText(CanvasWidth * 0.5f, 945, "PRESS SPACE",
-                     IM_COL32(255, 220, 55, 255), 22);
+        if (loadingReady)
+        {
+            const std::string prompt = "PRESS SPACE";
+            const bool inverse = (static_cast<int>(ImGui::GetTime()) & 1) != 0;
+            const float promptSize = 22.0f;
+            AddDeathlordText(draw, deathlordCharset_, origin, scale,
+                             CanvasWidth * 0.5f
+                                 - DeathlordTextWidth(prompt, promptSize) * 0.5f,
+                             945, IM_COL32(255, 220, 55, 255), prompt,
+                             promptSize, inverse);
+        }
     }
     else if (gameOver)
     {
@@ -1402,7 +1508,7 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
                      IM_COL32(255, 220, 55, 255), 20);
     }
 
-    if (paused)
+    if (paused && !loading)
     {
         draw->AddRectFilled(origin, Point(origin, scale, CanvasWidth, CanvasHeight),
                             IM_COL32(0, 0, 0, 130));
@@ -1447,6 +1553,47 @@ void ModernUI::RenderLogWindow(bool* open)
         ImGui::EndChild();
     }
     ImGui::End();
+}
+
+void ModernUI::RenderHostHint(const std::string& text, float centerX, float y,
+                              float maximumWidth) const
+{
+    if (text.empty() || !deathlordCharset_.IsValid()) return;
+    constexpr float logicalSize = 16.0f;
+    std::vector<std::string> lines = { text };
+    if (DeathlordTextWidth(text, logicalSize) > maximumWidth)
+    {
+        std::size_t bestSplit = std::string::npos;
+        float bestBalance = maximumWidth;
+        for (std::size_t split = text.find(' '); split != std::string::npos;
+             split = text.find(' ', split + 1))
+        {
+            const std::string first = text.substr(0, split);
+            const std::string second = text.substr(split + 1);
+            const float firstWidth = DeathlordTextWidth(first, logicalSize);
+            const float secondWidth = DeathlordTextWidth(second, logicalSize);
+            if (firstWidth <= maximumWidth && secondWidth <= maximumWidth)
+            {
+                const float balance = std::abs(firstWidth - secondWidth);
+                if (balance < bestBalance)
+                {
+                    bestBalance = balance;
+                    bestSplit = split;
+                }
+            }
+        }
+        if (bestSplit != std::string::npos)
+            lines = { text.substr(0, bestSplit), text.substr(bestSplit + 1) };
+    }
+    ImDrawList* draw = ImGui::GetWindowDrawList();
+    for (std::size_t line = 0; line < lines.size(); ++line)
+    {
+        const std::string& value = lines[line];
+        AddDeathlordText(draw, deathlordCharset_, ImVec2(0, 0), 1.0f,
+                         std::floor(centerX - DeathlordTextWidth(value, logicalSize) * 0.5f),
+                         std::floor(y + line * 19.0f),
+                         IM_COL32(235, 235, 220, 255), value, logicalSize);
+    }
 }
 
 } // namespace dlrl
