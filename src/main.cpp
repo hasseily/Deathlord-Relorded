@@ -13,7 +13,9 @@
 #include "DlrlHooks.h"
 #include "Frame.h"
 #include "InventoryRules.h"
+#include "FileUtil.h"
 #include "ModernUI.h"
+#include "PartyTransfer.h"
 #include "Renderer.h"
 
 #include "pp/postprocessor.h"
@@ -35,6 +37,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cctype>
 #include <cstdint>
 #include <cstring>
 #include <cstdio>
@@ -43,6 +46,7 @@
 #include <iterator>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -124,6 +128,13 @@ struct AppState
     bool showSpells = false;
     bool showLog = false;
     bool showAbout = false;
+    bool showPartyEditor = false;
+    bool newGameRequested = false;
+    bool importConfirmationRequested = false;
+    bool operationErrorRequested = false;
+    bool operationNoticeRequested = false;
+    bool fixtureImportConfirmation = false;
+    bool testCleanReset = false;
     bool englishNames = false;
     bool fullscreen = false;
     bool uiFixture = false;
@@ -143,6 +154,13 @@ struct AppState
     bool startupSplashReady = false;
     std::mutex pendingHdvMutex;
     std::filesystem::path pendingHdv;
+    std::mutex pendingPartyDialogMutex;
+    std::filesystem::path pendingPartyExport;
+    std::filesystem::path pendingPartyImport;
+    std::optional<dlrl::PartySnapshot> partyToImport;
+    std::string operationError;
+    std::string operationNotice;
+    int partyEditorMember = 0;
     std::vector<ScheduledKey> scheduledKeys;
 };
 
@@ -377,6 +395,8 @@ std::filesystem::path FindDevelopmentHdv()
     std::filesystem::path dir = base ? base : ".";
     for (int i = 0; i < 7; ++i)
     {
+        const auto staged = dir / "Resources" / "Images" / "Deathlord PRODOS.hdv";
+        if (std::filesystem::exists(staged)) return staged;
         const auto packaged = dir / "Images" / "Deathlord PRODOS.hdv";
         if (std::filesystem::exists(packaged)) return packaged;
         const auto local = dir / "extras" / "deathlord-relorded-win-201"
@@ -663,6 +683,37 @@ void LoadHdv(AppState& state, const std::filesystem::path& path)
     RebootEmulator(state);
 }
 
+bool StartCleanNewGame(AppState& state, std::string& error)
+{
+    const std::filesystem::path cleanHdv = FindDevelopmentHdv();
+    if (cleanHdv.empty() || state.hdvPath.empty())
+    {
+        error = "The clean or active hard disk image could not be found.";
+        return false;
+    }
+
+    auto* hdc = static_cast<HarddiskInterfaceCard*>(GetCardMgr().GetObj(SLOT7));
+    if (!hdc)
+    {
+        error = "The SmartPort hard disk controller is unavailable.";
+        return false;
+    }
+
+    hdc->Unplug(HARDDISK_1);
+    if (!dlrl::ReplaceFileFromTemplate(cleanHdv, state.hdvPath, error))
+    {
+        hdc->Insert(HARDDISK_1, state.hdvPath.string());
+        return false;
+    }
+    if (!hdc->Insert(HARDDISK_1, state.hdvPath.string()))
+    {
+        error = "The clean image was installed but could not be reopened.";
+        return false;
+    }
+    RebootEmulator(state);
+    return true;
+}
+
 void SDLCALL HdvDialogCallback(void* userdata, const char* const* files, int)
 {
     if (!files || !files[0]) return;
@@ -686,6 +737,63 @@ void OpenHdvDialog(AppState& state)
     SDL_ShowOpenFileDialog(&HdvDialogCallback, &state, state.renderer.Window(),
                            filters, static_cast<int>(std::size(filters)),
                            initialDirectory.empty() ? nullptr : initialDirectory.c_str(), false);
+}
+
+void SDLCALL PartyExportDialogCallback(void* userdata, const char* const* files, int)
+{
+    if (!files || !files[0]) return;
+    auto& state = *static_cast<AppState*>(userdata);
+    std::lock_guard<std::mutex> lock(state.pendingPartyDialogMutex);
+    state.pendingPartyExport = files[0];
+}
+
+void SDLCALL PartyImportDialogCallback(void* userdata, const char* const* files, int)
+{
+    if (!files || !files[0]) return;
+    auto& state = *static_cast<AppState*>(userdata);
+    std::lock_guard<std::mutex> lock(state.pendingPartyDialogMutex);
+    state.pendingPartyImport = files[0];
+}
+
+std::string SafePartyFilename(const std::string& partyName)
+{
+    std::string filename;
+    for (char character : partyName)
+    {
+        const unsigned char byte = static_cast<unsigned char>(character);
+        if (std::isalnum(byte)) filename.push_back(character);
+        else if ((character == ' ' || character == '-' || character == '_')
+                 && !filename.empty() && filename.back() != '-')
+            filename.push_back('-');
+    }
+    while (!filename.empty() && filename.back() == '-') filename.pop_back();
+    return filename.empty() ? "deathlord-party" : filename;
+}
+
+void OpenPartyExportDialog(AppState& state)
+{
+    static const SDL_DialogFileFilter filters[] = {
+        { "Deathlord Relorded party (*.json)", "json" },
+    };
+    const std::string partyName = dlrl::PartyTransfer::DecodeString(
+        dlrl::deathlord::PartyPartyName, dlrl::PartySnapshot::PartyNameLength);
+    std::filesystem::path suggested = state.prefDir.empty()
+        ? std::filesystem::current_path() : std::filesystem::path(state.prefDir);
+    suggested /= SafePartyFilename(partyName) + ".dlrl-party.json";
+    const std::string location = suggested.string();
+    SDL_ShowSaveFileDialog(&PartyExportDialogCallback, &state, state.renderer.Window(),
+                           filters, static_cast<int>(std::size(filters)), location.c_str());
+}
+
+void OpenPartyImportDialog(AppState& state)
+{
+    static const SDL_DialogFileFilter filters[] = {
+        { "Deathlord Relorded party (*.json)", "json" },
+        { "All files", "*" },
+    };
+    const char* initial = state.prefDir.empty() ? nullptr : state.prefDir.c_str();
+    SDL_ShowOpenFileDialog(&PartyImportDialogCallback, &state, state.renderer.Window(),
+                           filters, static_cast<int>(std::size(filters)), initial, false);
 }
 
 BYTE SdlKeyToAscii(SDL_Keycode key, SDL_Keymod mod)
@@ -828,6 +936,287 @@ std::string StartMenuHint(const AppState& state)
     }
 }
 
+int PartyWord(std::uint16_t lowAddress, std::uint16_t highAddress, int member)
+{
+    return MemGetMainPtr(lowAddress)[member]
+         | (MemGetMainPtr(highAddress)[member] << 8);
+}
+
+void SetPartyWord(std::uint16_t lowAddress, std::uint16_t highAddress,
+                  int member, int value)
+{
+    value = std::clamp(value, 0, 65535);
+    MemGetMainPtr(lowAddress)[member] = static_cast<BYTE>(value);
+    MemGetMainPtr(highAddress)[member] = static_cast<BYTE>(value >> 8);
+}
+
+void RenderPartyEditor(AppState& state, bool activeParty)
+{
+    using namespace dlrl::deathlord;
+    if (!state.showPartyEditor) return;
+    if (!activeParty)
+    {
+        state.showPartyEditor = false;
+        return;
+    }
+
+    constexpr std::array<const char*, 16> classNames = {
+        "Fighter", "Paladin", "Ranger", "Barbarian", "Berzerker", "Samurai",
+        "Dark Knight", "Thief", "Assassin", "Ninja", "Monk", "Priest", "Druid",
+        "Magician", "Illusionist", "Peasant"
+    };
+    constexpr std::array<const char*, 8> raceNames = {
+        "Human", "Elf", "Half-Elf", "Dwarf", "Gnome", "Dark Elf", "Orc", "Half-Orc"
+    };
+    constexpr std::array<const char*, 3> alignmentNames = {"Good", "Neutral", "Evil"};
+    constexpr std::array<const char*, 8> inventoryNames = {
+        "Melee", "Ranged", "Chest", "Shield", "Misc.", "Jewelry", "Tool", "Scroll"
+    };
+
+    ImGui::SetNextWindowSize(ImVec2(900, 760), ImGuiCond_FirstUseEver);
+    if (!ImGui::Begin("Party Editor", &state.showPartyEditor))
+    {
+        ImGui::End();
+        return;
+    }
+
+    std::array<char, 17> partyName{};
+    const std::string currentPartyName = dlrl::PartyTransfer::DecodeString(
+        PartyPartyName, dlrl::PartySnapshot::PartyNameLength);
+    std::copy_n(currentPartyName.c_str(),
+                std::min(currentPartyName.size(), partyName.size() - 1), partyName.data());
+    if (ImGui::InputText("Party name", partyName.data(), partyName.size()))
+        dlrl::PartyTransfer::EncodeString(PartyPartyName, partyName.size() - 1,
+                                          partyName.data(), true);
+
+    state.partyEditorMember = std::clamp(state.partyEditorMember, 0, PartySize - 1);
+    std::array<std::string, PartySize> memberLabels;
+    for (int member = 0; member < PartySize; ++member)
+    {
+        memberLabels[member] = std::to_string(member + 1) + ": "
+            + dlrl::PartyTransfer::DecodeString(
+                static_cast<std::uint16_t>(PartyName + member * 9), 9);
+    }
+    if (ImGui::BeginCombo("Character", memberLabels[state.partyEditorMember].c_str()))
+    {
+        for (int member = 0; member < PartySize; ++member)
+            if (ImGui::Selectable(memberLabels[member].c_str(),
+                                  state.partyEditorMember == member))
+                state.partyEditorMember = member;
+        ImGui::EndCombo();
+    }
+
+    const int member = state.partyEditorMember;
+    ImGui::PushID(member);
+    bool recalculateArmor = false;
+
+    auto editByte = [&](const char* label, std::uint16_t address,
+                        int minimum, int maximum)
+    {
+        int value = MemGetMainPtr(address)[member];
+        ImGui::SetNextItemWidth(105.0f);
+        if (!ImGui::InputInt(label, &value)) return false;
+        MemGetMainPtr(address)[member] = static_cast<BYTE>(
+            std::clamp(value, minimum, maximum));
+        return true;
+    };
+    auto editWord = [&](const char* label, std::uint16_t low, std::uint16_t high,
+                        int maximum)
+    {
+        int value = PartyWord(low, high, member);
+        ImGui::SetNextItemWidth(105.0f);
+        if (!ImGui::InputInt(label, &value)) return false;
+        SetPartyWord(low, high, member, std::clamp(value, 0, maximum));
+        return true;
+    };
+    auto editCombo = [&](const char* label, std::uint16_t address,
+                         const auto& labels)
+    {
+        int value = std::min<int>(MemGetMainPtr(address)[member], labels.size() - 1);
+        bool changed = false;
+        if (ImGui::BeginCombo(label, labels[value]))
+        {
+            for (int index = 0; index < static_cast<int>(labels.size()); ++index)
+            {
+                if (ImGui::Selectable(labels[index], value == index))
+                {
+                    value = index;
+                    MemGetMainPtr(address)[member] = static_cast<BYTE>(index);
+                    changed = true;
+                }
+            }
+            ImGui::EndCombo();
+        }
+        return changed;
+    };
+
+    if (ImGui::CollapsingHeader("Identity", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        std::array<char, 10> name{};
+        const std::string currentName = dlrl::PartyTransfer::DecodeString(
+            static_cast<std::uint16_t>(PartyName + member * 9), 9);
+        std::copy_n(currentName.c_str(), std::min(currentName.size(), name.size() - 1),
+                    name.data());
+        if (ImGui::InputText("Name", name.data(), name.size()))
+            dlrl::PartyTransfer::EncodeString(
+                static_cast<std::uint16_t>(PartyName + member * 9), 9, name.data(), false);
+        const bool classChanged = editCombo("Class", PartyClass, classNames);
+        recalculateArmor |= classChanged;
+        if (classChanged && MemGetMainPtr(PartyCurrentCharacter)[0] == member)
+            MemGetMainPtr(PartyCurrentClass)[0] = MemGetMainPtr(PartyClass)[member];
+        recalculateArmor |= editCombo("Race", PartyRace, raceNames);
+        constexpr std::array<const char*, 2> genderNames = {"Male", "Female"};
+        editCombo("Gender", PartyGender, genderNames);
+        editCombo("Alignment", PartyAlignment, alignmentNames);
+
+        constexpr std::array<const char*, 5> magicNames = {
+            "None", "Priest", "Druid", "Magician", "Illusionist"
+        };
+        const BYTE storedMagic = MemGetMainPtr(PartyMagicUserType)[member];
+        int magic = storedMagic == 0xFF ? 0 : std::min<int>(storedMagic + 1, 4);
+        if (ImGui::BeginCombo("Magic discipline", magicNames[magic]))
+        {
+            for (int index = 0; index < static_cast<int>(magicNames.size()); ++index)
+            {
+                if (ImGui::Selectable(magicNames[index], magic == index))
+                {
+                    magic = index;
+                    MemGetMainPtr(PartyMagicUserType)[member] = index == 0
+                        ? 0xFF : static_cast<BYTE>(index - 1);
+                }
+            }
+            ImGui::EndCombo();
+        }
+        if (ImGui::Button("Make party leader"))
+        {
+            MemGetMainPtr(PartyLeader)[0] = static_cast<BYTE>(member);
+            MemGetMainPtr(PartyCurrentCharacter)[0] = static_cast<BYTE>(member);
+            MemGetMainPtr(PartyCurrentClass)[0] = MemGetMainPtr(PartyClass)[member];
+        }
+        ImGui::SameLine();
+        if (MemGetMainPtr(PartyLeader)[0] == member) ImGui::TextDisabled("Current leader");
+    }
+
+    if (ImGui::CollapsingHeader("Progress and resources", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (ImGui::BeginTable("Progress", 3, ImGuiTableFlags_SizingStretchSame))
+        {
+            ImGui::TableNextColumn(); editByte("Level", PartyLevel, 1, 255);
+            ImGui::TableNextColumn(); editByte("Levels waiting", PartyLevelPlus, 0, 2);
+            ImGui::TableNextColumn(); editWord("Experience", PartyXpLow, PartyXpHigh, 65535);
+            ImGui::TableNextColumn(); editWord("Health", PartyHealthLow, PartyHealthHigh, 65535);
+            ImGui::TableNextColumn(); editWord("Maximum health", PartyHealthMaxLow,
+                                                PartyHealthMaxHigh, 65535);
+            ImGui::TableNextColumn(); editByte("Power", PartyPower, 0, 255);
+            ImGui::TableNextColumn(); editByte("Maximum power", PartyPowerMax, 0, 255);
+            ImGui::TableNextColumn(); editWord("Gold", PartyGoldLow, PartyGoldHigh, 10000);
+            ImGui::TableNextColumn(); editByte("Food", PartyFood, 0, 100);
+            ImGui::TableNextColumn(); editByte("Torches", PartyTorches, 0, 10);
+            int armorClass = 10 - MemGetMainPtr(PartyArmorClass)[member];
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(105.0f);
+            if (ImGui::InputInt("Armor class", &armorClass))
+                MemGetMainPtr(PartyArmorClass)[member] = static_cast<BYTE>(
+                    std::clamp(10 - armorClass, 0, 255));
+            ImGui::EndTable();
+        }
+    }
+
+    if (ImGui::CollapsingHeader("Attributes", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (ImGui::BeginTable("Attributes", 3, ImGuiTableFlags_SizingStretchSame))
+        {
+            ImGui::TableNextColumn(); editByte("Strength", PartyStrength, 0, 255);
+            ImGui::TableNextColumn(); editByte("Constitution", PartyConstitution, 0, 255);
+            ImGui::TableNextColumn(); editByte("Size", PartySizeAttribute, 0, 255);
+            ImGui::TableNextColumn(); editByte("Intelligence", PartyIntelligence, 0, 255);
+            ImGui::TableNextColumn(); editByte("Dexterity", PartyDexterity, 0, 255);
+            ImGui::TableNextColumn(); editByte("Charisma", PartyCharisma, 0, 255);
+            ImGui::EndTable();
+        }
+    }
+
+    if (ImGui::CollapsingHeader("Status", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        constexpr std::array<std::pair<BYTE, const char*>, 7> statuses = {{
+            {0x02, "Starving"}, {0x04, "Toxified"}, {0x08, "Ill"},
+            {0x10, "Paralyzed"}, {0x20, "Stone"}, {0x40, "Dead"}, {0x80, "Ashes"}
+        }};
+        BYTE status = MemGetMainPtr(PartyStatus)[member];
+        for (const auto& [mask, label] : statuses)
+        {
+            bool enabled = (status & mask) != 0;
+            if (ImGui::Checkbox(label, &enabled))
+            {
+                if (enabled) status |= mask;
+                else status &= static_cast<BYTE>(~mask);
+                MemGetMainPtr(PartyStatus)[member] = status;
+            }
+            ImGui::SameLine();
+        }
+        ImGui::NewLine();
+    }
+
+    if (ImGui::CollapsingHeader("Inventory", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        BYTE* inventory = MemGetMainPtr(
+            static_cast<std::uint16_t>(PartyInventory + member * 0x20));
+        if (ImGui::BeginTable("InventoryTable", 4,
+                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg
+                              | ImGuiTableFlags_SizingStretchProp))
+        {
+            ImGui::TableSetupColumn("Slot");
+            ImGui::TableSetupColumn("Item ID");
+            ImGui::TableSetupColumn("Item");
+            ImGui::TableSetupColumn("Charges");
+            ImGui::TableHeadersRow();
+            for (int slot = 0; slot < 8; ++slot)
+            {
+                ImGui::PushID(slot);
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(inventoryNames[slot]);
+                int item = inventory[slot];
+                ImGui::TableNextColumn();
+                if (ImGui::InputInt("##Item", &item))
+                {
+                    inventory[slot] = static_cast<BYTE>(std::clamp(item, 0, 255));
+                    recalculateArmor = true;
+                }
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(inventory[slot] == 0xFF ? "Empty"
+                    : state.inventoryRules.Name(inventory[slot], true).c_str());
+                int charges = inventory[slot + 8];
+                ImGui::TableNextColumn();
+                if (ImGui::InputInt("##Charges", &charges))
+                    inventory[slot + 8] = static_cast<BYTE>(std::clamp(charges, 0, 255));
+                ImGui::PopID();
+            }
+            ImGui::EndTable();
+        }
+        constexpr std::array<const char*, 3> readyNames = {"Melee", "Ranged", "Fists"};
+        BYTE readyStored = MemGetMainPtr(PartyWeaponReady)[member];
+        int ready = readyStored < 2 ? readyStored : 2;
+        if (ImGui::BeginCombo("Weapon in hands", readyNames[ready]))
+        {
+            for (int index = 0; index < 3; ++index)
+            {
+                if (ImGui::Selectable(readyNames[index], ready == index))
+                {
+                    ready = index;
+                    MemGetMainPtr(PartyWeaponReady)[member] = index < 2
+                        ? static_cast<BYTE>(index) : 0xFF;
+                    recalculateArmor = true;
+                }
+            }
+            ImGui::EndCombo();
+        }
+    }
+
+    if (recalculateArmor) RecalculateArmorClasses();
+    ImGui::PopID();
+    ImGui::End();
+}
+
 void RenderAppleWindow(AppState& state)
 {
     Video& video = GetVideo();
@@ -837,12 +1226,23 @@ void RenderAppleWindow(AppState& state)
 
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(),
                                  ImGuiDockNodeFlags_PassthruCentralNode);
+    const bool activeParty = dlrl::PartyTransfer::HasActiveParty(
+        state.hooks.State().inGameMap || state.hooks.State().inBattle || state.uiFixture);
 
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))
         {
             if (ImGui::MenuItem("Open DLRL HDV...")) OpenHdvDialog(state);
+            ImGui::Separator();
+            if (ImGui::MenuItem("Start a clean new game")) state.newGameRequested = true;
+            if (ImGui::MenuItem("Export active party...", nullptr, false, activeParty))
+                OpenPartyExportDialog(state);
+            if (ImGui::MenuItem("Import party...", nullptr, false, activeParty))
+                OpenPartyImportDialog(state);
+            if (ImGui::MenuItem("Party editor", nullptr,
+                                state.showPartyEditor, activeParty))
+                state.showPartyEditor = !state.showPartyEditor;
             ImGui::Separator();
             if (ImGui::MenuItem("Quit", "Cmd/Ctrl-Q"))
             {
@@ -1097,6 +1497,7 @@ void RenderAppleWindow(AppState& state)
 
     state.modernUi.RenderSpellWindow(&state.showSpells);
     state.modernUi.RenderLogWindow(&state.showLog);
+    RenderPartyEditor(state, activeParty);
     sa2::PostProcessor::GetInstance()->RenderImGuiWindow();
 
     if (state.showAbout)
@@ -1133,6 +1534,110 @@ void RenderAppleWindow(AppState& state)
         if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
     }
+
+    if (state.newGameRequested)
+    {
+        ImGui::OpenPopup("Start a clean new game?");
+        state.newGameRequested = false;
+    }
+    if (ImGui::BeginPopupModal("Start a clean new game?", nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 620.0f);
+        ImGui::TextUnformatted(
+            "Starting a new game overwrites completely the existing hard disk image. "
+            "You will lose all characters, active or inactive, and the game will reset "
+            "from a brand new state. Are you sure that's what you want?");
+        ImGui::PopTextWrapPos();
+        ImGui::Separator();
+        if (ImGui::Button("Yes"))
+        {
+            std::string error;
+            if (!StartCleanNewGame(state, error))
+            {
+                state.operationError = error;
+                state.operationErrorRequested = true;
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("No")) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
+    if (state.importConfirmationRequested)
+    {
+        ImGui::OpenPopup("Import party?");
+        state.importConfirmationRequested = false;
+    }
+    if (ImGui::BeginPopupModal("Import party?", nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        if (state.partyToImport)
+        {
+            const std::string prompt = "Are you sure you want to overwrite the current party "
+                "with the party called " + state.partyToImport->partyName + ", exported on "
+                + state.partyToImport->exportedAt + "? This cannot be undone!";
+            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 620.0f);
+            ImGui::TextUnformatted(prompt.c_str());
+            ImGui::PopTextWrapPos();
+            ImGui::Separator();
+            if (ImGui::Button("Yes"))
+            {
+                if (activeParty)
+                {
+                    dlrl::PartyTransfer::Apply(*state.partyToImport);
+                    state.operationNotice = "The party was imported successfully.";
+                    state.operationNoticeRequested = true;
+                }
+                else
+                {
+                    state.operationError = "There is no active party to overwrite.";
+                    state.operationErrorRequested = true;
+                }
+                state.partyToImport.reset();
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("No"))
+            {
+                state.partyToImport.reset();
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        else
+        {
+            ImGui::TextUnformatted("No party is waiting to be imported.");
+            if (ImGui::Button("OK")) ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if (state.operationErrorRequested)
+    {
+        ImGui::OpenPopup("Operation failed");
+        state.operationErrorRequested = false;
+    }
+    if (ImGui::BeginPopupModal("Operation failed", nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::TextWrapped("%s", state.operationError.c_str());
+        if (ImGui::Button("OK")) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
+    if (state.operationNoticeRequested)
+    {
+        ImGui::OpenPopup("Party operation complete");
+        state.operationNoticeRequested = false;
+    }
+    if (ImGui::BeginPopupModal("Party operation complete", nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::TextUnformatted(state.operationNotice.c_str());
+        if (ImGui::Button("OK")) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
 }
 
 } // namespace
@@ -1162,6 +1667,11 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
         }
         else if (arg == "--show-spells") state->showSpells = true;
         else if (arg == "--show-log") state->showLog = true;
+        else if (arg == "--show-party-editor") state->showPartyEditor = true;
+        else if (arg == "--show-new-game-confirm") state->newGameRequested = true;
+        else if (arg == "--show-import-confirmation")
+            state->fixtureImportConfirmation = true;
+        else if (arg == "--test-clean-reset") state->testCleanReset = true;
         else if (arg == "--ui-fixture") state->uiFixture = true;
         else if (arg == "--key-event" && i + 1 < argc)
         {
@@ -1258,7 +1768,22 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
     dlrl::ApplyAppleStyle(static_cast<dlrl::InterfaceColor>(state->interfaceColor));
     if (state->smokeFrames > 0) SDL_GL_SetSwapInterval(0);
     if (!InitEmulator(*state, state->hdvPath)) return SDL_APP_FAILURE;
+    if (state->testCleanReset)
+    {
+        std::string error;
+        if (!StartCleanNewGame(*state, error))
+        {
+            std::fprintf(stderr, "Clean-new-game integration failed: %s\n", error.c_str());
+            return SDL_APP_FAILURE;
+        }
+        std::puts("DLRL clean new game: active HDV replaced and rebooted");
+    }
     if (state->uiFixture) SeedModernUiFixture(*state);
+    if (state->uiFixture && state->fixtureImportConfirmation)
+    {
+        state->partyToImport = dlrl::PartyTransfer::Capture("2026-07-12T12:34:56Z");
+        state->importConfirmationRequested = true;
+    }
     ApplySpeed(*state);
     ApplyVideo(*state);
     ApplyVolume(*state);
@@ -1385,6 +1910,56 @@ SDL_AppResult SDL_AppIterate(void* appstate)
             std::swap(pending, state.pendingHdv);
         }
         if (!pending.empty()) LoadHdv(state, pending);
+    }
+    {
+        std::filesystem::path exportPath;
+        std::filesystem::path importPath;
+        {
+            std::lock_guard<std::mutex> lock(state.pendingPartyDialogMutex);
+            std::swap(exportPath, state.pendingPartyExport);
+            std::swap(importPath, state.pendingPartyImport);
+        }
+        const bool activeParty = dlrl::PartyTransfer::HasActiveParty(
+            state.hooks.State().inGameMap || state.hooks.State().inBattle || state.uiFixture);
+        if (!exportPath.empty())
+        {
+            if (exportPath.extension() != ".json") exportPath += ".dlrl-party.json";
+            if (!activeParty)
+            {
+                state.operationError = "There is no active party to export.";
+                state.operationErrorRequested = true;
+            }
+            else
+            {
+                std::string error;
+                const dlrl::PartySnapshot snapshot = dlrl::PartyTransfer::Capture();
+                if (dlrl::PartyTransfer::Save(snapshot, exportPath, error))
+                {
+                    state.operationNotice = "The party was exported to " + exportPath.string();
+                    state.operationNoticeRequested = true;
+                }
+                else
+                {
+                    state.operationError = error;
+                    state.operationErrorRequested = true;
+                }
+            }
+        }
+        if (!importPath.empty())
+        {
+            dlrl::PartySnapshot snapshot;
+            std::string error;
+            if (dlrl::PartyTransfer::Load(importPath, snapshot, error))
+            {
+                state.partyToImport = std::move(snapshot);
+                state.importConfirmationRequested = true;
+            }
+            else
+            {
+                state.operationError = error;
+                state.operationErrorRequested = true;
+            }
+        }
     }
     for (const AppState::ScheduledKey& event : state.scheduledKeys)
         if (event.frame == state.presentedFrames)

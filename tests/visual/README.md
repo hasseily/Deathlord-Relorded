@@ -135,3 +135,18 @@ through the marker centers and render behind their dots; its SHA-256 is
 `5d60e69a00fa749a41ae80e3eaa1ac4d6c047d9017ecdc75ac4a38771a2999ac`.
 The shared `Tanto` fixture/reference sample is also checked manually at native
 scale: all 122 lit glyph pixels match the v2 screenshot exactly.
+
+The File-menu party tools have three bounded UI fixtures. They render the live
+editor over the same six-member memory fixture, the clean-HDV destructive
+confirmation, and a validated import confirmation containing the decoded party
+name and fixed UTC timestamp. Their inspected SHA-256 baselines are:
+
+```
+party editor:        10a1b9395d750d4baaaf7c5f16d710acdcf827f73f15c97894d2f6b22e127251
+clean confirmation:  afc3ad5fe3afc1b40f45726dde4a450cf745086a2ab1f1b52e162fcc10aab936
+import confirmation: 684203862f21d110d3382c3c791d16eed9aac9dd608dcb58ad3ebec2ac012a85
+```
+
+The nonvisual hook test also round-trips all `$FD00-$FFFF` party bytes through
+the versioned JSON format, rejects unrelated JSON, and replaces a synthetic
+active HDV from a clean template without modifying the template.

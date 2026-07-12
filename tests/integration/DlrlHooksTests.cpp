@@ -3,6 +3,8 @@
 #include "DlrlHooks.h"
 #include "InventoryRules.h"
 #include "InventoryState.h"
+#include "FileUtil.h"
+#include "PartyTransfer.h"
 
 #include "Emulator/CardManager.h"
 #include "Emulator/Core.h"
@@ -13,9 +15,12 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 
 namespace
 {
@@ -109,6 +114,71 @@ int main()
           "Relorded Crossbow rule still rejects a Priest");
     Check(inventoryRules.Name(0x00) == "Dagger" && inventoryRules.Slot(0x00) == 0,
           "inventory catalog exposes the portable display name and slot");
+
+    const auto transferDirectory = std::filesystem::temp_directory_path()
+        / ("dlrl-party-transfer-"
+           + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    std::filesystem::create_directories(transferDirectory);
+    std::fill_n(MemGetMainPtr(0xFD00), PartySnapshot::PartyDataLength,
+                static_cast<BYTE>(0x5A));
+    PartyTransfer::EncodeString(PartyPartyName, PartySnapshot::PartyNameLength,
+                                "THE TESTERS", true);
+    PartyTransfer::EncodeString(PartyName, 9, "AKIRA", false);
+    MemGetMainPtr(PartySizeAddress)[0] = PartySize;
+    MemGetMainPtr(PartyLeader)[0] = 2;
+    MemGetMainPtr(PartyCurrentCharacter)[0] = 3;
+    MemGetMainPtr(PartyClass)[3] = static_cast<BYTE>(CharacterClass::Samurai);
+    const PartySnapshot captured = PartyTransfer::Capture("2026-07-12T12:34:56Z");
+    const auto partyPath = transferDirectory / "test-party.dlrl-party.json";
+    std::string transferError;
+    Check(captured.partyName == "THE TESTERS"
+              && PartyTransfer::Save(captured, partyPath, transferError),
+          "party export captures the encoded name and writes versioned JSON");
+    std::fill_n(MemGetMainPtr(0xFD00), PartySnapshot::PartyDataLength,
+                static_cast<BYTE>(0));
+    PartySnapshot loaded;
+    Check(PartyTransfer::Load(partyPath, loaded, transferError),
+          "party import validates and reads an exported file");
+    PartyTransfer::Apply(loaded);
+    Check(PartyTransfer::DecodeString(PartyPartyName, PartySnapshot::PartyNameLength)
+              == "THE TESTERS"
+              && PartyTransfer::DecodeString(PartyName, 9) == "AKIRA"
+              && MemGetMainPtr(PartyLeader)[0] == 2
+              && MemGetMainPtr(PartyCurrentCharacter)[0] == 3
+              && MemGetMainPtr(PartyCurrentClass)[0]
+                    == static_cast<BYTE>(CharacterClass::Samurai)
+              && MemGetMainPtr(0xFFFF)[0] == 0x5A,
+          "party import restores controls and the complete FD00-FFFF payload");
+    {
+        std::ofstream invalid(transferDirectory / "invalid.json");
+        invalid << "{}";
+    }
+    Check(!PartyTransfer::Load(transferDirectory / "invalid.json", loaded, transferError),
+          "party import rejects unrelated JSON");
+
+    const auto cleanTemplate = transferDirectory / "clean.hdv";
+    const auto activeImage = transferDirectory / "active.hdv";
+    {
+        std::ofstream clean(cleanTemplate, std::ios::binary);
+        clean << "clean image";
+        std::ofstream active(activeImage, std::ios::binary);
+        active << "played image";
+    }
+    Check(ReplaceFileFromTemplate(cleanTemplate, activeImage, transferError),
+          "clean-new-game replacement succeeds through a recoverable temporary file");
+    std::ifstream replaced(activeImage, std::ios::binary);
+    const std::string replacedBytes((std::istreambuf_iterator<char>(replaced)),
+                                    std::istreambuf_iterator<char>());
+    std::ifstream preserved(cleanTemplate, std::ios::binary);
+    const std::string preservedBytes((std::istreambuf_iterator<char>(preserved)),
+                                     std::istreambuf_iterator<char>());
+    Check(replacedBytes == "clean image" && preservedBytes == "clean image"
+              && !std::filesystem::exists(activeImage.string() + ".new-game.tmp")
+              && !std::filesystem::exists(activeImage.string() + ".new-game.backup"),
+          "clean-new-game replacement overwrites only the active image and cleans its workspace");
+    Check(!ReplaceFileFromTemplate(cleanTemplate, cleanTemplate, transferError),
+          "clean-new-game replacement refuses to overwrite its own template");
+    std::filesystem::remove_all(transferDirectory);
 
     InventoryState inventoryState;
     for (int member = 0; member < PartySize; ++member)

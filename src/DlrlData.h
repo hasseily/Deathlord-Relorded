@@ -21,6 +21,7 @@ constexpr std::uint16_t DayMinute = 0xFC01;
 constexpr std::uint16_t DayOfMonth = 0xFC02;
 constexpr std::uint16_t PartyCurrentCharacter = 0xFC21;
 constexpr std::uint16_t PartyCurrentClass = 0xFC22;
+constexpr std::uint16_t PartyLeader = 0xFC19;
 constexpr std::uint16_t PartyIconType = 0xFC1D;
 constexpr std::uint16_t PartySizeAddress = 0xFC20;
 constexpr std::uint16_t PartyPartyName = 0xFCF0;

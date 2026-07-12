@@ -86,11 +86,14 @@ add_library(dlrl_platform STATIC
     src/DlrlHooks.cpp
     src/InventoryRules.cpp
     src/InventoryState.cpp
+    src/PartyTransfer.cpp
+    src/FileUtil.cpp
 )
 target_include_directories(dlrl_platform PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/Deathlord-Relorded
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party
 )
 target_link_libraries(dlrl_platform PUBLIC
     dlrl_emulator
@@ -154,6 +157,22 @@ add_custom_command(TARGET dlrl POST_BUILD
     COMMENT "Staging DLRL runtime data"
     VERBATIM
 )
+
+# The downloaded 2.0.1 release supplies the immutable clean-game template.
+# It is never tracked, but local/release builds stage it beside the portable
+# assets so the active per-user HDV can be replaced safely on request.
+set(DLRL_CLEAN_HDV_SOURCE
+    "${CMAKE_SOURCE_DIR}/extras/deathlord-relorded-win-201/Images/Deathlord PRODOS.hdv")
+if(EXISTS "${DLRL_CLEAN_HDV_SOURCE}")
+    add_custom_command(TARGET dlrl POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${DLRL_RESOURCE_DIR}/Images"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${DLRL_CLEAN_HDV_SOURCE}"
+            "${DLRL_RESOURCE_DIR}/Images/Deathlord PRODOS.hdv"
+        COMMENT "Staging clean DLRL HDV template"
+        VERBATIM
+    )
+endif()
 
 if(BUILD_TESTING)
     add_executable(dlrl_core_smoke
@@ -339,5 +358,50 @@ if(BUILD_TESTING)
             LABELS "gui;visual"
             PASS_REGULAR_EXPRESSION "frames=3"
         )
+        add_test(NAME sdl_party_editor_smoke
+            COMMAND $<TARGET_FILE:dlrl>
+                --smoke-frames 3
+                --ui-fixture
+                --show-party-editor
+                --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-party-editor.bmp"
+        )
+        set_tests_properties(sdl_party_editor_smoke PROPERTIES
+            LABELS "gui;visual;party"
+            PASS_REGULAR_EXPRESSION "frames=3"
+        )
+        add_test(NAME sdl_new_game_confirmation_smoke
+            COMMAND $<TARGET_FILE:dlrl>
+                --smoke-frames 3
+                --ui-fixture
+                --show-new-game-confirm
+                --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-new-game-confirmation.bmp"
+        )
+        set_tests_properties(sdl_new_game_confirmation_smoke PROPERTIES
+            LABELS "gui;visual;party"
+            PASS_REGULAR_EXPRESSION "frames=3"
+        )
+        add_test(NAME sdl_party_import_confirmation_smoke
+            COMMAND $<TARGET_FILE:dlrl>
+                --smoke-frames 3
+                --ui-fixture
+                --show-import-confirmation
+                --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-party-import-confirmation.bmp"
+        )
+        set_tests_properties(sdl_party_import_confirmation_smoke PROPERTIES
+            LABELS "gui;visual;party"
+            PASS_REGULAR_EXPRESSION "frames=3"
+        )
+        if(EXISTS "${DLRL_CLEAN_HDV_SOURCE}")
+            add_test(NAME sdl_clean_new_game_reset
+                COMMAND $<TARGET_FILE:dlrl>
+                    --smoke-frames 600
+                    --test-clean-reset
+                    --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-clean-reset.bmp"
+            )
+            set_tests_properties(sdl_clean_new_game_reset PROPERTIES
+                LABELS "gui;hdv;party"
+                PASS_REGULAR_EXPRESSION "active HDV replaced and rebooted"
+            )
+        endif()
     endif()
 endif()
