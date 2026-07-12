@@ -27,117 +27,377 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
 
-#include "pch.h"
+#include "StdAfx.h"
 
 #include "CardManager.h"
-#include "AppleWin.h"
+#include "Registry.h"
 
-#include "Disk.h"
+#include "Harddisk.h"
+#include "Mockingboard.h"
+#include "SAM.h"
+#include "VidHD.h"
+#include "LanguageCard.h"
+#include "Memory.h"
 
-void CardManager::Insert(UINT slot, SS_CARDTYPE type)
+void CardManager::InsertInternal(UINT slot, SS_CARDTYPE type)
 {
-	if (type == CT_Empty)
-		return Remove(slot);
-
 	RemoveInternal(slot);
 
 	switch (type)
 	{
-	case CT_Disk2:
-		m_slot[slot] = new Disk2InterfaceCard(slot);
+	case CT_Empty:
+		m_slot[slot] = new EmptyCard(slot);
 		break;
 	case CT_MockingboardC:
-		m_slot[slot] = new DummyCard(type);
-		break;
-	case CT_GenericPrinter:
-		m_slot[slot] = new DummyCard(type);
+	case CT_MegaAudio:
+	case CT_SDMusic:
+		m_slot[slot] = new MockingboardCard(slot, type);
 		break;
 	case CT_GenericHDD:
-		m_slot[slot] = new DummyCard(type);
-		break;
-	case CT_GenericClock:
-		m_slot[slot] = new DummyCard(type);
-		break;
-	case CT_Z80:
-		m_slot[slot] = new DummyCard(type);
+		m_slot[slot] = new HarddiskInterfaceCard(slot);
 		break;
 	case CT_Phasor:
-		m_slot[slot] = new DummyCard(type);
-		break;
-	case CT_Echo:
-		m_slot[slot] = new DummyCard(type);
+		m_slot[slot] = new MockingboardCard(slot, type);
 		break;
 	case CT_SAM:
-		m_slot[slot] = new DummyCard(type);
+		m_slot[slot] = new SAMCard(slot);
 		break;
-	case CT_Uthernet:
-		m_slot[slot] = new DummyCard(type);
+	case CT_VidHD:
+		_ASSERT(m_pVidHDCard == NULL);
+		if (m_pVidHDCard) break;	// Only support one VidHD card
+		m_slot[slot] = m_pVidHDCard = new VidHDCard(slot);
 		break;
-
 	case CT_LanguageCard:
-	case CT_Saturn128K:
-		{
-			if (slot != 0)
-			{
-				_ASSERT(0);
-				break;
-			}
-		}
-		m_slot[slot] = new DummyCard(type);
+	case CT_LanguageCardIIe:
+		_ASSERT(slot == SLOT0);
+		if (GetLanguageCardMgr().SetLanguageCard(type))
+			m_slot[SLOT0] = GetLanguageCardMgr().GetLanguageCard();
 		break;
-
-	case CT_LanguageCardIIe:	// not a card
+	case CT_Saturn128K:
+		if (slot == SLOT0)
+		{
+			if (GetLanguageCardMgr().SetLanguageCard(type))
+				m_slot[SLOT0] = GetLanguageCardMgr().GetLanguageCard();
+		}
+		else
+		{
+			m_slot[slot] = new Saturn128K(slot, Saturn128K::kMaxSaturnBanks);
+		}
+		break;
 	default:
 		_ASSERT(0);
 		break;
 	}
 
 	if (m_slot[slot] == NULL)
-		m_slot[slot] = new EmptyCard;
+		Remove(slot);			// creates a new EmptyCard
+}
+
+void CardManager::Insert(UINT slot, SS_CARDTYPE type, bool updateRegistry/*=true*/)
+{
+	InsertInternal(slot, type);
+	if (updateRegistry)
+		RegSetConfigSlotNewCardType(slot, type);
 }
 
 void CardManager::RemoveInternal(UINT slot)
 {
-	if (m_slot[slot] && m_slot[slot]->QueryType() == CT_MouseInterface)
-		m_pMouseCard = NULL;
+	if (m_slot[slot])
+	{
+		// NB. object deleted below: delete m_slot[slot]
+		switch (m_slot[slot]->QueryType())
+		{
+		case CT_LanguageCard:
+		case CT_LanguageCardIIe:
+			_ASSERT(slot == SLOT0);
+			GetLanguageCardMgr().SetLanguageCard(CT_Empty);
+			break;
+		case CT_Saturn128K:
+			if (slot == SLOT0)
+				GetLanguageCardMgr().SetLanguageCard(CT_Empty);
+			break;
+		case CT_VidHD:
+			m_pVidHDCard = NULL;
+			break;
+		}
 
-	if (m_slot[slot] && m_slot[slot]->QueryType() == CT_SSC)
-		m_pSSC = NULL;
-
-	delete m_slot[slot];
-	m_slot[slot] = NULL;
+		UnregisterIoHandler(slot);
+		delete m_slot[slot];
+		m_slot[slot] = NULL;
+	}
 }
 
-void CardManager::Remove(UINT slot)
+void CardManager::Remove(UINT slot, bool updateRegistry/*=true*/)
 {
-	RemoveInternal(slot);
-	m_slot[slot] = new EmptyCard;
+	Insert(slot, CT_Empty, updateRegistry);
 }
 
-void CardManager::InsertAux(SS_CARDTYPE type)
+void CardManager::InsertAuxInternal(SS_CARDTYPE type)
 {
-	if (type == CT_Empty)
-		return RemoveAux();
+	RemoveAuxInternal();
 
 	switch (type)
 	{
+	case CT_Empty:
+		m_aux = new EmptyCard(SLOT_AUX);
+		break;
 	case CT_80Col:
-		m_aux = new DummyCard(type);
+		m_aux = new DummyCard(type, SLOT_AUX);
 		break;
 	case CT_Extended80Col:
-		m_aux = new DummyCard(type);
+		m_aux = new DummyCard(type, SLOT_AUX);
 		break;
 	case CT_RamWorksIII:
-		m_aux = new DummyCard(type);
+		m_aux = new DummyCard(type, SLOT_AUX);
 		break;
 	default:
 		_ASSERT(0);
 		break;
 	}
+
+	// for consistency m_aux must never be NULL
+	_ASSERT(m_aux != NULL);
+	if (m_aux == NULL)
+		RemoveAux();	// creates a new EmptyCard
+}
+
+void CardManager::InsertAux(SS_CARDTYPE type, bool updateRegistry/*=true*/)
+{
+	// Only update aux slot if a //e or above (GH#1428)
+	// ...otherwise we'll lose the card in the aux slot when switching //e -> II+ -> //e
+	if (!IsAppleIIeOrAbove(GetApple2Type()))
+		return;
+
+	InsertAuxInternal(type);
+	if (updateRegistry)
+	{
+		if (type != CT_RamWorksIII)
+			SetRamWorksMemorySize(1, false);	// 1x 64K bank for Empty/80Col/Extended80Col cards
+
+		RegSetConfigSlotNewCardType(SLOT_AUX, type);
+		SetRegistryAuxNumberOfBanks();
+	}
+}
+
+void CardManager::RemoveAuxInternal()
+{
+	delete m_aux;
+	m_aux = NULL;
 }
 
 void CardManager::RemoveAux(void)
 {
-	delete m_aux;
-	m_aux = new EmptyCard;
+	InsertAux(CT_Empty);
+}
+
+void CardManager::InitializeIO(LPBYTE pCxRomPeripheral)
+{
+	// if it is a //e then SLOT0 must be CT_LanguageCardIIe (and the other way round)
+	_ASSERT(IsApple2PlusOrClone(GetApple2Type()) != (m_slot[SLOT0]->QueryType() == CT_LanguageCardIIe));
+
+	for (UINT i = SLOT0; i < NUM_SLOTS; ++i)
+	{
+		if (m_slot[i])
+		{
+			m_slot[i]->InitializeIO(pCxRomPeripheral);
+		}
+	}
+}
+
+void CardManager::Destroy()
+{
+	for (UINT i = SLOT0; i < NUM_SLOTS; ++i)
+	{
+		if (m_slot[i])
+		{
+			m_slot[i]->Destroy();
+		}
+	}
+
+	GetMockingboardCardMgr().Destroy();
+}
+
+void CardManager::Reset(const bool powerCycle)
+{
+	for (UINT i = SLOT0; i < NUM_SLOTS; ++i)
+	{
+		if (m_slot[i])
+		{
+			m_slot[i]->Reset(powerCycle);
+		}
+	}
+
+	GetMockingboardCardMgr().Reset(powerCycle);
+}
+
+void CardManager::Update(const ULONG nExecutedCycles)
+{
+	for (UINT i = SLOT0; i < NUM_SLOTS; ++i)
+	{
+		if (m_slot[i])
+		{
+			m_slot[i]->Update(nExecutedCycles);
+		}
+	}
+
+	GetMockingboardCardMgr().Update(nExecutedCycles);
+}
+
+void CardManager::SaveSnapshot(YamlSaveHelper& yamlSaveHelper)
+{
+	for (UINT i = SLOT0; i < NUM_SLOTS; ++i)
+	{
+		if (m_slot[i])
+		{
+			m_slot[i]->SaveSnapshot(yamlSaveHelper);
+		}
+	}
+}
+
+SS_CARDTYPE CardManager::QueryDefaultCardForSlot(UINT slot, eApple2Type model)
+{
+	const SS_CARDTYPE defaultCards[] = {
+	CT_Empty,	// or LC or LC//e
+	CT_Empty,
+	CT_Empty,
+	CT_VidHD,
+	CT_MockingboardC,
+	CT_Empty,
+	CT_Empty,
+	CT_GenericHDD,
+	};
+
+	if (slot == SLOT0)
+	{
+		if (IsApple2Original(model))
+			return CT_Empty;
+		if (IsApple2PlusOrClone(model))
+			return CT_LanguageCard;
+		return CT_LanguageCardIIe;
+	}
+	else if (slot <= SLOT7)
+	{
+		return defaultCards[slot];
+	}
+
+	// SLOT_AUX
+	_ASSERT(slot == SLOT_AUX);
+	return CT_Extended80Col;
+}
+
+bool CardManager::IsSingleInstanceCard(SS_CARDTYPE card)
+{
+	const SS_CARDTYPE uniqueCards[] = {
+	CT_VidHD
+	};
+
+	for (int i = 0; i < std::size(uniqueCards); i++)
+	{
+		if (card == uniqueCards[i])
+			return true;
+	}
+
+	return false;
+}
+
+void CardManager::GetCardChoicesForSlot(const UINT slot, const SS_CARDTYPE currConfig[NUM_SLOTS], std::vector<SS_CARDTYPE>& choicesList)
+{
+	// Availability & order of cards in drop-down menu:
+	const SS_CARDTYPE cardsOnlyInSlot0[] =
+	{
+	CT_Empty,
+	CT_LanguageCard,
+	CT_Saturn128K,
+	};
+
+	// Availability & order of cards in drop-down menu:
+	const SS_CARDTYPE cardsInSlots1to7[] =
+	{
+	CT_Empty,
+	CT_GenericHDD,
+	CT_Saturn128K,
+	// Sound
+	CT_MockingboardC,
+	CT_Phasor,
+	CT_SAM,
+	CT_VidHD,
+	};
+
+	choicesList.clear();
+
+	if (slot == SLOT0)
+	{
+		choicesList.reserve(std::size(cardsOnlyInSlot0));
+		for (UINT i = 0; i < std::size(cardsOnlyInSlot0); i++)
+		{
+			choicesList.push_back(cardsOnlyInSlot0[i]);
+		}
+	}
+	else
+	{
+		const UINT kInvalidSlot = NUM_SLOTS;
+		BYTE haveCard[CT_NUM_CARDS];
+		memset(haveCard, kInvalidSlot, sizeof(haveCard));
+
+		for (UINT i = SLOT1; i < NUM_SLOTS; i++)
+		{
+			if (IsSingleInstanceCard(currConfig[i]))
+				haveCard[currConfig[i]] = i;
+		}
+
+		choicesList.reserve(std::size(cardsInSlots1to7));
+		for (UINT i = 0; i < std::size(cardsInSlots1to7); i++)
+		{
+			const SS_CARDTYPE thisCard = cardsInSlots1to7[i];
+
+			if (IsSingleInstanceCard(thisCard) && haveCard[thisCard] != kInvalidSlot && haveCard[thisCard] != slot)
+				continue;
+
+			choicesList.push_back(thisCard);
+		}
+
+		// Scan for any advanced/debug cards that aren't in cardsInSlots1to7[]
+		// . eg. advanced cards added from the cmd line
+		std::set<SS_CARDTYPE> advancedCards;
+		for (UINT i = SLOT1; i < NUM_SLOTS; i++)
+		{
+			bool found = false;
+			for (UINT j = 0; j < std::size(cardsInSlots1to7); j++)
+			{
+				if (currConfig[i] == cardsInSlots1to7[j])
+				{
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+				advancedCards.insert(currConfig[i]);
+		}
+
+		for (auto card : advancedCards)
+		{
+			choicesList.push_back(card);
+		}
+	}
+}
+
+void CardManager::GetCardChoicesForAuxSlot(std::vector<SS_CARDTYPE>& choicesList)
+{
+	// Availability & order of cards in drop-down menu:
+	const SS_CARDTYPE cards[] =
+	{
+	CT_Empty,
+	CT_80Col,
+	CT_Extended80Col,
+	CT_RamWorksIII
+	};
+
+	choicesList.clear();
+
+	choicesList.reserve(std::size(cards));
+	for (UINT i = 0; i < std::size(cards); i++)
+	{
+		const SS_CARDTYPE thisCard = cards[i];
+		choicesList.push_back(thisCard);
+	}
 }

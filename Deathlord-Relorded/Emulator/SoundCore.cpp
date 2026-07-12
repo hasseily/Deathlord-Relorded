@@ -26,56 +26,42 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * Author: Tom Charlesworth
  */
 
-#include "pch.h"
+#include "StdAfx.h"
 
 #include "SoundCore.h"
-#include "AppleWin.h"
+#include "Core.h"
+#include "Interface.h"
+#include "Log.h"
 #include "Speaker.h"
-#include <uuids.h>
-
-//-----------------------------------------------------------------------------
-
-#define MAX_SOUND_DEVICES 10
-
-static wchar_t *sound_devices[MAX_SOUND_DEVICES];
-static GUID sound_device_guid[MAX_SOUND_DEVICES];
-static int num_sound_devices = 0;
-
-static LPDIRECTSOUND g_lpDS = NULL;
 
 //-------------------------------------
 
 // Used for muting & fading:
 
-static const UINT uMAX_VOICES = 66;	// 64 phonemes + spkr + mockingboard
-static UINT g_uNumVoices = 0;
+static const UINT uMAX_VOICES = NUM_SLOTS * 2 + 1 + 1;	// 8x (2x SSI263) + spkr + MockingboardCardManager
+UINT g_uNumVoices = 0;
 static VOICE* g_pVoices[uMAX_VOICES] = {NULL};
 
 static VOICE* g_pSpeakerVoice = NULL;
 
-//-------------------------------------
-
-bool g_bDSAvailable = false;
-
 //-----------------------------------------------------------------------------
 
-static BOOL CALLBACK DSEnumProc(LPGUID lpGUID, LPCTSTR lpszDesc, LPCTSTR lpszDrvName,  LPVOID lpContext)
-{
-	int i = num_sound_devices;
-	if(i == MAX_SOUND_DEVICES)
-		return TRUE;
-	if(lpGUID != NULL)
-		memcpy(&sound_device_guid[i], lpGUID, sizeof (GUID));
-	sound_devices[i] = _wcsdup(lpszDesc);
+// NB. Also similar is done by: MockingboardCardManager::Destroy()
+// - which is called from WM_DESTROY (when both restarting VM & exiting the app)
 
-	num_sound_devices++;
-	return TRUE;
+VOICE::~VOICE(void)
+{
+	if (lpDSBvoice)
+	{
+		DSVoiceStop(this);
+		DSReleaseSoundBuffer(this);
+	}
 }
 
 //-----------------------------------------------------------------------------
 
 #ifdef _DEBUG
-static char *DirectSound_ErrorText (HRESULT error)
+static const char *DirectSound_ErrorText (HRESULT error)
 {
     switch( error )
     {
@@ -119,7 +105,7 @@ static char *DirectSound_ErrorText (HRESULT error)
 
 //-----------------------------------------------------------------------------
 
-HRESULT DSGetLock(LPDIRECTSOUNDBUFFER pVoice, DWORD dwOffset, DWORD dwBytes,
+HRESULT DSGetLock(const std::shared_ptr<SoundBuffer>& pVoice, uint32_t dwOffset, uint32_t dwBytes,
 					  SHORT** ppDSLockedBuffer0, DWORD* pdwDSLockedBufferSize0,
 					  SHORT** ppDSLockedBuffer1, DWORD* pdwDSLockedBufferSize1)
 {
@@ -162,33 +148,15 @@ HRESULT DSGetLock(LPDIRECTSOUNDBUFFER pVoice, DWORD dwOffset, DWORD dwBytes,
 
 //-----------------------------------------------------------------------------
 
-HRESULT DSGetSoundBuffer(VOICE* pVoice, DWORD dwFlags, DWORD dwBufferSize, DWORD nSampleRate, int nChannels)
+HRESULT DSGetSoundBuffer(VOICE* pVoice, uint32_t dwBufferSize, uint32_t nSampleRate, int nChannels, const char* pszVoiceName)
 {
-	WAVEFORMATEX wavfmt;
-	DSBUFFERDESC dsbdesc;
+	pVoice->name = pszVoiceName;
 
-	wavfmt.wFormatTag = WAVE_FORMAT_PCM;
-	wavfmt.nChannels = (WORD)nChannels;
-	wavfmt.nSamplesPerSec = nSampleRate;
-	wavfmt.wBitsPerSample = 16;
-	wavfmt.nBlockAlign = wavfmt.nChannels==1 ? 2 : 4;
-	wavfmt.nAvgBytesPerSec = wavfmt.nBlockAlign * wavfmt.nSamplesPerSec;
+	std::shared_ptr<SoundBuffer> soundBuffer = GetFrame().CreateSoundBuffer(dwBufferSize, nSampleRate, nChannels, pszVoiceName);
+	if (!soundBuffer)
+		return E_FAIL;
 
-	memset (&dsbdesc, 0, sizeof (dsbdesc));
-	dsbdesc.dwSize = sizeof (dsbdesc);
-	dsbdesc.dwBufferBytes = dwBufferSize;
-	dsbdesc.lpwfxFormat = &wavfmt;
-	dsbdesc.dwFlags = dwFlags | DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_GLOBALFOCUS;
-
-	// Are buffers released when g_lpDS OR pVoice->lpDSBvoice is released?
-	// . From DirectX doc:
-	//   "Buffer objects are owned by the device object that created them. When the
-	//    device object is released, all buffers created by that object are also released..."
-	HRESULT hr = g_lpDS->CreateSoundBuffer(&dsbdesc, &pVoice->lpDSBvoice, NULL);
-	if(FAILED(hr))
-		return hr;
-
-	//
+	pVoice->lpDSBvoice = soundBuffer;
 
 	_ASSERT(g_uNumVoices < uMAX_VOICES);
 	if(g_uNumVoices < uMAX_VOICES)
@@ -197,7 +165,7 @@ HRESULT DSGetSoundBuffer(VOICE* pVoice, DWORD dwFlags, DWORD dwBufferSize, DWORD
 	if(pVoice->bIsSpeaker)
 		g_pSpeakerVoice = pVoice;
 
-	return hr;
+	return DS_OK;
 }
 
 void DSReleaseSoundBuffer(VOICE* pVoice)
@@ -216,27 +184,46 @@ void DSReleaseSoundBuffer(VOICE* pVoice)
 		}
 	}
 
-	SAFE_RELEASE(pVoice->lpDSBvoice);
+	pVoice->lpDSBvoice.reset();
 }
 
 //-----------------------------------------------------------------------------
 
-bool DSZeroVoiceBuffer(PVOICE Voice, const char* pszDevName, DWORD dwBufferSize)
+bool DSVoiceStop(PVOICE Voice)
 {
+#ifdef NO_DIRECT_X
+	return false;
+#else
+	_ASSERT(Voice->lpDSBvoice);
+	HRESULT hr = Voice->lpDSBvoice->Stop();
+	if(FAILED(hr))
+	{
+		if(g_fh) fprintf(g_fh, "%s: DSStop failed (%08X)\n", Voice->name.c_str(), (uint32_t)hr);
+		return false;
+	}
+
+	Voice->bActive = false;
+	return true;
+#endif // NO_DIRECT_X
+}
+
+// Use this to Play()
+bool DSZeroVoiceBuffer(PVOICE Voice, uint32_t dwBufferSize)
+{
+#ifdef NO_DIRECT_X
+	return false;
+#else
 
 	DWORD dwDSLockedBufferSize = 0;    // Size of the locked DirectSound buffer
 	SHORT* pDSLockedBuffer;
 
-	_ASSERT(Voice->lpDSBvoice);
-	HRESULT hr = Voice->lpDSBvoice->Stop();
-	if (FAILED(hr))
-	{
+	if (!DSVoiceStop(Voice))
 		return false;
-	}
 
-	hr = DSGetLock(Voice->lpDSBvoice, 0, 0, &pDSLockedBuffer, &dwDSLockedBufferSize, NULL, 0);
-	if (FAILED(hr))
+	HRESULT hr = DSGetLock(Voice->lpDSBvoice, 0, 0, &pDSLockedBuffer, &dwDSLockedBufferSize, NULL, 0);
+	if(FAILED(hr))
 	{
+		if(g_fh) fprintf(g_fh, "%s: DSGetLock failed (%08X)\n", Voice->name.c_str(), (uint32_t)hr);
 		return false;
 	}
 
@@ -244,23 +231,27 @@ bool DSZeroVoiceBuffer(PVOICE Voice, const char* pszDevName, DWORD dwBufferSize)
 	memset(pDSLockedBuffer, 0x00, dwDSLockedBufferSize);
 
 	hr = Voice->lpDSBvoice->Unlock((void*)pDSLockedBuffer, dwDSLockedBufferSize, NULL, 0);
-	if (FAILED(hr))
+	if(FAILED(hr))
 	{
+		if(g_fh) fprintf(g_fh, "%s: DSUnlock failed (%08X)\n", Voice->name.c_str(), (uint32_t)hr);
 		return false;
 	}
 
-	hr = Voice->lpDSBvoice->Play(0, 0, DSBPLAY_LOOPING);
-	if (FAILED(hr))
+	hr = Voice->lpDSBvoice->Play(0,0,DSBPLAY_LOOPING);
+	if(FAILED(hr))
 	{
+		if(g_fh) fprintf(g_fh, "%s: DSPlay failed (%08X)\n", Voice->name.c_str(), (uint32_t)hr);
 		return false;
 	}
 
+	Voice->bActive = true;
 	return true;
+#endif // NO_DIRECT_X
 }
 
 //-----------------------------------------------------------------------------
 
-bool DSZeroVoiceWritableBuffer(PVOICE Voice, const char* pszDevName, DWORD dwBufferSize)
+bool DSZeroVoiceWritableBuffer(PVOICE Voice, uint32_t dwBufferSize)
 {
 	DWORD dwDSLockedBufferSize0=0, dwDSLockedBufferSize1=0;
 	SHORT *pDSLockedBuffer0, *pDSLockedBuffer1;
@@ -272,6 +263,7 @@ bool DSZeroVoiceWritableBuffer(PVOICE Voice, const char* pszDevName, DWORD dwBuf
 							&pDSLockedBuffer1, &dwDSLockedBufferSize1);
 	if(FAILED(hr))
 	{
+		if(g_fh) fprintf(g_fh, "%s: DSGetLock failed (%08X)\n", Voice->name.c_str(), (uint32_t)hr);
 		return false;
 	}
 
@@ -283,6 +275,7 @@ bool DSZeroVoiceWritableBuffer(PVOICE Voice, const char* pszDevName, DWORD dwBuf
 									(void*)pDSLockedBuffer1, dwDSLockedBufferSize1);
 	if(FAILED(hr))
 	{
+		if(g_fh) fprintf(g_fh, "%s: DSUnlock failed (%08X)\n", Voice->name.c_str(), (uint32_t)hr);
 		return false;
 	}
 
@@ -316,7 +309,7 @@ static bool SoundCore_StartTimer()
 	return true;
 }
 
-static void SoundCore_StopTimer()
+void SoundCore_StopTimer()
 {
 	if(!g_bTimerActive)
 		return;
@@ -356,27 +349,70 @@ static VOID CALLBACK SoundCore_TimerFunc(HWND hwnd, UINT uMsg, UINT_PTR idEvent,
 
 	//
 
+#if 1
 	if(g_FadeType == FADE_IN)
 		g_FadeType = FADE_NONE;
 	else
 		SpkrUpdate_Timer();
+#else
+	const LONG nFadeUnit_Fast = (DSBVOLUME_MAX - DSBVOLUME_MIN) / 10;
+	const LONG nFadeUnit_Slow = (DSBVOLUME_MAX - DSBVOLUME_MIN) / 1000;	// Less noisy for 'silence'
+
+	LONG nFadeUnit = g_pSpeakerVoice->bRecentlyActive ? nFadeUnit_Fast : nFadeUnit_Slow;
+	LONG nFadeVolume = g_pSpeakerVoice->nFadeVolume;
+
+	if(g_FadeType == FADE_IN)
+	{
+		if(nFadeVolume == g_pSpeakerVoice->nVolume)
+		{
+			g_FadeType = FADE_NONE;
+			SoundCore_StopTimer();
+			return;
+		}
+
+		nFadeVolume += nFadeUnit;
+
+		if(nFadeVolume > g_pSpeakerVoice->nVolume)
+			nFadeVolume = g_pSpeakerVoice->nVolume;
+	}
+	else // FADE_OUT
+	{
+		if(nFadeVolume == DSBVOLUME_MIN)
+		{
+			g_FadeType = FADE_NONE;
+			SoundCore_StopTimer();
+			return;
+		}
+
+		nFadeVolume -= nFadeUnit;
+
+		if(nFadeVolume < DSBVOLUME_MIN)
+			nFadeVolume = DSBVOLUME_MIN;
+	}
+
+	g_pSpeakerVoice->nFadeVolume = nFadeVolume;
+	g_pSpeakerVoice->lpDSBvoice->SetVolume(nFadeVolume);
+#endif
 }
 
 //-----------------------------------------------------------------------------
 
 void SoundCore_SetFade(eFADE FadeType)
 {
-	static AppMode_e nLastMode = AppMode_e::MODE_UNKNOWN;
+	static AppMode_e nLastMode = MODE_UNDEFINED;
 
-	// Fade in/out for speaker, the others are demuted/muted here
+	if(g_nAppMode == MODE_DEBUG)
+		return;
+
+	// Fade in/out for speaker, the others are unmuted/muted here
 	if(FadeType != FADE_NONE)
 	{
 		for(UINT i=0; i<g_uNumVoices; i++)
 		{
-			// Note: Kludge for fading speaker if curr/last g_nAppMode is/was AppMode_e::MODE_LOGO:
+			// Note: Kludge for fading speaker if curr/last g_nAppMode is/was MODE_LOGO:
 			// . Bug in DirectSound? SpeakerVoice.lpDSBvoice->SetVolume() doesn't work without this!
 			// . See SoundCore_TweakVolumes() - could be this?
-			if((g_pVoices[i]->bIsSpeaker) && (g_nAppMode != AppMode_e::MODE_LOGO) && (nLastMode != AppMode_e::MODE_LOGO))
+			if((g_pVoices[i]->bIsSpeaker) && (g_nAppMode != MODE_LOGO) && (nLastMode != MODE_LOGO))
 			{
 				g_pVoices[i]->lpDSBvoice->GetVolume(&g_pVoices[i]->nFadeVolume);
 				g_FadeType = FadeType;
@@ -423,90 +459,7 @@ void SoundCore_TweakVolumes()
 
 //-----------------------------------------------------------------------------
 
-static UINT g_uDSInitRefCount = 0;
-
-bool DSInit(HWND window)
-{
-	if(g_bDSAvailable)
-	{
-		g_uDSInitRefCount++;
-		return true;		// Already initialised successfully
-	}
-
-	HRESULT hr = DirectSoundEnumerate((LPDSENUMCALLBACK)DSEnumProc, NULL);
-	if(FAILED(hr))
-	{
-		return false;
-	}
-
-	bool bCreatedOK = false;
-	for(int x=0; x<num_sound_devices; x++)
-	{
-		hr = DirectSoundCreate(&sound_device_guid[x], &g_lpDS, NULL);
-		if(SUCCEEDED(hr))
-		{
-			bCreatedOK = true;
-			break;
-		}
-
-	}
-	if(!bCreatedOK)
-	{
-		return false;
-	}
-
-	hr = g_lpDS->SetCooperativeLevel(window, DSSCL_NORMAL);
-	if(FAILED(hr))
-	{
-		return false;
-	}
-
-	DSCAPS DSCaps;
-    ZeroMemory(&DSCaps, sizeof(DSCAPS));
-    DSCaps.dwSize = sizeof(DSCAPS);
-	hr = g_lpDS->GetCaps(&DSCaps);
-	if(FAILED(hr))
-	{
-		// Not fatal: so continue...
-	}
-
-	g_bDSAvailable = true;
-
-	g_uDSInitRefCount = 1;
-
-	return true;
-}
-
-//-----------------------------------------------------------------------------
-
-void DSUninit()
-{
-	if(!g_bDSAvailable)
-		return;
-
-	_ASSERT(g_uDSInitRefCount);
-
-	if(g_uDSInitRefCount == 0)
-		return;
-
-	g_uDSInitRefCount--;
-
-	if(g_uDSInitRefCount)
-		return;
-
-	//
-
-	_ASSERT(g_uNumVoices == 0);
-
-	SAFE_RELEASE(g_lpDS);
-	g_bDSAvailable = false;
-
-	SoundCore_StopTimer();
-}
-
-//-----------------------------------------------------------------------------
-
-LONG NewVolume(DWORD dwVolume, DWORD dwVolumeMax)
+LONG NewVolume(uint32_t dwVolume, uint32_t dwVolumeMax)
 {
 	float fVol = (float) dwVolume / (float) dwVolumeMax;	// 0.0=Max, 1.0=Min
 
@@ -526,6 +479,7 @@ int SoundCore_GetErrorInc()
 void SoundCore_SetErrorInc(const int nErrorInc)
 {
 	g_nErrorInc = nErrorInc < g_nErrorMax ? nErrorInc : g_nErrorMax;
+	if(g_fh) fprintf(g_fh, "Speaker/MB Error Inc = %d\n", g_nErrorInc);
 }
 
 int SoundCore_GetErrorMax()
@@ -536,15 +490,17 @@ int SoundCore_GetErrorMax()
 void SoundCore_SetErrorMax(const int nErrorMax)
 {
 	g_nErrorMax = nErrorMax < MAX_SAMPLES ? nErrorMax : MAX_SAMPLES;
+	if(g_fh) fprintf(g_fh, "Speaker/MB Error Max = %d\n", g_nErrorMax);
 }
 
 //=============================================================================
 
-static DWORD g_dwAdviseToken;
+// Use DWORD_PTR according to IReferenceClock from <strmif.h>.
+static DWORD_PTR g_pdwAdviseCookie = 0; // Not really used as pointer.
 static IReferenceClock *g_pRefClock = NULL;
 static HANDLE g_hSemaphore = NULL;
 static bool g_bRefClockTimerActive = false;
-static DWORD g_dwLastUsecPeriod = 0;
+static uint32_t g_dwLastUsecPeriod = 0;
 
 
 bool SysClk_InitTimer()
@@ -552,14 +508,14 @@ bool SysClk_InitTimer()
 	g_hSemaphore = CreateSemaphore(NULL, 0, 1, NULL);		// Max count = 1
 	if (g_hSemaphore == NULL)
 	{
-		OutputDebugString(L"Error creating semaphore\n");
+		fprintf(stderr, "Error creating semaphore\n");
 		return false;
 	}
 
 	if (CoCreateInstance(CLSID_SystemClock, NULL, CLSCTX_INPROC,
                          IID_IReferenceClock, (LPVOID*)&g_pRefClock) != S_OK)
 	{
-		OutputDebugString(L"Error initialising COM\n");
+		fprintf(stderr, "Error initialising COM\n");
 		return false;	// Fails for Win95!
 	}
 
@@ -573,7 +529,7 @@ void SysClk_UninitTimer()
 	SAFE_RELEASE(g_pRefClock);
 
 	if (CloseHandle(g_hSemaphore) == 0)
-		OutputDebugString(L"Error closing semaphore handle\n");
+		fprintf(stderr, "Error closing semaphore handle\n");
 }
 
 //
@@ -588,14 +544,14 @@ void SysClk_WaitTimer()
 
 //
 
-void SysClk_StartTimerUsec(DWORD dwUsecPeriod)
+void SysClk_StartTimerUsec(uint32_t dwUsecPeriod)
 {
 	if(g_bRefClockTimerActive && (g_dwLastUsecPeriod == dwUsecPeriod))
 		return;
 
 	SysClk_StopTimer();
 
-	REFERENCE_TIME rtPeriod = (REFERENCE_TIME) ((LONGLONG)dwUsecPeriod * 10);	// In units of 100ns
+	REFERENCE_TIME rtPeriod = (REFERENCE_TIME) (dwUsecPeriod * 10);	// In units of 100ns
 	REFERENCE_TIME rtNow;
 
 	HRESULT hr = g_pRefClock->GetTime(&rtNow);
@@ -607,7 +563,9 @@ void SysClk_StartTimerUsec(DWORD dwUsecPeriod)
 		return;
 	}
 
-	if (g_pRefClock->AdvisePeriodic(rtNow, rtPeriod, g_hSemaphore, &g_dwAdviseToken) != S_OK)
+	// IReferenceClock from <strmif.h> (origin <axcore.idl>) is "oddly" defined to use HSEMAPHORE.
+	static_assert(sizeof(HSEMAPHORE) == sizeof(HANDLE), "must be same size");
+	if (g_pRefClock->AdvisePeriodic(rtNow, rtPeriod, (HSEMAPHORE)g_hSemaphore, &g_pdwAdviseCookie) != S_OK)
 	{
 		fprintf(stderr, "Error creating timer\n");
 		_ASSERT(0);
@@ -623,9 +581,9 @@ void SysClk_StopTimer()
 	if(!g_bRefClockTimerActive)
 		return;
 
-	if (g_pRefClock->Unadvise(g_dwAdviseToken) != S_OK)
+	if (g_pRefClock->Unadvise(g_pdwAdviseCookie) != S_OK)
 	{
-		OutputDebugString(L"SYSCLK: Error deleting timer\n");
+		fprintf(stderr, "Error deleting timer\n");
 		_ASSERT(0);
 		return;
 	}

@@ -39,8 +39,9 @@ This conclusion is drawn from the 3 available data points:
 All the other drivers and utilities available to me don't define the DOW mapping.
 */
 
-#include "pch.h"
+#include "StdAfx.h"
 #include "NoSlotClock.h"
+#include "YamlHelper.h"
 
 CNoSlotClock::CNoSlotClock()
 :
@@ -58,7 +59,20 @@ void CNoSlotClock::Reset()
 	m_bWriteEnabled = true;
 }
 
-bool CNoSlotClock::Read(int address, int& data)
+bool CNoSlotClock::ReadWrite(int address, BYTE& data, BYTE write)
+{
+	if (!write)
+	{
+		return Read(address, data);
+	}
+	else
+	{
+		Write(address);
+		return true;
+	}
+}
+
+bool CNoSlotClock::Read(int address, BYTE& data)
 {
 	// this may read or write the clock (returns true if data is changed)
 	if (address & 0x04)
@@ -73,14 +87,14 @@ bool CNoSlotClock::Read(int address, int& data)
 void CNoSlotClock::Write(int address)
 {
 	// this may read or write the clock
-	int dummy = 0;
+	BYTE dummy = 0;
 	if (address & 0x04)
 		ClockRead(dummy);
 	else
 		ClockWrite(address);
 }
 
-bool CNoSlotClock::ClockRead(int& data)
+bool CNoSlotClock::ClockRead(BYTE& data)
 {
 	// for a ROM, A2 high = read, and data out (if any) is on D0
 	if (!m_bClockRegisterEnabled)
@@ -173,10 +187,36 @@ void CNoSlotClock::PopulateClockRegister()
 #define SS_YAML_KEY_COMPARISON_REGISTER_MASK "Comparison Register Mask"
 #define SS_YAML_KEY_COMPARISON_REGISTER "Comparison Register"
 
-std::string CNoSlotClock::GetSnapshotStructName(void)
+const std::string& CNoSlotClock::GetSnapshotStructName(void)
 {
 	static const std::string name("No Slot Clock");
 	return name;
+}
+
+void CNoSlotClock::SaveSnapshot(YamlSaveHelper& yamlSaveHelper)
+{
+	YamlSaveHelper::Label state(yamlSaveHelper, "%s:\n", GetSnapshotStructName().c_str());
+	yamlSaveHelper.SaveBool(SS_YAML_KEY_CLOCK_REGISTER_ENABLED, m_bClockRegisterEnabled);
+	yamlSaveHelper.SaveBool(SS_YAML_KEY_WRITE_ENABLED, m_bWriteEnabled);
+	yamlSaveHelper.SaveHexUint64(SS_YAML_KEY_CLOCK_REGISTER_MASK, m_ClockRegister.m_Mask);
+	yamlSaveHelper.SaveHexUint64(SS_YAML_KEY_CLOCK_REGISTER, m_ClockRegister.m_Register);
+	yamlSaveHelper.SaveHexUint64(SS_YAML_KEY_COMPARISON_REGISTER_MASK, m_ComparisonRegister.m_Mask);
+	yamlSaveHelper.SaveHexUint64(SS_YAML_KEY_COMPARISON_REGISTER, m_ComparisonRegister.m_Register);
+}
+
+void CNoSlotClock::LoadSnapshot(YamlLoadHelper& yamlLoadHelper)
+{
+	if (!yamlLoadHelper.GetSubMap(GetSnapshotStructName()))
+		return;
+
+	m_bClockRegisterEnabled = yamlLoadHelper.LoadBool(SS_YAML_KEY_CLOCK_REGISTER_ENABLED);
+	m_bWriteEnabled = yamlLoadHelper.LoadBool(SS_YAML_KEY_WRITE_ENABLED);
+	m_ClockRegister.m_Mask = yamlLoadHelper.LoadUint64(SS_YAML_KEY_CLOCK_REGISTER_MASK);
+	m_ClockRegister.m_Register = yamlLoadHelper.LoadUint64(SS_YAML_KEY_CLOCK_REGISTER);
+	m_ComparisonRegister.m_Mask = yamlLoadHelper.LoadUint64(SS_YAML_KEY_COMPARISON_REGISTER_MASK);
+	m_ComparisonRegister.m_Register = yamlLoadHelper.LoadUint64(SS_YAML_KEY_COMPARISON_REGISTER);
+
+	yamlLoadHelper.PopMap();
 }
 
 CNoSlotClock::RingRegister64::RingRegister64()
@@ -216,7 +256,7 @@ void CNoSlotClock::RingRegister64::WriteBit(int data)
 	m_Register = (data & 0x1) ? (m_Register | m_Mask) : (m_Register & ~m_Mask);
 }
 
-void CNoSlotClock::RingRegister64::ReadBit(int& data)
+void CNoSlotClock::RingRegister64::ReadBit(BYTE& data)
 {
 	data = (m_Register & m_Mask) ? data | 1 : data & ~1;
 }

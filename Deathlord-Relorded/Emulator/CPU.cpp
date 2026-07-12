@@ -84,33 +84,19 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 // . algorithms for those illops which involve ADC or SBC. You rock too.
 
 
-#include "pch.h"
+#include "StdAfx.h"
 
 #include "CPU.h"
-#include "AppleWin.h"
+#include "Core.h"
 #include "CardManager.h"
 #include "Memory.h"
-#include "Mockingboard.h"
 #include "SynchronousEventManager.h"
-#include "Video.h"
 #include "NTSC.h"
-#include "LogWindow.h"
-#include "NonVolatile.h"
-#include "Game.h"
+#include "Log.h"
 
-static bool b_in_combat =		false;		// bool for tracking when we're in combat to suppress logging
-static bool b_in_printright =	false;		// bool for tracking when we're actually printing a string on the right scroll area
+#include "YamlHelper.h"
+
 #define LOG_IRQ_TAKEN_AND_RTI 0
-
-// 6502 Accumulator Bit Flags
-	#define	 AF_SIGN       0x80
-	#define	 AF_OVERFLOW   0x40
-	#define	 AF_RESERVED   0x20
-	#define	 AF_BREAK      0x10
-	#define	 AF_DECIMAL    0x08
-	#define	 AF_INTERRUPT  0x04
-	#define	 AF_ZERO       0x02
-	#define	 AF_CARRY      0x01
 
 #define	 SHORTOPCODES  22
 #define	 BENCHOPCODES  33
@@ -124,8 +110,12 @@ static BYTE benchopcode[BENCHOPCODES] = {
 	0xDD,0xED,0xEE
 };
 
-regsrec regs;
+CpuInstructionHookFn g_cpuInstructionHook = nullptr;
+void* g_cpuInstructionHookUserData = nullptr;
+KeyboardReadHookFn g_keyboardReadHook = nullptr;
+void* g_keyboardReadHookUserData = nullptr;
 
+regsrec regs;
 unsigned __int64 g_nCumulativeCycles = 0;
 
 static ULONG g_nCyclesExecuted;	// # of cycles executed up to last IO access
@@ -143,14 +133,15 @@ static volatile UINT32 g_bmNMI = 0;
 static volatile BOOL g_bNmiFlank = FALSE; // Positive going flank on NMI line
 
 static bool g_irqDefer1Opcode = false;
+static bool g_interruptInLastExecutionBatch = false;	// Last batch of executed cycles included an interrupt (IRQ/NMI)
+
+// NB. No need to save to save-state, as IRQ() follows CheckSynchronousInterruptSources(), and IRQ() always sets it to false.
+static bool g_irqOnLastOpcodeCycle = false;
 
 //
 
 static eCpuType g_MainCPU = CPU_65C02;
 static eCpuType g_ActiveCPU = CPU_65C02;
-
-static wchar_t strDebug[1000] = L"";
-static bool isForcingACCalculation = false;		// If set to true, stop Cpu65C02() at the RTS of the AC routine
 
 eCpuType GetMainCpu(void)
 {
@@ -168,7 +159,8 @@ void SetMainCpu(eCpuType cpu)
 
 static bool IsCpu65C02(eApple2Type apple2Type)
 {
-	return (apple2Type == A2TYPE_APPLE2EENHANCED); 
+	// NB. All Pravets clones are 6502 (GH#307)
+	return (apple2Type == A2TYPE_APPLE2EENHANCED) || (apple2Type == A2TYPE_TK30002E) || (apple2Type & A2TYPE_APPLE2C); 
 }
 
 eCpuType ProbeMainCpuDefault(eApple2Type apple2Type)
@@ -191,6 +183,11 @@ void SetActiveCpu(eCpuType cpu)
 	g_ActiveCPU = cpu;
 }
 
+bool IsIrqAsserted(void)
+{
+	return g_bmIRQ ? true : false;
+}
+
 bool Is6502InterruptEnabled(void)
 {
 	return !(regs.ps & AF_INTERRUPT);
@@ -201,10 +198,21 @@ void ResetCyclesExecutedForDebugger(void)
 	g_nCyclesExecuted = 0;
 }
 
+bool IsInterruptInLastExecution(void)
+{
+	return g_interruptInLastExecutionBatch;
+}
+
+void SetIrqOnLastOpcodeCycle(void)
+{
+	if (!(regs.ps & AF_INTERRUPT))
+		g_irqOnLastOpcodeCycle = true;
+}
+
 //
 
-#include "Emulator/CPU/cpu_general.inl"
-#include "Emulator/CPU/cpu_instructions.inl"
+#include "CPU/cpu_general.inl"
+#include "CPU/cpu_instructions.inl"
 
 /****************************************************************************
 *
@@ -225,11 +233,15 @@ static UINT g_nMin = 0xFFFFFFFF;
 static UINT g_nMax = 0;
 #endif
 
-static __forceinline void DoIrqProfiling(DWORD uCycles)
+static __forceinline void DoIrqProfiling(uint32_t uCycles)
 {
 #ifdef _DEBUG
 	if(regs.ps & AF_INTERRUPT)
 		return;		// Still in Apple's ROM
+
+#if LOG_IRQ_TAKEN_AND_RTI
+	LogOutput("ISR-end\n\n");
+#endif
 
 	g_nCycleIrqEnd = g_nCumulativeCycles + uCycles;
 	g_nCycleIrqTime = (UINT) (g_nCycleIrqEnd - g_nCycleIrqStart);
@@ -256,25 +268,102 @@ static __forceinline void DoIrqProfiling(DWORD uCycles)
 
 //===========================================================================
 
+//#define DBG_HDD_ENTRYPOINT
+#if defined(_DEBUG) && defined(DBG_HDD_ENTRYPOINT)
+// Output a debug msg whenever the HDD f/w is called or jump to.
+static void DebugHddEntrypoint(const USHORT PC)
+{
+	static bool bOldPCAtC7xx = false;
+	static WORD OldPC = 0;
+	static UINT Count = 0;
+
+	if ((PC >> 8) == 0xC7)
+	{
+		if (!bOldPCAtC7xx /*&& PC != 0xc70a*/)
+		{
+			Count++;
+			LogOutput("HDD Entrypoint: $%04X\n", PC);
+		}
+
+		bOldPCAtC7xx = true;
+	}
+	else
+	{
+		bOldPCAtC7xx = false;
+	}
+	OldPC = PC;
+}
+#endif
 
 static __forceinline void Fetch(BYTE& iOpcode, ULONG uExecutedCycles)
 {
-	//wchar_t szDebug[100];
 	const USHORT PC = regs.pc;
 
-	iOpcode = ((PC & 0xF000) == 0xC000)
-		? IORead[(PC >> 4) & 0xFF](PC, PC, 0, 0, uExecutedCycles)	// Fetch opcode from I/O memory, but params are still from mem[]
-		: *(mem + PC);
-
 #if defined(_DEBUG) && defined(DBG_HDD_ENTRYPOINT)
-	DebugHddEntrypoint(PC, iOpcode, uExecutedCycles);
+	DebugHddEntrypoint(PC);
 #endif
+
+	iOpcode = ((PC & 0xF000) == 0xC000)
+	    ? IORead[(PC>>4) & 0xFF](PC,PC,0,0,uExecutedCycles)	// Fetch opcode from I/O memory, but params are still from mem[]
+		: *(mem+PC);
 
 	regs.pc++;
 }
 
-static __forceinline void NMI(ULONG& uExecutedCycles, BOOL& flagc, BOOL& flagn, BOOL& flagv, BOOL& flagz)
+static __forceinline void Fetch_alt(BYTE& iOpcode, ULONG uExecutedCycles)
 {
+	const USHORT PC = regs.pc;
+
+#if defined(_DEBUG) && defined(DBG_HDD_ENTRYPOINT)
+	DebugHddEntrypoint(PC);
+#endif
+
+	iOpcode = _READ_ALT(regs.pc);
+
+	regs.pc++;
+}
+
+//#define ENABLE_NMI_SUPPORT	// Not used - so don't enable
+static __forceinline bool NMI(ULONG& uExecutedCycles, BOOL& flagc, BOOL& flagn, BOOL& flagv, BOOL& flagz)
+{
+#ifdef ENABLE_NMI_SUPPORT
+	if (!g_bNmiFlank)
+		return false;
+
+	// NMI signals are only serviced once
+	g_bNmiFlank = FALSE;
+#ifdef _DEBUG
+	g_nCycleIrqStart = g_nCumulativeCycles + uExecutedCycles;
+#endif
+	if (GetIsMemCacheValid())
+	{
+		_PUSH(regs.pc >> 8)
+		_PUSH(regs.pc & 0xFF)
+		EF_TO_AF
+		_PUSH(regs.ps & ~AF_BREAK)
+		regs.ps |= AF_INTERRUPT;
+		if (GetMainCpu() == CPU_65C02)	// GH#1099
+			regs.ps &= ~AF_DECIMAL;
+		regs.pc = *(WORD*)(mem + _6502_NMI_VECTOR);
+	}
+	else
+	{
+		_PUSH_ALT(regs.pc >> 8)
+		_PUSH_ALT(regs.pc & 0xFF)
+		EF_TO_AF
+		_PUSH_ALT(regs.ps & ~AF_BREAK)
+		regs.ps |= AF_INTERRUPT;
+		if (GetMainCpu() == CPU_65C02)	// GH#1099
+			regs.ps &= ~AF_DECIMAL;
+		regs.pc = READ_WORD_ALT(_6502_NMI_VECTOR);
+	}
+	UINT uExtraCycles = 0;	// Needed for CYC(a) macro
+	CYC(7);
+	g_interruptInLastExecutionBatch = true;
+	return true;
+#else
+	return false;
+#endif
 }
 
 static __forceinline void CheckSynchronousInterruptSources(UINT cycles, ULONG uExecutedCycles)
@@ -282,19 +371,18 @@ static __forceinline void CheckSynchronousInterruptSources(UINT cycles, ULONG uE
 	g_SynchronousEventMgr.Update(cycles, uExecutedCycles);
 }
 
-// NB. No need to save to save-state, as IRQ() follows CheckSynchronousInterruptSources(), and IRQ() always sets it to false.
-bool g_irqOnLastOpcodeCycle = false;
-
-static __forceinline void IRQ(ULONG& uExecutedCycles, BOOL& flagc, BOOL& flagn, BOOL& flagv, BOOL& flagz)
+static __forceinline bool IRQ(ULONG& uExecutedCycles, BOOL& flagc, BOOL& flagn, BOOL& flagv, BOOL& flagz)
 {
-	if(g_bmIRQ && !(regs.ps & AF_INTERRUPT))
+	bool irqTaken = false;
+
+	if (g_bmIRQ && !(regs.ps & AF_INTERRUPT))
 	{
-		// if 6522 interrupt occurs on opcode's last cycle, then defer IRQ by 1 opcode
+		// if interrupt (eg. from 6522) occurs on opcode's last cycle, then defer IRQ by 1 opcode
 		if (g_irqOnLastOpcodeCycle && !g_irqDefer1Opcode)
 		{
 			g_irqOnLastOpcodeCycle = false;
 			g_irqDefer1Opcode = true;	// if INT occurs again on next opcode, then do NOT defer
-			return;
+			return false;
 		}
 
 		g_irqDefer1Opcode = false;
@@ -303,58 +391,182 @@ static __forceinline void IRQ(ULONG& uExecutedCycles, BOOL& flagc, BOOL& flagn, 
 #ifdef _DEBUG
 		g_nCycleIrqStart = g_nCumulativeCycles + uExecutedCycles;
 #endif
-		PUSH(regs.pc >> 8)
-		PUSH(regs.pc & 0xFF)
-		EF_TO_AF
-		PUSH(regs.ps & ~AF_BREAK)
-		regs.ps = (regs.ps | AF_INTERRUPT) & (~AF_DECIMAL);
-		regs.pc = * (WORD*) (mem+0xFFFE);
+		if (GetIsMemCacheValid())
+		{
+			_PUSH(regs.pc >> 8)
+			_PUSH(regs.pc & 0xFF)
+			EF_TO_AF;
+			_PUSH(regs.ps & ~AF_BREAK)
+			regs.ps |= AF_INTERRUPT;
+			if (GetMainCpu() == CPU_65C02)	// GH#1099
+				regs.ps &= ~AF_DECIMAL;
+			regs.pc = *(WORD*)(mem + _6502_INTERRUPT_VECTOR);
+		}
+		else
+		{
+			_PUSH_ALT(regs.pc >> 8)
+			_PUSH_ALT(regs.pc & 0xFF)
+			EF_TO_AF;
+			_PUSH_ALT(regs.ps & ~AF_BREAK)
+			regs.ps |= AF_INTERRUPT;
+			if (GetMainCpu() == CPU_65C02)	// GH#1099
+				regs.ps &= ~AF_DECIMAL;
+			regs.pc = READ_WORD_ALT(_6502_INTERRUPT_VECTOR);
+		}
 		UINT uExtraCycles = 0;	// Needed for CYC(a) macro
-		CYC(7)
-		CheckSynchronousInterruptSources(7, uExecutedCycles);
+		CYC(7);
+#if defined(_DEBUG) && LOG_IRQ_TAKEN_AND_RTI
+		std::string irq6522;
+		GetCardMgr().GetMockingboardCardMgr().Get6522IrqDescription(irq6522);
+		const char* pSrc =	(g_bmIRQ & 1) ? irq6522.c_str() :
+							(g_bmIRQ & 2) ? "SPEECH" :
+							(g_bmIRQ & 4) ? "SSC" :
+							(g_bmIRQ & 8) ? "MOUSE" : "UNKNOWN";
+		LogOutput("IRQ (%08X) (%s)\n", (UINT)g_nCycleIrqStart, pSrc);
+#endif
+		g_interruptInLastExecutionBatch = true;
+		irqTaken = true;
 	}
 
 	g_irqOnLastOpcodeCycle = false;
+	return irqTaken;
 }
 
 //===========================================================================
 
-#define READ _READ
-#define WRITE(value) _WRITE(value)
 #define HEATMAP_X(address)
+
+// 6502 & no debugger
+#define READ(addr) _READ_WITH_IO_F8xx(addr)
+#define WRITE(value) _WRITE_WITH_IO_F8xx(value)
+
+#include "CPU/cpu6502.h"  // MOS 6502
+
+//-------
+
+// 6502 & no debugger & alt read/write support
+#define CPU_ALT
+#define READ(addr) _READ_ALT(addr)
+#define WRITE(value) _WRITE_ALT(value)
+
+#define Cpu6502 Cpu6502_altRW
+#define Fetch Fetch_alt
+#include "CPU/cpu6502.h"  // MOS 6502
+#undef Cpu6502
+#undef Fetch
+
+//-------
+
+// 65C02 & no debugger
+#define READ(addr) _READ(addr)
+#define WRITE(value) _WRITE(value)
 
 #include "CPU/cpu65C02.h" // WDC 65C02
 
-#undef READ
-#undef WRITE
+//-------
+
+// 65C02 & no debugger & alt read/write support
+#define CPU_ALT
+#define READ(addr) _READ_ALT(addr)
+#define WRITE(value) _WRITE_ALT(value)
+
+#define Cpu65C02 Cpu65C02_altRW
+#define Fetch Fetch_alt
+#include "CPU/cpu65C02.h" // WDC 65C02
+#undef Cpu65C02
+#undef Fetch
+
 #undef HEATMAP_X
 
 //-----------------
 
-#define READ Heatmap_ReadByte(addr, uExecutedCycles)
-#define WRITE(value) Heatmap_WriteByte(addr, value, uExecutedCycles);
-
 #define HEATMAP_X(address) Heatmap_X(address)
-
 #include "CPU/cpu_heatmap.inl"
+
+// 6502 & debugger
+#define READ(addr) Heatmap_ReadByte_With_IO_F8xx(addr, uExecutedCycles)
+#define WRITE(value) Heatmap_WriteByte_With_IO_F8xx(addr, value, uExecutedCycles);
+
+#define Cpu6502 Cpu6502_debug
+#include "CPU/cpu6502.h"  // MOS 6502
+#undef Cpu6502
+
+//-------
+
+// 6502 & debugger & alt read/write support
+#define CPU_ALT
+#define READ(addr) _READ_ALT(addr)
+#define WRITE(value) _WRITE_ALT(value)
+
+#define Cpu6502 Cpu6502_debug_altRW
+#define Fetch Fetch_alt
+#include "CPU/cpu6502.h"  // MOS 6502
+#undef Cpu6502
+#undef Fetch
+
+//-------
+
+// 65C02 & debugger
+#define READ(addr) Heatmap_ReadByte(addr, uExecutedCycles)
+#define WRITE(value) Heatmap_WriteByte(addr, value, uExecutedCycles);
 
 #define Cpu65C02 Cpu65C02_debug
 #include "CPU/cpu65C02.h" // WDC 65C02
 #undef Cpu65C02
 
-#undef READ
-#undef WRITE
+//-------
+
+// 65C02 & debugger & alt read/write support
+#define CPU_ALT
+#define READ(addr) _READ_ALT(addr)
+#define WRITE(value) _WRITE_ALT(value)
+
+#define Cpu65C02 Cpu65C02_debug_altRW
+#define Fetch Fetch_alt
+#include "CPU/cpu65C02.h" // WDC 65C02
+#undef Cpu65C02
+#undef Fetch
+
 #undef HEATMAP_X
 
 //===========================================================================
 
-static DWORD InternalCpuExecute(const DWORD uTotalCycles, const bool bVideoUpdate)
+static uint32_t InternalCpuExecute(const uint32_t uTotalCycles, const bool bVideoUpdate)
 {
-	if (g_nAppMode == AppMode_e::MODE_RUNNING)
+	if (g_nAppMode == MODE_RUNNING || g_nAppMode == MODE_BENCHMARK)
 	{
-		return Cpu65C02(uTotalCycles, bVideoUpdate);	// Enhanced Apple //e
+		if (!GetIsMemCacheValid())
+		{
+			_ASSERT(memshadow[0]);
+			if (GetMainCpu() == CPU_6502)
+				return Cpu6502_altRW(uTotalCycles, bVideoUpdate);		// Apple //e
+			else
+				return Cpu65C02_altRW(uTotalCycles, bVideoUpdate);		// Enhanced Apple //e
+		}
+
+		if (GetMainCpu() == CPU_6502)
+			return Cpu6502(uTotalCycles, bVideoUpdate);		// Apple ][, ][+, //e, Clones
+		else
+			return Cpu65C02(uTotalCycles, bVideoUpdate);	// Enhanced Apple //e
 	}
-	return 0;
+	else
+	{
+		_ASSERT(g_nAppMode == MODE_STEPPING || g_nAppMode == MODE_DEBUG);
+
+		if (!GetIsMemCacheValid())
+		{
+			_ASSERT(memshadow[0]);
+			if (GetMainCpu() == CPU_6502)
+				return Cpu6502_debug_altRW(uTotalCycles, bVideoUpdate);		// Apple //e
+			else
+				return Cpu65C02_debug_altRW(uTotalCycles, bVideoUpdate);	// Enhanced Apple //e
+		}
+
+		if (GetMainCpu() == CPU_6502)
+			return Cpu6502_debug(uTotalCycles, bVideoUpdate);	// Apple ][, ][+, //e, Clones
+		else
+			return Cpu65C02_debug(uTotalCycles, bVideoUpdate);	// Enhanced Apple //e
+	}
 }
 
 //
@@ -366,35 +578,24 @@ static DWORD InternalCpuExecute(const DWORD uTotalCycles, const bool bVideoUpdat
 // Called by z80_RDMEM()
 BYTE CpuRead(USHORT addr, ULONG uExecutedCycles)
 {
-	if (g_nAppMode == AppMode_e::MODE_RUNNING)
+	if (g_nAppMode == MODE_RUNNING)
 	{
-		return _READ;
+		return _READ_WITH_IO_F8xx(addr);	// Superset of _READ
 	}
 
-	return Heatmap_ReadByte(addr, uExecutedCycles);
+	return Heatmap_ReadByte_With_IO_F8xx(addr, uExecutedCycles);
 }
 
 // Called by z80_WRMEM()
 void CpuWrite(USHORT addr, BYTE value, ULONG uExecutedCycles)
 {
-	if (g_nAppMode == AppMode_e::MODE_RUNNING)
+	if (g_nAppMode == MODE_RUNNING)
 	{
-		_WRITE(value);
+		_WRITE_WITH_IO_F8xx(value);	// Superset of _WRITE
 		return;
 	}
 
-	Heatmap_WriteByte(addr, value, uExecutedCycles);
-}
-
-//===========================================================================
-
-void CpuDestroy ()
-{
-	if (g_bCritSectionValid)
-	{
-  		DeleteCriticalSection(&g_CriticalSection);
-		g_bCritSectionValid = false;
-	}
+	Heatmap_WriteByte_With_IO_F8xx(addr, value, uExecutedCycles);
 }
 
 //===========================================================================
@@ -443,7 +644,7 @@ ULONG CpuGetCyclesThisVideoFrame(const ULONG nExecutedCycles)
 
 //===========================================================================
 
-DWORD CpuExecute(const DWORD uCycles, const bool bVideoUpdate)
+uint32_t CpuExecute(const uint32_t uCycles, const bool bVideoUpdate)
 {
 #ifdef LOG_PERF_TIMINGS
 	extern UINT64 g_timeCpu;
@@ -451,20 +652,21 @@ DWORD CpuExecute(const DWORD uCycles, const bool bVideoUpdate)
 #endif
 
 	g_nCyclesExecuted =	0;
+	g_interruptInLastExecutionBatch = false;
 
 #ifdef _DEBUG
-	MB_CheckCumulativeCycles();
+	GetCardMgr().GetMockingboardCardMgr().CheckCumulativeCycles();
 #endif
 
 	// uCycles:
 	//  =0  : Do single step
 	//  >0  : Do multi-opcode emulation
-	DWORD uExecutedCycles = 0;
-	uExecutedCycles = InternalCpuExecute(uCycles, bVideoUpdate);
+	const uint32_t uExecutedCycles = InternalCpuExecute(uCycles, bVideoUpdate);
 
-	// NB. Required for normal-speed (even though 6522 is updated after every opcode), as may've finished on IRQ()
-	MB_UpdateCycles(uExecutedCycles);	// Update 6522s (NB. Do this before updating g_nCumulativeCycles below)
-										// NB. Ensures that 6522 regs are up-to-date for any potential save-state
+	// Update 6522s (NB. Do this before updating g_nCumulativeCycles below)
+	// . Ensures that 6522 regs are up-to-date for any potential save-state
+	// . SyncEvent will trigger the 6522 TIMER1/2 underflow on the correct cycle
+	GetCardMgr().GetMockingboardCardMgr().UpdateCycles(uExecutedCycles);
 
 	const UINT nRemainingCycles = uExecutedCycles - g_nCyclesExecuted;
 	g_nCumulativeCycles	+= nRemainingCycles;
@@ -474,22 +676,73 @@ DWORD CpuExecute(const DWORD uCycles, const bool bVideoUpdate)
 
 //===========================================================================
 
-void CpuInitialize ()
+// Called by:
+// . CpuInitialize()
+// . SY6522.Reset()
+void CpuCreateCriticalSection(void)
 {
-	CpuDestroy();
-	regs.a = regs.x = regs.y = regs.ps = 0xFF;
-	regs.sp = 0x01FF;
-	CpuReset();	// Init's ps & pc. Updates sp
-
-	InitializeCriticalSection(&g_CriticalSection);
-	g_bCritSectionValid = true;
-	CpuIrqReset();
-	CpuNmiReset();
+	if (!g_bCritSectionValid)
+	{
+		InitializeCriticalSection(&g_CriticalSection);
+		g_bCritSectionValid = true;
+	}
 }
 
 //===========================================================================
 
-void CpuSetupBenchmark ()
+// Called from RepeatInitialization():
+// . MemInitialize() -> MemReset()
+void CpuInitialize(void)
+{
+	regs.a = regs.x = regs.y = 0xFF;
+	regs.sp = 0x01FF;
+
+	CpuReset();
+
+	CpuCreateCriticalSection();
+
+	CpuIrqReset();
+	CpuNmiReset();
+
+}
+
+//===========================================================================
+
+void CpuDestroy()
+{
+	if (g_bCritSectionValid)
+	{
+		DeleteCriticalSection(&g_CriticalSection);
+		g_bCritSectionValid = false;
+	}
+}
+
+//===========================================================================
+
+void CpuReset()
+{
+	_ASSERT(mem != NULL);
+
+	// 7 cycles
+	regs.ps |= AF_INTERRUPT;
+	if (GetMainCpu() == CPU_65C02)	// GH#1099
+		regs.ps &= ~AF_DECIMAL;
+
+	_ASSERT(memshadow[_6502_RESET_VECTOR >> 8] != NULL);
+	regs.pc = ReadWordFromMemory(_6502_RESET_VECTOR);
+
+	regs.sp = 0x0100 | ((regs.sp - 3) & 0xFF);
+
+	regs.bJammed = 0;
+
+	g_irqDefer1Opcode = false;
+
+	SetActiveCpu(GetMainCpu());
+}
+
+//===========================================================================
+
+void CpuSetupBenchmark()
 {
 	regs.a  = 0;
 	regs.x  = 0;
@@ -503,17 +756,19 @@ void CpuSetupBenchmark ()
 		int opcode = 0;
 		do
 		{
-			*(mem+addr++) = benchopcode[opcode];
-			*(mem+addr++) = benchopcode[opcode];
+			WriteByteToMemory(addr++, benchopcode[opcode]);
+			WriteByteToMemory(addr++, benchopcode[opcode]);
 
 			if (opcode >= SHORTOPCODES)
-				*(mem+addr++) = 0;
+				WriteByteToMemory(addr++, 0);
 
 			if ((++opcode >= BENCHOPCODES) || ((addr & 0x0F) >= 0x0B))
 			{
-				*(mem+addr++) = 0x4C;
-				*(mem+addr++) = (opcode >= BENCHOPCODES) ? 0x00 : ((addr >> 4)+1) << 4;
-				*(mem+addr++) = 0x03;
+				WriteByteToMemory(addr++, 0x4C);
+				// split into 2 lines to avoid -Wunsequenced and undefined behaviour
+				const BYTE value = (opcode >= BENCHOPCODES) ? 0x00 : ((addr >> 4)+1) << 4;
+				WriteByteToMemory(addr++, value);
+				WriteByteToMemory(addr++, 0x03);
 				while (addr & 0x0F)
 					++addr;
 			}
@@ -578,35 +833,66 @@ void CpuNmiDeassert(eIRQSRC Device)
 
 //===========================================================================
 
-void CpuReset()
+#define SS_YAML_KEY_CPU_TYPE "Type"
+#define SS_YAML_KEY_REGA "A"
+#define SS_YAML_KEY_REGX "X"
+#define SS_YAML_KEY_REGY "Y"
+#define SS_YAML_KEY_REGP "P"
+#define SS_YAML_KEY_REGS "S"
+#define SS_YAML_KEY_REGPC "PC"
+#define SS_YAML_KEY_CUMULATIVE_CYCLES "Cumulative Cycles"
+#define SS_YAML_KEY_IRQ_DEFER_1_OPCODE "Defer IRQ By 1 Opcode"
+
+#define SS_YAML_VALUE_6502 "6502"
+#define SS_YAML_VALUE_65C02 "65C02"
+
+static const std::string& CpuGetSnapshotStructName(void)
 {
-	// 7 cycles
-	regs.ps = (regs.ps | AF_INTERRUPT) & ~AF_DECIMAL;
-	regs.pc = * (WORD*) (mem+0xFFFC);
-	regs.sp = 0x0100 | ((regs.sp - 3) & 0xFF);
-
-	regs.bJammed = 0;
-
-	g_irqDefer1Opcode = false;
-
-	SetActiveCpu( GetMainCpu() );
+	static const std::string name("CPU");
+	return name;
 }
 
-//===========================================================================
-
-// This runs just the Armor Class calculation routine, as if we'd JSR'd into it
-// We need to be able to run it at any time, independently of the state of the CPU
-// Cpu65C02 will check at the end of the routine if it needs to stop via isForcingACCalculation
-void ExecuteDeathlordArmorClassRoutine()
+void CpuSaveSnapshot(YamlSaveHelper& yamlSaveHelper)
 {
-	if (isForcingACCalculation)
+	regs.ps |= (AF_RESERVED | AF_BREAK);
+
+	YamlSaveHelper::Label state(yamlSaveHelper, "%s:\n", CpuGetSnapshotStructName().c_str());	
+	yamlSaveHelper.SaveString(SS_YAML_KEY_CPU_TYPE, GetMainCpu() == CPU_6502 ? SS_YAML_VALUE_6502 : SS_YAML_VALUE_65C02);
+	yamlSaveHelper.SaveHexUint8(SS_YAML_KEY_REGA, regs.a);
+	yamlSaveHelper.SaveHexUint8(SS_YAML_KEY_REGX, regs.x);
+	yamlSaveHelper.SaveHexUint8(SS_YAML_KEY_REGY, regs.y);
+	yamlSaveHelper.SaveHexUint8(SS_YAML_KEY_REGP, regs.ps);
+	yamlSaveHelper.SaveHexUint8(SS_YAML_KEY_REGS, (BYTE) regs.sp);
+	yamlSaveHelper.SaveHexUint16(SS_YAML_KEY_REGPC, regs.pc);
+	yamlSaveHelper.SaveHexUint64(SS_YAML_KEY_CUMULATIVE_CYCLES, g_nCumulativeCycles);
+	yamlSaveHelper.SaveBool(SS_YAML_KEY_IRQ_DEFER_1_OPCODE, g_irqDefer1Opcode);
+}
+
+void CpuLoadSnapshot(YamlLoadHelper& yamlLoadHelper, UINT version)
+{
+	if (!yamlLoadHelper.GetSubMap(CpuGetSnapshotStructName()))
 		return;
-	isForcingACCalculation = true;
-	regsrec regs_orig = regs;
-	regs.pc = PC_RECALC_ARMORCLASS_BEGIN;
-	// Routine will never use up so many cycles
-	// and will exit at PC_RECALC_ARMORCLASS_END
-	Cpu65C02(10000, false);
-	regs = regs_orig;
-	isForcingACCalculation = false;
+
+	std::string cpuType = yamlLoadHelper.LoadString(SS_YAML_KEY_CPU_TYPE);
+	eCpuType cpu;
+	if (cpuType == SS_YAML_VALUE_6502) cpu = CPU_6502;
+	else if (cpuType == SS_YAML_VALUE_65C02) cpu = CPU_65C02;
+	else throw std::runtime_error("Load: Unknown main CPU type");
+	SetMainCpu(cpu);
+
+	regs.a  = (BYTE)     yamlLoadHelper.LoadUint(SS_YAML_KEY_REGA);
+	regs.x  = (BYTE)     yamlLoadHelper.LoadUint(SS_YAML_KEY_REGX);
+	regs.y  = (BYTE)     yamlLoadHelper.LoadUint(SS_YAML_KEY_REGY);
+	regs.ps = (BYTE)     yamlLoadHelper.LoadUint(SS_YAML_KEY_REGP) | (AF_RESERVED | AF_BREAK);
+	regs.sp = (USHORT) ((yamlLoadHelper.LoadUint(SS_YAML_KEY_REGS) & 0xff) | 0x100);
+	regs.pc = (USHORT)   yamlLoadHelper.LoadUint(SS_YAML_KEY_REGPC);
+
+	CpuIrqReset();
+	CpuNmiReset();
+	g_nCumulativeCycles = yamlLoadHelper.LoadUint64(SS_YAML_KEY_CUMULATIVE_CYCLES);
+
+	if (version >= 5)
+		g_irqDefer1Opcode = yamlLoadHelper.LoadBool(SS_YAML_KEY_IRQ_DEFER_1_OPCODE);
+
+	yamlLoadHelper.PopMap();
 }

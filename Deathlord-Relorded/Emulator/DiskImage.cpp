@@ -26,7 +26,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * Author: Various
  */
 
-#include "pch.h"
+#include "StdAfx.h"
 
 #include "DiskImage.h"
 #include "Common.h"
@@ -39,10 +39,11 @@ static CHardDiskImageHelper sg_HardDiskImageHelper;
 //===========================================================================
 
 // Pre: *pWriteProtected_ already set to file's r/w status - see DiskInsert()
-ImageError_e ImageOpen(	const std::wstring & pszImageFilename,
+ImageError_e ImageOpen(	const std::string & pszImageFilename,
 						ImageInfo** ppImageInfo,
 						bool* pWriteProtected,
 						const bool bCreateIfNecessary,
+						std::string& strFilenameInZip,
 						const bool bExpectFloppy /*=true*/)
 {
 	if (!(!pszImageFilename.empty() && ppImageInfo && pWriteProtected))
@@ -56,7 +57,7 @@ ImageError_e ImageOpen(	const std::wstring & pszImageFilename,
 	if (bExpectFloppy)	pImageInfo->pImageHelper = &sg_DiskImageHelper;
 	else				pImageInfo->pImageHelper = &sg_HardDiskImageHelper;
 
-	ImageError_e Err = pImageInfo->pImageHelper->Open(pszImageFilename.c_str(), pImageInfo, bCreateIfNecessary);
+	ImageError_e Err = pImageInfo->pImageHelper->Open(pszImageFilename.c_str(), pImageInfo, bCreateIfNecessary, strFilenameInZip);
 	if (Err != eIMAGE_ERROR_NONE)
 	{
 		ImageClose(*ppImageInfo);
@@ -67,17 +68,28 @@ ImageError_e ImageOpen(	const std::wstring & pszImageFilename,
 	if (pImageInfo->pImageType && pImageInfo->pImageType->GetType() == eImageHDV)
 	{
 		if (bExpectFloppy)
+		{
+			ImageClose(*ppImageInfo);
+			*ppImageInfo = NULL;
 			Err = eIMAGE_ERROR_UNSUPPORTED_HDV;
+		}
+
+		if (Err == eIMAGE_ERROR_NONE)
+			*pWriteProtected = pImageInfo->bWriteProtected;
+
 		return Err;
 	}
 
 	// THE FILE MATCHES A KNOWN FORMAT
 
 	_ASSERT(bExpectFloppy);
-	if (!bExpectFloppy)
+	const eImageType type = pImageInfo->pImageType ? pImageInfo->pImageType->GetType() : eImageUNKNOWN;
+	if (!bExpectFloppy || (!pImageInfo->uNumTracks && type != eImageAPL && type != eImagePRG))
+	{
+		ImageClose(*ppImageInfo);
+		*ppImageInfo = NULL;
 		return eIMAGE_ERROR_UNSUPPORTED;
-
-	_ASSERT(pImageInfo->uNumTracks);
+	}
 
 	*pWriteProtected = pImageInfo->bWriteProtected;
 
@@ -155,7 +167,7 @@ void ImageWriteTrack(	ImageInfo* const pImageInfo,
 		eImageType imageType = pImageInfo->pImageType->GetType();
 		if (imageType == eImageWOZ1 || imageType == eImageWOZ2)
 		{
-			DWORD dummy;
+			uint32_t dummy;
 			bool res = sg_DiskImageHelper.WOZUpdateInfo(pImageInfo, dummy);
 			_ASSERT(res);
 		}
@@ -195,14 +207,14 @@ UINT ImageGetNumTracks(ImageInfo* const pImageInfo)
 	return pImageInfo ? pImageInfo->uNumTracks : 0;
 }
 
-bool ImageIsWriteProtected(ImageInfo* const pImageInfo)
+bool ImageIsMultiFileZip(ImageInfo* const pImageInfo)
 {
-	return pImageInfo ? pImageInfo->bWriteProtected : true;
+	return pImageInfo ? (pImageInfo->uNumValidImagesInZip > 1) : false;
 }
 
-const std::wstring & ImageGetPathname(ImageInfo* const pImageInfo)
+const std::string & ImageGetPathname(ImageInfo* const pImageInfo)
 {
-	static const std::wstring szEmpty;
+	static const std::string szEmpty;
 	return pImageInfo ? pImageInfo->szFilename : szEmpty;
 }
 
@@ -248,16 +260,27 @@ UINT ImageGetMaxNibblesPerTrack(ImageInfo* const pImageInfo)
 	return pImageInfo ? pImageInfo->maxNibblesPerTrack : NIBBLES_PER_TRACK;
 }
 
-void GetImageTitle(LPCTSTR pPathname, std::wstring & pImageName, std::wstring & pFullName)
+bool ImageIsZeroTracksValidForThisType(ImageInfo* const pImageInfo)
 {
-	TCHAR   imagetitle[ MAX_DISK_FULL_NAME+1 ];
+	if (!pImageInfo || !pImageInfo->pImageType)
+		return false;
+
+	if (pImageInfo->pImageType->GetType() == eImageAPL || pImageInfo->pImageType->GetType() == eImagePRG)
+		return true;
+
+	return false;
+}
+
+void GetImageTitle(LPCTSTR pPathname, std::string & pImageName, std::string & pFullName)
+{
+	char   imagetitle[ MAX_DISK_FULL_NAME+1 ];
 	LPCTSTR startpos = pPathname;
 
 	// imagetitle = <FILENAME.EXT>
-	if (wcsrchr(startpos, TEXT('\\')))
-		startpos = wcsrchr(startpos, TEXT('\\'))+1;
+	if (strrchr(startpos, PATH_SEPARATOR))
+		startpos = strrchr(startpos, PATH_SEPARATOR)+1;
 
-	wcsncpy_s(imagetitle, startpos, MAX_DISK_FULL_NAME);
+	strncpy(imagetitle, startpos, MAX_DISK_FULL_NAME);
 	imagetitle[MAX_DISK_FULL_NAME] = 0;
 
 	// if imagetitle contains a lowercase char, then found=1 (why?)
@@ -272,7 +295,7 @@ void GetImageTitle(LPCTSTR pPathname, std::wstring & pImageName, std::wstring & 
 	}
 
 	if ((!found) && (loop > 2))
-		CharLowerBuff(imagetitle+1, wcslen(imagetitle+1));
+		CharLowerBuff(imagetitle+1, (uint32_t)strlen(imagetitle+1));
 
 	// pFullName = <FILENAME.EXT>
 	pFullName = imagetitle;
@@ -280,8 +303,8 @@ void GetImageTitle(LPCTSTR pPathname, std::wstring & pImageName, std::wstring & 
 	if (imagetitle[0])
 	{
 		LPTSTR dot = imagetitle;
-		if (wcsrchr(dot, TEXT('.')))
-			dot = wcsrchr(dot, TEXT('.'));
+		if (strrchr(dot, '.'))
+			dot = strrchr(dot, '.');
 		if (dot > imagetitle)
 			*dot = 0;
 	}

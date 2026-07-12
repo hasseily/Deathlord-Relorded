@@ -1,21 +1,5 @@
 #pragma once
 
-#define MAX_8910 4
-
-//-------------------------------------
-// MAME interface
-
-void _AYWriteReg(int chip, int r, int v);
-//void AY8910_write_ym(int chip, int addr, int data);
-void AY8910_reset(int chip);
-void AY8910Update(int chip, INT16** buffer, int nNumSamples);
-
-void AY8910_InitAll(int nClock, int nSampleRate);
-void AY8910_InitClock(int nClock);
-BYTE* AY8910_GetRegsPtr(UINT uChip);
-
-void AY8910UpdateSetCycles();
-
 //-------------------------------------
 // FUSE stuff
 
@@ -29,19 +13,24 @@ typedef SHORT libspectrum_signed_word;
  */
 #define AY_CHANGE_MAX		8000
 
-class CAY8910
+class AY8913
 {
 public:
-	CAY8910();
-	virtual ~CAY8910() {};
+	AY8913(void);
+	~AY8913(void) {};
 
 	void sound_ay_init( void );
 	void sound_init( const char *device );
+	BYTE sound_ay_read( int reg );	// TC
 	void sound_ay_write( int reg, int val, libspectrum_dword now );
 	void sound_ay_reset( void );
 	void sound_frame( void );
 	BYTE* GetAYRegsPtr( void ) { return &sound_ay_registers[0]; }
+	void SetFramesize(int frameSize) { sound_generator_framesiz = frameSize; }
+	void SetSoundBuffers(INT16** buffers) { ppSoundBuffers = buffers; }
 	static void SetCLK( double CLK ) { m_fCurrentCLK_AY8910 = CLK; }
+	void SaveSnapshot(class YamlSaveHelper& yamlSaveHelper, const std::string& suffix);
+	bool LoadSnapshot(class YamlLoadHelper& yamlLoadHelper, const std::string& suffix);
 
 private:
 	void init( void );
@@ -77,6 +66,12 @@ private:
 	int rng;
 	int noise_toggle;
 	int env_first, env_rev, env_counter;
+
+	// Vars
+	libspectrum_signed_word** ppSoundBuffers;	// Used to pass param to sound_ay_overlay()
+	int sound_generator_framesiz;
+	int sound_generator_freq;
+	unsigned int ay_tone_levels[16];
 
 	// Vars shared between all AY's
 	static double m_fCurrentCLK_AY8910;

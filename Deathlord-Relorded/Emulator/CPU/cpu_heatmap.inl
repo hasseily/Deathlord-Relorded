@@ -50,11 +50,23 @@ inline void Heatmap_X(uint16_t address)
 inline uint8_t Heatmap_ReadByte(uint16_t addr, int uExecutedCycles)
 {
 	Heatmap_R(addr);
-	return _READ;
+	return _READ(addr);
+}
+
+inline uint8_t Heatmap_ReadByte_With_IO_F8xx(uint16_t addr, int uExecutedCycles)
+{
+	Heatmap_R(addr);
+	return _READ_WITH_IO_F8xx(addr);
 }
 
 inline void Heatmap_WriteByte(uint16_t addr, uint16_t value, int uExecutedCycles)
 {
 	Heatmap_W(addr);
 	_WRITE(value);
+}
+
+inline void Heatmap_WriteByte_With_IO_F8xx(uint16_t addr, uint16_t value, int uExecutedCycles)
+{
+	Heatmap_W(addr);
+	_WRITE_WITH_IO_F8xx(value);
 }

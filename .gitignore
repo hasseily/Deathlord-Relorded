@@ -33,6 +33,7 @@
 /.vs
 /Debug
 /x64
+/build*/
 /Deathlord-Relorded/Debug
 /Deathlord-Relorded/x64/Debug
 /Deathlord-Relorded/x64/Release
@@ -43,3 +44,10 @@
 /Deathlord-Relorded/Deathlord Charset.data
 /JSON/Schemas/Catalog/https%003A%002F%002Fgo.microsoft.com%002Ffwlink%002F%003Flinkid%003D835884
 /Deathlord-Relorded/resource.aps
+
+# Apple
+**/.DS_Store
+
+# Local release builds and private game images
+/extras/
+/imgui.ini

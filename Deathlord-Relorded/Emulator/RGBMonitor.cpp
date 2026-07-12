@@ -1,12 +1,12 @@
 // Sync'd with 1.25.0.4 source
 
-#include "pch.h"
+#include "StdAfx.h"
 
-#include "AppleWin.h"
 #include "RGBMonitor.h"
 #include "Memory.h" // MemGetMainPtr() MemGetAuxPtr()
-#include "Video.h"
-#include "Card.h"
+#include "Interface.h"
+#include "YamlHelper.h"
+
 
 // RGB videocards types
 
@@ -114,8 +114,6 @@ const BYTE DoubleHiresPalIndex[16] = {
 		ORANGE,  PINK,      YELLOW,    WHITE
 	};
 
-#define  SETRGBCOLOR(r,g,b) {b,g,r,0}
-
 static RGBQUAD* g_pPaletteRGB;
 
 static RGBQUAD PaletteRGB_NTSC[] =
@@ -215,7 +213,7 @@ static void V_CreateLookup_DoubleHires ()
     int coloffs = SIZE * column;
     for (unsigned byteval = 0; byteval < 256; byteval++) {
       int color[SIZE];
-      ZeroMemory(color,sizeof(color));
+      memset(color, 0, sizeof(color));
       unsigned pattern = MAKEWORD(byteval,column);
       int pixel;
       for (pixel = 1; pixel < 15; pixel++) {
@@ -320,7 +318,7 @@ void V_CreateLookup_HiResHalfPixel_Authentic(VideoType_e videoType)
 					{
 						if ( !prevHighBit )	// GH#616
 						{
-							// colour the half-pixel black (was orange - not good for Deathlord, eg. 2000:00 40 E0; 2000:00 40 9E)
+							// Colour the half-pixel black to avoid a boundary artifact.
 							SETSOURCEPIXEL(SRCOFFS_HIRES+offsetx+0 ,y  , HGR_BLACK );
 						}
 						else
@@ -515,7 +513,7 @@ static void CopyMixedSource(int x, int y, int sx, int sy, bgra_t *pVideoAddress)
 
 	const int matx = x*14;
 	const int maty = HGR_MATRIX_YOFFSET + y;
-	const bool isSWMIXED = VideoGetSWMIXED();
+	const bool isSWMIXED = GetVideo().VideoGetSWMIXED();
 
 	// transfer 14 pixels (i.e. the visible part of an apple hgr-byte) from row to pixelmatrix
 	for (int nBytes=13; nBytes>=0; nBytes--)
@@ -523,8 +521,8 @@ static void CopyMixedSource(int x, int y, int sx, int sy, bgra_t *pVideoAddress)
 		hgrpixelmatrix[matx+nBytes][maty] = *(pSrc+nBytes);
 	}
 
-	const bool bIsHalfScanLines = IsVideoStyle(VS_HALF_SCANLINES);
-	const UINT frameBufferWidth = GetFrameBufferWidth();
+	const bool bIsHalfScanLines = GetVideo().IsVideoStyle(VS_HALF_SCANLINES);
+	const UINT frameBufferWidth = GetVideo().GetFrameBufferWidth();
 
 	for (int nBytes=13; nBytes>=0; nBytes--)
 	{
@@ -538,7 +536,7 @@ static void CopyMixedSource(int x, int y, int sx, int sy, bgra_t *pVideoAddress)
 			if (bIsHalfScanLines && (h & 1))
 			{
 				// 50% Half Scan Line clears every odd scanline (and SHIFT+PrintScreen saves only the even rows)
-				*(pDst+nBytes) = 0;
+				*(pDst+nBytes) = OPAQUE_BLACK;
 			}
 			else
 			{
@@ -560,15 +558,15 @@ static void CopySource(int w, int h, int sx, int sy, bgra_t *pVideoAddress, cons
 	UINT32* pDst = (UINT32*) pVideoAddress;
 	const BYTE* const pSrc = g_aSourceStartofLine[ sy ] + sx;
 
-	const bool bIsHalfScanLines = IsVideoStyle(VS_HALF_SCANLINES);
-	const UINT frameBufferWidth = GetFrameBufferWidth();
+	const bool bIsHalfScanLines = GetVideo().IsVideoStyle(VS_HALF_SCANLINES);
+	const UINT frameBufferWidth = GetVideo().GetFrameBufferWidth();
 
 	while (h--)
 	{
 		if (bIsHalfScanLines && !(h & 1))
 		{
 			// 50% Half Scan Line clears every odd scanline (and SHIFT+PrintScreen saves only the even rows)
-			std::fill(pDst, pDst + w, 0);
+			std::fill(pDst, pDst + w, OPAQUE_BLACK);
 		}
 		else
 		{
@@ -590,19 +588,19 @@ static void CopySource(int w, int h, int sx, int sy, bgra_t *pVideoAddress, cons
 
 void UpdateHiResCell (int x, int y, uint16_t addr, bgra_t *pVideoAddress)
 {
-	uint8_t *pMain = MemGetMainPtr(addr);
+	uint8_t *pMain = MemGetMainPtrWithLC(addr);
 	BYTE byteval1 = (x >  0) ? *(pMain-1) : 0;
 	BYTE byteval2 =            *(pMain);
 	BYTE byteval3 = (x < 39) ? *(pMain+1) : 0;
 
-	if (g_uVideoMode & VF_DHIRES)	// ie. VF_DHIRES=1, VF_HIRES=1, VF_80COL=0 - NTSC.cpp refers to this as "DoubleHires40"
+	if (GetVideo().GetVideoMode() & VF_DHIRES)	// ie. VF_DHIRES=1, VF_HIRES=1, VF_80COL=0 - NTSC.cpp refers to this as "DoubleHires40"
 	{
 		byteval1 &= 0x7f;
 		byteval2 &= 0x7f;
 		byteval3 &= 0x7f;
 	}
 
-	if (IsVideoStyle(VS_COLOR_VERTICAL_BLEND))
+	if (GetVideo().IsVideoStyle(VS_COLOR_VERTICAL_BLEND))
 	{
 		CopyMixedSource(x, y, SRCOFFS_HIRES+HIRES_COLUMN_OFFSET+((x & 1)*HIRES_COLUMN_SUBUNIT_SIZE), (int)byteval2, pVideoAddress);
 	}
@@ -629,7 +627,7 @@ void UpdateDHiResCell(int x, int y, uint16_t addr, bgra_t* pVideoAddress, bool u
 	BYTE byteval3 = *pMain;
 	BYTE byteval4 = (x < 39) ? *(pAux + 1) : 0;
 
-	DWORD dwordval = (byteval1 & 0x70) | ((byteval2 & 0x7F) << 7) |
+	uint32_t dwordval = (byteval1 & 0x70) | ((byteval2 & 0x7F) << 7) |
 		((byteval3 & 0x7F) << 14) | ((byteval4 & 0x07) << 21);
 
 #define PIXEL  0
@@ -657,7 +655,7 @@ void UpdateHiResRGBCell(int x, int y, uint16_t addr, bgra_t* pVideoAddress)
 	int xoffset = x & 1; // offset to start of the 2 bytes
 	addr -= xoffset;
 
-	uint8_t* pMain = MemGetMainPtr(addr);
+	uint8_t* pMain = MemGetMainPtrWithLC(addr);
 
 	// We need all 28 bits because each pixel needs a three bit evaluation
 	uint8_t byteval1 = (x < 2 ? 0 : *(pMain - 1));
@@ -666,12 +664,12 @@ void UpdateHiResRGBCell(int x, int y, uint16_t addr, bgra_t* pVideoAddress)
 	uint8_t byteval4 = (x >= 38 ? 0 : *(pMain + 2));
 	
 	// all 28 bits chained
-	DWORD dwordval = (byteval1 & 0x7F) | ((byteval2 & 0x7F) << 7) | ((byteval3 & 0x7F) << 14) | ((byteval4 & 0x7F) << 21);
+	uint32_t dwordval = (byteval1 & 0x7F) | ((byteval2 & 0x7F) << 7) | ((byteval3 & 0x7F) << 14) | ((byteval4 & 0x7F) << 21);
 
 	// Extraction of 14 color pixels
 	UINT32 colors[14];
 	int color = 0;
-	DWORD dwordval_tmp = dwordval;
+	uint32_t dwordval_tmp = dwordval;
 	dwordval_tmp = dwordval_tmp >> 7;
 	bool offset = (byteval2 & 0x80) ? true : false;
 	for (int i = 0; i < 14; i++)
@@ -690,9 +688,19 @@ void UpdateHiResRGBCell(int x, int y, uint16_t addr, bgra_t* pVideoAddress)
 	bw[0] = *reinterpret_cast<const UINT32*>(&g_pPaletteRGB[0]);
 	bw[1] = *reinterpret_cast<const UINT32*>(&g_pPaletteRGB[1]);
 
-	DWORD mask  =  0x01C0; //  00|000001 1|1000000
-	DWORD chck1 =  0x0140; //  00|000001 0|1000000
-	DWORD chck2 =  0x0080; //  00|000000 1|0000000
+	uint32_t mask  =  0x01C0; //  00|000001 1|1000000
+	uint32_t chck1 =  0x0140; //  00|000001 0|1000000
+	uint32_t chck2 =  0x0080; //  00|000000 1|0000000
+
+	// Text-fringe suppression: a 0 pixel sandwiched between two whites on
+	// each side (pattern 11 0 11) would otherwise be rendered as the
+	// surrounding color, which produces the rainbow halo around HGR text.
+	// Forcing it to black keeps glyphs sharp without altering true colour
+	// mix patterns. See commit 16041c7 — patch lives here, not behind a
+	// flag, because picking "Text-Optimized RGB" *is* selecting the RGB
+	// videocard renderer (VT_COLOR_VIDEOCARD_RGB).
+	uint32_t mask0  = 0x03E0;   // 0000 0011 1110 0000
+	uint32_t chck01 = 0x0360;   // 0000 0011 0110 0000
 
 	// HIRES render in RGB works on a pixel-basis (1-bit data in framebuffer)
 	// The pixel can be 'color', if it makes a 101 or 010 pattern with the two neighbour bits
@@ -710,7 +718,15 @@ void UpdateHiResRGBCell(int x, int y, uint16_t addr, bgra_t* pVideoAddress)
 
 	for (int i = xoffset; i < xoffset+7; i++)
 	{
-		if (((dwordval & mask) == chck1) || ((dwordval & mask) == chck2))
+		if ((dwordval & mask0) == chck01)
+		{
+			// 11 0 11 → render the centre pixel as black to kill the
+			// chroma fringe around white HGR text.
+			*(pDst) = bw[0];
+			*(pDst + 1) = *(pDst);
+			pDst += 2;
+		}
+		else if (((dwordval & mask) == chck1) || ((dwordval & mask) == chck2))
 		{
 			// Color pixel
 			*(pDst) = colors[i];
@@ -728,15 +744,15 @@ void UpdateHiResRGBCell(int x, int y, uint16_t addr, bgra_t* pVideoAddress)
 		dwordval = dwordval >> 1;
 	}
 
-	const bool bIsHalfScanLines = IsVideoStyle(VS_HALF_SCANLINES);
+	const bool bIsHalfScanLines = GetVideo().IsVideoStyle(VS_HALF_SCANLINES);
 
 	// Second line
 	UINT32* pSrc = (UINT32*)pVideoAddress;
-	pDst = pSrc - GetFrameBufferWidth();
+	pDst = pSrc - GetVideo().GetFrameBufferWidth();
 	if (bIsHalfScanLines)
 	{
 		// Scanlines
-		std::fill(pDst, pDst + 14, 0);
+		std::fill(pDst, pDst + 14, OPAQUE_BLACK);
 	}
 	else
 	{
@@ -764,13 +780,13 @@ void UpdateDHiResCellRGB(int x, int y, uint16_t addr, bgra_t* pVideoAddress, boo
 	uint8_t byteval4 = *(pMain + 1);
 
 	// all 28 bits chained
-	DWORD dwordval = (byteval1 & 0x7F) | ((byteval2 & 0x7F) << 7) | ((byteval3 & 0x7F) << 14) | ((byteval4 & 0x7F) << 21);
+	uint32_t dwordval = (byteval1 & 0x7F) | ((byteval2 & 0x7F) << 7) | ((byteval3 & 0x7F) << 14) | ((byteval4 & 0x7F) << 21);
 
 	// Extraction of 7 color pixels and 7x4 bits
 	int bits[7];
 	UINT32 colors[7];
 	int color = 0;
-	DWORD dwordval_tmp = dwordval;
+	uint32_t dwordval_tmp = dwordval;
 	for (int i = 0; i < 7; i++)
 	{
 		bits[i] = dwordval_tmp & 0xF;
@@ -943,15 +959,15 @@ void UpdateDHiResCellRGB(int x, int y, uint16_t addr, bgra_t* pVideoAddress, boo
 		}
 	}
 
-	const bool bIsHalfScanLines = IsVideoStyle(VS_HALF_SCANLINES);
+	const bool bIsHalfScanLines = GetVideo().IsVideoStyle(VS_HALF_SCANLINES);
 
 	// Second line
 	UINT32* pSrc = (UINT32*)pVideoAddress ;
-	pDst = pSrc - GetFrameBufferWidth();
+	pDst = pSrc - GetVideo().GetFrameBufferWidth();
 	if (bIsHalfScanLines)
 	{
 		// Scanlines
-		std::fill(pDst, pDst + 14, 0);
+		std::fill(pDst, pDst + 14, OPAQUE_BLACK);
 	}
 	else
 	{
@@ -974,7 +990,7 @@ int UpdateDHiRes160Cell (int x, int y, uint16_t addr, bgra_t *pVideoAddress)
 	BYTE byteval3 = *pMain;
 	BYTE byteval4 = (x < 39) ? *(pAux+1) : 0;
 
-	DWORD dwordval = (byteval1 & 0xF8)        | ((byteval2 & 0xFF) << 8) |
+	uint32_t dwordval = (byteval1 & 0xF8)        | ((byteval2 & 0xFF) << 8) |
 					((byteval3 & 0xFF) << 16) | ((byteval4 & 0x1F) << 24);
 	dwordval <<= 2;
 
@@ -1005,7 +1021,7 @@ int UpdateDHiRes160Cell (int x, int y, uint16_t addr, bgra_t *pVideoAddress)
 	BYTE byteval3 = *pMain;
 	BYTE byteval4 = (x < 39) ? *(pAux+1) : 0;
 
-	DWORD dwordval = (byteval1 & 0xFC)        | ((byteval2 & 0xFF) << 8) |	// NB. Needs more bits than above squashed version, to avoid vertical black lines
+	uint32_t dwordval = (byteval1 & 0xFC)        | ((byteval2 & 0xFF) << 8) |	// NB. Needs more bits than above squashed version, to avoid vertical black lines
 					((byteval3 & 0xFF) << 16) | ((byteval4 & 0x3F) << 24);
 	dwordval <<= 2;
 
@@ -1051,7 +1067,8 @@ void UpdateDLoResCell (int x, int y, uint16_t addr, bgra_t *pVideoAddress)
 
 	const BYTE auxval_h = auxval >> 4;
 	const BYTE auxval_l = auxval & 0xF;
-	auxval = (ROL_NIB(auxval_h)<<4) | ROL_NIB(auxval_l);
+	if (!RGB_IsMacLCCardDLGR())	// "Apple IIe Card for Macintosh LC" has a bug in its DLGR implementation (GH#1258)
+		auxval = (ROL_NIB(auxval_h)<<4) | ROL_NIB(auxval_l);
 
 	if ((y & 4) == 0)
 	{
@@ -1105,7 +1122,7 @@ void UpdateText80ColorCell(int x, int y, uint16_t addr, bgra_t* pVideoAddress, u
 // Duochrome HGR (some RGB cards only)
 void UpdateHiResDuochromeCell(int x, int y, uint16_t addr, bgra_t* pVideoAddress)
 {
-	BYTE bits = *MemGetMainPtr(addr);
+	BYTE bits = *MemGetMainPtrWithLC(addr);
 	BYTE val = *MemGetAuxPtr(addr);
 	const uint8_t foreground = val >> 4;
 	const uint8_t background = val & 0x0F;
@@ -1122,8 +1139,8 @@ void UpdateDuochromeCell(int h, int w, bgra_t* pVideoAddress, uint8_t bits, uint
 {
 	UINT32* pDst = (UINT32*)pVideoAddress;
 
-	const bool bIsHalfScanLines = IsVideoStyle(VS_HALF_SCANLINES);
-	const UINT frameBufferWidth = GetFrameBufferWidth();
+	const bool bIsHalfScanLines = GetVideo().IsVideoStyle(VS_HALF_SCANLINES);
+	const UINT frameBufferWidth = GetVideo().GetFrameBufferWidth();
 	RGBQUAD colors[2];
 	// use LoRes palette
 	background += 12;
@@ -1140,7 +1157,7 @@ void UpdateDuochromeCell(int h, int w, bgra_t* pVideoAddress, uint8_t bits, uint
 		if (bIsHalfScanLines && !(h & 1))
 		{
 			// 50% Half Scan Line clears every odd scanline (and SHIFT+PrintScreen saves only the even rows)
-			std::fill(pDst, pDst + w, 0);
+			std::fill(pDst, pDst + w, OPAQUE_BLACK);
 		}
 		else
 		{
@@ -1175,7 +1192,7 @@ static void V_CreateDIBSections(void)
 		g_aSourceStartofLine[ y ] = g_pSourcePixels + SRCOFFS_TOTAL*((MAX_SOURCE_Y-1) - y);
 
 	// DRAW THE SOURCE IMAGE INTO THE SOURCE BIT BUFFER
-	ZeroMemory(g_pSourcePixels, SRCOFFS_TOTAL*MAX_SOURCE_Y);
+	memset(g_pSourcePixels, 0, SRCOFFS_TOTAL*MAX_SOURCE_Y);
 
 	V_CreateLookup_Lores();
 	V_CreateLookup_HiResHalfPixel_Authentic(VT_COLOR_IDEALIZED);
@@ -1215,6 +1232,7 @@ static UINT g_rgbFlags = 0;
 static UINT g_rgbMode = 0;
 static WORD g_rgbPrevAN3Addr = 0;
 static bool g_rgbInvertBit7 = false;
+static bool g_rgbMacLCCardDLGR = false;	// TODO: Persist to save-state
 
 // Video7 RGB card:
 // . Clock in the !80COL state to define the 2 flags: F2, F1
@@ -1241,7 +1259,7 @@ void RGB_SetVideoMode(WORD address)
 	if (address == 0x5F && g_rgbPrevAN3Addr == 0x5E)
 	{
 		g_rgbFlags = (g_rgbFlags << 1) & 3;
-		g_rgbFlags |= ((g_uVideoMode & VF_80COL) ? 0 : 1);	// clock in !80COL
+		g_rgbFlags |= ((GetVideo().GetVideoMode() & VF_80COL) ? 0 : 1);	// clock in !80COL
 		g_rgbMode = g_rgbFlags;								// latch F2,F1
 	}
 
@@ -1275,6 +1293,11 @@ bool RGB_IsMixModeInvertBit7(void)
 	return RGB_IsMixMode() && g_rgbInvertBit7;
 }
 
+bool RGB_IsMacLCCardDLGR(void)
+{
+	return g_rgbMacLCCardDLGR;
+}
+
 void RGB_ResetState(void)
 {
 	g_rgbFlags = 0;
@@ -1285,6 +1308,51 @@ void RGB_ResetState(void)
 void RGB_SetInvertBit7(bool state)
 {
 	g_rgbInvertBit7 = state;
+}
+
+void RGB_SetMacLCCardDLGR(bool state)
+{
+	g_rgbMacLCCardDLGR = state;
+}
+
+//===========================================================================
+
+#define SS_YAML_KEY_RGB_CARD "AppleColor RGB Adaptor"
+// NB. No version - this is determined by the parent card
+
+#define SS_YAML_KEY_RGB_FLAGS "RGB mode flags"
+#define SS_YAML_KEY_RGB_MODE "RGB mode"
+#define SS_YAML_KEY_RGB_PREVIOUS_AN3 "Previous AN3"
+#define SS_YAML_KEY_RGB_80COL_CHANGED "80COL changed"
+#define SS_YAML_KEY_RGB_INVERT_BIT7 "Invert bit7"
+
+void RGB_SaveSnapshot(YamlSaveHelper& yamlSaveHelper)
+{
+	YamlSaveHelper::Label label(yamlSaveHelper, "%s:\n", SS_YAML_KEY_RGB_CARD);
+
+	yamlSaveHelper.SaveHexUint8(SS_YAML_KEY_RGB_FLAGS, g_rgbFlags);
+	yamlSaveHelper.SaveHexUint8(SS_YAML_KEY_RGB_MODE, g_rgbMode);
+	yamlSaveHelper.SaveHexUint8(SS_YAML_KEY_RGB_PREVIOUS_AN3, g_rgbPrevAN3Addr);
+	yamlSaveHelper.SaveBool(SS_YAML_KEY_RGB_80COL_CHANGED, false);	// unused (todo: remove next time the parent card's version changes)
+	yamlSaveHelper.SaveBool(SS_YAML_KEY_RGB_INVERT_BIT7, g_rgbInvertBit7);
+}
+
+void RGB_LoadSnapshot(YamlLoadHelper& yamlLoadHelper, UINT cardVersion)
+{
+	if (!yamlLoadHelper.GetSubMap(SS_YAML_KEY_RGB_CARD))
+		throw std::runtime_error("Card: Expected key: " SS_YAML_KEY_RGB_CARD);
+
+	g_rgbFlags = yamlLoadHelper.LoadUint(SS_YAML_KEY_RGB_FLAGS);
+	g_rgbMode = yamlLoadHelper.LoadUint(SS_YAML_KEY_RGB_MODE);
+	g_rgbPrevAN3Addr = yamlLoadHelper.LoadUint(SS_YAML_KEY_RGB_PREVIOUS_AN3);
+
+	if (cardVersion >= 3)
+	{
+		yamlLoadHelper.LoadBool(SS_YAML_KEY_RGB_80COL_CHANGED);	// Obsolete (so just consume)
+		g_rgbInvertBit7 = yamlLoadHelper.LoadBool(SS_YAML_KEY_RGB_INVERT_BIT7);
+	}
+
+	yamlLoadHelper.PopMap();
 }
 
 RGB_Videocard_e RGB_GetVideocard(void)

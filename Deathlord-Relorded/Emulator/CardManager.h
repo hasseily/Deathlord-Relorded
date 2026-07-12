@@ -1,60 +1,78 @@
 #pragma once
 
 #include "Card.h"
+#include "LanguageCard.h"
+#include "MockingboardCardManager.h"
 #include "Common.h"
 
 class CardManager
 {
 public:
 	CardManager(void) :
-		m_pMouseCard(NULL),
-		m_pSSC(NULL)
+		m_pVidHDCard(NULL)
 	{
-		Insert(0, CT_Empty);
-		Insert(1, CT_Empty);
-		Insert(2, CT_Empty);
-		Insert(3, CT_Empty);
-		Insert(4, CT_Empty);
-		Insert(5, CT_Empty);
-		Insert(6, CT_Disk2);
-		Insert(7, CT_Empty);
-		InsertAux(CT_Extended80Col);	// For Apple //e and above
+		// LoadConfiguration() now sets up default cards for a new install
+		InsertInternal(SLOT0, CT_Empty);
+		InsertInternal(SLOT1, CT_Empty);
+		InsertInternal(SLOT2, CT_Empty);
+		InsertInternal(SLOT3, CT_Empty);
+		InsertInternal(SLOT4, CT_Empty);
+		InsertInternal(SLOT5, CT_Empty);
+		InsertInternal(SLOT6, CT_Empty);
+		InsertInternal(SLOT7, CT_Empty);
+		InsertAuxInternal(CT_Extended80Col);	// For Apple //e and above
 	}
 	~CardManager(void)
 	{
 		for (UINT i=0; i<NUM_SLOTS; i++)
-			Remove(i);
-		RemoveAux();
+			RemoveInternal(i);
+		RemoveAuxInternal();
 	}
 
-	void Insert(UINT slot, SS_CARDTYPE type);
-	void Remove(UINT slot);
+	void Insert(UINT slot, SS_CARDTYPE type, bool updateRegistry = true);
+	void Remove(UINT slot, bool updateRegistry = true);
 	SS_CARDTYPE QuerySlot(UINT slot) { _ASSERT(slot<NUM_SLOTS); return m_slot[slot]->QueryType(); }
 	Card& GetRef(UINT slot)
 	{
-		SS_CARDTYPE t=QuerySlot(slot); _ASSERT((t==CT_SSC || t==CT_MouseInterface || t==CT_Disk2) && m_slot[slot]);
-		if (!m_slot[slot]) throw std::runtime_error("slot/card mismatch");
+		_ASSERT(m_slot[slot]);
 		return *m_slot[slot];
 	}
-	Card* GetObj(UINT slot) { SS_CARDTYPE t=QuerySlot(slot); _ASSERT(t==CT_SSC || t==CT_MouseInterface || t==CT_Disk2); return m_slot[slot]; }
+	Card* GetObj(UINT slot)
+	{
+		return m_slot[slot];
+	}
 
-	void InsertAux(SS_CARDTYPE type);
+	void InsertAux(SS_CARDTYPE type, bool updateRegistry = true);
 	void RemoveAux(void);
 	SS_CARDTYPE QueryAux(void) { return m_aux->QueryType(); }
 	Card* GetObjAux(void) { _ASSERT(0); return m_aux; }	// ASSERT because this is a DummyCard
 
 	//
 
-	class CMouseInterface* GetMouseCard(void) { return m_pMouseCard; }
-	bool IsMouseCardInstalled(void) { return m_pMouseCard != NULL; }
-	class CSuperSerialCard* GetSSC(void) { return m_pSSC; }
-	bool IsSSCInstalled(void) { return m_pSSC != NULL; }
+	LanguageCardManager& GetLanguageCardMgr(void) { return m_languageCardMgr; }
+	MockingboardCardManager& GetMockingboardCardMgr(void) { return m_mockingboardCardMgr; }
+	class VidHDCard* GetVidHDCard(void) { return m_pVidHDCard; }
+	SS_CARDTYPE QueryDefaultCardForSlot(UINT slot, eApple2Type model);
+
+	void GetCardChoicesForSlot(const UINT slot, const SS_CARDTYPE currConfig[NUM_SLOTS], std::vector<SS_CARDTYPE>& choicesList);
+	void GetCardChoicesForAuxSlot(std::vector<SS_CARDTYPE>& choicesList);
+
+	void InitializeIO(LPBYTE pCxRomPeripheral);
+	void Destroy(void);
+	void Reset(const bool powerCycle);
+	void Update(const ULONG nExecutedCycles);
+	void SaveSnapshot(YamlSaveHelper& yamlSaveHelper);
 
 private:
+	void InsertInternal(UINT slot, SS_CARDTYPE type);
+	void InsertAuxInternal(SS_CARDTYPE type);
 	void RemoveInternal(UINT slot);
+	void RemoveAuxInternal(void);
+	bool IsSingleInstanceCard(SS_CARDTYPE card);
 
 	Card* m_slot[NUM_SLOTS];
 	Card* m_aux;
-	class CMouseInterface* m_pMouseCard;
-	class CSuperSerialCard* m_pSSC;
+	LanguageCardManager m_languageCardMgr;
+	MockingboardCardManager m_mockingboardCardMgr;
+	class VidHDCard* m_pVidHDCard;
 };

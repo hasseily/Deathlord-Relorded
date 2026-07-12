@@ -19,11 +19,11 @@ along with AppleWin; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include "pch.h"
+#include "StdAfx.h"
 #include "NTSC_CharSet.h"
-#include "AppleWin.h"
-#include "resource.h"
-#include "Video.h"
+#include "Interface.h"
+#include "Core.h"
+#include "ResourceIds.h"
 
 
 unsigned char csbits_enhanced2e[2][256][8];	// Enhanced //e (2732 4K video ROM)
@@ -71,13 +71,12 @@ static void get_csbits_xy(csbits_t csbits, UINT ch, UINT cx, UINT cy, const BYTE
 	}
 }
 
-static void get_csbits(csbits_t csbits, UINT resourceId, const UINT cy0)
+static void get_csbits(csbits_t csbits, WORD id, const UINT cy0)
 {
 	const UINT bufferSize = bitmapWidthBytes*bitmapHeight;
 	BYTE* pBuffer = new BYTE [bufferSize];
 
-	HBITMAP hCharBitmap = LoadBitmap(g_hInstance, MAKEINTRESOURCE(resourceId));
-	GetBitmapBits(hCharBitmap, bufferSize, pBuffer);
+	GetFrame().GetBitmap(id, bufferSize, pBuffer);
 
 	for (UINT cy=cy0, ch=0; cy<cy0+16; cy++)
 	{
@@ -86,8 +85,6 @@ static void get_csbits(csbits_t csbits, UINT resourceId, const UINT cy0)
 			get_csbits_xy(csbits, ch++, cx, cy, pBuffer);
 		}
 	}
-
-	DeleteObject(hCharBitmap);
 
 	delete [] pBuffer;
 }
@@ -161,11 +158,11 @@ static void userVideoRom4K(csbits_t csbits, const BYTE* pVideoRom)
 static void userVideoRomForIIe(void)
 {
 	const BYTE* pVideoRom;
-	UINT size = GetVideoRom(pVideoRom);	// 2K or 4K or 8K
-	if (size < kVideoRomSize4K)
+	UINT size = GetVideo().GetVideoRom(pVideoRom);	// 2K or 4K or 8K
+	if (size < Video::kVideoRomSize4K)
 		return;
 
-	if (size == kVideoRomSize4K)
+	if (size == Video::kVideoRomSize4K)
 	{
 		userVideoRom4K(&csbits_enhanced2e[0], pVideoRom);
 	}
@@ -181,11 +178,21 @@ static void userVideoRomForIIe(void)
 
 //-------------------------------------
 
+static void userVideoRom2K(csbits_t csbits, const BYTE* pVideoRom, const eApple2Type type = A2TYPE_APPLE2, const int AN2=0);
+
 static void userVideoRom2K(csbits_t csbits, const BYTE* pVideoRom, const eApple2Type type /*= A2TYPE_APPLE2*/, const int AN2/*=0*/)
 {
 	for (int i=0; i<256; i++)
 	{
 		int RA = i*8;	// rom address
+
+		if (type == A2TYPE_APPLE2JPLUS)
+		{
+			// AN2=0: $00-3F, $00-3F; $80-BF, $80-BF => KKAA (Repeat Katakana)
+			// AN2=1: $40-7F, $40-7F; $C0-FF, $C0-FF => AAAA (Repeat ASCII)
+			RA &= ~(1<<(6+3));
+			RA |= (AN2<<(6+3));	// AN2 controls A9 (UTAII 8-12, Fig 8.7)
+		}
 
 		for (int y=0; y<8; y++)
 		{
@@ -197,37 +204,66 @@ static void userVideoRom2K(csbits_t csbits, const BYTE* pVideoRom, const eApple2
 			// Base64A: Bit 0 instead of bit 7
 			if (RA < 1024)
 			{
-				if (!(n & 0x80))
-					n = n ^ 0x7f;
+				if (type == A2TYPE_BASE64A)
+				{
+					if (!(n & 0x01))
+						n = n ^ 0xfe;
+				}
+				else
+				{
+					if (!(n & 0x80) || (type == A2TYPE_APPLE2JPLUS))
+						n = n ^ 0x7f;
+				}
 			}
 
 			BYTE d = 0;
-			// UTAII:8-30 "TEXT ROM pattern is ... reversed"
-			for (BYTE j = 0; j < 7; j++, n >>= 1)	// Just bits [0..6]
-				d = (d << 1) | (n & 1);
+			if (type == A2TYPE_BASE64A)
+			{
+				// On the Base 64A bits are ordered 1345672.
+				d = (n >> 2) | ((n & 2) >> 1) | ((n & 4) << 4);
+			}
+			else
+			{
+				// UTAII:8-30 "TEXT ROM pattern is ... reversed"
+				for (BYTE j = 0; j < 7; j++, n >>= 1)	// Just bits [0..6]
+					d = (d << 1) | (n & 1);
+			}
 
 			csbits[0][i][y] = d;
 		}
 	}
 }
 
+static void userVideoRomForIIPlus(void)
+{
+	const BYTE* pVideoRom;
+	UINT size = GetVideo().GetVideoRom(pVideoRom);	// 2K or 4K or 8K
+	if (size != Video::kVideoRomSize2K)
+		return;
+
+	userVideoRom2K(&csbits_a2[0], pVideoRom);
+}
+
+//-------------------------------------
+
 //-------------------------------------
 
 void make_csbits(void)
 {
-	get_csbits(&csbits_enhanced2e[0], IDB_CHARSET40, 0);	// Enhanced //e: Alt char set off
-	get_csbits(&csbits_enhanced2e[1], IDB_CHARSET40, 16);	// Enhanced //e: Alt char set on (mousetext)
-	get_csbits(&csbits_a2[0],		  IDB_CHARSET40, 32);	// Apple ][, ][+
-	get_csbits(&csbits_pravets82[0],  IDB_CHARSET82, 0);	// Pravets 82
-	get_csbits(&csbits_pravets8M[0],  IDB_CHARSET8M, 0);	// Pravets 8M
-	get_csbits(&csbits_pravets8C[0],  IDB_CHARSET8C, 0);	// Pravets 8A / 8C: Alt char set off
-	get_csbits(&csbits_pravets8C[1],  IDB_CHARSET8C, 16);	// Pravets 8A / 8C: Alt char set on
+	// NAC only emulates the Apple //e Enhanced — load its 4K video ROM and
+	// derive the bit-pattern table from it.
+	BYTE* pVideoRom = GetFrame().GetResource(IDR_APPLE2E_ENHANCED_VIDEO_ROM, "ROM", Video::kVideoRomSize4K);
+	if (pVideoRom)
+	{
+		userVideoRom4K(&csbits_enhanced2e[0], pVideoRom);
+	}
 
-	// Original //e is just Enhanced //e with the 32 mousetext chars [0x40..0x5F] replaced by the non-alt charset chars [0x40..0x5F]
+	// Original //e is just Enhanced //e with the 32 mousetext chars [0x40..0x5F]
+	// replaced by the non-alt charset chars [0x40..0x5F]
 	memcpy(csbits_2e, csbits_enhanced2e, sizeof(csbits_enhanced2e));
 	memcpy(&csbits_2e[1][64], &csbits_2e[0][64], 32*8);
 
-	// Try to use any user-provided video ROM for Original/Enhanced //e
+	// Allow a user-supplied video ROM file to override the Enhanced //e set.
 	userVideoRomForIIe();
 }
 
@@ -235,8 +271,8 @@ csbits_t Get2e_csbits(void)
 {
 	const csbits_t videoRom4K = (GetApple2Type() == A2TYPE_APPLE2E) ? csbits_2e : csbits_enhanced2e;
 
-	if (IsVideoRom4K())	// 4K means US-only, so no secondary PAL video ROM
+	if (GetVideo().IsVideoRom4K())	// 4K means US-only, so no secondary PAL video ROM
 		return videoRom4K;
 
-	return GetVideoRomRockerSwitch() == false ? videoRom4K : csbits_2e_pal;	// NB. Same PAL video ROM for Original & Enhanced //e
+	return GetVideo().GetVideoRomRockerSwitch() == false ? videoRom4K : csbits_2e_pal;	// NB. Same PAL video ROM for Original & Enhanced //e
 }

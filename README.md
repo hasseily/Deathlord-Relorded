@@ -1,4 +1,4 @@
-# Deathlord Relorded
+# Deathlord Relorded 3.0
 
 Deathlord... the infamous Apple 2 RPG of 1987.
 Too tough for many, just the right level of sadistic extremism for others. But with brilliant dungeon design, and always interesting!
@@ -7,17 +7,14 @@ And make sure you never need to "save scum". Play, save, backup obviously. But n
 This means that magic pools always give you stats increase, search never fails, and monsters never level drain you.
 It'll still be tough as nails, it's Deathlord after all. But it will never force you to reload to get a better outcome, something every player had to constantly do in the original game.
 
-This app requires a 1920x1080 display, DirectX 12, Windows 10 x64, with working sound.
-Fork on GitHub or contact me for other builds, but the DirectX 12 requirement is set in stone, sorry.
-
 ## How I'm doing it
 
 The architecture of Deathlord Relorded is relatively unique. Fundamentally, you'll be running the original Deathlord game in an emulator.
-No change has been made whatsoever to the original Deathlord codebase. Even the original copy protection is kept.
-In fact, you can take the .woz images of the original game and run them in your favorite emulator, the game is untouched.
+No change has been made to the original Deathlord program. Even the original copy protection is kept.
+DLRL 3.0 runs the game from one ProDOS HDV through an emulated SmartPort hard disk; floppy images and Disk II are no longer part of the application.
 
 What has changed, and immensely so, is the emulation layer that is running the game. I took the AppleWin codebase and transformed it.
-First, I ripped out everything except for the core emulation code of an Apple //e Enhanced. I rewrote the graphics layer in pure DX12.
+First, I ripped out everything except for the core emulation code of an Apple //e Enhanced. DLRL 3.0 now uses the same portable AppleWin foundation as Nox Archaist Companion, with SDL3, OpenGL, and ImGui on top.
 Then I heavily tweaked the CPU emulation to hook into the original code as necessary and fire off either display events or changes
 in the code behavior. So sometimes the emulated CPU will do something different, and sometimes it's the GUI layer that will update itself.
 
@@ -31,7 +28,7 @@ Make sure you read the `DOCUMENTATION.md` file.
 
 ## Features
 
-* The game runs in a fixed 1920x1080 resolution, windowed or full screen.
+* The original high-resolution DLRL layout scales cleanly to the available window or full screen.
 * The map is expanded from 9x9 to 32x32
 * There's a world mini-map to not get lost at sea
 * Many, many more colors

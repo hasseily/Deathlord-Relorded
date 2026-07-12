@@ -26,15 +26,19 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * Author: Various
  */
 
-#include "pch.h"
+#include "StdAfx.h"
 
 #include "Speaker.h"
-#include "AppleWin.h"
+#include "Core.h"
 #include "CPU.h"
+#include "Interface.h"
+#include "Log.h"
 #include "Memory.h"
 #include "SoundCore.h"
-#include "Video.h"	// VideoRedrawScreen()
-#include "../Game.h"
+#include "YamlHelper.h"
+#include "Riff.h"
+
+static uint32_t extbench = 0;	// debugger benchmark cycle counter (debugger stripped — kept as no-op)
 
 // Notes:
 //
@@ -49,8 +53,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 // their buffers are running low.
 //
 
-static const unsigned short g_nSPKR_NumChannels = 1;
-static const DWORD g_dwDSSpkrBufferSize = MAX_SAMPLES * sizeof(short) * g_nSPKR_NumChannels;
+// NB. Setting g_nSPKR_NumChannels=1 still works (ie. mono).
+// . Retain it for a while in case there are regressions with the new 2-channel code, then remove it.
+static const unsigned short g_nSPKR_NumChannels = 2;
+static const uint32_t g_dwDSSpkrBufferSize = MAX_SAMPLES * sizeof(short) * g_nSPKR_NumChannels;
 
 //-------------------------------------
 
@@ -60,14 +66,13 @@ static short*	g_pSpeakerBuffer = NULL;
 const short		SPKR_DATA_INIT = (short)0x8000;
 
 short		g_nSpeakerData	= SPKR_DATA_INIT;
-static UINT		g_nBufferIdx	= 0;
+static UINT		g_nBufferIdx	= 0;		// Sample index
 
 static short*	g_pRemainderBuffer = NULL;
 static UINT		g_nRemainderBufferSize;		// Setup in SpkrInitialize()
 static UINT		g_nRemainderBufferIdx;		// Setup in SpkrInitialize()
 
 // Application-wide globals:
-SoundType_e		soundtype		= SOUND_WAVE;
 double		    g_fClksPerSpkrSample;		// Setup in SetClksPerSpkrSample()
 
 // Allow temporary quietening of speaker (8 bit DAC)
@@ -77,7 +82,7 @@ bool			g_bQuieterSpeaker = false;
 static unsigned __int64	g_nSpkrQuietCycleCount = 0;
 static unsigned __int64 g_nSpkrLastCycle = 0;
 static bool g_bSpkrToggleFlag = false;
-static VOICE SpeakerVoice = {0};
+static VOICE SpeakerVoice;
 static bool g_bSpkrAvailable = false;
 
 //-----------------------------------------------------------------------------
@@ -88,21 +93,32 @@ static ULONG   Spkr_SubmitWaveBuffer(short* pSpeakerBuffer, ULONG nNumSamples);
 static void    Spkr_SetActive(bool bActive);
 static void    Spkr_DSUninit();
 
+//-----------------------------------------------------------------------------
+
+static bool g_bSpkrOutputToRiff = false;
+
+void Spkr_OutputToRiff(void)
+{
+	g_bSpkrOutputToRiff = true;
+}
+
+UINT Spkr_GetNumChannels(void)
+{
+	return g_nSPKR_NumChannels;
+}
+
 //=============================================================================
 
-static void DisplayBenchmarkResults ()
+static void DisplayBenchmarkResults()
 {
-  DWORD totaltime = GetTickCount();
-  VideoRedrawScreen();
-  TCHAR buffer[64];
-  wsprintf(buffer,
-           TEXT("This benchmark took %u.%02u seconds."),
-           (unsigned)(totaltime / 1000),
-           (unsigned)((totaltime / 10) % 100));
-  MessageBox(g_hFrameWindow,
-             buffer,
-             TEXT("Benchmark Results"),
-             MB_ICONINFORMATION | MB_SETFOREGROUND);
+  uint32_t totaltime = GetTickCount()-extbench;
+  GetFrame().VideoRedrawScreen();
+  std::string strText = StrFormat("This benchmark took %u.%02u seconds.",
+								  (uint32_t)(totaltime / 1000),
+								  (uint32_t)((totaltime / 10) % 100));
+  GetFrame().FrameMessageBox(strText.c_str(),
+							 "Benchmark Results",
+							 MB_ICONINFORMATION | MB_SETFOREGROUND);
 }
 
 //=============================================================================
@@ -165,6 +181,33 @@ inline short DCFilter(short sample_in)
 
 //=============================================================================
 
+static void QueueOneFrame(short* dest, UINT& index, short sample_in)
+{
+	// add one frame to the speaker buffer
+	const short sample = DCFilter(sample_in);
+	short * begin = dest + (index * g_nSPKR_NumChannels);
+	std::fill_n(begin, g_nSPKR_NumChannels, sample);
+	// and advance its position
+	index++;
+}
+
+static void PadNFrames(short* dest, uint32_t sizeBytes)
+{
+	if (sizeBytes)
+	{
+		const UINT numSamples = sizeBytes / (sizeof(short) * g_nSPKR_NumChannels);
+		UINT index = 0;
+		for (UINT i = 0; i < numSamples; i++)
+		{
+			QueueOneFrame(dest, index, g_nSpeakerData);
+		}
+		if (g_bSpkrOutputToRiff)
+			RiffPutSamples(dest, numSamples);
+	}
+}
+
+//=============================================================================
+
 static void SetClksPerSpkrSample()
 {
 //	// 23.191 clks for 44.1Khz (when 6502 CLK=1.0Mhz)
@@ -199,54 +242,59 @@ static void InitRemainderBuffer()
 
 //=============================================================================
 
-void SpkrDestroy ()
+void SpkrDestroy()
 {
 	Spkr_DSUninit();
 
 	//
 
-	if(soundtype == SOUND_WAVE)
-	{
-		delete [] g_pSpeakerBuffer;
-		delete [] g_pRemainderBuffer;
+	delete [] g_pSpeakerBuffer;
+	delete [] g_pRemainderBuffer;
 		
-		g_pSpeakerBuffer = NULL;
-		g_pRemainderBuffer = NULL;
-	}
+	g_pSpeakerBuffer = NULL;
+	g_pRemainderBuffer = NULL;
 }
 
 //=============================================================================
 
-void SpkrInitialize ()
+void SpkrInitialize()
 {
-	if(g_bDisableDirectSound)
+	if (g_bDisableDirectSound)
 	{
 		SpeakerVoice.bMute = true;
+		LogFileOutput("SpkrInitialize: g_bDisableDirectSound=1... SpeakerVoice.bMute=true\n");
 	}
 	else
 	{
 		g_bSpkrAvailable = Spkr_DSInit();
+		LogFileOutput("Spkr_DSInit(), res=%d\n", g_bSpkrAvailable ? 1 : 0);
+		if (!g_bSpkrAvailable)
+		{
+			GetFrame().FrameMessageBox(
+				"The emulator is unable to initialize a waveform "
+				"output device.  Make sure you have a sound card "
+				"and a driver installed and that Windows is "
+				"correctly configured to use the driver.  Also "
+				"ensure that no other program is currently using "
+				"the device.",
+				"Configuration",
+				MB_ICONEXCLAMATION | MB_SETFOREGROUND);
+		}
 	}
 
 	//
 
-	if (soundtype == SOUND_WAVE)
-	{
-		InitRemainderBuffer();
+	InitRemainderBuffer();
 
-		g_pSpeakerBuffer = new short [SPKR_SAMPLE_RATE];	// Buffer can hold a max of 1 seconds worth of samples
-	}
+	g_pSpeakerBuffer = new short[SPKR_SAMPLE_RATE * g_nSPKR_NumChannels];	// Buffer can hold a max of 1 seconds worth of samples
 }
 
 //=============================================================================
 
 // NB. Called when /g_fCurrentCLK6502/ changes
-void SpkrReinitialize ()
+void SpkrReinitialize()
 {
-	if (soundtype == SOUND_WAVE)
-	{
-		InitRemainderBuffer();
-	}
+	InitRemainderBuffer();
 }
 
 //=============================================================================
@@ -260,37 +308,7 @@ void SpkrReset()
 	InitRemainderBuffer();
 	Spkr_SubmitWaveBuffer(NULL, 0);
 	Spkr_SetActive(false);
-	Spkr_Demute();
-}
-
-//=============================================================================
-
-BOOL SpkrSetEmulationType (HWND window, SoundType_e newtype)
-{
-  SpkrDestroy();	// GH#295: Destroy for all types (even SOUND_NONE)
-
-  soundtype = newtype;
-  if (soundtype != SOUND_NONE)
-    SpkrInitialize();
-
-  if (soundtype != newtype)
-    switch (newtype) {
-
-      case SOUND_WAVE:
-        MessageBox(window,
-                   TEXT("The emulator is unable to initialize a waveform ")
-                   TEXT("output device.  Make sure you have a sound card ")
-                   TEXT("and a driver installed and that windows is ")
-                   TEXT("correctly configured to use the driver.  Also ")
-                   TEXT("ensure that no other program is currently using ")
-                   TEXT("the device."),
-                   TEXT("Configuration"),
-                   MB_ICONEXCLAMATION | MB_SETFOREGROUND);
-        return 0;
-
-    }
-
-  return 1;
+	Spkr_Unmute();
 }
 
 //=============================================================================
@@ -325,8 +343,10 @@ static void UpdateRemainderBuffer(ULONG* pnCycleDiff)
 				nSampleMean += (signed long) g_pRemainderBuffer[i];
 			nSampleMean /= (signed long) g_nRemainderBufferSize;
 
-			if(g_nBufferIdx < SPKR_SAMPLE_RATE-1)
-				g_pSpeakerBuffer[g_nBufferIdx++] = DCFilter( (short)nSampleMean );
+			if (g_nBufferIdx < SPKR_SAMPLE_RATE - 1)
+			{
+				QueueOneFrame(g_pSpeakerBuffer, g_nBufferIdx, (short)nSampleMean);
+			}
 		}
 	}
 }
@@ -343,8 +363,10 @@ static void UpdateSpkr()
 
 	  ULONG nCyclesRemaining = (ULONG) ((double)nCycleDiff - (double)nNumSamples * g_fClksPerSpkrSample);
 
-	  while((nNumSamples--) && (g_nBufferIdx < SPKR_SAMPLE_RATE-1))
-		g_pSpeakerBuffer[g_nBufferIdx++] = DCFilter(g_nSpeakerData);
+	  while ((nNumSamples--) && (g_nBufferIdx < SPKR_SAMPLE_RATE - 1))
+	  {
+			QueueOneFrame(g_pSpeakerBuffer, g_nBufferIdx, (short)g_nSpeakerData);
+	  }
 
 	  ReinitRemainderBuffer(nCyclesRemaining);	// Partially fill 1Mhz sample buffer
   }
@@ -357,104 +379,99 @@ static void UpdateSpkr()
 // Called by emulation code when Speaker I/O reg is accessed
 //
 
-BYTE __stdcall SpkrToggle (WORD, WORD, BYTE, BYTE, ULONG nExecutedCycles)
+BYTE __stdcall SpkrToggle(WORD, WORD, BYTE, BYTE, ULONG nExecutedCycles)
 {
-  g_bSpkrToggleFlag = true;
+	g_bSpkrToggleFlag = true;
 
-  if(!g_bFullSpeed)
-	Spkr_SetActive(true);
+	if (!g_bFullSpeed)
+		Spkr_SetActive(true);
 
-  //
+	if (extbench)
+	{
+		DisplayBenchmarkResults();
+		extbench = 0;
+	}
 
-  if (soundtype == SOUND_WAVE)
-  {
-	  CpuCalcCycles(nExecutedCycles);
+	CpuCalcCycles(nExecutedCycles);
 
-	  UpdateSpkr();
+	UpdateSpkr();
 
-      short speakerDriveLevel = SPKR_DATA_INIT;
-      if (g_bQuieterSpeaker)	// quieten the speaker if 8 bit DAC in use
-        speakerDriveLevel /= 4;	// NB. Don't shift -ve number right: undefined behaviour (MSDN says: implementation-dependent)
+	short speakerDriveLevel = SPKR_DATA_INIT;
+	if (g_bQuieterSpeaker)	// quieten the speaker if 8 bit DAC in use
+		speakerDriveLevel /= 4;	// NB. Don't shift -ve number right: undefined behaviour (MSDN says: implementation-dependent)
 
-      // When full-speed: Don't ResetDCFilter(), otherwise get occasional clicks when speaker toggled
-      if (!g_bFullSpeed)
-        ResetDCFilter();
+	// When full-speed: Don't ResetDCFilter(), otherwise get occasional clicks when speaker toggled
+	if (!g_bFullSpeed)
+		ResetDCFilter();
 
-      if (g_nSpeakerData == speakerDriveLevel)
-        g_nSpeakerData = ~speakerDriveLevel;
-      else
-        g_nSpeakerData = speakerDriveLevel;
-  }
+	if (g_nSpeakerData == speakerDriveLevel)
+		g_nSpeakerData = ~speakerDriveLevel;
+	else
+		g_nSpeakerData = speakerDriveLevel;
 
-  return MemReadFloatingBus(nExecutedCycles);
+	return MemReadFloatingBus(nExecutedCycles);
 }
 
 //=============================================================================
 
 // Called by ContinueExecution()
-void SpkrUpdate (DWORD totalcycles)
+void SpkrUpdate(uint32_t totalcycles)
 {
 #ifdef LOG_PERF_TIMINGS
 	extern UINT64 g_timeSpeaker;
 	PerfMarker perfMarker(g_timeSpeaker);
 #endif
 
-  if(!g_bSpkrToggleFlag)
-  {
-	  if(!g_nSpkrQuietCycleCount)
-	  {
-		  g_nSpkrQuietCycleCount = g_nCumulativeCycles;
-	  }
-	  else if(g_nCumulativeCycles - g_nSpkrQuietCycleCount > (unsigned __int64)g_fCurrentCLK6502/5)
-	  {
-		  // After 0.2 sec of Apple time, deactivate spkr voice
-		  // . This allows emulator to auto-switch to full-speed g_nAppMode for fast disk access
-		  Spkr_SetActive(false);
-	  }
-  }
-  else
-  {
-      g_nSpkrQuietCycleCount = 0;
-      g_bSpkrToggleFlag = false;
-  }
+	if (!g_bSpkrToggleFlag)
+	{
+		if (!g_nSpkrQuietCycleCount)
+		{
+			g_nSpkrQuietCycleCount = g_nCumulativeCycles;
+		}
+		else if (g_nCumulativeCycles - g_nSpkrQuietCycleCount > (unsigned __int64)g_fCurrentCLK6502 / 5)
+		{
+			// After 0.2 sec of Apple time, deactivate spkr voice
+			// . This allows emulator to auto-switch to full-speed g_nAppMode for fast disk access
+			Spkr_SetActive(false);
+		}
+	}
+	else
+	{
+		g_nSpkrQuietCycleCount = 0;
+		g_bSpkrToggleFlag = false;
+	}
 
-  //
+	//
 
-  if (soundtype == SOUND_WAVE)
-  {
-	  UpdateSpkr();
-	  ULONG nSamplesUsed;
+	UpdateSpkr();
+	ULONG nSamplesUsed;
 
-	  if(g_bFullSpeed)
-		  nSamplesUsed = Spkr_SubmitWaveBuffer_FullSpeed(g_pSpeakerBuffer, g_nBufferIdx);
-	  else
-		  nSamplesUsed = Spkr_SubmitWaveBuffer(g_pSpeakerBuffer, g_nBufferIdx);
+	if (g_bFullSpeed)
+		nSamplesUsed = Spkr_SubmitWaveBuffer_FullSpeed(g_pSpeakerBuffer, g_nBufferIdx);
+	else
+		nSamplesUsed = Spkr_SubmitWaveBuffer(g_pSpeakerBuffer, g_nBufferIdx);
 
-	  _ASSERT(nSamplesUsed <= g_nBufferIdx);
-	  memmove(g_pSpeakerBuffer, &g_pSpeakerBuffer[nSamplesUsed], g_nBufferIdx-nSamplesUsed);	// FIXME-TC: _Size * 2
-	  g_nBufferIdx -= nSamplesUsed;
-  }
+	_ASSERT(nSamplesUsed <= g_nBufferIdx);
+	memmove(g_pSpeakerBuffer, &g_pSpeakerBuffer[nSamplesUsed], (g_nBufferIdx - nSamplesUsed) * sizeof(short) * g_nSPKR_NumChannels);
+	g_nBufferIdx -= nSamplesUsed;
 }
 
 // Called from SoundCore_TimerFunc() for FADE_OUT
 void SpkrUpdate_Timer()
 {
-	if (soundtype == SOUND_WAVE)
-	{
-		UpdateSpkr();
-		ULONG nSamplesUsed;
+	UpdateSpkr();
+	ULONG nSamplesUsed;
 
-		nSamplesUsed = Spkr_SubmitWaveBuffer_FullSpeed(g_pSpeakerBuffer, g_nBufferIdx);
+	nSamplesUsed = Spkr_SubmitWaveBuffer_FullSpeed(g_pSpeakerBuffer, g_nBufferIdx);
 
-		_ASSERT(nSamplesUsed <=	g_nBufferIdx);
-		memmove(g_pSpeakerBuffer, &g_pSpeakerBuffer[nSamplesUsed], g_nBufferIdx-nSamplesUsed);	// FIXME-TC: _Size * 2 (GH#213?)
-		g_nBufferIdx -=	nSamplesUsed;
-	}
+	_ASSERT(nSamplesUsed <=	g_nBufferIdx);
+	memmove(g_pSpeakerBuffer, &g_pSpeakerBuffer[nSamplesUsed], (g_nBufferIdx - nSamplesUsed) * sizeof(short) * g_nSPKR_NumChannels);
+	g_nBufferIdx -=	nSamplesUsed;
 }
 
 //=============================================================================
 
-static DWORD dwByteOffset = (DWORD)-1;
+static uint32_t dwByteOffset = (uint32_t)-1;
 static int nNumSamplesError = 0;
 static int nDbgSpkrCnt = 0;
 
@@ -471,7 +488,6 @@ static int nDbgSpkrCnt = 0;
 
 static ULONG Spkr_SubmitWaveBuffer_FullSpeed(short* pSpeakerBuffer, ULONG nNumSamples)
 {
-	//char szDbg[200];
 	nDbgSpkrCnt++;
 
 	if(!SpeakerVoice.bActive)
@@ -491,13 +507,13 @@ static ULONG Spkr_SubmitWaveBuffer_FullSpeed(short* pSpeakerBuffer, ULONG nNumSa
 	if(FAILED(hr))
 		return nNumSamples;
 
-	if(dwByteOffset == (DWORD)-1)
+	if(dwByteOffset == (uint32_t)-1)
 	{
 		// First time in this func (probably after re-init (Spkr_SubmitWaveBuffer()))
 
 		dwByteOffset = dwCurrentPlayCursor + (g_dwDSSpkrBufferSize/8)*3;	// Ideal: 0.375 is between 0.25 & 0.50 full
 		dwByteOffset %= g_dwDSSpkrBufferSize;
-		//sprintf(szDbg, "[Submit_FS] PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X [REINIT]\n", dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples); OutputDebugString(szDbg);
+		//LogOutput("[Submit_FS] PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X [REINIT]\n", dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples);
 	}
 	else
 	{
@@ -508,7 +524,7 @@ static ULONG Spkr_SubmitWaveBuffer_FullSpeed(short* pSpeakerBuffer, ULONG nNumSa
 			// |-----PxxxxxW-----|
 			if((dwByteOffset > dwCurrentPlayCursor) && (dwByteOffset < dwCurrentWriteCursor))
 			{
-				//sprintf(szDbg, "[Submit_FS] PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X xxx\n", dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples); OutputDebugString(szDbg);
+				//LogOutput("[Submit_FS] PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X xxx\n", dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples);
 				dwByteOffset = dwCurrentWriteCursor;
 			}
 		}
@@ -517,7 +533,7 @@ static ULONG Spkr_SubmitWaveBuffer_FullSpeed(short* pSpeakerBuffer, ULONG nNumSa
 			// |xxW----------Pxxx|
 			if((dwByteOffset > dwCurrentPlayCursor) || (dwByteOffset < dwCurrentWriteCursor))
 			{
-				//sprintf(szDbg, "[Submit_FS] PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X XXX\n", dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples); OutputDebugString(szDbg);
+				//LogOutput("[Submit_FS] PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X XXX\n", dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples);
 				dwByteOffset = dwCurrentWriteCursor;
 			}
 		}
@@ -537,7 +553,7 @@ static ULONG Spkr_SubmitWaveBuffer_FullSpeed(short* pSpeakerBuffer, ULONG nNumSa
 	if(nBytesRemaining < g_dwDSSpkrBufferSize / 4)
 	{
 		// < 1/4 of play-buffer remaining (need *more* data)
-		nNumPadSamples = ((g_dwDSSpkrBufferSize / 4) - nBytesRemaining) / sizeof(short);
+		nNumPadSamples = ((g_dwDSSpkrBufferSize / 4) - nBytesRemaining) / (sizeof(short) * g_nSPKR_NumChannels);
 
 		if(nNumPadSamples > nNumSamples)
 			nNumPadSamples -= nNumSamples;
@@ -552,15 +568,15 @@ static ULONG Spkr_SubmitWaveBuffer_FullSpeed(short* pSpeakerBuffer, ULONG nNumSa
 	UINT nBytesFree = g_dwDSSpkrBufferSize - nBytesRemaining;	// Calc free buffer space
 	ULONG nNumSamplesToUse = nNumSamples + nNumPadSamples;
 
-	if(nNumSamplesToUse * sizeof(short) > nBytesFree)
-		nNumSamplesToUse = nBytesFree / sizeof(short);
+	if (nNumSamplesToUse * sizeof(short) * g_nSPKR_NumChannels > nBytesFree)
+		nNumSamplesToUse = nBytesFree / (sizeof(short) * g_nSPKR_NumChannels);
 
 	//
 
 	if(nNumSamplesToUse >= 128)	// Limit the buffer unlock/locking to a minimum
 	{
 		hr = DSGetLock(SpeakerVoice.lpDSBvoice,
-			dwByteOffset, (DWORD)nNumSamplesToUse * sizeof(short),
+			dwByteOffset, (uint32_t)nNumSamplesToUse * sizeof(short) * g_nSPKR_NumChannels,
 			&pDSLockedBuffer0, &dwDSLockedBufferSize0,
 			&pDSLockedBuffer1, &dwDSLockedBufferSize1);
 		if (FAILED(hr))
@@ -568,65 +584,50 @@ static ULONG Spkr_SubmitWaveBuffer_FullSpeed(short* pSpeakerBuffer, ULONG nNumSa
 
 		//
 
-		DWORD dwBufferSize0 = 0;
-		DWORD dwBufferSize1 = 0;
+		uint32_t dwBufferSize0 = 0;
+		uint32_t dwBufferSize1 = 0;
 
 		if(nNumSamples)
 		{
-			//sprintf(szDbg, "[Submit_FS] C=%08X, PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X ***\n", nDbgSpkrCnt, dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples); OutputDebugString(szDbg);
+			//LogOutput("[Submit_FS] C=%08X, PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X ***\n", nDbgSpkrCnt, dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples);
 
-			if(nNumSamples*sizeof(short) <= dwDSLockedBufferSize0)
+			if (nNumSamples * sizeof(short) * g_nSPKR_NumChannels <= dwDSLockedBufferSize0)
 			{
-				dwBufferSize0 = nNumSamples*sizeof(short);
+				dwBufferSize0 = nNumSamples * sizeof(short) * g_nSPKR_NumChannels;
 				dwBufferSize1 = 0;
 			}
 			else
 			{
 				dwBufferSize0 = dwDSLockedBufferSize0;
-				dwBufferSize1 = nNumSamples*sizeof(short) - dwDSLockedBufferSize0;
+				dwBufferSize1 = nNumSamples * sizeof(short) * g_nSPKR_NumChannels - dwDSLockedBufferSize0;
 
 				if(dwBufferSize1 > dwDSLockedBufferSize1)
 					dwBufferSize1 = dwDSLockedBufferSize1;
 			}
 			
 			memcpy(pDSLockedBuffer0, &pSpeakerBuffer[0], dwBufferSize0);
-#ifdef RIFF_SPKR
-			RiffPutSamples(pDSLockedBuffer0, dwBufferSize0/sizeof(short));
-#endif
-			nNumSamples = dwBufferSize0/sizeof(short);
+			if (g_bSpkrOutputToRiff)
+				RiffPutSamples(pDSLockedBuffer0, dwBufferSize0 / (sizeof(short) * g_nSPKR_NumChannels));
+			nNumSamples = dwBufferSize0 / (sizeof(short) * g_nSPKR_NumChannels);
 
 			if(pDSLockedBuffer1 && dwBufferSize1)
 			{
 				memcpy(pDSLockedBuffer1, &pSpeakerBuffer[dwDSLockedBufferSize0/sizeof(short)], dwBufferSize1);
-#ifdef RIFF_SPKR
-				RiffPutSamples(pDSLockedBuffer1, dwBufferSize1/sizeof(short));
-#endif
-				nNumSamples += dwBufferSize1/sizeof(short);
+				if (g_bSpkrOutputToRiff)
+					RiffPutSamples(pDSLockedBuffer1, dwBufferSize1 / (sizeof(short) * g_nSPKR_NumChannels));
+				nNumSamples += dwBufferSize1 / (sizeof(short) * g_nSPKR_NumChannels);
 			}
 		}
 
 		if(nNumPadSamples)
 		{
-			//sprintf(szDbg, "[Submit_FS] C=%08X, PC=%08X, WC=%08X, Diff=%08X, Off=%08X, PS=%08X, Data=%04X\n", nDbgSpkrCnt, dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumPadSamples, g_nSpeakerData); OutputDebugString(szDbg);
+			//LogOutput("[Submit_FS] C=%08X, PC=%08X, WC=%08X, Diff=%08X, Off=%08X, PS=%08X, Data=%04X\n", nDbgSpkrCnt, dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumPadSamples, g_nSpeakerData);
 
 			dwBufferSize0 = dwDSLockedBufferSize0 - dwBufferSize0;
 			dwBufferSize1 = dwDSLockedBufferSize1 - dwBufferSize1;
 
-			if(dwBufferSize0)
-			{
-				wmemset((wchar_t*)pDSLockedBuffer0, (wchar_t)DCFilter(g_nSpeakerData), dwBufferSize0/sizeof(wchar_t));
-#ifdef RIFF_SPKR
-				RiffPutSamples(pDSLockedBuffer0, dwBufferSize0/sizeof(short));
-#endif
-			}
-
-			if(pDSLockedBuffer1)
-			{
-				wmemset((wchar_t*)pDSLockedBuffer1, (wchar_t)DCFilter(g_nSpeakerData), dwBufferSize1/sizeof(wchar_t));
-#ifdef RIFF_SPKR
-				RiffPutSamples(pDSLockedBuffer1, dwBufferSize1/sizeof(short));
-#endif
-			}
+			PadNFrames(pDSLockedBuffer0, dwBufferSize0);
+			PadNFrames(pDSLockedBuffer1, dwBufferSize1);
 		}
 
 		// Commit sound buffer
@@ -635,7 +636,7 @@ static ULONG Spkr_SubmitWaveBuffer_FullSpeed(short* pSpeakerBuffer, ULONG nNumSa
 		if(FAILED(hr))
 			return nNumSamples;
 
-		dwByteOffset = (dwByteOffset + (DWORD)nNumSamplesToUse*sizeof(short)*g_nSPKR_NumChannels) % g_dwDSSpkrBufferSize;
+		dwByteOffset = (dwByteOffset + (uint32_t)nNumSamplesToUse*sizeof(short)*g_nSPKR_NumChannels) % g_dwDSSpkrBufferSize;
 	}
 
 	return nNumSamples;
@@ -645,7 +646,6 @@ static ULONG Spkr_SubmitWaveBuffer_FullSpeed(short* pSpeakerBuffer, ULONG nNumSa
 
 static ULONG Spkr_SubmitWaveBuffer(short* pSpeakerBuffer, ULONG nNumSamples)
 {
-	//char szDbg[200];
 	nDbgSpkrCnt++;
 
 	if(!SpeakerVoice.bActive)
@@ -654,12 +654,13 @@ static ULONG Spkr_SubmitWaveBuffer(short* pSpeakerBuffer, ULONG nNumSamples)
 	if(pSpeakerBuffer == NULL)
 	{
 		// Re-init from SpkrReset()
-		dwByteOffset = (DWORD)-1;
+		dwByteOffset = (uint32_t)-1;
 		nNumSamplesError = 0;
 
 		// Don't call DSZeroVoiceBuffer() - get noise with "VIA AC'97 Enhanced Audio Controller"
 		// . I guess SpeakerVoice.Stop() isn't really working and the new zero buffer causes noise corruption when submitted.
-		DSZeroVoiceWritableBuffer(&SpeakerVoice, "Spkr", g_dwDSSpkrBufferSize);
+		bool res = DSZeroVoiceWritableBuffer(&SpeakerVoice, g_dwDSSpkrBufferSize);
+		LogFileOutput("Spkr_SubmitWaveBuffer: DSZeroVoiceWritableBuffer, res=%d\n", res ? 1 : 0);
 
 		return 0;
 	}
@@ -672,19 +673,19 @@ static ULONG Spkr_SubmitWaveBuffer(short* pSpeakerBuffer, ULONG nNumSamples)
 
 	DWORD dwCurrentPlayCursor, dwCurrentWriteCursor;
 	HRESULT hr = SpeakerVoice.lpDSBvoice->GetCurrentPosition(&dwCurrentPlayCursor, &dwCurrentWriteCursor);
-	if(FAILED(hr))
+	if (FAILED(hr))
+	{
+		LogFileOutput("Spkr_SubmitWaveBuffer: GetCurrentPosition failed (%08X)\n", hr);
 		return nNumSamples;
+	}
 
-//	wchar_t szDbg[2000];
-//	dwCurrentPlayCursor = dwCurrentWriteCursor - 0xA56;
-	if(dwByteOffset == (DWORD)-1)
+	if(dwByteOffset == (uint32_t)-1)
 	{
 		// First time in this func (probably after re-init (above))
 
 		dwByteOffset = dwCurrentPlayCursor + (g_dwDSSpkrBufferSize/8)*3;	// Ideal: 0.375 is between 0.25 & 0.50 full
 		dwByteOffset %= g_dwDSSpkrBufferSize;
-//		wsprintf(szDbg, L"[Submit]   PC=%08X, WC=%08X, Diff=%08X, Off=%08X [REINIT]\n", dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset);
-//		OutputDebugString(szDbg);
+		//LogOutput("[Submit]   PC=%08X, WC=%08X, Diff=%08X, Off=%08X [REINIT]\n", dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset);
 	}
 	else
 	{
@@ -696,39 +697,27 @@ static ULONG Spkr_SubmitWaveBuffer(short* pSpeakerBuffer, ULONG nNumSamples)
 			if((dwByteOffset > dwCurrentPlayCursor) && (dwByteOffset < dwCurrentWriteCursor))
 			{
 				double fTicksSecs = (double)GetTickCount() / 1000.0;
-//				wsprintf(szDbg, L"%010.3f: [Submit]    PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X xxx\n", fTicksSecs, dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples);
-//				OutputDebugString(szDbg);
-				//if (g_fh) fprintf(g_fh, szDbg);
+				//LogOutput("%010.3f: [Submit]    PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X xxx\n", fTicksSecs, dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples);
+				//LogFileOutput("%010.3f: [Submit]    PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X xxx\n", fTicksSecs, dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples);
 
 				dwByteOffset = dwCurrentWriteCursor;
 				nNumSamplesError = 0;
 				bBufferError = true;
 			}
-//			else
-//			{
-//				wsprintf(szDbg, L"[IN ELSE]: [Submit]    PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X xxx\n", dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor - dwCurrentPlayCursor, dwByteOffset, nNumSamples);
-//				OutputDebugString(szDbg);
-			}
-//		}
+		}
 		else
 		{
 			// |xxW----------Pxxx|
 			if((dwByteOffset > dwCurrentPlayCursor) || (dwByteOffset < dwCurrentWriteCursor))
 			{
 				double fTicksSecs = (double)GetTickCount() / 1000.0;
-//				wsprintf(szDbg, L"%010.3f: [Submit 2]    PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X XXX\n", fTicksSecs, dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples);
-//				OutputDebugString(szDbg);
-				//if (g_fh) fprintf(g_fh, "%s", szDbg);
+				//LogOutput("%010.3f: [Submit]    PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X XXX\n", fTicksSecs, dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples);
+				//LogFileOutput("%010.3f: [Submit]    PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X XXX\n", fTicksSecs, dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamples);
 
 				dwByteOffset = dwCurrentWriteCursor;
 				nNumSamplesError = 0;
 				bBufferError = true;
 			}
-//			else
-//			{
-//				wsprintf(szDbg, L"[IN ELSE 2]: [Submit 2]    PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X xxx\n", dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor - dwCurrentPlayCursor, dwByteOffset, nNumSamples);
-//				OutputDebugString(szDbg);
-//			}
 		}
 	}
 
@@ -768,35 +757,39 @@ static ULONG Spkr_SubmitWaveBuffer(short* pSpeakerBuffer, ULONG nNumSamples)
 
 	if(nNumSamplesToUse)
 	{
-		//sprintf(szDbg, "[Submit]    C=%08X, PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X +++\n", nDbgSpkrCnt, dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamplesToUse); OutputDebugString(szDbg);
+		//LogOutput("[Submit]    C=%08X, PC=%08X, WC=%08X, Diff=%08X, Off=%08X, NS=%08X +++\n", nDbgSpkrCnt, dwCurrentPlayCursor, dwCurrentWriteCursor, dwCurrentWriteCursor-dwCurrentPlayCursor, dwByteOffset, nNumSamplesToUse);
 
 		hr = DSGetLock(SpeakerVoice.lpDSBvoice,
-			dwByteOffset, (DWORD)nNumSamplesToUse * sizeof(short),
+			dwByteOffset, (uint32_t)nNumSamplesToUse * sizeof(short) * g_nSPKR_NumChannels,
 			&pDSLockedBuffer0, &dwDSLockedBufferSize0,
 			&pDSLockedBuffer1, &dwDSLockedBufferSize1);
 		if (FAILED(hr))
+		{
+			LogFileOutput("Spkr_SubmitWaveBuffer: DSGetLock failed\n");
 			return nNumSamples;
+		}
 
 		memcpy(pDSLockedBuffer0, &pSpeakerBuffer[0], dwDSLockedBufferSize0);
-#ifdef RIFF_SPKR
-		RiffPutSamples(pDSLockedBuffer0, dwDSLockedBufferSize0/sizeof(short));
-#endif
+		if (g_bSpkrOutputToRiff)
+			RiffPutSamples(pDSLockedBuffer0, dwDSLockedBufferSize0 / (sizeof(short) * g_nSPKR_NumChannels));
 
 		if(pDSLockedBuffer1)
 		{
 			memcpy(pDSLockedBuffer1, &pSpeakerBuffer[dwDSLockedBufferSize0/sizeof(short)], dwDSLockedBufferSize1);
-#ifdef RIFF_SPKR
-			RiffPutSamples(pDSLockedBuffer1, dwDSLockedBufferSize1/sizeof(short));
-#endif
+			if (g_bSpkrOutputToRiff)
+				RiffPutSamples(pDSLockedBuffer1, dwDSLockedBufferSize1 / (sizeof(short) * g_nSPKR_NumChannels));
 		}
 
 		// Commit sound buffer
 		hr = SpeakerVoice.lpDSBvoice->Unlock((void*)pDSLockedBuffer0, dwDSLockedBufferSize0,
 											(void*)pDSLockedBuffer1, dwDSLockedBufferSize1);
-		if(FAILED(hr))
+		if (FAILED(hr))
+		{
+			LogFileOutput("Spkr_SubmitWaveBuffer: Unlock failed (%08X)\n", hr);
 			return nNumSamples;
+		}
 
-		dwByteOffset = (dwByteOffset + (DWORD)nNumSamplesToUse*sizeof(short)*g_nSPKR_NumChannels) % g_dwDSSpkrBufferSize;
+		dwByteOffset = (dwByteOffset + (uint32_t)nNumSamplesToUse*sizeof(short)*g_nSPKR_NumChannels) % g_dwDSSpkrBufferSize;
 	}
 
 	return bBufferError ? nNumSamples : nNumSamplesToUse;
@@ -804,20 +797,24 @@ static ULONG Spkr_SubmitWaveBuffer(short* pSpeakerBuffer, ULONG nNumSamples)
 
 //-----------------------------------------------------------------------------
 
+// NB. Not currently used
 void Spkr_Mute()
 {
 	if(SpeakerVoice.bActive && !SpeakerVoice.bMute)
 	{
-		SpeakerVoice.lpDSBvoice->SetVolume(DSBVOLUME_MIN);
+		HRESULT hr = SpeakerVoice.lpDSBvoice->SetVolume(DSBVOLUME_MIN);
+		LogFileOutput("Spkr_Mute: SetVolume(%d) res = %08X\n", DSBVOLUME_MIN, hr);
 		SpeakerVoice.bMute = true;
 	}
 }
 
-void Spkr_Demute()
+// NB. Only called by SpkrReset()
+void Spkr_Unmute()
 {
 	if(SpeakerVoice.bActive && SpeakerVoice.bMute)
 	{
-		SpeakerVoice.lpDSBvoice->SetVolume(SpeakerVoice.nVolume);
+		HRESULT hr = SpeakerVoice.lpDSBvoice->SetVolume(SpeakerVoice.nVolume);
+		LogFileOutput("Spkr_Unmute: SetVolume(%d) res = %08X\n", SpeakerVoice.nVolume, hr);
 		SpeakerVoice.bMute = false;
 	}
 }
@@ -853,19 +850,22 @@ bool Spkr_IsActive()
 
 //-----------------------------------------------------------------------------
 
-DWORD SpkrGetVolume()
+uint32_t SpkrGetVolume()
 {
 	return SpeakerVoice.dwUserVolume;
 }
 
-void SpkrSetVolume(DWORD dwVolume, DWORD dwVolumeMax)
+void SpkrSetVolume(uint32_t dwVolume, uint32_t dwVolumeMax)
 {
 	SpeakerVoice.dwUserVolume = dwVolume;
 
 	SpeakerVoice.nVolume = NewVolume(dwVolume, dwVolumeMax);
 
 	if (SpeakerVoice.bActive && !SpeakerVoice.bMute)
-		SpeakerVoice.lpDSBvoice->SetVolume(SpeakerVoice.nVolume);
+	{
+		HRESULT hr = SpeakerVoice.lpDSBvoice->SetVolume(SpeakerVoice.nVolume);
+		LogFileOutput("SpkrSetVolume: SetVolume(%d) res = %08X\n", SpeakerVoice.nVolume, hr);
+	}
 }
 
 //=============================================================================
@@ -876,39 +876,46 @@ bool Spkr_DSInit()
 	// Create single Apple speaker voice
 	//
 
-	if(!g_bDSAvailable)
-		return false;
-
-	SpeakerVoice.bIsSpeaker = true;
-
-	HRESULT hr = DSGetSoundBuffer(&SpeakerVoice, DSBCAPS_CTRLVOLUME, g_dwDSSpkrBufferSize, SPKR_SAMPLE_RATE, 1);
-	if(FAILED(hr))
+	if (!DSAvailable())
 	{
+		LogFileOutput("Spkr_DSInit: DSAvailable=0\n");
 		return false;
 	}
 
-	if(!DSZeroVoiceBuffer(&SpeakerVoice, "Spkr", g_dwDSSpkrBufferSize))
+	SpeakerVoice.bIsSpeaker = true;
+
+	HRESULT hr = DSGetSoundBuffer(&SpeakerVoice, g_dwDSSpkrBufferSize, SPKR_SAMPLE_RATE, g_nSPKR_NumChannels, "Spkr");
+	if (FAILED(hr))
+	{
+		LogFileOutput("Spkr_DSInit: DSGetSoundBuffer failed (%08X)\n", hr);
 		return false;
+	}
 
-	SpeakerVoice.bActive = true;
+	if (!DSZeroVoiceBuffer(&SpeakerVoice, g_dwDSSpkrBufferSize))
+	{
+		LogFileOutput("Spkr_DSInit: DSZeroVoiceBuffer failed\n");
+		return false;
+	}
 
-	// Volume might've been setup from value in Registry
-	if(!SpeakerVoice.nVolume)
-		SpeakerVoice.nVolume = DSBVOLUME_MAX;
-
-	SpeakerVoice.lpDSBvoice->SetVolume(SpeakerVoice.nVolume);
+	hr = SpeakerVoice.lpDSBvoice->SetVolume(SpeakerVoice.nVolume);
+	LogFileOutput("Spkr_DSInit: SetVolume(%d) res = %08X\n", SpeakerVoice.nVolume, (uint32_t)hr);
 
 	//
 
 	DWORD dwCurrentPlayCursor, dwCurrentWriteCursor;
 	hr = SpeakerVoice.lpDSBvoice->GetCurrentPosition(&dwCurrentPlayCursor, &dwCurrentWriteCursor);
-	if(SUCCEEDED(hr) && (dwCurrentPlayCursor == dwCurrentWriteCursor))
+	if (FAILED(hr))
+		LogFileOutput("Spkr_DSInit: GetCurrentPosition failed (%08X)\n", (uint32_t)hr);
+	if (SUCCEEDED(hr) && (dwCurrentPlayCursor == dwCurrentWriteCursor))
 	{
 		// KLUDGE: For my WinXP PC with "VIA AC'97 Enhanced Audio Controller"
 		// . Not required for my Win98SE/WinXP PC with PCI "Soundblaster Live!"
 		Sleep(200);
 
 		hr = SpeakerVoice.lpDSBvoice->GetCurrentPosition(&dwCurrentPlayCursor, &dwCurrentWriteCursor);
+		LogFileOutput("Spkr_DSInit: GetCurrentPosition kludge (%08X)\n", (uint32_t)hr);
+		LogOutput("[DSInit] PC=%08X, WC=%08X, Diff=%08X\n", (uint32_t)dwCurrentPlayCursor,
+			(uint32_t)dwCurrentWriteCursor, (uint32_t)(dwCurrentWriteCursor-dwCurrentPlayCursor));
 	}
 
 	return true;
@@ -917,10 +924,33 @@ bool Spkr_DSInit()
 static void Spkr_DSUninit()
 {
 	if(SpeakerVoice.lpDSBvoice && SpeakerVoice.bActive)
-	{
-		SpeakerVoice.lpDSBvoice->Stop();
-		SpeakerVoice.bActive = false;
-	}
+		DSVoiceStop(&SpeakerVoice);
 
 	DSReleaseSoundBuffer(&SpeakerVoice);
+}
+
+//=============================================================================
+
+#define SS_YAML_KEY_LASTCYCLE "Last Cycle"
+
+static const std::string& SpkrGetSnapshotStructName(void)
+{
+	static const std::string name("Speaker");
+	return name;
+}
+
+void SpkrSaveSnapshot(YamlSaveHelper& yamlSaveHelper)
+{
+	YamlSaveHelper::Label state(yamlSaveHelper, "%s:\n", SpkrGetSnapshotStructName().c_str());
+	yamlSaveHelper.SaveHexUint64(SS_YAML_KEY_LASTCYCLE, g_nSpkrLastCycle);
+}
+
+void SpkrLoadSnapshot(YamlLoadHelper& yamlLoadHelper)
+{
+	if (!yamlLoadHelper.GetSubMap(SpkrGetSnapshotStructName()))
+		return;
+
+	g_nSpkrLastCycle = yamlLoadHelper.LoadUint64(SS_YAML_KEY_LASTCYCLE);
+
+	yamlLoadHelper.PopMap();
 }

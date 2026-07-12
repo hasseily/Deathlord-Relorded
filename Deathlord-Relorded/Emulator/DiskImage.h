@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include "DiskDefs.h"
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 
 #define RAND_THRESHOLD(num, den) ((RAND_MAX * num) / den)
 
@@ -45,10 +45,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 	enum Disk_Status_e
 	{
-		DISK_STATUS_OFF  ,
+		DISK_STATUS_OFF  , // motor is off
 		DISK_STATUS_READ ,
 		DISK_STATUS_WRITE,
-		DISK_STATUS_PROT ,
+		DISK_STATUS_PROT , // NOTE: GetDriveLightStatus() and GetCurrentState() return slightly different states
+		DISK_STATUS_EMPTY, // See: GetCurrentState(); no disk image mounted
+		DISK_STATUS_SPIN , // See: GetCurrentState(), motor has been turned off, spinning before stopping
 		NUM_DISK_STATUS
 	};
 
@@ -76,11 +78,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 struct ImageInfo;
 
-ImageError_e ImageOpen(const std::wstring & pszImageFilename, ImageInfo** ppImageInfo, bool* pWriteProtected, const bool bCreateIfNecessary, const bool bExpectFloppy=true);
+ImageError_e ImageOpen(const std::string & pszImageFilename, ImageInfo** ppImageInfo, bool* pWriteProtected, const bool bCreateIfNecessary, std::string& strFilenameInZip, const bool bExpectFloppy=true);
 void ImageClose(ImageInfo* const pImageInfo);
 BOOL ImageBoot(ImageInfo* const pImageInfo);
-void ImageDestroy(void);
-void ImageInitialize(void);
 
 void ImageReadTrack(ImageInfo* const pImageInfo, float phase, LPBYTE pTrackImageBuffer, int* pNibbles, UINT* pBitCount, bool enhanceDisk);
 void ImageWriteTrack(ImageInfo* const pImageInfo, float phase, LPBYTE pTrackImageBuffer, int nNibbles);
@@ -88,13 +88,14 @@ bool ImageReadBlock(ImageInfo* const pImageInfo, UINT nBlock, LPBYTE pBlockBuffe
 bool ImageWriteBlock(ImageInfo* const pImageInfo, UINT nBlock, LPBYTE pBlockBuffer);
 
 UINT ImageGetNumTracks(ImageInfo* const pImageInfo);
-bool ImageIsWriteProtected(ImageInfo* const pImageInfo);
-const std::wstring & ImageGetPathname(ImageInfo* const pImageInfo);
+bool ImageIsMultiFileZip(ImageInfo* const pImageInfo);
+const std::string & ImageGetPathname(ImageInfo* const pImageInfo);
 UINT ImageGetImageSize(ImageInfo* const pImageInfo);
 bool ImageIsWOZ(ImageInfo* const pImageInfo);
 BYTE ImageGetOptimalBitTiming(ImageInfo* const pImageInfo);
 UINT ImagePhaseToTrack(ImageInfo* const pImageInfo, const float phase, const bool limit=true);
 UINT ImageGetMaxNibblesPerTrack(ImageInfo* const pImageInfo);
 bool ImageIsBootSectorFormatSector13(ImageInfo* const pImageInfo);
+bool ImageIsZeroTracksValidForThisType(ImageInfo* const pImageInfo);
 
-void GetImageTitle(LPCTSTR pPathname, std::wstring & pImageName, std::wstring & pFullName);
+void GetImageTitle(LPCTSTR pPathname, std::string & pImageName, std::string & pFullName);
