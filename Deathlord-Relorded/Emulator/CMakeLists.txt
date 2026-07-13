@@ -173,6 +173,9 @@ target_include_directories(dlrl_emulator PUBLIC
 target_link_libraries(dlrl_emulator PUBLIC yaml dlrl_minizip dlrl_zlib)
 
 if(WIN32)
+    # AppleWin's public headers include windows.h. Prevent its min/max macros
+    # from breaking std::min/std::max in the portable host and hook layers.
+    target_compile_definitions(dlrl_emulator PUBLIC NOMINMAX)
     target_link_libraries(dlrl_emulator PUBLIC
         winmm
         dsound

@@ -39,16 +39,29 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          verify_sha256() {
+            local expected="$1"
+            local file="$2"
+            local actual
+            actual="$(cmake -E sha256sum "$file")"
+            actual="${actual%% *}"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "SHA-256 mismatch for $file: expected $expected, got $actual" >&2
+              exit 1
+            fi
+          }
           mkdir -p extras
           archive="extras/deathlord-relorded-win-201.zip"
           curl -L --fail --retry 3 \
             https://github.com/hasseily/Deathlord-Relorded/releases/download/v2.0.1/deathlord-relorded-win-201.zip \
             -o "$archive"
-          echo "1efb57a4b2062f8d8012a70442ebcd3bc74fd546c4811a16f621a5c01387073f  $archive" \
-            | sha256sum --check
+          verify_sha256 \
+            1efb57a4b2062f8d8012a70442ebcd3bc74fd546c4811a16f621a5c01387073f \
+            "$archive"
           (cd extras && cmake -E tar xf deathlord-relorded-win-201.zip)
-          echo "f25f6174554c3341739f7b6d3026d56b375255cfab98ddd0ba4dcac70a723a6d  extras/deathlord-relorded-win-201/Images/Deathlord PRODOS.hdv" \
-            | sha256sum --check
+          verify_sha256 \
+            f25f6174554c3341739f7b6d3026d56b375255cfab98ddd0ba4dcac70a723a6d \
+            "extras/deathlord-relorded-win-201/Images/Deathlord PRODOS.hdv"
 
       # SDL3 is built by FetchContent. These are the same runner dependencies
       # used by NAC so SDL detects complete Linux video/audio/GL backends.
