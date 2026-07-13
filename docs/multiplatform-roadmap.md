@@ -89,10 +89,11 @@ ported. It is deleted after its final feature has a portable replacement.
   live-RAM, host-input-consuming read-only presentation; item
   movement/stash/discard behavior, log file load/save, floating combat text,
   and complete fog/marker controls remain.
-- The NAC-shaped CI/package workflow is now present for Linux, Windows, and
-  macOS, with HDV-free core/hook tests and draft releases on version tags. Its
-  first remote matrix run, legacy cleanup, Gamelink decision, signing, and
-  release validation remain pending in Milestones 8-9.
+- The NAC-shaped CI/package workflow is present for Linux, Windows, and macOS.
+  It verifies the author's public 2.0.1 release and clean HDV hashes, runs the
+  core/hook and real-HDV tests, performs a packaged Linux SDL capture, and
+  publishes testable archives from every run. Windows uses the Visual Studio
+  2026 runner/toolset; signing and full release validation remain pending.
 
 ## Milestone 0 - foundation and audit
 
@@ -299,8 +300,9 @@ Deliverables:
 - Windows stages SDL3 and runtime resources next to the executable.
 - Linux produces a relocatable archive initially; AppImage can follow if
   distribution demand justifies it.
-- Release artifacts never contain the private DLRL HDV unless distribution
-  rights and policy explicitly permit it.
+- Release artifacts contain the clean HDV from the author's existing public
+  v2.0.1 release, verified by SHA-256; no local or active player HDV is ever
+  packaged.
 
 Acceptance matrix:
 
@@ -309,7 +311,7 @@ Acceptance matrix:
 | Configure and compile | required | required | required |
 | Unit tests | required | required | required |
 | Emulator lifecycle | required | required | required |
-| HDV boot/capture | local/private | local/private | local/private |
+| HDV boot/capture | required | required | required |
 | SDL bounded smoke | required | required | required |
 | Visual golden comparison | required | required | required |
 | Manual playthrough checkpoint | required | required | required |

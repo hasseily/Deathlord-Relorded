@@ -137,6 +137,20 @@ elseif(NOT WIN32)
     target_link_libraries(dlrl PRIVATE pthread)
 endif()
 
+# SDL's shared target emits SDL3.dll in its own FetchContent build directory.
+# Keep a copy next to every Windows executable so the app and CTest binaries
+# run directly from the multi-config Release directory (same arrangement as
+# the NAC portable build).
+if(WIN32 AND TARGET SDL3::SDL3-shared)
+    add_custom_command(TARGET dlrl POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:SDL3::SDL3-shared>
+            $<TARGET_FILE_DIR:dlrl>
+        COMMENT "Staging SDL3 runtime"
+        VERBATIM
+    )
+endif()
+
 if(APPLE)
     set(DLRL_RESOURCE_DIR $<TARGET_BUNDLE_DIR:dlrl>/Contents/Resources)
 else()

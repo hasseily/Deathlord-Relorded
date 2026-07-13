@@ -1239,15 +1239,15 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
                               64.0f / inventorySprites_.Height()),
                        ImVec2(168.0f / inventorySprites_.Width(),
                               96.0f / inventorySprites_.Height()));
-        auto centeredStash = [&](float y, const std::string& value, ImU32 color = white)
+        auto centeredStash = [&](float y, const std::string& value, ImU32 color)
         {
             const float centeredX = stashColumnX + std::floor(
                 (memberColumnWidth - AppleTextWidth(value)) * 0.5f);
             AddAppleText(draw, appleFont_, origin, scale,
                          centeredX, y, color, value);
         };
-        centeredStash(innerTop + 37, "STASH");
-        centeredStash(innerTop + 55, std::to_string(stashCount) + " / 2");
+        centeredStash(innerTop + 37, "STASH", white);
+        centeredStash(innerTop + 55, std::to_string(stashCount) + " / 2", white);
         if (stashCount == 2) centeredStash(innerTop + 119, "FULL", amber);
 
         int hoveredRow = -1;

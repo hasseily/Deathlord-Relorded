@@ -414,6 +414,8 @@ std::filesystem::path FindDlrlAssetsDir()
     std::filesystem::path dir = base ? base : ".";
     for (int i = 0; i < 7; ++i)
     {
+        const auto portable = dir / "DLRLAssets";
+        if (std::filesystem::exists(portable / "InventoryList.csv")) return portable;
         const auto staged = dir / "Resources" / "DLRLAssets";
         if (std::filesystem::exists(staged / "InventoryList.csv")) return staged;
         const auto source = dir / "Deathlord-Relorded" / "Assets";
@@ -430,6 +432,8 @@ std::filesystem::path FindPortableAssetsDir()
     std::filesystem::path dir = base ? base : ".";
     for (int i = 0; i < 7; ++i)
     {
+        const auto portable = dir / "assets";
+        if (std::filesystem::exists(portable / "Apple2eFont14x16")) return portable;
         const auto staged = dir / "Resources" / "assets";
         if (std::filesystem::exists(staged / "Apple2eFont14x16")) return staged;
         const auto source = dir / "assets" / "pp" / "assets";

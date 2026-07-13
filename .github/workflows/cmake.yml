@@ -23,7 +23,7 @@ jobs:
             generator: Ninja
             artifact: dlrl-linux-x64
           - os: windows-latest
-            generator: "Visual Studio 17 2022"
+            generator: "Visual Studio 18 2026"
             artifact: dlrl-windows-x64
           - os: macos-latest
             generator: Ninja
@@ -31,6 +31,24 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+
+      # The author-provided 2.0.1 release is the canonical source for the
+      # immutable clean HDV. Keep it out of Git, but stage and verify it for
+      # real boot tests and complete distributable packages on every OS.
+      - name: Fetch clean game HDV
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p extras
+          archive="extras/deathlord-relorded-win-201.zip"
+          curl -L --fail --retry 3 \
+            https://github.com/hasseily/Deathlord-Relorded/releases/download/v2.0.1/deathlord-relorded-win-201.zip \
+            -o "$archive"
+          echo "1efb57a4b2062f8d8012a70442ebcd3bc74fd546c4811a16f621a5c01387073f  $archive" \
+            | sha256sum --check
+          (cd extras && cmake -E tar xf deathlord-relorded-win-201.zip)
+          echo "f25f6174554c3341739f7b6d3026d56b375255cfab98ddd0ba4dcac70a723a6d  extras/deathlord-relorded-win-201/Images/Deathlord PRODOS.hdv" \
+            | sha256sum --check
 
       # SDL3 is built by FetchContent. These are the same runner dependencies
       # used by NAC so SDL detects complete Linux video/audio/GL backends.
@@ -53,8 +71,8 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      # The private Deathlord HDV is intentionally absent. HDV integration
-      # tests report CTest skip code 77; core and hook tests must still pass.
+      # Includes deterministic boot and input captures against the canonical
+      # clean HDV staged above, in addition to core and hook tests.
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
 
@@ -65,12 +83,24 @@ jobs:
           OUT="dist/${{ matrix.artifact }}"
           mkdir -p "$OUT"
           cp build/dlrl "$OUT/"
-          for d in Resources DLRLAssets assets presets shaders; do
+          for d in Resources DLRLAssets assets presets shaders Images; do
             cp -r "build/$d" "$OUT/"
           done
           cp -P build/_deps/sdl3-build/libSDL3.so* "$OUT/"
           patchelf --set-rpath '$ORIGIN' "$OUT/dlrl"
           (cd dist && tar -czf ${{ matrix.artifact }}.tar.gz ${{ matrix.artifact }})
+
+      - name: Smoke test packaged Linux app
+        if: runner.os == 'Linux'
+        env:
+          SDL_VIDEODRIVER: offscreen
+          SDL_AUDIODRIVER: dummy
+        run: |
+          cd "dist/${{ matrix.artifact }}"
+          ./dlrl \
+            --hdv "Images/Deathlord PRODOS.hdv" \
+            --smoke-frames 600 \
+            --capture "$GITHUB_WORKSPACE/build/Testing/dlrl-linux.bmp"
 
       - name: Package Windows
         if: runner.os == 'Windows'
@@ -80,7 +110,7 @@ jobs:
           New-Item -ItemType Directory -Path $out -Force | Out-Null
           Copy-Item build/Release/dlrl.exe  $out/
           Copy-Item build/Release/SDL3.dll $out/
-          foreach ($d in 'Resources','DLRLAssets','assets','presets','shaders') {
+          foreach ($d in 'Resources','DLRLAssets','assets','presets','shaders','Images') {
               Copy-Item -Recurse "build/Release/$d" "$out/"
           }
           Compress-Archive -Path "$out/*" -DestinationPath "dist/${{ matrix.artifact }}.zip"
@@ -112,7 +142,6 @@ jobs:
           ditto -c -k --keepParent "$APP" "dist/${{ matrix.artifact }}.zip"
 
       - name: Upload artifact
-        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}

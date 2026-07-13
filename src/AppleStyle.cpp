@@ -25,6 +25,8 @@ std::filesystem::path FindAssetPath(const char* name)
     {
         const auto candidate = dir / "assets" / name;
         if (std::filesystem::exists(candidate)) return candidate;
+        const auto bundledCandidate = dir / "Resources" / "assets" / name;
+        if (std::filesystem::exists(bundledCandidate)) return bundledCandidate;
         // Fall-through to the source-tree layout (running from build-win/).
         const auto srcCandidate = dir / "assets" / "pp" / "assets" / name;
         if (std::filesystem::exists(srcCandidate)) return srcCandidate;

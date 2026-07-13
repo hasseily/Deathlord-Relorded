@@ -4,6 +4,46 @@ DLRL uses CMake 3.20+, C++17, SDL3, OpenGL, and Dear ImGui. CMake uses an
 installed SDL3 when available and otherwise fetches the same pinned SDL release
 as NAC. ImGui is fetched at configure time.
 
+Put the extracted 2.0.1 release at
+`extras/deathlord-relorded-win-201/`. The directory is ignored by Git. Its
+`Images/Deathlord PRODOS.hdv` is used for the real boot tests and is staged as
+the immutable clean-game template. CI obtains the same archive from the
+project's public v2.0.1 GitHub release and verifies both the archive and HDV
+SHA-256 hashes before building.
+
+## Windows
+
+Visual Studio 2022 or 2026 with the Desktop C++ workload is supported. From a
+Developer PowerShell:
+
+```powershell
+cmake -S . -B build-win -G "Visual Studio 18 2026" -A x64
+cmake --build build-win --config Release --parallel
+ctest --test-dir build-win -C Release --output-on-failure
+build-win\Release\dlrl.exe
+```
+
+Use `Visual Studio 17 2022` as the generator when building with VS 2022. CMake
+copies `SDL3.dll` and all runtime data into `build-win/Release`, so that
+directory is directly runnable and portable.
+
+## Linux
+
+Install a C++ compiler, CMake, Ninja, OpenGL development files, and SDL's X11,
+Wayland, audio, input, and D-Bus development dependencies. On Ubuntu 24.04:
+
+```sh
+sudo apt-get install ninja-build libgl1-mesa-dev libegl1-mesa-dev \
+  libgles2-mesa-dev libx11-dev libxext-dev libxrandr-dev libxcursor-dev \
+  libxfixes-dev libxi-dev libxss-dev libxkbcommon-dev libwayland-dev \
+  libdecor-0-dev libdrm-dev libgbm-dev libasound2-dev libpulse-dev \
+  libdbus-1-dev libudev-dev libibus-1.0-dev
+cmake -S . -B build-linux -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build-linux --parallel
+ctest --test-dir build-linux --output-on-failure
+./build-linux/dlrl
+```
+
 ## macOS
 
 ```sh
@@ -21,9 +61,10 @@ cmake -S . -B build-mac \
   -DFETCHCONTENT_SOURCE_DIR_IMGUI="$PWD/../NoxArchaistCompanion/build-mac/_deps/imgui-src"
 ```
 
-The private HDV tests discover
+The HDV tests discover
 `extras/deathlord-relorded-win-201/Images/Deathlord PRODOS.hdv` by default or
-accept `-DDLRL_PRIVATE_HDV=/path/to/Deathlord.hdv`. They skip when it is absent.
+accept `-DDLRL_PRIVATE_HDV=/path/to/Deathlord.hdv`. They skip only when it is
+absent.
 
 Native visual tests are opt-in because they open a real window:
 
@@ -80,7 +121,10 @@ map loading, and automatic attribute rerolls, then restore 1x.
 ## Continuous integration and packages
 
 `.github/workflows/cmake.yml` follows the NAC matrix on Linux, Windows, and
-macOS. It builds SDL3 from the pinned FetchContent source, runs the HDV-free
-core/hook suite (private-HDV tests skip with code 77), and creates a portable
-archive for each platform. A version tag such as `3.0.0-rc1` uploads those
-archives into a draft prerelease; no HDV is included.
+macOS. It builds SDL3 from the pinned FetchContent source, runs core, hook, and
+real-HDV boot/input tests, launches and captures the packaged Linux SDL app,
+and uploads a directly testable portable archive for each platform on every
+run. A version tag such as `3.0.0-rc1` also collects those archives into a draft
+prerelease. Each archive includes a verified clean HDV; the application copies
+it to per-user storage before normal play and never mutates the packaged
+template.
