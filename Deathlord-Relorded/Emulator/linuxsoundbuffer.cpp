@@ -1,6 +1,8 @@
 // std::min collides with the Windows.h min macro pulled in by StdAfx —
 // suppress the macros before any header is parsed.
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include "StdAfx.h"
 
 #include "linuxsoundbuffer.h"

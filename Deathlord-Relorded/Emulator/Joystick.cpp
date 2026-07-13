@@ -738,7 +738,7 @@ void JoyResetPosition(ULONG nExecutedCycles)
 			{
 				// rescale the circle to the square
 				const double ratio2 = (y * y) / (x * x);
-				const double c = min(ratio2, 1.0 / ratio2);
+				const double c = std::min(ratio2, 1.0 / ratio2);
 				const double coeff = sqrt(1.0 + c);
 				axis *= coeff;
 			}
