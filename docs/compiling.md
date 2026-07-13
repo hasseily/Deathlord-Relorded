@@ -4,12 +4,11 @@ DLRL uses CMake 3.20+, C++17, SDL3, OpenGL, and Dear ImGui. CMake uses an
 installed SDL3 when available and otherwise fetches the same pinned SDL release
 as NAC. ImGui is fetched at configure time.
 
-Put the extracted 2.0.1 release at
-`extras/deathlord-relorded-win-201/`. The directory is ignored by Git. Its
-`Images/Deathlord PRODOS.hdv` is used for the real boot tests and is staged as
-the immutable clean-game template. CI obtains the same archive from the
-project's public v2.0.1 GitHub release and verifies both the archive and HDV
-SHA-256 hashes before building.
+The canonical clean HDV and original master images are tracked in
+`assets/Images`. CMake stages that complete directory into every runnable
+build and package. CI verifies the checked-in image hashes before building;
+normal play copies the clean HDV to per-user storage and never mutates the
+source or packaged template.
 
 ## Windows
 
@@ -61,10 +60,9 @@ cmake -S . -B build-mac \
   -DFETCHCONTENT_SOURCE_DIR_IMGUI="$PWD/../NoxArchaistCompanion/build-mac/_deps/imgui-src"
 ```
 
-The HDV tests discover
-`extras/deathlord-relorded-win-201/Images/Deathlord PRODOS.hdv` by default or
-accept `-DDLRL_PRIVATE_HDV=/path/to/Deathlord.hdv`. They skip only when it is
-absent.
+The HDV tests use `assets/Images/Deathlord PRODOS.hdv` by default or accept
+`-DDLRL_TEST_HDV=/path/to/Deathlord.hdv`. A clean clone therefore runs them
+without any separate game download.
 
 Native visual tests are opt-in because they open a real window:
 
@@ -76,7 +74,7 @@ ctest --test-dir build-mac -R sdl_window_smoke --output-on-failure
 To run the bounded real-game modern-UI validation:
 
 ```sh
-ctest --test-dir build-mac -R sdl_live_game_smoke --output-on-failure
+ctest --test-dir build-mac -R sdl_clean_game_flow_smoke --output-on-failure
 ```
 
 The app itself also provides a bounded visual-development mode:

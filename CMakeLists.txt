@@ -172,21 +172,24 @@ add_custom_command(TARGET dlrl POST_BUILD
     VERBATIM
 )
 
-# The downloaded 2.0.1 release supplies the immutable clean-game template.
-# It is never tracked, but local/release builds stage it beside the portable
-# assets so the active per-user HDV can be replaced safely on request.
-set(DLRL_CLEAN_HDV_SOURCE
-    "${CMAKE_SOURCE_DIR}/extras/deathlord-relorded-win-201/Images/Deathlord PRODOS.hdv")
-if(EXISTS "${DLRL_CLEAN_HDV_SOURCE}")
-    add_custom_command(TARGET dlrl POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${DLRL_RESOURCE_DIR}/Images"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${DLRL_CLEAN_HDV_SOURCE}"
-            "${DLRL_RESOURCE_DIR}/Images/Deathlord PRODOS.hdv"
-        COMMENT "Staging clean DLRL HDV template"
-        VERBATIM
-    )
+# The tracked image tree supplies the immutable clean-game HDV and the
+# original master images. Normal play copies the HDV to per-user storage and
+# never writes to this packaged template.
+set(DLRL_IMAGE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/assets/Images")
+set(DLRL_CLEAN_HDV_SOURCE "${DLRL_IMAGE_SOURCE_DIR}/Deathlord PRODOS.hdv")
+if(NOT EXISTS "${DLRL_CLEAN_HDV_SOURCE}")
+    message(FATAL_ERROR "Missing canonical game HDV: ${DLRL_CLEAN_HDV_SOURCE}")
 endif()
+add_custom_command(TARGET dlrl POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${DLRL_IMAGE_SOURCE_DIR}"
+        "${DLRL_RESOURCE_DIR}/Images"
+    COMMAND ${CMAKE_COMMAND} -E rm -f
+        "${DLRL_RESOURCE_DIR}/Images/.DS_Store"
+        "${DLRL_RESOURCE_DIR}/Images/Original Master Images/.DS_Store"
+    COMMENT "Staging DLRL game images"
+    VERBATIM
+)
 
 if(BUILD_TESTING)
     add_executable(dlrl_core_smoke
@@ -215,12 +218,12 @@ if(BUILD_TESTING)
         DLRL_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Deathlord-Relorded/Emulator/Resources"
     )
 
-    set(DLRL_PRIVATE_HDV
-        "${CMAKE_CURRENT_SOURCE_DIR}/extras/deathlord-relorded-win-201/Images/Deathlord PRODOS.hdv"
-        CACHE FILEPATH "Private DLRL HDV used by local integration tests")
+    set(DLRL_TEST_HDV
+        "${DLRL_CLEAN_HDV_SOURCE}"
+        CACHE FILEPATH "DLRL HDV used by integration tests")
     add_test(NAME hdv_boot_capture
         COMMAND dlrl_capture
-            --hdv "${DLRL_PRIVATE_HDV}"
+            --hdv "${DLRL_TEST_HDV}"
             --frames 600
             --output "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-boot.bmp"
     )
@@ -231,7 +234,7 @@ if(BUILD_TESTING)
 
     add_test(NAME hdv_input_capture
         COMMAND dlrl_capture
-            --hdv "${DLRL_PRIVATE_HDV}"
+            --hdv "${DLRL_TEST_HDV}"
             --frames 1800
             --key-at 800
             --key X
@@ -242,10 +245,10 @@ if(BUILD_TESTING)
         PASS_REGULAR_EXPRESSION "pc=\\$1C27.*fnv1a64=466f292c38add1a7"
     )
 
-    if(DLRL_ENABLE_GUI_TESTS AND EXISTS "${DLRL_PRIVATE_HDV}")
+    if(DLRL_ENABLE_GUI_TESTS AND EXISTS "${DLRL_TEST_HDV}")
         add_test(NAME sdl_window_smoke
             COMMAND $<TARGET_FILE:dlrl>
-                --hdv "${DLRL_PRIVATE_HDV}"
+                --hdv "${DLRL_TEST_HDV}"
                 --smoke-frames 600
                 --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-host.bmp"
         )
@@ -253,9 +256,9 @@ if(BUILD_TESTING)
             LABELS "gui;visual"
             PASS_REGULAR_EXPRESSION "frames=600 pc=\\$1D3E"
         )
-        add_test(NAME sdl_live_game_smoke
+        add_test(NAME sdl_clean_game_flow_smoke
             COMMAND $<TARGET_FILE:dlrl>
-                --hdv "${DLRL_PRIVATE_HDV}"
+                --hdv "${DLRL_TEST_HDV}"
                 --smoke-frames 5000
                 --key-event 800:X
                 --key-event 1900:P
@@ -265,15 +268,15 @@ if(BUILD_TESTING)
                 --key-event 4000:SPACE
                 --key-event 4500:SPACE
                 --window-size 1920x1080
-                --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-live-game.bmp"
+                --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-clean-game-flow.bmp"
         )
-        set_tests_properties(sdl_live_game_smoke PROPERTIES
+        set_tests_properties(sdl_clean_game_flow_smoke PROPERTIES
             LABELS "gui;visual;hdv"
-            PASS_REGULAR_EXPRESSION "frames=5000 pc=\\$4AEF"
+            PASS_REGULAR_EXPRESSION "DLRL startup splash: dismissed with Space"
         )
         add_test(NAME sdl_startup_splash_smoke
             COMMAND $<TARGET_FILE:dlrl>
-                --hdv "${DLRL_PRIVATE_HDV}"
+                --hdv "${DLRL_TEST_HDV}"
                 --smoke-frames 4000
                 --key-event 800:X
                 --key-event 1900:P

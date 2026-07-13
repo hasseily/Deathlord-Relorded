@@ -152,6 +152,7 @@ struct AppState
     bool playLoadingAcceleration = false;
     bool startupSplash = false;
     bool startupSplashReady = false;
+    bool startupSplashCompleted = false;
     std::mutex pendingHdvMutex;
     std::filesystem::path pendingHdv;
     std::mutex pendingPartyDialogMutex;
@@ -354,6 +355,11 @@ void DismissStartupSplash(AppState& state)
     if (!state.startupSplash || !state.startupSplashReady) return;
     state.startupSplash = false;
     state.startupSplashReady = false;
+    state.startupSplashCompleted = true;
+    // The clean HDV waits for the same Space at the underlying Deathlord
+    // startup gate. Forward the dismissal so a brand-new game can continue
+    // into character creation rather than returning to the interstitial.
+    KeybQueueKeypress(' ', ASCII);
     SetPaused(state, false);
     std::puts("DLRL startup splash: dismissed with Space");
     std::fflush(stdout);
@@ -399,8 +405,7 @@ std::filesystem::path FindDevelopmentHdv()
         if (std::filesystem::exists(staged)) return staged;
         const auto packaged = dir / "Images" / "Deathlord PRODOS.hdv";
         if (std::filesystem::exists(packaged)) return packaged;
-        const auto local = dir / "extras" / "deathlord-relorded-win-201"
-                         / "Images" / "Deathlord PRODOS.hdv";
+        const auto local = dir / "assets" / "Images" / "Deathlord PRODOS.hdv";
         if (std::filesystem::exists(local)) return local;
         dir = dir.parent_path();
         if (dir.empty()) break;
@@ -545,6 +550,7 @@ void RebootEmulator(AppState& state)
     state.playLoadingAcceleration = false;
     state.startupSplash = false;
     state.startupSplashReady = false;
+    state.startupSplashCompleted = false;
     ApplySpeed(state);
     SetPaused(state, false);
 }
@@ -913,10 +919,17 @@ void ReceiveDlrlEvent(const dlrl::HookEvent& event, void* userData)
     }
     else if (event.type == dlrl::HookEventType::StartupSplash)
     {
-        state.startupSplash = true;
-        state.startupSplashReady = false;
-        std::puts("DLRL startup splash: pre-game validation complete");
-        std::fflush(stdout);
+        if (!state.startupSplash && !state.startupSplashCompleted)
+        {
+            state.startupSplash = true;
+            state.startupSplashReady = true;
+            state.playLoadingAcceleration = false;
+            state.requestedSpeedIndex = 1;
+            std::puts("DLRL startup splash: pre-game validation complete");
+            std::puts("DLRL internal speed: main game ready at 1x");
+            std::puts("DLRL startup splash: waiting for Space");
+            std::fflush(stdout);
+        }
     }
 }
 
@@ -1983,10 +1996,8 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     if (state.playLoadingAcceleration && state.hooks.State().inGameMap)
     {
         state.playLoadingAcceleration = false;
-        state.startupSplashReady = true;
         state.requestedSpeedIndex = 1;
         std::puts("DLRL internal speed: main game ready at 1x");
-        std::puts("DLRL startup splash: waiting for Space");
         std::fflush(stdout);
     }
     if (state.requestedSpeedIndex >= 0)

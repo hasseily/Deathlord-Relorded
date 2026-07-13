@@ -48,6 +48,6 @@
 # Apple
 **/.DS_Store
 
-# Local release builds and private game images
+# Optional local release scratch data
 /extras/
 /imgui.ini

@@ -1,8 +1,8 @@
 # Visual regression fixtures
 
-The private DLRL HDV is not tracked. `hdv_boot_capture` copies the ignored
-source image to a temporary working image, executes 600 emulated frames, and
-writes `build-mac/Testing/dlrl-boot.bmp`.
+The canonical DLRL HDV is tracked at `assets/Images/Deathlord PRODOS.hdv`.
+`hdv_boot_capture` copies it to a temporary working image, executes 600
+emulated frames, and writes `build-mac/Testing/dlrl-boot.bmp`.
 
 For the 2.0.1 HDV identified in the multiplatform roadmap, the approved boot
 checkpoint is:
@@ -25,9 +25,9 @@ BMP SHA-256:      66ea5affd533ee4065e0f9d9bff43a5662c6d36a18ebfc5a430b1ac34c761a
 visible state:    Deathlord main menu
 ```
 
-The test skips with CTest code 77 when the private HDV is absent. A visual
-change is accepted only after opening the new capture and updating these values
-and the CTest expectation together.
+The test skips with CTest code 77 only when its configured test HDV is absent.
+A visual change is accepted only after opening the new capture and updating
+these values and the CTest expectation together.
 
 The real-window smoke gate is enabled with `-DDLRL_ENABLE_GUI_TESTS=ON`. It
 creates the default 1280x900 SDL/OpenGL window, composes the ImGui menu and
@@ -81,21 +81,21 @@ The large-window command requests 1920x1080. On the development Mac SDL clamps
 that to its 1800x1080 usable display area. The inspected current baseline is
 `a5d256ef5068bf9d027171ecfe17061075371636268776807cd4799ea6a0cfb0`.
 
-`sdl_live_game_smoke` is the gameplay truth test. It uses a temporary copy of
-the ignored release HDV, schedules the real title/menu keys, and reaches the
-bundled ATEAM party in INDOO at PC `$4AEF`. The 1800x1080 host capture proves
-the map uses real RAM rather than fixture terrain and that all six cards render
-class/race, six attributes, status, and all eight live inventory/equipment
-rows (empty slots are retained as dotted rows, matching v2):
+`sdl_clean_game_flow_smoke` uses a temporary copy of the tracked clean HDV,
+schedules the real title/menu keys, dismisses the Relorded interstitial with
+Space, and continues into Deathlord's no-party setup flow. This verifies that
+the host forwards the dismissal key to the emulated game and never mutates the
+canonical image:
 
 ```
-SHA-256:       642164180aa4fd8cbec85d8c5cf390e533bb2ad46c7dd1983b6832b5a1e5f655
-visible state: real INDOO town at 2x FollowPlayer and numbered bundled ATEAM party using the original Deathlord font
+SHA-256:       4393a0590facc01ecaa3d5edde7ad4d90df62d7560061bed742f89462779ae8d
+visible state: clean-HDV no-party setup screen after the Relorded interstitial
 ```
 
-`sdl_startup_splash_smoke` follows the same accelerated HDV path but omits
-Space. It verifies that the emulator pauses only once the main map is ready,
-leaving the v2 Relorded credits artwork and its `PRESS SPACE` prompt visible:
+`sdl_startup_splash_smoke` follows the same accelerated clean-HDV path but
+omits Space. It verifies that the emulator returns to 1x and pauses at the
+validated startup gate, leaving the v2 Relorded credits artwork and its
+`PRESS SPACE` prompt visible:
 
 ```
 SHA-256:       bbe4ac28dee0bd00f909c5eccfc96969c86d1063569d48b9c78d04fe51a9ec0b

@@ -90,10 +90,10 @@ ported. It is deleted after its final feature has a portable replacement.
   movement/stash/discard behavior, log file load/save, floating combat text,
   and complete fog/marker controls remain.
 - The NAC-shaped CI/package workflow is present for Linux, Windows, and macOS.
-  It verifies the author's public 2.0.1 release and clean HDV hashes, runs the
-  core/hook and real-HDV tests, performs a packaged Linux SDL capture, and
-  publishes testable archives from every run. Windows uses the Visual Studio
-  2026 runner/toolset; signing and full release validation remain pending.
+  It verifies the tracked canonical game-image hashes, runs the core/hook and
+  real-HDV tests, performs a packaged Linux SDL capture, and publishes testable
+  archives from every run. Windows uses the Visual Studio 2026 runner/toolset;
+  signing and full release validation remain pending.
 
 ## Milestone 0 - foundation and audit
 
@@ -300,9 +300,8 @@ Deliverables:
 - Windows stages SDL3 and runtime resources next to the executable.
 - Linux produces a relocatable archive initially; AppImage can follow if
   distribution demand justifies it.
-- Release artifacts contain the clean HDV from the author's existing public
-  v2.0.1 release, verified by SHA-256; no local or active player HDV is ever
-  packaged.
+- Release artifacts contain the tracked clean HDV and original master images,
+  verified by SHA-256; no local or active player HDV is ever packaged.
 
 Acceptance matrix:
 
@@ -346,23 +345,24 @@ The port must be inspectable without relying on an indefinitely running GUI:
   make DirectX types compile on other platforms.
 - **OpenGL on macOS:** follow NAC's working 4.1-core path despite deprecation;
   changing graphics APIs is outside this migration.
-- **Private game data:** tests must skip cleanly when the HDV is absent, while
-  public emulator/unit tests always run.
+- **Bundled game data:** the canonical HDV must remain immutable during tests
+  and normal play; all writes go to temporary or per-user copies.
 
-## Local private test fixture
+## Canonical game-image fixture
 
-The author's Windows 2.0.1 release is available only in the ignored directory
-`extras/deathlord-relorded-win-201/`. The development HDV is:
+The clean HDV and original master images are tracked under `assets/Images`.
+The integration-test and clean-new-game template is:
 
 ```
-extras/deathlord-relorded-win-201/Images/Deathlord PRODOS.hdv
+assets/Images/Deathlord PRODOS.hdv
 size:   819200 bytes (1600 ProDOS blocks)
 volume: /DEATHLORD
-sha256: f25f6174554c3341739f7b6d3026d56b375255cfab98ddd0ba4dcac70a723a6d
+sha256: 32311bcd479d902c693a0e14fee572f64cc4661d2c0cf32b28400170d3cf33d9
 ```
 
-Tests discover it through `DLRL_HDV`, with that path as a source-tree-local
-developer fallback. The fallback is never staged or packaged.
+Tests use it through the `DLRL_TEST_HDV` CMake cache variable. Builds stage the
+whole `assets/Images` directory, while tests and normal play write only to
+temporary or per-user copies.
 
 ## Definition of done
 

@@ -149,7 +149,7 @@ int main(int argc, char** argv)
     }
     if (!std::filesystem::exists(options.hdv))
     {
-        std::fprintf(stderr, "SKIP: private HDV not found: %s\n", options.hdv.string().c_str());
+        std::fprintf(stderr, "SKIP: test HDV not found: %s\n", options.hdv.string().c_str());
         return 77;
     }
 

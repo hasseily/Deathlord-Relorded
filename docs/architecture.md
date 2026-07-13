@@ -29,14 +29,13 @@ portable AppleWin core + SmartPort HDV
 
 ## Runtime data
 
-CMake stages Apple //e ROMs, GLSL shaders, postprocessor presets/assets, and
-DLRL presentation assets beside the executable or into the macOS bundle's
-`Contents/Resources`. The game HDV is private data and is never staged from
-`extras/`.
+CMake stages Apple //e ROMs, GLSL shaders, postprocessor presets/assets, DLRL
+presentation assets, and the complete tracked `assets/Images` tree beside the
+executable or into the macOS bundle's `Contents/Resources`.
 
-On the first development launch, the ignored 2.0.1 release HDV is copied to the
-directory returned by `SDL_GetPrefPath("Rikkles", "DeathlordRelorded")`. Normal
-play therefore never mutates the pristine fixture. Explicitly opened HDVs are
+On first launch, the bundled clean HDV is copied to the directory returned by
+`SDL_GetPrefPath("Rikkles", "DeathlordRelorded")`. Normal play therefore never
+mutates the pristine tracked or packaged template. Explicitly opened HDVs are
 used in place, because they are user-selected save images.
 
 ## Visual test path
@@ -49,7 +48,7 @@ Approved checkpoints live in `tests/visual/README.md`.
 The `--ui-fixture` path seeds representative party RAM and freezes the CPU. Its
 `--ui-fixture-mode battle|inventory|loading|gameover` variants drive the same runtime
 overlay paths from deterministic state. Together they exercise modern
-asset/layout rendering independently of the private HDV and save-game state.
+asset/layout rendering independently of the clean HDV and save-game state.
 The automap reads Deathlord's 64x64 RAM map and composes native 28x32 sprites
 into one cached 1792x2048 RGBA texture only when the map signature changes.
 Linear filtering scales it into the legacy 896x1024 viewport, matching the old

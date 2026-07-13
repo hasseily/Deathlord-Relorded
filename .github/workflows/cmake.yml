@@ -32,10 +32,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # The author-provided 2.0.1 release is the canonical source for the
-      # immutable clean HDV. Keep it out of Git, but stage and verify it for
-      # real boot tests and complete distributable packages on every OS.
-      - name: Fetch clean game HDV
+      # The tracked image tree is the canonical source for the immutable clean
+      # HDV and the original master images. Verify it before tests/package work.
+      - name: Verify game images
         shell: bash
         run: |
           set -euo pipefail
@@ -50,18 +49,18 @@ jobs:
               exit 1
             fi
           }
-          mkdir -p extras
-          archive="extras/deathlord-relorded-win-201.zip"
-          curl -L --fail --retry 3 \
-            https://github.com/hasseily/Deathlord-Relorded/releases/download/v2.0.1/deathlord-relorded-win-201.zip \
-            -o "$archive"
           verify_sha256 \
-            1efb57a4b2062f8d8012a70442ebcd3bc74fd546c4811a16f621a5c01387073f \
-            "$archive"
-          (cd extras && cmake -E tar xf deathlord-relorded-win-201.zip)
+            32311bcd479d902c693a0e14fee572f64cc4661d2c0cf32b28400170d3cf33d9 \
+            "assets/Images/Deathlord PRODOS.hdv"
           verify_sha256 \
-            f25f6174554c3341739f7b6d3026d56b375255cfab98ddd0ba4dcac70a723a6d \
-            "extras/deathlord-relorded-win-201/Images/Deathlord PRODOS.hdv"
+            c63561b59e56016324b568843c24dfa90b16cfb5b902dc95bcfca2b344da1d03 \
+            "assets/Images/Original Master Images/Deathlord - Disk 1, Side A Boot disk.woz"
+          verify_sha256 \
+            d256156af0827e4e9a01b6053c2fcfb96c6a915f7b744c13ac53caf358ea6cba \
+            "assets/Images/Original Master Images/Deathlord - Disk 2, Side A Master scenario A.woz"
+          verify_sha256 \
+            1ad716e3b17f56ca8a1038715d5b5615ebf55dd58283479390892b26889f669f \
+            "assets/Images/Original Master Images/Deathlord - Disk 2, Side A Master scenario B.woz"
 
       # SDL3 is built by FetchContent. These are the same runner dependencies
       # used by NAC so SDL detects complete Linux video/audio/GL backends.
@@ -85,7 +84,7 @@ jobs:
         run: cmake --build build --config Release --parallel
 
       # Includes deterministic boot and input captures against the canonical
-      # clean HDV staged above, in addition to core and hook tests.
+      # clean HDV, in addition to core and hook tests.
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
 

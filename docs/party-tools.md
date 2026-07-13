@@ -5,8 +5,9 @@ The File menu owns four destructive/persistence-related tools.
 ## Clean new game
 
 The active writable HDV is a per-user copy. The immutable clean template comes
-from `extras/deathlord-relorded-win-201/Images/Deathlord PRODOS.hdv` during a
-development build and is staged as `Resources/Images/Deathlord PRODOS.hdv`.
+from `assets/Images/Deathlord PRODOS.hdv` and is staged as
+`Resources/Images/Deathlord PRODOS.hdv` in the macOS bundle or
+`Images/Deathlord PRODOS.hdv` beside the Windows/Linux executable.
 After confirmation, DLRL closes the SmartPort image, prepares a complete
 temporary copy, swaps it over the active HDV with a recoverable backup, removes
 the backup after success, reinserts the active image, and power-cycles the
