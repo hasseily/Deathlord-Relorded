@@ -178,6 +178,10 @@ int main()
           "clean-new-game replacement overwrites only the active image and cleans its workspace");
     Check(!ReplaceFileFromTemplate(cleanTemplate, cleanTemplate, transferError),
           "clean-new-game replacement refuses to overwrite its own template");
+    // Windows does not permit deleting files while an input stream still has
+    // an open handle. POSIX tolerated this and hid the test cleanup bug.
+    replaced.close();
+    preserved.close();
     std::filesystem::remove_all(transferDirectory);
 
     InventoryState inventoryState;
