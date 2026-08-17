@@ -57,6 +57,20 @@ constexpr std::uint16_t PartyCharisma = 0xFD90;
 constexpr std::uint16_t PartyMagicUserType = 0xFDA2;
 constexpr std::uint16_t CurrentPlayerTile = 0x0328;
 constexpr std::uint16_t MapMonsterSpriteIds = 0x08EF;
+constexpr std::uint16_t MapVisibilityRadius = 0xFC05;
+constexpr std::uint16_t MapId = 0xFC4E;
+constexpr std::uint16_t MapFloor = 0xFC4F;
+
+// Live monster tracking, used to recover the static tile a monster stands on.
+// Overland and towns track 32 monsters; dungeons track 16 per floor times 4.
+constexpr std::uint16_t OverlandMonsterX = 0x0800;
+constexpr std::uint16_t OverlandMonsterY = 0x0820;
+constexpr std::uint16_t OverlandMonsterTile = 0x0860;
+constexpr std::uint8_t OverlandMonsterCount = 32;
+constexpr std::uint16_t DungeonMonsterX = 0x0800;
+constexpr std::uint16_t DungeonMonsterY = 0x0840;
+constexpr std::uint16_t DungeonMonsterTile = 0x0AC0;
+constexpr std::uint8_t DungeonMonsterCount = 64;
 
 constexpr std::uint16_t CharacterCreateRng = 0x6500;
 constexpr std::uint16_t CharacterCreateAttributes = 0x71F2;

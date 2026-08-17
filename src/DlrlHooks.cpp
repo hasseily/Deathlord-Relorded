@@ -45,6 +45,15 @@ void SkipTo(CpuInstructionHookResult& result, std::uint16_t pc,
     result.skipOpcode = consumeIteration;
 }
 
+// The Apple //e latches lowercase letters when the emulated caps lock is off
+// (easy to toggle while naming a character). Deathlord itself treats letters
+// case-insensitively, so the menu and autoroll hooks must as well.
+BYTE UppercaseKey(BYTE key)
+{
+    const BYTE plain = key & 0x7F;
+    return plain >= 'a' && plain <= 'z' ? static_cast<BYTE>(key & ~0x20) : key;
+}
+
 bool IsPoisonResistantClass(BYTE value)
 {
     const auto characterClass = static_cast<CharacterClass>(value);
@@ -226,7 +235,7 @@ CpuInstructionHookResult DlrlHooks::HandleInstruction(std::uint16_t pc)
         case PcMenuKey:
             state_.startMenu = regs.a > 0x7F ? StartMenuState::Other
                                              : StartMenuState::Menu;
-            if (regs.a == ('P' | 0x80))
+            if (UppercaseKey(regs.a) == ('P' | 0x80))
                 Emit(HookEventType::RequestSpeed, pc, -1, 6);
             break;
         case PcStartupSplash:
@@ -252,7 +261,7 @@ CpuInstructionHookResult DlrlHooks::HandleInstruction(std::uint16_t pc)
             case StartMenuState::AttributesRerollCancelled:
             case StartMenuState::AttributesRerollDone:
             case StartMenuState::AttributesRerollPropose:
-                if (regs.a == ('A' | 0x80))
+                if (UppercaseKey(regs.a) == ('A' | 0x80))
                 {
                     state_.rerollCount = 0;
                     state_.startMenu = StartMenuState::AttributesRerolling;
@@ -260,7 +269,7 @@ CpuInstructionHookResult DlrlHooks::HandleInstruction(std::uint16_t pc)
                     regs.pc = 0x7C16;
                     Emit(HookEventType::RequestSpeed, pc, -1, 6);
                 }
-                else if (regs.a == ('N' | 0x80))
+                else if (UppercaseKey(regs.a) == ('N' | 0x80))
                 {
                     state_.startMenu = StartMenuState::AttributesRerollPropose;
                     Ram(0xC000) = 0;
@@ -285,7 +294,7 @@ CpuInstructionHookResult DlrlHooks::HandleInstruction(std::uint16_t pc)
         case PcCharacterWaitKey:
             if (state_.startMenu == StartMenuState::AttributesRerolling)
             {
-                if (regs.a != 'A' && regs.a != 0)
+                if (UppercaseKey(regs.a) != 'A' && regs.a != 0)
                 {
                     state_.startMenu = StartMenuState::AttributesRerollCancelled;
                     Emit(HookEventType::RequestSpeed, pc, -1, 1);

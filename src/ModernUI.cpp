@@ -8,6 +8,7 @@
 #include "Emulator/Memory.h"
 
 #include <imgui.h>
+#include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <array>
@@ -15,6 +16,7 @@
 #include <cctype>
 #include <cstring>
 #include <cstdio>
+#include <fstream>
 #include <string>
 
 namespace dlrl
@@ -26,6 +28,90 @@ using namespace deathlord;
 
 constexpr float CanvasWidth = 1904.0f;
 constexpr float CanvasHeight = 1041.0f;
+
+constexpr int MapLength = 64 * 64;
+constexpr std::uint8_t FogSeen = 0x01;
+constexpr std::uint8_t FogFootstep = 0x02;
+constexpr int LosMaxDistance = 16;
+constexpr float RememberedTileVisibility = 0.15f;
+
+// Tile ids that stop line of sight (v2 TILES_*_BLOCKVIS tables).
+constexpr std::array<std::uint8_t, 0x50> OverlandBlocksSight = {
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+constexpr std::array<std::uint8_t, 0x50> DungeonBlocksSight = {
+    0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+// v2 map naming: overland sectors by coordinates, everything else by map id,
+// type, and floor. The fog markers persist under these names.
+std::string FogMapName()
+{
+    char buffer[24];
+    if (MemGetMainPtr(MapType)[0] == 1)
+        std::snprintf(buffer, sizeof(buffer), "Overland_%02d_%02d",
+                      MemGetMainPtr(MapOverlandX)[0], MemGetMainPtr(MapOverlandY)[0]);
+    else
+        std::snprintf(buffer, sizeof(buffer), "Map_%03d_%02d_%02d",
+                      MemGetMainPtr(MapId)[0], MemGetMainPtr(MapType)[0],
+                      MemGetMainPtr(MapFloor)[0]);
+    return buffer;
+}
+
+// The static tile a monster is standing on, recovered from the game's live
+// monster tracking arrays (v2 StaticTileIdAtMapPosition).
+BYTE StaticTileAt(int x, int y)
+{
+    const bool dungeon = MemGetMainPtr(MapType)[0] == 2;
+    const int count = dungeon ? DungeonMonsterCount : OverlandMonsterCount;
+    const BYTE* xs = MemGetMainPtr(dungeon ? DungeonMonsterX : OverlandMonsterX);
+    const BYTE* ys = MemGetMainPtr(dungeon ? DungeonMonsterY : OverlandMonsterY);
+    const BYTE* tiles =
+        MemGetMainPtr(dungeon ? DungeonMonsterTile : OverlandMonsterTile);
+    for (int i = 0; i < count; ++i)
+        if (xs[i] == x && ys[i] == y) return tiles[i];
+    return MemGetMainPtr(GameMap)[x + y * 64];
+}
+
+std::string EncodeHex(const std::vector<std::uint8_t>& data)
+{
+    static const char digits[] = "0123456789abcdef";
+    std::string text;
+    text.reserve(data.size() * 2);
+    for (const std::uint8_t byte : data)
+    {
+        text.push_back(digits[byte >> 4]);
+        text.push_back(digits[byte & 0x0F]);
+    }
+    return text;
+}
+
+std::vector<std::uint8_t> DecodeHex(const std::string& text)
+{
+    auto nibble = [](char digit) -> int
+    {
+        if (digit >= '0' && digit <= '9') return digit - '0';
+        if (digit >= 'a' && digit <= 'f') return digit - 'a' + 10;
+        if (digit >= 'A' && digit <= 'F') return digit - 'A' + 10;
+        return -1;
+    };
+    std::vector<std::uint8_t> data;
+    data.reserve(text.size() / 2);
+    for (std::size_t i = 0; i + 1 < text.size(); i += 2)
+    {
+        const int high = nibble(text[i]);
+        const int low = nibble(text[i + 1]);
+        if (high < 0 || low < 0) return {};
+        data.push_back(static_cast<std::uint8_t>((high << 4) | low));
+    }
+    return data;
+}
 constexpr std::array<float, 6> PartyX = {17, 17, 17, 1570, 1570, 1570};
 constexpr std::array<float, 6> PartyY = {386, 606, 826, 386, 606, 826};
 constexpr std::array<const char*, 16> ClassNames = {
@@ -297,6 +383,9 @@ bool ModernUI::ConsumeInventoryChanged()
 
 void ModernUI::SeedVisualFixture()
 {
+    // Fixtures exercise layout with deterministic RAM; fog would black most
+    // of the seeded map out and never persists from fixture runs.
+    fogDisabled_ = true;
     sectorsSeen_.fill(false);
     for (int x = 2; x <= 10; ++x) sectorsSeen_[8 * 16 + x] = true;
     for (int y = 4; y <= 8; ++y) sectorsSeen_[y * 16 + 6] = true;
@@ -307,11 +396,13 @@ void ModernUI::SeedVisualFixture()
     log_.push_back({"KENJI FOUND 42 GP", false});
     log_.push_back({"A HIDDEN DOOR!", true});
     log_.push_back({"PARTY ENTERS KAWAH", false});
+    longLog_.clear();
     for (int line = 5; line <= 32; ++line)
     {
         char history[19];
         std::snprintf(history, sizeof(history), "HISTORY LINE %02d", line);
         log_.push_back({history, false});
+        longLog_.push_back(history);
     }
     billboard_[0] = {"\x7eS\x7f SEARCH", true};
     billboard_[1] = {"\x7e" "C\x7f CAST SPELL", false};
@@ -455,9 +546,209 @@ void ModernUI::HandleEvent(const HookEvent& event)
     }
 }
 
-void ModernUI::UpdateMapTexture()
+void ModernUI::SetFogOfWarPath(const std::filesystem::path& path)
 {
+    fogPath_ = path;
+    fogStore_.clear();
+    if (fogPath_.empty() || !std::filesystem::exists(fogPath_)) return;
+    try
+    {
+        std::ifstream input(fogPath_);
+        nlohmann::json json;
+        input >> json;
+        if (json.contains("maps"))
+            for (const auto& [name, value] : json["maps"].items())
+            {
+                auto markers = DecodeHex(value.get<std::string>());
+                if (markers.size() == MapLength) fogStore_[name] = std::move(markers);
+            }
+        const auto sectors = DecodeHex(json.value("sectors_seen", std::string{}));
+        if (sectors.size() == sectorsSeen_.size())
+            for (std::size_t i = 0; i < sectors.size(); ++i)
+                sectorsSeen_[i] = sectors[i] != 0;
+    }
+    catch (const std::exception& error)
+    {
+        std::fprintf(stderr, "Unable to load fog of war: %s\n", error.what());
+    }
+}
+
+void ModernUI::SaveFogOfWar()
+{
+    if (fogPath_.empty() || fogDisabled_) return;
+    if (!fogMapName_.empty()) fogStore_[fogMapName_] = fogSeen_;
+    try
+    {
+        nlohmann::json maps = nlohmann::json::object();
+        for (const auto& [name, markers] : fogStore_) maps[name] = EncodeHex(markers);
+        std::vector<std::uint8_t> sectors(sectorsSeen_.size());
+        for (std::size_t i = 0; i < sectorsSeen_.size(); ++i)
+            sectors[i] = sectorsSeen_[i] ? 1 : 0;
+        const nlohmann::json json = {
+            {"maps", maps},
+            {"sectors_seen", EncodeHex(sectors)},
+        };
+        std::ofstream output(fogPath_);
+        output << json.dump();
+    }
+    catch (const std::exception& error)
+    {
+        std::fprintf(stderr, "Unable to save fog of war: %s\n", error.what());
+    }
+}
+
+void ModernUI::ResetFogOfWar()
+{
+    fogStore_.clear();
+    std::fill(fogSeen_.begin(), fogSeen_.end(), 0);
+    std::fill(losVisible_.begin(), losVisible_.end(), 0);
+    sectorsSeen_.fill(false);
+    fogMapName_.clear();
+    fogAvatarX_ = -1;
+    fogAvatarY_ = -1;
+    losRadius_ = 0;
+    ++fogEpoch_;
+    if (!fogPath_.empty())
+    {
+        std::error_code ignored;
+        std::filesystem::remove(fogPath_, ignored);
+    }
+}
+
+int ModernUI::LosRadius(bool extraRaceAndClassBonuses) const
+{
+    const BYTE mapType = MemGetMainPtr(MapType)[0];
+    const int gameRadius = MemGetMainPtr(MapVisibilityRadius)[0];
+    int radius = 0;
+    if (mapType == 1)
+    {
+        // Overland visibility follows the time of day (v2 UpdateLOSRadius):
+        // nothing at night, full during the day, ramps at dawn and dusk.
+        const int hour = MemGetMainPtr(DayHour)[0] % 24;
+        const BYTE minuteBcd = MemGetMainPtr(DayMinute)[0];
+        const float time = hour
+            + std::min(59, ((minuteBcd >> 4) * 10) + (minuteBcd & 0x0F)) / 60.0f;
+        if (time <= 4.0f || time >= 21.0f) radius = 0;
+        else if (time >= 7.0f && time <= 18.0f) radius = LosMaxDistance;
+        else if (time < 7.0f)
+            radius = static_cast<int>(LosMaxDistance * (time - 4.0f) / 3.0f);
+        else
+            radius = static_cast<int>(LosMaxDistance * (1.0f - (time - 18.0f) / 3.0f));
+    }
+    else if (mapType == 0)
+    {
+        radius = LosMaxDistance; // towns always get the big radius
+    }
+    else
+    {
+        const int leader = MemGetMainPtr(PartyLeader)[0] % PartySize;
+        const bool gnomeLeader =
+            (Party(PartyRace, leader) & 0x07) == static_cast<int>(Race::Gnome);
+        radius = gnomeLeader && extraRaceAndClassBonuses ? LosMaxDistance : gameRadius;
+    }
+    // Never less than the game's own radius: torches and light spells win.
+    return std::max(radius, gameRadius);
+}
+
+void ModernUI::CalculateLos()
+{
+    std::fill(losVisible_.begin(), losVisible_.end(), 0);
+    ++fogEpoch_;
+    if (fogAvatarX_ < 0 || fogAvatarX_ >= 64 || fogAvatarY_ < 0 || fogAvatarY_ >= 64)
+        return;
+    const int avatarPos = fogAvatarX_ + fogAvatarY_ * 64;
+    losVisible_[avatarPos] = 1;
+    fogSeen_[avatarPos] |= FogSeen;
+    if (losRadius_ <= 0) return;
+
+    // v2 CalculateLOS: sweep rays through a full circle in half-tile steps.
+    // A blocking tile is itself revealed but ends its ray.
     const BYTE* map = MemGetMainPtr(GameMap);
+    const auto& blocks = MemGetMainPtr(MapType)[0] == 1 ? OverlandBlocksSight
+                                                        : DungeonBlocksSight;
+    const float centerX = fogAvatarX_ + 0.5f;
+    const float centerY = fogAvatarY_ + 0.5f;
+    const int steps = losRadius_ * 2;
+    for (float angle = 0.0f; angle < 6.2831853f; angle += 0.002f)
+    {
+        const float directionX = std::cos(angle);
+        const float directionY = std::sin(angle);
+        for (int step = 1; step <= steps; ++step)
+        {
+            const float distance = step * 0.5f;
+            const int x = static_cast<int>(std::floor(centerX + directionX * distance));
+            const int y = static_cast<int>(std::floor(centerY + directionY * distance));
+            if (x < 0 || x >= 64 || y < 0 || y >= 64) break;
+            if (x == fogAvatarX_ && y == fogAvatarY_) continue;
+            const int pos = x + y * 64;
+            losVisible_[pos] = 1;
+            fogSeen_[pos] |= FogSeen;
+            if (blocks[map[pos] % 0x50]) break;
+        }
+    }
+}
+
+void ModernUI::UpdateMapTexture(bool inBattle, bool inTransition,
+                                bool extraRaceAndClassBonuses)
+{
+    // The map memory and identifiers are unreliable during battles (v2 froze
+    // the automap there too); keep showing the last composed map.
+    if (inBattle) return;
+
+    const BYTE* map = MemGetMainPtr(GameMap);
+
+    if (!fogDisabled_)
+    {
+        // Per-map persistence: entering a new map saves the old markers and
+        // restores whatever the player already discovered on the new one.
+        const std::string mapName = FogMapName();
+        if (mapName != fogMapName_)
+        {
+            if (!fogMapName_.empty()) fogStore_[fogMapName_] = fogSeen_;
+            fogMapName_ = mapName;
+            auto& stored = fogStore_[mapName];
+            stored.resize(MapLength, 0);
+            fogSeen_ = stored;
+            std::fill(losVisible_.begin(), losVisible_.end(), 0);
+            fogAvatarX_ = -1;
+            fogAvatarY_ = -1;
+            losRadius_ = 0;
+            ++fogEpoch_;
+            SaveFogOfWar();
+        }
+
+        bool losDirty = false;
+        const int avatarX = MemGetMainPtr(MapX)[0];
+        const int avatarY = MemGetMainPtr(MapY)[0];
+        if (avatarX < 64 && avatarY < 64
+            && (avatarX != fogAvatarX_ || avatarY != fogAvatarY_))
+        {
+            fogAvatarX_ = avatarX;
+            fogAvatarY_ = avatarY;
+            fogSeen_[avatarX + avatarY * 64] |= FogSeen | FogFootstep;
+            losDirty = true;
+        }
+        const int radius = inTransition ? 0 : LosRadius(extraRaceAndClassBonuses);
+        if (radius != losRadius_)
+        {
+            losRadius_ = radius;
+            losDirty = true;
+        }
+        std::uint64_t contentHash = 1469598103934665603ull;
+        for (std::size_t i = 0; i < MapLength; ++i)
+        {
+            contentHash ^= map[i];
+            contentHash *= 1099511628211ull;
+        }
+        if (contentHash != mapContentHash_)
+        {
+            // Opened doors, dug walls, and moving monsters change sight lines.
+            mapContentHash_ = contentHash;
+            losDirty = true;
+        }
+        if (losDirty) CalculateLos();
+    }
+
     std::uint64_t signature = 1469598103934665603ull;
     for (std::size_t i = 0; i < 64 * 64; ++i)
     {
@@ -478,15 +769,22 @@ void ModernUI::UpdateMapTexture()
         signature ^= MemGetMainPtr(MapMonsterSpriteIds)[index];
         signature *= 1099511628211ull;
     }
+    signature ^= fogEpoch_;
+    signature *= 1099511628211ull;
     if (signature == mapSignature_ && mapTexture_.IsValid()) return;
 
     constexpr int tileWidth = 28;
     constexpr int tileHeight = 32;
     constexpr int mapWidth = 64 * tileWidth;
     constexpr int mapHeight = 64 * tileHeight;
+    // v2 composed the automap over a cleared (black) render target, so
+    // unexplored terrain reads as darkness — never the parchment behind it.
     mapPixels_.assign(static_cast<std::size_t>(mapWidth) * mapHeight * 4, 0);
+    for (std::size_t offset = 3; offset < mapPixels_.size(); offset += 4)
+        mapPixels_[offset] = 255;
 
-    auto blit = [&](const Texture& sheet, int sprite, int columns, int tileX, int tileY)
+    auto blit = [&](const Texture& sheet, int sprite, int columns, int tileX, int tileY,
+                    float opacity)
     {
         const auto& source = sheet.Pixels();
         if (source.empty()) return;
@@ -504,8 +802,14 @@ void ModernUI::UpdateMapTexture()
                     (static_cast<std::size_t>(tileY * tileHeight + y) * mapWidth
                      + tileX * tileWidth + x) * 4;
                 if (source[sourceOffset + 3] == 0) continue;
-                std::copy_n(source.data() + sourceOffset, 4,
-                            mapPixels_.data() + destinationOffset);
+                // Remembered tiles fade toward black exactly like v2's alpha
+                // blend over its cleared target.
+                for (int channel = 0; channel < 3; ++channel)
+                    mapPixels_[destinationOffset + channel] = opacity >= 1.0f
+                        ? source[sourceOffset + channel]
+                        : static_cast<std::uint8_t>(
+                              source[sourceOffset + channel] * opacity);
+                mapPixels_[destinationOffset + 3] = 255;
             }
         }
     };
@@ -516,7 +820,22 @@ void ModernUI::UpdateMapTexture()
     {
         for (int x = 0; x < 64; ++x)
         {
-            const BYTE id = static_cast<BYTE>(map[x + y * 64] % 0x50);
+            const int posIndex = x + y * 64;
+            // v2 tile visibility: full in line of sight, ghosted when only
+            // remembered, parchment when never seen.
+            float visibility = 1.0f;
+            if (!fogDisabled_)
+                visibility = losVisible_[posIndex] ? 1.0f
+                           : (fogSeen_[posIndex] & FogSeen) ? RememberedTileVisibility
+                                                            : 0.0f;
+            if (visibility <= 0.0f) continue;
+            BYTE id = static_cast<BYTE>(map[posIndex] % 0x50);
+            if (id >= 0x40 && visibility < 1.0f)
+            {
+                // Monsters only appear in full sight; remembered tiles show
+                // the static terrain they cover.
+                id = static_cast<BYTE>(StaticTileAt(x, y) % 0x50);
+            }
             if (id < 0x40)
             {
                 int elementRow = -1;
@@ -533,14 +852,15 @@ void ModernUI::UpdateMapTexture()
                     else if (id == 0x2D) elementRow = 1;
                     else if (id == 0x38) elementRow = 3;
                 }
-                if (elementRow >= 0) blit(animatedElements_, elementRow * 7, 7, x, y);
-                else blit(environment, id, 16, x, y);
+                if (elementRow >= 0)
+                    blit(animatedElements_, elementRow * 7, 7, x, y, visibility);
+                else blit(environment, id, 16, x, y, visibility);
             }
             else
             {
                 const int localMonster = id - 0x40;
                 const BYTE monster = MemGetMainPtr(MapMonsterSpriteIds)[localMonster];
-                blit(monsters_, monster, 16, x, y);
+                blit(monsters_, monster, 16, x, y, visibility);
             }
         }
     }
@@ -548,7 +868,8 @@ void ModernUI::UpdateMapTexture()
     const int avatarX = MemGetMainPtr(MapX)[0];
     const int avatarY = MemGetMainPtr(MapY)[0];
     if (avatarX < 64 && avatarY < 64)
-        blit(monsters_, MemGetMainPtr(PartyCurrentClass)[0] & 0x0F, 16, avatarX, avatarY);
+        blit(monsters_, MemGetMainPtr(PartyCurrentClass)[0] & 0x0F, 16,
+             avatarX, avatarY, 1.0f);
 
     // Match the DX12 AutoMap: compose native 28x32 sprites first, then let
     // linear filtering scale the complete 1792x2048 map into 896x1024.
@@ -660,11 +981,10 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
     const BYTE minuteBcd = MemGetMainPtr(DayMinute)[0];
     const int minute = std::min(59, ((minuteBcd >> 4) * 10) + (minuteBcd & 0x0F));
     const bool daytime = hour >= 6 && hour < 18;
-    const int hour12 = hour % 12 == 0 ? 12 : hour % 12;
     char timeBuffer[32];
-    std::snprintf(timeBuffer, sizeof(timeBuffer), "%02d:%02d %s",
-                  hour12, minute, hour < 12 ? "AM" : "PM");
-    AddText(draw, origin, scale, 133, 208,
+    std::snprintf(timeBuffer, sizeof(timeBuffer), "%02d:%02d", hour, minute);
+    // Center the 24-hour readout on the clock dial (the hand pivots at x 177).
+    AddText(draw, origin, scale, 177 - DeathlordTextWidth(timeBuffer, 18) * 0.5f, 208,
             daytime ? IM_COL32(255, 150, 30, 255) : IM_COL32(70, 150, 255, 255),
             timeBuffer, 18);
 
@@ -1542,14 +1862,15 @@ void ModernUI::RenderLogWindow(bool* open)
     ImGui::SetNextWindowSize(ImVec2(440, 620), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Game Log", open))
     {
-        if (ImGui::Button("Clear")) log_.clear();
+        if (ImGui::Button("Clear")) longLog_.clear();
         ImGui::Separator();
         ImGui::BeginChild("##LogScroll", ImVec2(0, 0), false,
                           ImGuiWindowFlags_HorizontalScrollbar);
+        // Scrolled lines are archived into longLog_ the moment they complete,
+        // so the window shows only the archive; log_ still feeds the in-game
+        // panel and would duplicate every line here.
         for (const std::string& line : longLog_)
             ImGui::TextUnformatted(line.c_str());
-        for (auto line = log_.rbegin(); line != log_.rend(); ++line)
-            ImGui::TextUnformatted(line->text.c_str());
         ImGui::EndChild();
     }
     ImGui::End();

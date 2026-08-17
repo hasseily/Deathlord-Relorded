@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <array>
 #include <cstdint>
+#include <map>
 #include <vector>
 #include <deque>
 #include <string>
@@ -34,7 +35,11 @@ public:
                     const std::filesystem::path& portableAssetsDir,
                     const InventoryRules* inventoryRules);
     void Shutdown();
-    void UpdateMapTexture();
+    void UpdateMapTexture(bool inBattle, bool inTransition,
+                          bool extraRaceAndClassBonuses);
+    void SetFogOfWarPath(const std::filesystem::path& path);
+    void SaveFogOfWar();
+    void ResetFogOfWar();
     void SeedVisualFixture();
     void SeedBattleFixture();
     void SeedInventoryFixture();
@@ -51,6 +56,9 @@ public:
     bool ConsumeInventoryChanged();
 
 private:
+    int LosRadius(bool extraRaceAndClassBonuses) const;
+    void CalculateLos();
+
     Texture background_;
     Texture backgroundTop_;
     Texture noMap_;
@@ -74,6 +82,19 @@ private:
     std::vector<std::uint8_t> mapPixels_;
     std::uint64_t mapSignature_ = 0;
     std::array<bool, 256> sectorsSeen_{};
+    // v2 fog of war: per-map seen/footstep markers plus a live line-of-sight
+    // pass recomputed whenever the avatar, radius, or map content changes.
+    std::filesystem::path fogPath_;
+    std::map<std::string, std::vector<std::uint8_t>> fogStore_;
+    std::vector<std::uint8_t> fogSeen_ = std::vector<std::uint8_t>(64 * 64, 0);
+    std::vector<std::uint8_t> losVisible_ = std::vector<std::uint8_t>(64 * 64, 0);
+    std::string fogMapName_;
+    std::uint64_t fogEpoch_ = 0;
+    std::uint64_t mapContentHash_ = 0;
+    int fogAvatarX_ = -1;
+    int fogAvatarY_ = -1;
+    int losRadius_ = 0;
+    bool fogDisabled_ = false;
     struct TextLine
     {
         std::string text;

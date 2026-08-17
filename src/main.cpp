@@ -136,6 +136,7 @@ struct AppState
     bool fixtureImportConfirmation = false;
     bool testCleanReset = false;
     bool englishNames = false;
+    bool autoHideMenuBar = false;
     bool fullscreen = false;
     bool uiFixture = false;
     UiFixtureMode uiFixtureMode = UiFixtureMode::Gameplay;
@@ -194,6 +195,7 @@ void LoadHostSettings(AppState& state)
             "show_apple_video_in_game", state.showAppleVideoInGame);
         state.showSpells = json.value("show_spells", state.showSpells);
         state.englishNames = json.value("english_names", state.englishNames);
+        state.autoHideMenuBar = json.value("menu_auto_hide", state.autoHideMenuBar);
         const int mapViewMode = json.value(
             "map_view_mode", static_cast<int>(state.mapViewMode));
         if ((mapViewMode >= 0 && mapViewMode <= 4) || mapViewMode == 99)
@@ -249,6 +251,7 @@ void SaveSettings(const AppState& state)
         { "show_apple_video_in_game", state.showAppleVideoInGame },
         { "show_spells", state.showSpells },
         { "english_names", state.englishNames },
+        { "menu_auto_hide", state.autoHideMenuBar },
         { "map_view_mode", static_cast<int>(state.mapViewMode) },
         { "hdv_path", state.hdvPath.string() },
         { "relorded_changes", {
@@ -720,6 +723,8 @@ bool StartCleanNewGame(AppState& state, std::string& error)
         error = "The clean image was installed but could not be reopened.";
         return false;
     }
+    // A clean game starts unexplored: drop every saved fog-of-war marker.
+    state.modernUi.ResetFogOfWar();
     RebootEmulator(state);
     return true;
 }
@@ -1246,7 +1251,24 @@ void RenderAppleWindow(AppState& state)
     const bool activeParty = dlrl::PartyTransfer::HasActiveParty(
         state.hooks.State().inGameMap || state.hooks.State().inBattle || state.uiFixture);
 
-    if (ImGui::BeginMainMenuBar())
+    // With auto-hide on, the bar only appears while the pointer sits along the
+    // top edge or a menu popup is open, so an open menu never vanishes while
+    // the mouse travels down into it.
+    bool showMenuBar = true;
+    if (state.autoHideMenuBar)
+    {
+        const ImGuiViewport* mainViewport = ImGui::GetMainViewport();
+        const ImVec2 mouse = ImGui::GetMousePos();
+        const float activation = std::max(ImGui::GetFrameHeight(), 24.0f);
+        const bool mouseAtTop = mouse.x >= mainViewport->Pos.x
+            && mouse.x <= mainViewport->Pos.x + mainViewport->Size.x
+            && mouse.y >= mainViewport->Pos.y
+            && mouse.y <= mainViewport->Pos.y + activation;
+        showMenuBar = mouseAtTop
+            || ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId
+                                          | ImGuiPopupFlags_AnyPopupLevel);
+    }
+    if (showMenuBar && ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))
         {
@@ -1357,6 +1379,7 @@ void RenderAppleWindow(AppState& state)
                 ImGui::EndMenu();
             }
             ImGui::MenuItem("English Translation", "F10", &state.englishNames);
+            ImGui::MenuItem("Auto-Hide Menu Bar", nullptr, &state.autoHideMenuBar);
             ImGui::Separator();
             if (ImGui::BeginMenu("Map"))
             {
@@ -1383,11 +1406,7 @@ void RenderAppleWindow(AppState& state)
                 ImGui::EndMenu();
             }
             ImGui::MenuItem("Spell Window", "Alt-S", &state.showSpells);
-            if (ImGui::BeginMenu("Log Window"))
-            {
-                ImGui::MenuItem("Show", "Alt-L", &state.showLog);
-                ImGui::EndMenu();
-            }
+            ImGui::MenuItem("Log Window", "Alt-L", &state.showLog);
             ImGui::Separator();
             if (ImGui::BeginMenu("Hacks / Relorded Changes"))
             {
@@ -1672,6 +1691,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
         else if (arg == "--postprocess") state->postprocessorEnabled = true;
         else if (arg == "--show-original-interface") state->showAppleVideoInGame = true;
         else if (arg == "--fullscreen") state->fullscreen = true;
+        else if (arg == "--auto-hide-menu") state->autoHideMenuBar = true;
         else if (arg == "--fixture-mouse" && i + 1 < argc)
         {
             const std::string position = argv[++i];
@@ -1769,6 +1789,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
     if (!state->modernUi.Initialize(FindDlrlAssetsDir(), FindPortableAssetsDir(),
                                     &state->inventoryRules))
         std::fprintf(stderr, "Unable to initialize the modern DLRL renderer\n");
+    if (state->smokeFrames == 0 && !state->prefDir.empty())
+        state->modernUi.SetFogOfWarPath(
+            std::filesystem::path(state->prefDir) / "fogofwar.json");
     if (state->smokeFrames == 0 && !state->prefDir.empty())
     {
         const auto ppState = std::filesystem::path(state->prefDir) / kPostprocessorFilename;
@@ -2010,7 +2033,10 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         SetPaused(state, true);
 
     state.renderer.BeginFrame();
-    if (state.hooks.State().inGameMap) state.modernUi.UpdateMapTexture();
+    if (state.hooks.State().inGameMap)
+        state.modernUi.UpdateMapTexture(state.hooks.State().inBattle,
+                                        state.hooks.State().inTransition,
+                                        state.hooks.Changes().extraRaceAndClassBonuses);
     state.renderer.BeginImGui();
     RenderAppleWindow(state);
     state.renderer.EndImGui();
@@ -2043,6 +2069,7 @@ void SDL_AppQuit(void* appstate, SDL_AppResult)
     if (state)
     {
         SaveSettings(*state);
+        state->modernUi.SaveFogOfWar();
         ShutdownEmulator(*state);
         state->modernUi.Shutdown();
         state->renderer.Shutdown();
