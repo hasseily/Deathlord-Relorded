@@ -103,6 +103,9 @@ target_link_libraries(dlrl_platform PUBLIC
 if(APPLE)
     target_compile_definitions(dlrl_platform PRIVATE GL_SILENCE_DEPRECATION)
 endif()
+if(MSVC)
+    target_compile_definitions(dlrl_platform PRIVATE NOMINMAX _CRT_SECURE_NO_WARNINGS)
+endif()
 
 add_executable(dlrl WIN32 MACOSX_BUNDLE
     src/main.cpp
@@ -125,6 +128,9 @@ target_link_libraries(dlrl PRIVATE
     OpenGL::GL
 )
 
+if(MSVC)
+    target_compile_definitions(dlrl PRIVATE NOMINMAX _CRT_SECURE_NO_WARNINGS)
+endif()
 if(APPLE)
     target_compile_definitions(dlrl PRIVATE GL_SILENCE_DEPRECATION)
     set_target_properties(dlrl PROPERTIES
