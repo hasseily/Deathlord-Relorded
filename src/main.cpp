@@ -137,6 +137,7 @@ struct AppState
     bool testCleanReset = false;
     bool englishNames = false;
     bool autoHideMenuBar = false;
+    bool menuBarHeldOpen = false;
     bool fullscreen = false;
     bool uiFixture = false;
     UiFixtureMode uiFixtureMode = UiFixtureMode::Gameplay;
@@ -145,7 +146,7 @@ struct AppState
     int videoIndex = 0;
     int speakerVolume = 3;
     int mockingboardVolume = 3;
-    int interfaceColor = static_cast<int>(dlrl::InterfaceColor_Green);
+    int interfaceColor = static_cast<int>(dlrl::InterfaceColor_White);
     int originalInterfaceOpacity = 85;
     int windowWidth = kWindowWidth;
     int windowHeight = kWindowHeight;
@@ -186,7 +187,6 @@ void LoadHostSettings(AppState& state)
         state.speakerVolume = std::clamp(json.value("speaker_volume", state.speakerVolume), 0, 4);
         state.mockingboardVolume = std::clamp(
             json.value("mockingboard_volume", state.mockingboardVolume), 0, 4);
-        state.interfaceColor = std::clamp(json.value("interface_color", state.interfaceColor), 0, 2);
         state.originalInterfaceOpacity = std::clamp(
             json.value("original_interface_opacity", state.originalInterfaceOpacity), 0, 100);
         state.postprocessorEnabled = json.value(
@@ -245,7 +245,6 @@ void SaveSettings(const AppState& state)
         { "video_index", state.videoIndex },
         { "speaker_volume", state.speakerVolume },
         { "mockingboard_volume", state.mockingboardVolume },
-        { "interface_color", state.interfaceColor },
         { "original_interface_opacity", state.originalInterfaceOpacity },
         { "postprocessor_enabled", state.postprocessorEnabled },
         { "show_apple_video_in_game", state.showAppleVideoInGame },
@@ -995,10 +994,13 @@ void RenderPartyEditor(AppState& state, bool activeParty)
         "Melee", "Ranged", "Chest", "Shield", "Misc.", "Jewelry", "Tool", "Scroll"
     };
 
-    ImGui::SetNextWindowSize(ImVec2(900, 760), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin("Party Editor", &state.showPartyEditor))
+    // The ### id suffix retires stale imgui.ini geometry from builds whose
+    // default size still needed a scrollbar.
+    if (!state.modernUi.BeginPanel("Party Editor###PartyEditorTall",
+                                   &state.showPartyEditor, 900, 960,
+                                   ImGuiWindowFlags_NoDocking))
     {
-        ImGui::End();
+        state.modernUi.EndPanel();
         return;
     }
 
@@ -1032,11 +1034,22 @@ void RenderPartyEditor(AppState& state, bool activeParty)
     ImGui::PushID(member);
     bool recalculateArmor = false;
 
+    // Field widths sized for their largest values: five digits for gold and
+    // the other resources, three digits for item ids and charges. The +/-
+    // step buttons of InputInt claim a frame-height square each.
+    const ImGuiStyle& editorStyle = ImGui::GetStyle();
+    const float stepButtonsWidth =
+        (ImGui::GetFrameHeight() + editorStyle.ItemInnerSpacing.x) * 2.0f;
+    const float numberFieldWidth = ImGui::CalcTextSize("00000").x
+        + editorStyle.FramePadding.x * 2.0f + stepButtonsWidth;
+    const float smallNumberFieldWidth = ImGui::CalcTextSize("000").x
+        + editorStyle.FramePadding.x * 2.0f + stepButtonsWidth;
+
     auto editByte = [&](const char* label, std::uint16_t address,
                         int minimum, int maximum)
     {
         int value = MemGetMainPtr(address)[member];
-        ImGui::SetNextItemWidth(105.0f);
+        ImGui::SetNextItemWidth(numberFieldWidth);
         if (!ImGui::InputInt(label, &value)) return false;
         MemGetMainPtr(address)[member] = static_cast<BYTE>(
             std::clamp(value, minimum, maximum));
@@ -1046,7 +1059,7 @@ void RenderPartyEditor(AppState& state, bool activeParty)
                         int maximum)
     {
         int value = PartyWord(low, high, member);
-        ImGui::SetNextItemWidth(105.0f);
+        ImGui::SetNextItemWidth(numberFieldWidth);
         if (!ImGui::InputInt(label, &value)) return false;
         SetPartyWord(low, high, member, std::clamp(value, 0, maximum));
         return true;
@@ -1136,7 +1149,7 @@ void RenderPartyEditor(AppState& state, bool activeParty)
             ImGui::TableNextColumn(); editByte("Torches", PartyTorches, 0, 10);
             int armorClass = 10 - MemGetMainPtr(PartyArmorClass)[member];
             ImGui::TableNextColumn();
-            ImGui::SetNextItemWidth(105.0f);
+            ImGui::SetNextItemWidth(numberFieldWidth);
             if (ImGui::InputInt("Armor class", &armorClass))
                 MemGetMainPtr(PartyArmorClass)[member] = static_cast<BYTE>(
                     std::clamp(10 - armorClass, 0, 255));
@@ -1187,10 +1200,12 @@ void RenderPartyEditor(AppState& state, bool activeParty)
                               ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg
                               | ImGuiTableFlags_SizingStretchProp))
         {
-            ImGui::TableSetupColumn("Slot");
-            ImGui::TableSetupColumn("Item ID");
-            ImGui::TableSetupColumn("Item");
-            ImGui::TableSetupColumn("Charges");
+            ImGui::TableSetupColumn("Slot", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+            ImGui::TableSetupColumn("Item ID", ImGuiTableColumnFlags_WidthFixed,
+                                    smallNumberFieldWidth);
+            ImGui::TableSetupColumn("Item", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Charges", ImGuiTableColumnFlags_WidthFixed,
+                                    smallNumberFieldWidth);
             ImGui::TableHeadersRow();
             for (int slot = 0; slot < 8; ++slot)
             {
@@ -1199,6 +1214,7 @@ void RenderPartyEditor(AppState& state, bool activeParty)
                 ImGui::TableNextColumn(); ImGui::TextUnformatted(inventoryNames[slot]);
                 int item = inventory[slot];
                 ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(smallNumberFieldWidth);
                 if (ImGui::InputInt("##Item", &item))
                 {
                     inventory[slot] = static_cast<BYTE>(std::clamp(item, 0, 255));
@@ -1209,6 +1225,7 @@ void RenderPartyEditor(AppState& state, bool activeParty)
                     : state.inventoryRules.Name(inventory[slot], true).c_str());
                 int charges = inventory[slot + 8];
                 ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(smallNumberFieldWidth);
                 if (ImGui::InputInt("##Charges", &charges))
                     inventory[slot + 8] = static_cast<BYTE>(std::clamp(charges, 0, 255));
                 ImGui::PopID();
@@ -1236,7 +1253,7 @@ void RenderPartyEditor(AppState& state, bool activeParty)
 
     if (recalculateArmor) RecalculateArmorClasses();
     ImGui::PopID();
-    ImGui::End();
+    state.modernUi.EndPanel();
 }
 
 void RenderAppleWindow(AppState& state)
@@ -1252,9 +1269,18 @@ void RenderAppleWindow(AppState& state)
         state.hooks.State().inGameMap || state.hooks.State().inBattle || state.uiFixture);
 
     // With auto-hide on, the bar only appears while the pointer sits along the
-    // top edge or a menu popup is open, so an open menu never vanishes while
-    // the mouse travels down into it.
+    // top edge or one of the bar's own menus is open, so an open menu never
+    // vanishes while the mouse travels down into it. The hold must NOT apply
+    // to popups the bar did not spawn: appearing in response to an unrelated
+    // popup (a combo dropdown in the party editor, say) steals focus and
+    // closes that popup on the spot. menuBarHeldOpen chains visibility: it is
+    // only set while the bar was already visible when a popup opened.
     bool showMenuBar = true;
+    const auto anyPopupOpen = []()
+    {
+        return ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId
+                                          | ImGuiPopupFlags_AnyPopupLevel);
+    };
     if (state.autoHideMenuBar)
     {
         const ImGuiViewport* mainViewport = ImGui::GetMainViewport();
@@ -1264,9 +1290,7 @@ void RenderAppleWindow(AppState& state)
             && mouse.x <= mainViewport->Pos.x + mainViewport->Size.x
             && mouse.y >= mainViewport->Pos.y
             && mouse.y <= mainViewport->Pos.y + activation;
-        showMenuBar = mouseAtTop
-            || ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId
-                                          | ImGuiPopupFlags_AnyPopupLevel);
+        showMenuBar = mouseAtTop || (state.menuBarHeldOpen && anyPopupOpen());
     }
     if (showMenuBar && ImGui::BeginMainMenuBar())
     {
@@ -1317,43 +1341,15 @@ void RenderAppleWindow(AppState& state)
             }
             if (ImGui::BeginMenu("Volume"))
             {
-                if (ImGui::BeginMenu("Speaker"))
+                // Deathlord has no Mockingboard audio; the speaker levels are
+                // the whole volume story.
+                for (int i = 0; i < static_cast<int>(std::size(kVolumeLabels)); ++i)
                 {
-                    for (int i = 0; i < static_cast<int>(std::size(kVolumeLabels)); ++i)
+                    if (ImGui::MenuItem(kVolumeLabels[i], nullptr,
+                                        state.speakerVolume == i))
                     {
-                        if (ImGui::MenuItem(kVolumeLabels[i], nullptr,
-                                            state.speakerVolume == i))
-                        {
-                            state.speakerVolume = i;
-                            ApplyVolume(state);
-                        }
-                    }
-                    ImGui::EndMenu();
-                }
-                if (ImGui::BeginMenu("Mockingboard"))
-                {
-                    for (int i = 0; i < static_cast<int>(std::size(kVolumeLabels)); ++i)
-                    {
-                        if (ImGui::MenuItem(kVolumeLabels[i], nullptr,
-                                            state.mockingboardVolume == i))
-                        {
-                            state.mockingboardVolume = i;
-                            ApplyVolume(state);
-                        }
-                    }
-                    ImGui::EndMenu();
-                }
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Interface color"))
-            {
-                constexpr const char* labels[] = { "White", "Green", "Amber" };
-                for (int i = 0; i < 3; ++i)
-                {
-                    if (ImGui::MenuItem(labels[i], nullptr, state.interfaceColor == i))
-                    {
-                        state.interfaceColor = i;
-                        dlrl::ApplyAppleStyle(static_cast<dlrl::InterfaceColor>(i));
+                        state.speakerVolume = i;
+                        ApplyVolume(state);
                     }
                 }
                 ImGui::EndMenu();
@@ -1445,6 +1441,9 @@ void RenderAppleWindow(AppState& state)
         ImGui::TextDisabled("HDV: %s", hdvLabel.c_str());
         ImGui::EndMainMenuBar();
     }
+    // Evaluated after the menus were submitted so a menu opened this frame
+    // latches the bar for the next one.
+    state.menuBarHeldOpen = showMenuBar && anyPopupOpen();
 
     const auto& hookState = state.hooks.State();
     const bool fixtureLoading = state.uiFixture
@@ -1490,45 +1489,39 @@ void RenderAppleWindow(AppState& state)
     }
     else
     {
-        ImGuiViewport* viewport = ImGui::GetMainViewport();
-        const ImVec2 appleWindowSize(kAppleDisplayWidth + 18.0f,
-                                     kAppleDisplayHeight + kAppleHintAreaHeight + 34.0f);
-        ImGui::SetNextWindowSize(appleWindowSize, ImGuiCond_Appearing);
-        ImGui::SetNextWindowPos(viewport->GetCenter(), ImGuiCond_Appearing,
-                                ImVec2(0.5f, 0.5f));
-        if (ImGui::Begin("Apple //e", nullptr, ImGuiWindowFlags_NoDocking))
+        // The boot screen is chromeless: just the Apple view centered in the
+        // work area over the cleared background, hint below.
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+        auto* pp = sa2::PostProcessor::GetInstance();
+        ImTextureID texture = static_cast<ImTextureID>(state.renderer.FramebufferTexId());
+        if (pp->IsActive())
         {
-            const ImVec2 available = ImGui::GetContentRegionAvail();
-            const std::string hint = StartMenuHint(state);
-            const ImVec2 cursor = ImGui::GetCursorPos();
-            ImGui::SetCursorPos(ImVec2(
-                cursor.x + (available.x - kAppleDisplayWidth) * 0.5f, cursor.y));
-            const ImVec2 imagePosition = ImGui::GetCursorScreenPos();
-            auto* pp = sa2::PostProcessor::GetInstance();
-            ImTextureID texture = static_cast<ImTextureID>(state.renderer.FramebufferTexId());
-            if (pp->IsActive())
-            {
-                pp->Render(static_cast<int>(kAppleDisplayWidth),
-                           static_cast<int>(kAppleDisplayHeight),
-                           state.renderer.FramebufferTexId(),
-                           static_cast<uint32_t>(video.GetFrameBufferWidth()),
-                           static_cast<uint32_t>(video.GetFrameBufferHeight()));
-                texture = static_cast<ImTextureID>(pp->GetTextureId());
-            }
-            const float sourceWidth = static_cast<float>(video.GetFrameBufferWidth());
-            const float sourceHeight = static_cast<float>(video.GetFrameBufferHeight());
-            const float borderX = video.GetFrameBufferBorderWidth() / sourceWidth;
-            const float borderY = video.GetFrameBufferBorderHeight() / sourceHeight;
-            ImGui::Image(texture, ImVec2(kAppleDisplayWidth, kAppleDisplayHeight),
-                         ImVec2(borderX, 1.0f - borderY),
-                         ImVec2(1.0f - borderX, borderY));
-            if (!hint.empty())
-                state.modernUi.RenderHostHint(
-                    hint, imagePosition.x + kAppleDisplayWidth * 0.5f,
-                    imagePosition.y + kAppleDisplayHeight + 6.0f,
-                    kAppleDisplayWidth);
+            pp->Render(static_cast<int>(kAppleDisplayWidth),
+                       static_cast<int>(kAppleDisplayHeight),
+                       state.renderer.FramebufferTexId(),
+                       static_cast<uint32_t>(video.GetFrameBufferWidth()),
+                       static_cast<uint32_t>(video.GetFrameBufferHeight()));
+            texture = static_cast<ImTextureID>(pp->GetTextureId());
         }
-        ImGui::End();
+        const float sourceWidth = static_cast<float>(video.GetFrameBufferWidth());
+        const float sourceHeight = static_cast<float>(video.GetFrameBufferHeight());
+        const float borderX = video.GetFrameBufferBorderWidth() / sourceWidth;
+        const float borderY = video.GetFrameBufferBorderHeight() / sourceHeight;
+        const ImVec2 topLeft(
+            std::floor(viewport->WorkPos.x
+                       + (viewport->WorkSize.x - kAppleDisplayWidth) * 0.5f),
+            std::floor(viewport->WorkPos.y
+                       + (viewport->WorkSize.y - kAppleDisplayHeight
+                          - kAppleHintAreaHeight) * 0.5f));
+        ImGui::GetBackgroundDrawList()->AddImage(
+            texture, topLeft,
+            ImVec2(topLeft.x + kAppleDisplayWidth, topLeft.y + kAppleDisplayHeight),
+            ImVec2(borderX, 1.0f - borderY), ImVec2(1.0f - borderX, borderY));
+        const std::string hint = StartMenuHint(state);
+        if (!hint.empty())
+            state.modernUi.RenderHostHint(
+                hint, topLeft.x + kAppleDisplayWidth * 0.5f,
+                topLeft.y + kAppleDisplayHeight + 6.0f, kAppleDisplayWidth);
     }
 
     state.modernUi.RenderSpellWindow(&state.showSpells);
@@ -1541,15 +1534,15 @@ void RenderAppleWindow(AppState& state)
         ImGui::OpenPopup("About Deathlord Relorded 3.0");
         state.showAbout = false;
     }
-    if (ImGui::BeginPopupModal("About Deathlord Relorded 3.0", nullptr,
-                               ImGuiWindowFlags_AlwaysAutoResize))
+    if (state.modernUi.BeginPanelPopup("About Deathlord Relorded 3.0"))
     {
         ImGui::TextUnformatted("Deathlord Relorded 3.0");
         ImGui::TextUnformatted("Portable AppleWin core, SDL3, OpenGL, and Dear ImGui.");
         ImGui::Separator();
         ImGui::TextUnformatted("Relorded by Rikkles. Deathlord (c) 1987 Al Escudero and David Wong.");
-        if (ImGui::Button("OK")) ImGui::CloseCurrentPopup();
-        ImGui::EndPopup();
+        ImGui::Spacing();
+        if (state.modernUi.PanelButton("OK")) ImGui::CloseCurrentPopup();
+        state.modernUi.EndPanelPopup();
     }
 
     if (state.rebootRequested)
@@ -1557,18 +1550,18 @@ void RenderAppleWindow(AppState& state)
         ImGui::OpenPopup("Reboot Deathlord?");
         state.rebootRequested = false;
     }
-    if (ImGui::BeginPopupModal("Reboot Deathlord?", nullptr,
-                               ImGuiWindowFlags_AlwaysAutoResize))
+    if (state.modernUi.BeginPanelPopup("Reboot Deathlord?"))
     {
         ImGui::TextUnformatted("Deathlord hates you. Power-cycle the Apple //e?");
-        if (ImGui::Button("Reboot"))
+        ImGui::Spacing();
+        if (state.modernUi.PanelButton("REBOOT"))
         {
             RebootEmulator(state);
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
-        ImGui::EndPopup();
+        if (state.modernUi.PanelButton("CANCEL")) ImGui::CloseCurrentPopup();
+        state.modernUi.EndPanelPopup();
     }
 
     if (state.newGameRequested)
@@ -1576,8 +1569,7 @@ void RenderAppleWindow(AppState& state)
         ImGui::OpenPopup("Start a clean new game?");
         state.newGameRequested = false;
     }
-    if (ImGui::BeginPopupModal("Start a clean new game?", nullptr,
-                               ImGuiWindowFlags_AlwaysAutoResize))
+    if (state.modernUi.BeginPanelPopup("Start a clean new game?"))
     {
         ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 620.0f);
         ImGui::TextUnformatted(
@@ -1585,8 +1577,8 @@ void RenderAppleWindow(AppState& state)
             "You will lose all characters, active or inactive, and the game will reset "
             "from a brand new state. Are you sure that's what you want?");
         ImGui::PopTextWrapPos();
-        ImGui::Separator();
-        if (ImGui::Button("Yes"))
+        ImGui::Spacing();
+        if (state.modernUi.PanelButton("YES"))
         {
             std::string error;
             if (!StartCleanNewGame(state, error))
@@ -1597,8 +1589,8 @@ void RenderAppleWindow(AppState& state)
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button("No")) ImGui::CloseCurrentPopup();
-        ImGui::EndPopup();
+        if (state.modernUi.PanelButton("NO")) ImGui::CloseCurrentPopup();
+        state.modernUi.EndPanelPopup();
     }
 
     if (state.importConfirmationRequested)
@@ -1606,8 +1598,7 @@ void RenderAppleWindow(AppState& state)
         ImGui::OpenPopup("Import party?");
         state.importConfirmationRequested = false;
     }
-    if (ImGui::BeginPopupModal("Import party?", nullptr,
-                               ImGuiWindowFlags_AlwaysAutoResize))
+    if (state.modernUi.BeginPanelPopup("Import party?"))
     {
         if (state.partyToImport)
         {
@@ -1617,8 +1608,8 @@ void RenderAppleWindow(AppState& state)
             ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 620.0f);
             ImGui::TextUnformatted(prompt.c_str());
             ImGui::PopTextWrapPos();
-            ImGui::Separator();
-            if (ImGui::Button("Yes"))
+            ImGui::Spacing();
+            if (state.modernUi.PanelButton("YES"))
             {
                 if (activeParty)
                 {
@@ -1635,7 +1626,7 @@ void RenderAppleWindow(AppState& state)
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
-            if (ImGui::Button("No"))
+            if (state.modernUi.PanelButton("NO"))
             {
                 state.partyToImport.reset();
                 ImGui::CloseCurrentPopup();
@@ -1644,9 +1635,9 @@ void RenderAppleWindow(AppState& state)
         else
         {
             ImGui::TextUnformatted("No party is waiting to be imported.");
-            if (ImGui::Button("OK")) ImGui::CloseCurrentPopup();
+            if (state.modernUi.PanelButton("OK")) ImGui::CloseCurrentPopup();
         }
-        ImGui::EndPopup();
+        state.modernUi.EndPanelPopup();
     }
 
     if (state.operationErrorRequested)
@@ -1654,12 +1645,12 @@ void RenderAppleWindow(AppState& state)
         ImGui::OpenPopup("Operation failed");
         state.operationErrorRequested = false;
     }
-    if (ImGui::BeginPopupModal("Operation failed", nullptr,
-                               ImGuiWindowFlags_AlwaysAutoResize))
+    if (state.modernUi.BeginPanelPopup("Operation failed"))
     {
         ImGui::TextWrapped("%s", state.operationError.c_str());
-        if (ImGui::Button("OK")) ImGui::CloseCurrentPopup();
-        ImGui::EndPopup();
+        ImGui::Spacing();
+        if (state.modernUi.PanelButton("OK")) ImGui::CloseCurrentPopup();
+        state.modernUi.EndPanelPopup();
     }
 
     if (state.operationNoticeRequested)
@@ -1667,12 +1658,12 @@ void RenderAppleWindow(AppState& state)
         ImGui::OpenPopup("Party operation complete");
         state.operationNoticeRequested = false;
     }
-    if (ImGui::BeginPopupModal("Party operation complete", nullptr,
-                               ImGuiWindowFlags_AlwaysAutoResize))
+    if (state.modernUi.BeginPanelPopup("Party operation complete"))
     {
         ImGui::TextUnformatted(state.operationNotice.c_str());
-        if (ImGui::Button("OK")) ImGui::CloseCurrentPopup();
-        ImGui::EndPopup();
+        ImGui::Spacing();
+        if (state.modernUi.PanelButton("OK")) ImGui::CloseCurrentPopup();
+        state.modernUi.EndPanelPopup();
     }
 }
 

@@ -55,9 +55,22 @@ public:
                         float maximumWidth) const;
     bool ConsumeInventoryChanged();
 
+    // Deathlord-styled host chrome: wooden slate panels with charset
+    // headings, shared by every host window, dialog, and the menu bar.
+    // Same contract as ImGui::Begin — always pair with EndPanel; only add
+    // content when it returns true. Popups follow the ImGui popup contract:
+    // call EndPanelPopup only when BeginPanelPopup returned true.
+    bool BeginPanel(const char* title, bool* open, float defaultWidth,
+                    float defaultHeight, int extraWindowFlags = 0);
+    void EndPanel();
+    bool BeginPanelPopup(const char* title);
+    void EndPanelPopup();
+    bool PanelButton(const char* label);
+
 private:
     int LosRadius(bool extraRaceAndClassBonuses) const;
     void CalculateLos();
+    void DrawPanelChrome(const char* title, bool* open);
 
     Texture background_;
     Texture backgroundTop_;
@@ -95,6 +108,14 @@ private:
     int fogAvatarY_ = -1;
     int losRadius_ = 0;
     bool fogDisabled_ = false;
+    // Canvas transform captured each Render so overlays drawn after the
+    // canvas (log, spells) share its coordinate space and frame validity.
+    float canvasOriginX_ = 0.0f;
+    float canvasOriginY_ = 0.0f;
+    float canvasScale_ = 1.0f;
+    int canvasFrame_ = -1;
+    bool panelContentVisible_ = false;
+    float logScrollFromBottom_ = 0.0f;
     struct TextLine
     {
         std::string text;

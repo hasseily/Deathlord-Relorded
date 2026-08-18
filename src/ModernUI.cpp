@@ -234,6 +234,63 @@ void AddDeathlordText(ImDrawList* draw, const Texture& charset,
     }
 }
 
+// Host chrome source inside Background_Relorded.png: the wooden-framed
+// slate panel (bottom right) is the 9-slice for every panel and button.
+constexpr float PanelSourceX0 = 1266.0f;
+constexpr float PanelSourceY0 = 839.0f;
+constexpr float PanelSourceX1 = 1560.0f;
+constexpr float PanelSourceY1 = 1034.0f;
+constexpr float PanelSourceBorder = 24.0f;
+// Heading text sits at y 15 with 18px glyphs; the divider lives at
+// PanelHeaderHeight - 6, giving the same 18px gap above the divider as the
+// content keeps below it.
+constexpr float PanelHeaderHeight = 57.0f;
+constexpr ImU32 PanelGold = IM_COL32(226, 183, 110, 255);
+constexpr ImU32 PanelGoldBright = IM_COL32(255, 216, 130, 255);
+constexpr ImU32 PanelChalk32 = IM_COL32(214, 219, 224, 255);
+constexpr ImVec4 PanelChalk = ImVec4(0.84f, 0.86f, 0.88f, 1.0f);
+
+void NineSlicePanel(ImDrawList* draw, const Texture& sheet, const ImVec2& minPos,
+                    const ImVec2& maxPos, float border)
+{
+    if (!sheet.IsValid()) return;
+    const float atlasWidth = static_cast<float>(sheet.Width());
+    const float atlasHeight = static_cast<float>(sheet.Height());
+    const float sourceX[4] = {PanelSourceX0, PanelSourceX0 + PanelSourceBorder,
+                              PanelSourceX1 - PanelSourceBorder, PanelSourceX1};
+    const float sourceY[4] = {PanelSourceY0, PanelSourceY0 + PanelSourceBorder,
+                              PanelSourceY1 - PanelSourceBorder, PanelSourceY1};
+    border = std::min({border, (maxPos.x - minPos.x) * 0.5f,
+                       (maxPos.y - minPos.y) * 0.5f});
+    const float destinationX[4] = {minPos.x, minPos.x + border,
+                                   maxPos.x - border, maxPos.x};
+    const float destinationY[4] = {minPos.y, minPos.y + border,
+                                   maxPos.y - border, maxPos.y};
+    for (int row = 0; row < 3; ++row)
+        for (int column = 0; column < 3; ++column)
+            draw->AddImage(static_cast<ImTextureID>(sheet.Id()),
+                           ImVec2(destinationX[column], destinationY[row]),
+                           ImVec2(destinationX[column + 1], destinationY[row + 1]),
+                           ImVec2(sourceX[column] / atlasWidth,
+                                  sourceY[row] / atlasHeight),
+                           ImVec2(sourceX[column + 1] / atlasWidth,
+                                  sourceY[row + 1] / atlasHeight));
+}
+
+// Panel headings render in the game charset, which only has uppercase
+// letters; the "##id" suffix never becomes part of the visible title.
+std::string PanelHeading(const char* title)
+{
+    std::string heading;
+    for (const char* p = title; *p; ++p)
+    {
+        if (p[0] == '#' && p[1] == '#') break;
+        heading.push_back(*p >= 'a' && *p <= 'z'
+                              ? static_cast<char>(*p - 'a' + 'A') : *p);
+    }
+    return heading;
+}
+
 constexpr float AppleGlyphWidth = 7.0f;
 constexpr float AppleGlyphHeight = 16.0f;
 
@@ -379,6 +436,145 @@ bool ModernUI::ConsumeInventoryChanged()
     const bool changed = inventoryChanged_;
     inventoryChanged_ = false;
     return changed;
+}
+
+void ModernUI::DrawPanelChrome(const char* title, bool* open)
+{
+    ImDrawList* draw = ImGui::GetWindowDrawList();
+    const ImVec2 pos = ImGui::GetWindowPos();
+    const ImVec2 size = ImGui::GetWindowSize();
+    NineSlicePanel(draw, background_, pos,
+                   ImVec2(pos.x + size.x, pos.y + size.y), 18.0f);
+    // An id-only title ("##...") means a headingless panel: no title, no
+    // divider, and content starting right below the top frame.
+    const std::string heading = PanelHeading(title);
+    if (!heading.empty())
+    {
+        AddDeathlordText(draw, deathlordCharset_, pos, 1.0f,
+                         (size.x - DeathlordTextWidth(heading, 18.0f)) * 0.5f, 15.0f,
+                         PanelGold, heading, 18.0f);
+        draw->AddLine(ImVec2(pos.x + 20.0f, pos.y + PanelHeaderHeight - 6.0f),
+                      ImVec2(pos.x + size.x - 20.0f, pos.y + PanelHeaderHeight - 6.0f),
+                      IM_COL32(96, 74, 38, 220), 2.0f);
+    }
+    if (open)
+    {
+        const ImVec2 restore = ImGui::GetCursorPos();
+        ImGui::SetCursorPos(ImVec2(size.x - 62.0f, 11.0f));
+        if (ImGui::InvisibleButton("##panel-close", ImVec2(46.0f, 24.0f)))
+            *open = false;
+        const bool hovered = ImGui::IsItemHovered();
+        const ImVec2 glyphOrigin = ImGui::GetItemRectMin();
+        AddDeathlordText(draw, deathlordCharset_, glyphOrigin, 1.0f, 2.0f, 4.0f,
+                         hovered ? PanelGoldBright : PanelGold, "\x7eX\x7f",
+                         16.0f, hovered);
+        ImGui::SetCursorPos(restore);
+    }
+    // Content starts a full padding step below the divider so the top gap
+    // matches the bottom one.
+    if (!heading.empty()) ImGui::SetCursorPosY(PanelHeaderHeight + 14.0f);
+}
+
+bool ModernUI::BeginPanel(const char* title, bool* open, float defaultWidth,
+                          float defaultHeight, int extraWindowFlags)
+{
+    ImGui::SetNextWindowSize(ImVec2(defaultWidth, defaultHeight),
+                             ImGuiCond_FirstUseEver);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(26.0f, 20.0f));
+    panelContentVisible_ = ImGui::Begin(
+        title, nullptr,
+        extraWindowFlags | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse
+                         | ImGuiWindowFlags_NoScrollbar);
+    if (panelContentVisible_)
+    {
+        DrawPanelChrome(title, open);
+        ImGui::PushStyleColor(ImGuiCol_Text, PanelChalk);
+        // Content lives in an inset child so scrolling widgets (and their
+        // scrollbar) stop at the slate instead of running over the frame.
+        // The frame's inner shadow eats a few extra pixels on the right and
+        // bottom beyond the window padding.
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
+        ImGui::BeginChild("##panel-content",
+                          ImVec2(ImGui::GetContentRegionAvail().x - 8.0f, -18.0f));
+    }
+    return panelContentVisible_;
+}
+
+void ModernUI::EndPanel()
+{
+    if (panelContentVisible_)
+    {
+        ImGui::EndChild();
+        ImGui::PopStyleColor(2);
+    }
+    ImGui::End();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(2);
+}
+
+bool ModernUI::BeginPanelPopup(const char* title)
+{
+    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(),
+                            ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(26.0f, 20.0f));
+    const bool visible = ImGui::BeginPopupModal(
+        title, nullptr,
+        ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar);
+    if (!visible)
+    {
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor(2);
+        return false;
+    }
+    DrawPanelChrome(title, nullptr);
+    // Keep the heading readable inside auto-resizing popups whose first
+    // frame is narrower than the title. The dummy only reserves width; the
+    // cursor returns so it adds no height above the content.
+    const float contentTop = ImGui::GetCursorPosY();
+    ImGui::Dummy(ImVec2(DeathlordTextWidth(PanelHeading(title), 18.0f) + 24.0f,
+                        1.0f));
+    ImGui::SetCursorPosY(contentTop);
+    ImGui::PushStyleColor(ImGuiCol_Text, PanelChalk);
+    return true;
+}
+
+void ModernUI::EndPanelPopup()
+{
+    // The 18px wood frame is drawn inside the window rect, so the bottom
+    // window padding mostly disappears under it. This spacer makes the
+    // visible slate below the content match the gap under the divider.
+    ImGui::Dummy(ImVec2(0.0f, 14.0f));
+    ImGui::PopStyleColor();
+    ImGui::EndPopup();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(2);
+}
+
+bool ModernUI::PanelButton(const char* label)
+{
+    const std::string text = PanelHeading(label);
+    const float width = DeathlordTextWidth(text, 16.0f) + 32.0f;
+    const float height = 32.0f;
+    const bool pressed = ImGui::InvisibleButton(label, ImVec2(width, height));
+    const bool hovered = ImGui::IsItemHovered();
+    const bool held = ImGui::IsItemActive();
+    ImDrawList* draw = ImGui::GetWindowDrawList();
+    const ImVec2 minPos = ImGui::GetItemRectMin();
+    const ImVec2 maxPos = ImGui::GetItemRectMax();
+    NineSlicePanel(draw, background_, minPos, maxPos, 7.0f);
+    if (hovered)
+        draw->AddRectFilled(ImVec2(minPos.x + 4.0f, minPos.y + 4.0f),
+                            ImVec2(maxPos.x - 4.0f, maxPos.y - 4.0f),
+                            IM_COL32(255, 184, 51, held ? 96 : 48));
+    AddDeathlordText(draw, deathlordCharset_, minPos, 1.0f,
+                     (width - DeathlordTextWidth(text, 16.0f)) * 0.5f,
+                     (height - 16.0f) * 0.5f,
+                     hovered ? PanelGoldBright : PanelGold, text, 16.0f);
+    return pressed;
 }
 
 void ModernUI::SeedVisualFixture()
@@ -903,6 +1099,10 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
     const ImVec2 start = ImGui::GetCursorScreenPos();
     const ImVec2 origin(start.x + (available.x - CanvasWidth * scale) * 0.5f,
                         start.y + (available.y - CanvasHeight * scale) * 0.5f);
+    canvasOriginX_ = origin.x;
+    canvasOriginY_ = origin.y;
+    canvasScale_ = scale;
+    canvasFrame_ = ImGui::GetFrameCount();
     ImGui::SetCursorScreenPos(origin);
     ImGui::Image(ImTextureRef(static_cast<ImTextureID>(background_.Id())),
                  ImVec2(CanvasWidth * scale, CanvasHeight * scale));
@@ -1840,40 +2040,167 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
     ImGui::PopStyleVar();
 }
 
+// Log and spell reference render as native game overlays on the canvas —
+// slate panels in the map area with charset text, exactly like the inventory
+// and battle overlays. They only exist while the canvas rendered this frame.
+
 void ModernUI::RenderSpellWindow(bool* open)
 {
     if (!open || !*open || !spellList_.IsValid()) return;
-    ImGui::SetNextWindowPos(ImVec2(30, 35), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(320, 700), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Spells", open))
+    if (canvasFrame_ != ImGui::GetFrameCount()) return;
+    ImDrawList* draw = ImGui::GetForegroundDrawList();
+    const ImVec2 origin(canvasOriginX_, canvasOriginY_);
+    const float scale = canvasScale_;
+
+    constexpr float panelX = 470.0f;
+    constexpr float panelY = 20.0f;
+    constexpr float panelWidth = 680.0f;
+    constexpr float panelHeight = 1000.0f;
+    NineSlicePanel(draw, background_, Point(origin, scale, panelX, panelY),
+                   Point(origin, scale, panelX + panelWidth, panelY + panelHeight),
+                   18.0f * scale);
+    const std::string heading = "SPELL REFERENCE";
+    AddDeathlordText(draw, deathlordCharset_, origin, scale,
+                     panelX + (panelWidth - DeathlordTextWidth(heading, 20.0f)) * 0.5f,
+                     panelY + 16.0f, PanelGold, heading, 20.0f);
+
+    const ImVec2 mouse = ImGui::GetMousePos();
+    auto hit = [&](float x, float y, float width, float height)
     {
-        const ImVec2 available = ImGui::GetContentRegionAvail();
-        const float scale = std::min(available.x / spellList_.Width(),
-                                     available.y / spellList_.Height());
-        ImGui::Image(ImTextureRef(static_cast<ImTextureID>(spellList_.Id())),
-                     ImVec2(spellList_.Width() * scale, spellList_.Height() * scale));
+        const ImVec2 a = Point(origin, scale, x, y);
+        const ImVec2 b = Point(origin, scale, x + width, y + height);
+        return mouse.x >= a.x && mouse.x < b.x && mouse.y >= a.y && mouse.y < b.y;
+    };
+    const float closeX = panelX + panelWidth - 24.0f - 3.0f * DeathlordGlyphWidth;
+    const bool closeHovered = hit(closeX, panelY + 16.0f,
+                                  3.0f * DeathlordGlyphWidth + 4.0f, 20.0f);
+    AddDeathlordText(draw, deathlordCharset_, origin, scale, closeX, panelY + 18.0f,
+                     closeHovered ? PanelGoldBright : PanelGold, "\x7eX\x7f",
+                     16.0f, closeHovered);
+    if (closeHovered && ImGui::IsMouseClicked(0))
+    {
+        *open = false;
+        return;
     }
-    ImGui::End();
+
+    const float contentX = panelX + 26.0f;
+    const float contentY = panelY + PanelHeaderHeight + 4.0f;
+    const float contentWidth = panelWidth - 52.0f;
+    const float contentHeight = panelHeight - PanelHeaderHeight - 30.0f;
+    const float fit = std::min(contentWidth / spellList_.Width(),
+                               contentHeight / spellList_.Height());
+    const float imageWidth = spellList_.Width() * fit;
+    const float imageHeight = spellList_.Height() * fit;
+    const float imageX = contentX + (contentWidth - imageWidth) * 0.5f;
+    const float imageY = contentY + (contentHeight - imageHeight) * 0.5f;
+    draw->AddImage(static_cast<ImTextureID>(spellList_.Id()),
+                   Point(origin, scale, imageX, imageY),
+                   Point(origin, scale, imageX + imageWidth, imageY + imageHeight));
 }
 
 void ModernUI::RenderLogWindow(bool* open)
 {
     if (!open || !*open) return;
-    ImGui::SetNextWindowSize(ImVec2(440, 620), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Game Log", open))
+    if (canvasFrame_ != ImGui::GetFrameCount()) return;
+    ImDrawList* draw = ImGui::GetForegroundDrawList();
+    const ImVec2 origin(canvasOriginX_, canvasOriginY_);
+    const float scale = canvasScale_;
+
+    constexpr float panelX = 430.0f;
+    constexpr float panelY = 70.0f;
+    constexpr float panelWidth = 480.0f;
+    constexpr float panelHeight = 910.0f;
+    NineSlicePanel(draw, background_, Point(origin, scale, panelX, panelY),
+                   Point(origin, scale, panelX + panelWidth, panelY + panelHeight),
+                   18.0f * scale);
+
+    auto text = [&](float x, float y, ImU32 color, const std::string& value,
+                    float size, bool inverse = false)
     {
-        if (ImGui::Button("Clear")) longLog_.clear();
-        ImGui::Separator();
-        ImGui::BeginChild("##LogScroll", ImVec2(0, 0), false,
-                          ImGuiWindowFlags_HorizontalScrollbar);
-        // Scrolled lines are archived into longLog_ the moment they complete,
-        // so the window shows only the archive; log_ still feeds the in-game
-        // panel and would duplicate every line here.
-        for (const std::string& line : longLog_)
-            ImGui::TextUnformatted(line.c_str());
-        ImGui::EndChild();
+        AddDeathlordText(draw, deathlordCharset_, origin, scale, x, y, color,
+                         value, size, inverse);
+    };
+    const std::string heading = "GAME LOG";
+    text(panelX + (panelWidth - DeathlordTextWidth(heading, 20.0f)) * 0.5f,
+         panelY + 16.0f, PanelGold, heading, 20.0f);
+
+    const ImVec2 mouse = ImGui::GetMousePos();
+    auto hit = [&](float x, float y, float width, float height)
+    {
+        const ImVec2 a = Point(origin, scale, x, y);
+        const ImVec2 b = Point(origin, scale, x + width, y + height);
+        return mouse.x >= a.x && mouse.x < b.x && mouse.y >= a.y && mouse.y < b.y;
+    };
+
+    const std::string clearLabel = "\x7e" "CLEAR\x7f";
+    const float clearWidth = DeathlordTextWidth(clearLabel, 16.0f);
+    const bool clearHovered = hit(panelX + 26.0f, panelY + 16.0f,
+                                  clearWidth + 4.0f, 20.0f);
+    text(panelX + 26.0f, panelY + 18.0f,
+         clearHovered ? PanelGoldBright : PanelGold, clearLabel, 16.0f, clearHovered);
+    if (clearHovered && ImGui::IsMouseClicked(0))
+    {
+        longLog_.clear();
+        logScrollFromBottom_ = 0.0f;
     }
-    ImGui::End();
+
+    const float closeX = panelX + panelWidth - 26.0f - 3.0f * DeathlordGlyphWidth;
+    const bool closeHovered = hit(closeX, panelY + 16.0f,
+                                  3.0f * DeathlordGlyphWidth + 4.0f, 20.0f);
+    text(closeX, panelY + 18.0f, closeHovered ? PanelGoldBright : PanelGold,
+         "\x7eX\x7f", 16.0f, closeHovered);
+    if (closeHovered && ImGui::IsMouseClicked(0))
+    {
+        *open = false;
+        return;
+    }
+    draw->AddLine(Point(origin, scale, panelX + 22.0f, panelY + PanelHeaderHeight - 6.0f),
+                  Point(origin, scale, panelX + panelWidth - 22.0f,
+                        panelY + PanelHeaderHeight - 6.0f),
+                  IM_COL32(96, 74, 38, 220), 2.0f * scale);
+
+    constexpr float lineHeight = 21.0f;
+    const float contentTop = panelY + PanelHeaderHeight + 6.0f;
+    const float contentBottom = panelY + panelHeight - 26.0f;
+    const int visibleRows = std::max(
+        1, static_cast<int>((contentBottom - contentTop) / lineHeight));
+    const int total = static_cast<int>(longLog_.size());
+    const float maxScroll = static_cast<float>(std::max(0, total - visibleRows));
+    if (hit(panelX, panelY, panelWidth, panelHeight))
+        logScrollFromBottom_ += ImGui::GetIO().MouseWheel * 3.0f;
+    logScrollFromBottom_ = std::clamp(logScrollFromBottom_, 0.0f, maxScroll);
+
+    if (total == 0)
+    {
+        const std::string empty = "NOTHING YET";
+        text(panelX + (panelWidth - DeathlordTextWidth(empty, 16.0f)) * 0.5f,
+             contentTop + 12.0f, IM_COL32(140, 145, 152, 255), empty, 16.0f);
+        return;
+    }
+
+    const int first = std::max(
+        0, total - visibleRows - static_cast<int>(logScrollFromBottom_));
+    const int last = std::min(total, first + visibleRows);
+    float y = contentTop;
+    for (int index = first; index < last; ++index, y += lineHeight)
+        text(panelX + 30.0f, y, PanelChalk32, longLog_[index], 18.0f);
+
+    if (total > visibleRows)
+    {
+        const float grooveX = panelX + panelWidth - 20.0f;
+        draw->AddRectFilled(Point(origin, scale, grooveX, contentTop),
+                            Point(origin, scale, grooveX + 5.0f, contentBottom),
+                            IM_COL32(20, 24, 30, 200));
+        const float grooveHeight = contentBottom - contentTop;
+        const float thumbHeight = std::max(
+            24.0f, grooveHeight * visibleRows / static_cast<float>(total));
+        const float thumbTravel = grooveHeight - thumbHeight;
+        const float thumbY = contentTop
+            + thumbTravel * (first / static_cast<float>(total - visibleRows));
+        draw->AddRectFilled(Point(origin, scale, grooveX, thumbY),
+                            Point(origin, scale, grooveX + 5.0f, thumbY + thumbHeight),
+                            PanelGold);
+    }
 }
 
 void ModernUI::RenderHostHint(const std::string& text, float centerX, float y,
@@ -1906,7 +2233,9 @@ void ModernUI::RenderHostHint(const std::string& text, float centerX, float y,
         if (bestSplit != std::string::npos)
             lines = { text.substr(0, bestSplit), text.substr(bestSplit + 1) };
     }
-    ImDrawList* draw = ImGui::GetWindowDrawList();
+    // Foreground drawlist: hints render with or without a window context
+    // (the boot screen draws the Apple view with no window at all).
+    ImDrawList* draw = ImGui::GetForegroundDrawList();
     for (std::size_t line = 0; line < lines.size(); ++line)
     {
         const std::string& value = lines[line];
