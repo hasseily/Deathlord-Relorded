@@ -1539,8 +1539,8 @@ void RenderAppleWindow(AppState& state)
         ImGui::TextUnformatted("Deathlord Relorded 3.0");
         ImGui::TextUnformatted("Portable AppleWin core, SDL3, OpenGL, and Dear ImGui.");
         ImGui::Separator();
-        ImGui::TextUnformatted("Relorded by Rikkles. Deathlord (c) 1987 Al Escudero and David Wong.");
-        ImGui::Spacing();
+        ImGui::TextUnformatted("Deathlord (c) 1987 Al Escudero and David Wong.");
+        ImGui::TextUnformatted("Relorded by Rikkles, with qkumba and BillG.");
         if (state.modernUi.PanelButton("OK")) ImGui::CloseCurrentPopup();
         state.modernUi.EndPanelPopup();
     }
