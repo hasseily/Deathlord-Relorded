@@ -88,6 +88,7 @@ add_library(dlrl_platform STATIC
     src/InventoryState.cpp
     src/PartyTransfer.cpp
     src/FileUtil.cpp
+    src/MapTravel.cpp
 )
 target_include_directories(dlrl_platform PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -251,7 +252,40 @@ if(BUILD_TESTING)
         PASS_REGULAR_EXPRESSION "pc=\\$1C27.*fnv1a64=466f292c38add1a7"
     )
 
+    foreach(map_test IN ITEMS travel exits)
+        add_test(NAME hdv_map_${map_test}
+            COMMAND dlrl_capture
+                --hdv "${DLRL_TEST_HDV}"
+                --frames 120000
+                --key-event 3500:X
+                --key-event 4400:P
+                --key-event "5500: "
+                --test-map-${map_test}
+                --output "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-map-${map_test}.bmp"
+        )
+        set_tests_properties(hdv_map_${map_test} PROPERTIES
+            SKIP_RETURN_CODE 77
+            LABELS "hdv;maps"
+            TIMEOUT 120
+        )
+    endforeach()
+
     if(DLRL_ENABLE_GUI_TESTS AND EXISTS "${DLRL_TEST_HDV}")
+        foreach(map_window IN ITEMS 1280x900 640x480)
+            add_test(NAME sdl_teleport_${map_window}
+                COMMAND $<TARGET_FILE:dlrl>
+                    --hdv "${DLRL_TEST_HDV}"
+                    --smoke-frames 3
+                    --ui-fixture
+                    --show-teleport
+                    --window-size ${map_window}
+                    --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-teleport-${map_window}.bmp"
+            )
+            set_tests_properties(sdl_teleport_${map_window} PROPERTIES
+                LABELS "gui;visual;maps"
+                PASS_REGULAR_EXPRESSION "frames=3"
+            )
+        endforeach()
         add_test(NAME sdl_window_smoke
             COMMAND $<TARGET_FILE:dlrl>
                 --hdv "${DLRL_TEST_HDV}"
@@ -297,6 +331,23 @@ if(BUILD_TESTING)
         )
     endif()
     if(DLRL_ENABLE_GUI_TESTS)
+        foreach(fog_mode IN ITEMS enabled disabled)
+            set(fog_option "")
+            if(fog_mode STREQUAL "disabled")
+                set(fog_option --no-map-fog)
+            endif()
+            add_test(NAME sdl_map_fog_${fog_mode}
+                COMMAND $<TARGET_FILE:dlrl>
+                    --smoke-frames 3
+                    --ui-fixture-mode fog
+                    ${fog_option}
+                    --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-map-fog-${fog_mode}.bmp"
+            )
+            set_tests_properties(sdl_map_fog_${fog_mode} PROPERTIES
+                LABELS "gui;visual;maps"
+                PASS_REGULAR_EXPRESSION "frames=3"
+            )
+        endforeach()
         add_test(NAME sdl_modern_ui_smoke
             COMMAND $<TARGET_FILE:dlrl>
                 --smoke-frames 3

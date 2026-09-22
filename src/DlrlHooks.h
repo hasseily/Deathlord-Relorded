@@ -4,8 +4,10 @@
 
 #include "DlrlData.h"
 #include "Emulator/CPU.h"
+#include "MapTravel.h"
 
 #include <cstdint>
+#include <optional>
 
 namespace dlrl
 {
@@ -116,6 +118,9 @@ public:
     void SetEventCallback(HookEventCallback callback, void* userData = nullptr);
     void SetCanEquipCallback(CanEquipCallback callback, void* userData = nullptr);
     void SetRandomSeed(std::uint32_t seed);
+    bool CanTeleport() const;
+    bool QueueTeleport(const TeleportRequest& request, std::string& error);
+    bool TeleportPending() const { return teleport_.has_value(); }
 
     CpuInstructionHookResult HandleInstruction(std::uint16_t pc);
 
@@ -124,6 +129,8 @@ private:
     void Emit(HookEventType type, std::uint16_t pc, int actor = -1,
               int value = 0, int auxiliary = 0) const;
     std::uint32_t NextRandom();
+    bool HandleTeleport(std::uint16_t pc, CpuInstructionHookResult& result);
+    void LoadTeleportDestination(const TeleportRequest& request);
 
     RelordedChanges changes_{};
     DlrlRuntimeState state_{};
@@ -133,6 +140,10 @@ private:
     void* canEquipUserData_ = nullptr;
     std::uint32_t randomState_ = 0xD34D10ADu;
     bool attached_ = false;
+    bool atMapPrompt_ = false;
+    enum class TravelStage { SaveDeparture, LoadDestination, EnterDungeon, LoadingDungeon, Arriving };
+    TravelStage travelStage_ = TravelStage::SaveDeparture;
+    std::optional<TeleportRequest> teleport_;
 };
 
 } // namespace dlrl

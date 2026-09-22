@@ -1,6 +1,7 @@
 #include "DlrlHooks.h"
 
 #include "Emulator/Memory.h"
+#include "Emulator/Keyboard.h"
 
 #include <algorithm>
 #include <array>
@@ -97,6 +98,162 @@ void DlrlHooks::Detach()
 void DlrlHooks::ResetRuntime()
 {
     state_ = {};
+    teleport_.reset();
+    atMapPrompt_ = false;
+}
+
+bool DlrlHooks::CanTeleport() const
+{
+    return atMapPrompt_ && state_.inGameMap && !state_.inBattle
+        && !state_.inTransition && !state_.dead && !state_.endCredits && !teleport_
+        && Ram(PartySizeAddress) > 0 && Ram(PartySizeAddress) <= PartySize;
+}
+
+bool DlrlHooks::QueueTeleport(const TeleportRequest& request, std::string& error)
+{
+    if (!CanTeleport())
+    {
+        error = "Return to the map movement prompt before teleporting.";
+        return false;
+    }
+    if (!MapTravel::Validate(request, error)) return false;
+    // Do not redirect an unknown executable into version-specific routines.
+    if (Ram(0x8100) != 0x4C || Ram(0x8326) != 0x2C
+        || Ram(0x621F) != 0xCE || Ram(0x6220) != 0x15 || Ram(0x6221) != 0x62)
+    {
+        error = "Teleport requires the supported Deathlord 2.0.1 game executable.";
+        return false;
+    }
+    teleport_ = request;
+    travelStage_ = TravelStage::SaveDeparture;
+    return true;
+}
+
+void DlrlHooks::LoadTeleportDestination(const TeleportRequest& request)
+{
+    const auto& map = request.destination;
+    Ram(MapOverlandX) = static_cast<BYTE>(map.worldX);
+    Ram(MapOverlandY) = static_cast<BYTE>(map.worldY);
+    Ram(0xFC4D) = static_cast<BYTE>(map.exitX);
+    Ram(0xFC4E) = static_cast<BYTE>(map.exitY);
+    Ram(0xFC51) = map.address.track;
+    Ram(0xFC52) = map.address.sector;
+    for (int i = 0; i < 4; ++i)
+    {
+        Ram(0xFC55 + i) = map.floorGroups[i].track;
+        Ram(0xFC59 + i) = map.floorGroups[i].sector;
+    }
+    Ram(MapFloor) = static_cast<BYTE>(request.floor);
+    Ram(MapX) = static_cast<BYTE>(request.x + (map.type == 2 ? ((request.floor-1)&1)*32 : 0));
+    Ram(MapY) = static_cast<BYTE>(request.y + (map.type == 2 ? (((request.floor-1)&3)/2)*32 : 0));
+    Ram(0xFC5E) = 1; // Direct dungeon exits return to the overworld.
+    Ram(0xFC66) = 0; // Load destination from its own map record.
+    Ram(0xFC67) = static_cast<BYTE>((request.floor - 1) / 4);
+    Ram(0xFC68) = 0;
+    Ram(PartyIconType) = 0;
+    Ram(0xFC25) = 0; // Hidden/pit/movement state must not follow the party.
+    Ram(0xFC26) = 0;
+    Ram(0xFC27) = 0;
+    Ram(0xFC39) = 0;
+    const BYTE side = map.worldY >= 1 && map.worldY < 7 ? 1 : 2;
+    Ram(0xBFEA) = side;
+    Ram(0xBFEB) = Ram(0xBFF6) = static_cast<BYTE>(side + 1);
+    regs.pc = map.type == 1 ? 0x8100 : map.type == 0 ? 0x8103 : 0x8106;
+}
+
+bool DlrlHooks::HandleTeleport(std::uint16_t pc, CpuInstructionHookResult& result)
+{
+    if (!teleport_) return false;
+    // Unlisted world sectors are open sea. Use the native ocean initializer
+    // directly; the legacy disk-overlay path preceding it expects the old
+    // floppy boot disk and cannot load that overlay from the HDV scenario.
+    if (pc == 0x81F1 && travelStage_ == TravelStage::Arriving
+        && teleport_->destination.type == 1)
+    {
+        Ram(0xFC69) = 0;
+        SkipTo(result, 0x8253, 6, true);
+        return true;
+    }
+    // Hell Island normally stays hidden until the party carries Sharktooth.
+    // An explicit teleport to that map loads its real terrain regardless.
+    if (pc == 0x8199 && travelStage_ == TravelStage::Arriving
+        && teleport_->destination.type == 1
+        && teleport_->destination.worldX == 11 && teleport_->destination.worldY == 1)
+    {
+        regs.a = 1;
+        regs.ps &= ~AF_ZERO;
+    }
+    if (pc == 0x8106 && travelStage_ == TravelStage::LoadingDungeon)
+    {
+        // The real town entrance has saved its return map and exit position.
+        // Supply the requested floor and position before the dungeon loader.
+        const auto& request = *teleport_;
+        Ram(MapFloor) = static_cast<BYTE>(request.floor);
+        Ram(MapX) = static_cast<BYTE>(request.x + ((request.floor-1)&1)*32);
+        Ram(MapY) = static_cast<BYTE>(request.y + (((request.floor-1)&3)/2)*32);
+        for (int i=0;i<4;++i)
+        {
+            Ram(0xFC55+i) = request.destination.floorGroups[i].track;
+            Ram(0xFC59+i) = request.destination.floorGroups[i].sector;
+        }
+        Ram(0xFC67) = static_cast<BYTE>((request.floor-1)/4);
+        travelStage_ = TravelStage::Arriving;
+    }
+    if (pc != PcDecrementTimer) return false;
+    if (travelStage_ == TravelStage::Arriving)
+    {
+        teleport_.reset();
+        return false;
+    }
+    if (travelStage_ == TravelStage::SaveDeparture)
+    {
+        // Call the active map's native save routine. Its RTS resumes this
+        // same safe point, retaining the original main-loop stack frame.
+        const WORD returnAddress = PcDecrementTimer - 1;
+        Ram(regs.sp) = static_cast<BYTE>(returnAddress >> 8);
+        regs.sp = 0x100 | ((regs.sp - 1) & 0xFF);
+        Ram(regs.sp) = static_cast<BYTE>(returnAddress);
+        regs.sp = 0x100 | ((regs.sp - 1) & 0xFF);
+        regs.pc = 0x03BD;
+        travelStage_ = TravelStage::LoadDestination;
+        state_.inTransition = true;
+        atMapPrompt_ = false;
+        Emit(HookEventType::MapTransition, pc);
+        Emit(HookEventType::RequestSpeed, pc, -1, 6);
+    }
+    else
+    {
+        // Native map initialization jumps to a fresh main loop. Discard
+        // only the old loop's JSR $6200 return address, not the whole stack.
+        regs.sp = 0x100 | ((regs.sp + 2) & 0xFF);
+        if (travelStage_ == TravelStage::EnterDungeon)
+        {
+            Ram(0xFC2A) = 3;
+            Ram(0xFC5F) = 0;
+            regs.pc = 0xEFF0; // Town's native stairs command.
+            travelStage_ = TravelStage::LoadingDungeon;
+        }
+        else if (teleport_->destination.insideTown)
+        {
+            auto parent = *teleport_;
+            parent.destination.type = 0;
+            parent.destination.address = parent.destination.parentTown;
+            parent.floor = 1;
+            parent.x = parent.destination.townExitX;
+            parent.y = parent.destination.townExitY - 1;
+            LoadTeleportDestination(parent);
+            travelStage_ = TravelStage::EnterDungeon;
+        }
+        else
+        {
+            LoadTeleportDestination(*teleport_);
+            travelStage_ = TravelStage::Arriving;
+        }
+    }
+    // Flush a key queued before opening the host modal.
+    KeybReadFlag();
+    result = {6, true};
+    return true;
 }
 
 void DlrlHooks::SetEventCallback(HookEventCallback callback, void* userData)
@@ -144,6 +301,10 @@ CpuInstructionHookResult DlrlHooks::HandleInstruction(std::uint16_t pc)
     CpuInstructionHookResult result{};
     ++state_.hookCalls;
     state_.inGameMap = Ram(MapIsInGame) == 0xE5;
+    if (HandleTeleport(pc, result)) return result;
+    if (pc == PcDecrementTimer) atMapPrompt_ = true;
+    else if (pc == PcMapKey || pc == PcBattleEnter || pc == PcBattleAmbush)
+        atMapPrompt_ = false;
 
     // Presentation events are intentionally data-only. ImGui, the automap,
     // battle sprites and the log consume them outside the emulator core.
@@ -386,13 +547,13 @@ CpuInstructionHookResult DlrlHooks::HandleInstruction(std::uint16_t pc)
         break;
     }
     case PcDecrementTimer:
+        if (state_.inTransition)
+            Emit(HookEventType::RequestSpeed, pc, -1, 1);
+        state_.inBattle = false;
+        state_.inTransition = false;
+        state_.hasBeenIdle = true;
         if (changes_.freezeTimeWhenIdle)
         {
-            if (state_.inTransition)
-                Emit(HookEventType::RequestSpeed, pc, -1, 1);
-            state_.inBattle = false;
-            state_.inTransition = false;
-            state_.hasBeenIdle = true;
             SkipTo(result, static_cast<std::uint16_t>(pc + 3), 6, true);
         }
         break;

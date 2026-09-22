@@ -40,7 +40,8 @@ public:
     void SetFogOfWarPath(const std::filesystem::path& path);
     void SaveFogOfWar();
     void ResetFogOfWar();
-    void SeedVisualFixture();
+    void SetFogOfWarEnabled(bool enabled);
+    void SeedVisualFixture(bool withFog = false);
     void SeedBattleFixture();
     void SeedInventoryFixture();
     void HandleEvent(const HookEvent& event);
@@ -66,6 +67,8 @@ public:
     bool BeginPanelPopup(const char* title);
     void EndPanelPopup();
     bool PanelButton(const char* label);
+    void RenderTeleportPreview(const std::array<std::uint8_t,4096>& tiles,
+                               bool overland, int size, float width, int& x, int& y);
 
 private:
     int LosRadius(bool extraRaceAndClassBonuses) const;
@@ -108,6 +111,7 @@ private:
     int fogAvatarY_ = -1;
     int losRadius_ = 0;
     bool fogDisabled_ = false;
+    bool revealMap_ = false;
     // Canvas transform captured each Render so overlays drawn after the
     // canvas (log, spells) share its coordinate space and frame validity.
     float canvasOriginX_ = 0.0f;

@@ -49,9 +49,8 @@ constexpr std::array<std::uint8_t, 0x50> DungeonBlocksSight = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-// v2 map naming: overland sectors by coordinates, everything else by map id,
-// type, and floor. The fog markers persist under these names.
-std::string FogMapName()
+// Retained only to migrate previously saved exploration markers.
+std::string LegacyFogMapName()
 {
     char buffer[24];
     if (MemGetMainPtr(MapType)[0] == 1)
@@ -61,6 +60,23 @@ std::string FogMapName()
         std::snprintf(buffer, sizeof(buffer), "Map_%03d_%02d_%02d",
                       MemGetMainPtr(MapId)[0], MemGetMainPtr(MapType)[0],
                       MemGetMainPtr(MapFloor)[0]);
+    return buffer;
+}
+
+std::string FogMapName()
+{
+    const int type = MemGetMainPtr(MapType)[0];
+    if (type == 1) return LegacyFogMapName();
+    const int floor = std::clamp<int>(MemGetMainPtr(MapFloor)[0],1,16);
+    const int group = (floor-1)/4;
+    const int track = MemGetMainPtr(type == 2 ? 0xFC55+group : 0xFC51)[0];
+    const int sector = MemGetMainPtr(type == 2 ? 0xFC59+group : 0xFC52)[0];
+    char buffer[64];
+    // $FC4E (formerly called MapId) is the overworld return Y coordinate;
+    // it is not unique. Use the actual scenario address for indoor maps.
+    std::snprintf(buffer,sizeof(buffer),"Local_%02d_%02d_%d_%02d_%02d_%02d",
+                  MemGetMainPtr(MapOverlandX)[0],MemGetMainPtr(MapOverlandY)[0],
+                  type,track,sector,floor);
     return buffer;
 }
 
@@ -514,6 +530,42 @@ void ModernUI::EndPanel()
     ImGui::PopStyleColor(2);
 }
 
+void ModernUI::RenderTeleportPreview(const std::array<std::uint8_t,4096>& tiles,
+                                     bool overland, int size, float width, int& x, int& y)
+{
+    const ImVec2 origin = ImGui::GetCursorScreenPos();
+    ImGui::InvisibleButton("##destination-map", ImVec2(width, width));
+    auto* draw = ImGui::GetWindowDrawList();
+    draw->AddRectFilled(origin, ImVec2(origin.x+width,origin.y+width), IM_COL32(0,0,0,255));
+    const auto& sheet = overland ? tilesOverland_ : tilesDungeon_;
+    const float cell = width / size;
+    if (sheet.IsValid())
+        for (int row=0;row<size;++row)
+            for (int col=0;col<size;++col)
+            {
+                const int tile = tiles[row*size+col] % 80;
+                if (tile >= 64) continue;
+                const ImVec2 uv0((tile%16)*28.0f/sheet.Width(), (tile/16)*32.0f/sheet.Height());
+                const ImVec2 uv1((tile%16+1)*28.0f/sheet.Width(), (tile/16+1)*32.0f/sheet.Height());
+                draw->AddImage(static_cast<ImTextureID>(sheet.Id()),
+                    ImVec2(origin.x+col*cell,origin.y+row*cell),
+                    ImVec2(origin.x+(col+1)*cell,origin.y+(row+1)*cell),uv0,uv1);
+            }
+    if (ImGui::IsItemHovered())
+    {
+        const auto mouse = ImGui::GetMousePos();
+        const int hoverX = std::clamp(static_cast<int>((mouse.x-origin.x)/cell),0,size-1);
+        const int hoverY = std::clamp(static_cast<int>((mouse.y-origin.y)/cell),0,size-1);
+        ImGui::SetTooltip("X: %d   Y: %d\nClick to choose this tile",hoverX,hoverY);
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) { x=hoverX; y=hoverY; }
+    }
+    const ImVec2 center(origin.x+(x+0.5f)*cell,origin.y+(y+0.5f)*cell);
+    draw->AddCircle(center,std::max(cell,5.0f),IM_COL32(0,0,0,255),16,4.0f);
+    draw->AddCircle(center,std::max(cell,5.0f),IM_COL32(255,220,60,255),16,2.0f);
+    draw->AddLine(ImVec2(center.x-8,center.y),ImVec2(center.x+8,center.y),IM_COL32(255,220,60,255));
+    draw->AddLine(ImVec2(center.x,center.y-8),ImVec2(center.x,center.y+8),IM_COL32(255,220,60,255));
+}
+
 bool ModernUI::BeginPanelPopup(const char* title)
 {
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(),
@@ -577,11 +629,11 @@ bool ModernUI::PanelButton(const char* label)
     return pressed;
 }
 
-void ModernUI::SeedVisualFixture()
+void ModernUI::SeedVisualFixture(bool withFog)
 {
     // Fixtures exercise layout with deterministic RAM; fog would black most
     // of the seeded map out and never persists from fixture runs.
-    fogDisabled_ = true;
+    fogDisabled_ = !withFog;
     sectorsSeen_.fill(false);
     for (int x = 2; x <= 10; ++x) sectorsSeen_[8 * 16 + x] = true;
     for (int y = 4; y <= 8; ++y) sectorsSeen_[y * 16 + 6] = true;
@@ -884,12 +936,19 @@ void ModernUI::CalculateLos()
     }
 }
 
+void ModernUI::SetFogOfWarEnabled(bool enabled)
+{
+    if (revealMap_ == !enabled) return;
+    revealMap_ = !enabled;
+    ++fogEpoch_;
+}
+
 void ModernUI::UpdateMapTexture(bool inBattle, bool inTransition,
                                 bool extraRaceAndClassBonuses)
 {
     // The map memory and identifiers are unreliable during battles (v2 froze
     // the automap there too); keep showing the last composed map.
-    if (inBattle) return;
+    if (inBattle || inTransition) return;
 
     const BYTE* map = MemGetMainPtr(GameMap);
 
@@ -902,6 +961,15 @@ void ModernUI::UpdateMapTexture(bool inBattle, bool inTransition,
         {
             if (!fogMapName_.empty()) fogStore_[fogMapName_] = fogSeen_;
             fogMapName_ = mapName;
+            if (!fogStore_.count(mapName))
+            {
+                const auto legacy = fogStore_.find(LegacyFogMapName());
+                if (legacy != fogStore_.end())
+                {
+                    fogStore_[mapName] = std::move(legacy->second);
+                    fogStore_.erase(legacy);
+                }
+            }
             auto& stored = fogStore_[mapName];
             stored.resize(MapLength, 0);
             fogSeen_ = stored;
@@ -1020,7 +1088,7 @@ void ModernUI::UpdateMapTexture(bool inBattle, bool inTransition,
             // v2 tile visibility: full in line of sight, ghosted when only
             // remembered, parchment when never seen.
             float visibility = 1.0f;
-            if (!fogDisabled_)
+            if (!fogDisabled_ && !revealMap_)
                 visibility = losVisible_[posIndex] ? 1.0f
                            : (fogSeen_[posIndex] & FogSeen) ? RememberedTileVisibility
                                                             : 0.0f;
@@ -1227,7 +1295,7 @@ void ModernUI::Render(unsigned int appleFramebufferTexture, bool showAppleVideo,
         {
             for (int x = 0; x < 16; ++x)
             {
-                if (seen(x, y)) continue;
+                if (revealMap_ || seen(x, y)) continue;
                 int neighbors = 0;
                 if (x == 0 || seen(x - 1, y)) neighbors |= 0b1000;
                 if (x == 15 || seen(x + 1, y)) neighbors |= 0b0100;

@@ -295,6 +295,50 @@ int main()
           "idle timer DEC is replaced with a six-cycle no-op");
     Check(hooks.State().hasBeenIdle, "idle hook records a settled game state");
 
+    {
+        TeleportRequest target;
+        target.destination.type = 2;
+        target.destination.floors = 8;
+        target.floor = 8;
+        target.x = target.y = 31;
+        std::string error;
+        Check(MapTravel::Validate(target,error), "teleport accepts floor-local dungeon coordinates");
+        target.x = 32;
+        Check(!MapTravel::Validate(target,error), "teleport rejects out-of-range dungeon X");
+        target.x = 0;
+        target.y = -1;
+        Check(!MapTravel::Validate(target,error), "teleport rejects negative Y");
+        target.y = 0;
+        target.floor = 9;
+        Check(!MapTravel::Validate(target,error), "teleport rejects nonexistent floors");
+        target.floor = 1;
+        target.destination.floorGroups[0].track = 35;
+        Check(!MapTravel::Validate(target,error), "teleport rejects invalid scenario addresses");
+        target.destination = {};
+        target.destination.type = 1;
+        target.x = target.y = 63;
+        Check(MapTravel::Validate(target,error), "overworld accepts the final 64x64 tile");
+        target.destination.worldY = 16;
+        Check(!MapTravel::Validate(target,error), "world sectors are restricted to 0-15");
+        target.destination.worldY = 0;
+
+        DlrlHooks travelHooks;
+        Check(!travelHooks.QueueTeleport(target,error), "teleport requires an idle movement prompt");
+        MemGetMainPtr(PartySizeAddress)[0] = PartySize;
+        travelHooks.Changes().freezeTimeWhenIdle = false;
+        travelHooks.HandleInstruction(PcDecrementTimer);
+        Check(travelHooks.CanTeleport(), "teleport works with the idle-time freeze disabled");
+        Check(!travelHooks.QueueTeleport(target,error), "teleport refuses an unknown executable");
+        travelHooks.HandleInstruction(PcBattleEnter);
+        Check(!travelHooks.CanTeleport(), "teleport is unavailable in combat");
+        travelHooks.HandleInstruction(PcDecrementTimer);
+        travelHooks.HandleInstruction(PcMapKey);
+        Check(!travelHooks.CanTeleport(), "teleport is unavailable during game input commands");
+        travelHooks.HandleInstruction(PcDecrementTimer);
+        travelHooks.ResetRuntime();
+        Check(!travelHooks.CanTeleport(), "reboot clears the safe teleport prompt");
+    }
+
     regs.sp = 0x0100;
     MemGetMainPtr(0x0101)[0] = 0;
     MemGetMainPtr(0x0102)[0] = 0;

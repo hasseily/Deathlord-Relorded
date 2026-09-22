@@ -1,5 +1,14 @@
 # Visual regression fixtures
 
+Map tools are documented in [map-tools.md](../../docs/map-tools.md).
+`sdl_teleport_1280x900` and `sdl_teleport_640x480` capture the searchable
+teleport modal, including the map preview, coordinate fields, and fixed
+Teleport/Cancel footer. `sdl_map_fog_enabled` and `sdl_map_fog_disabled`
+capture the same seeded map with the runtime visibility toggle in each
+state. The `fog` fixture retains normal line-of-sight calculations (unlike
+the ordinary layout fixture). All smoke runs use temporary HDVs and do not
+persist host settings or exploration markers.
+
 The canonical DLRL HDV is tracked at `assets/Images/Deathlord PRODOS.hdv`.
 `hdv_boot_capture` copies it to a temporary working image, executes 600
 emulated frames, and writes `build-mac/Testing/dlrl-boot.bmp`.

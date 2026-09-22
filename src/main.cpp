@@ -64,6 +64,7 @@ constexpr float kAppleHintAreaHeight = 48.0f;
 enum class UiFixtureMode
 {
     Gameplay,
+    Fog,
     Battle,
     Inventory,
     Loading,
@@ -137,6 +138,16 @@ struct AppState
     bool testCleanReset = false;
     bool englishNames = false;
     bool autoHideMenuBar = false;
+    bool mapFogEnabled = true;
+    bool teleportRequested = false;
+    bool teleportOpen = false;
+    dlrl::MapTravel mapTravel;
+    ImGuiTextFilter teleportFilter;
+    int teleportSelection = 0;
+    int teleportKind = 0;
+    dlrl::TeleportRequest teleportTarget;
+    std::array<std::uint8_t,4096> teleportTiles{};
+    std::string teleportError;
     bool menuBarHeldOpen = false;
     bool fullscreen = false;
     bool uiFixture = false;
@@ -196,6 +207,7 @@ void LoadHostSettings(AppState& state)
         state.showSpells = json.value("show_spells", state.showSpells);
         state.englishNames = json.value("english_names", state.englishNames);
         state.autoHideMenuBar = json.value("menu_auto_hide", state.autoHideMenuBar);
+        state.mapFogEnabled = json.value("map_fog_enabled", state.mapFogEnabled);
         const int mapViewMode = json.value(
             "map_view_mode", static_cast<int>(state.mapViewMode));
         if ((mapViewMode >= 0 && mapViewMode <= 4) || mapViewMode == 99)
@@ -251,6 +263,7 @@ void SaveSettings(const AppState& state)
         { "show_spells", state.showSpells },
         { "english_names", state.englishNames },
         { "menu_auto_hide", state.autoHideMenuBar },
+        { "map_fog_enabled", state.mapFogEnabled },
         { "map_view_mode", static_cast<int>(state.mapViewMode) },
         { "hdv_path", state.hdvPath.string() },
         { "relorded_changes", {
@@ -669,7 +682,7 @@ void SeedModernUiFixture(AppState& state)
         MemGetMainPtr(PartyWeaponReady)[member] = member < 3 ? 0 : 1;
     }
     MemGetMainPtr(PartyCurrentClass)[0] = classes[0];
-    state.modernUi.SeedVisualFixture();
+    state.modernUi.SeedVisualFixture(state.uiFixtureMode == UiFixtureMode::Fog);
     if (state.uiFixtureMode == UiFixtureMode::Battle)
         state.modernUi.SeedBattleFixture();
     if (state.uiFixtureMode == UiFixtureMode::Inventory)
@@ -869,9 +882,157 @@ WPARAM SdlKeyToVirtualKey(SDL_Keycode key)
     }
 }
 
+void RefreshTeleportPreview(AppState& state, bool resetPosition)
+{
+    auto& target = state.teleportTarget;
+    const int size = dlrl::MapTravel::Size(target.destination);
+    state.mapTravel.Preview(target.destination,target.floor,state.teleportTiles,state.teleportError);
+    if (resetPosition)
+    {
+        target.x = target.destination.type == 2 ? 16 : 32;
+        target.y = target.destination.type == 2 ? 1 : 62;
+        // Start at a nearby floor/grass tile rather than an arbitrary wall.
+        int distance = 10000, bestX = target.x, bestY = target.y;
+        for (int y=0;y<size;++y)
+            for (int x=0;x<size;++x)
+            {
+                const auto tile = state.teleportTiles[y*size+x] % 80;
+                const bool ground = target.destination.type == 1 ? tile == 0x34 : tile == 0x2E || tile == 0;
+                const int candidate = std::abs(x-target.x)+std::abs(y-target.y);
+                if (ground && candidate < distance)
+                { distance=candidate; bestX=x; bestY=y; }
+            }
+        target.x = bestX;
+        target.y = bestY;
+    }
+    target.x = std::clamp(target.x,0,size-1);
+    target.y = std::clamp(target.y,0,size-1);
+}
+
+void RenderTeleportDialog(AppState& state)
+{
+    if (state.teleportRequested)
+    {
+        state.teleportRequested = false;
+        if (!state.mapTravel.Load(state.hdvPath,state.teleportError))
+        {
+            state.operationError = state.teleportError;
+            state.operationErrorRequested = true;
+            return;
+        }
+        const auto& maps = state.mapTravel.Destinations();
+        state.teleportSelection = std::clamp(state.teleportSelection,0,static_cast<int>(maps.size())-1);
+        state.teleportTarget = {maps[state.teleportSelection],1,0,0};
+        RefreshTeleportPreview(state,true);
+        state.teleportOpen = true;
+        ImGui::OpenPopup("Teleport to a map");
+    }
+    if (!state.teleportOpen) return;
+    const auto available = ImGui::GetMainViewport()->WorkSize;
+    const float width = std::min(900.0f,available.x-28.0f);
+    const float previewWidth = std::clamp(std::min(width*0.44f,available.y-340.0f),120.0f,360.0f);
+    const float positionWidth = std::max(previewWidth,220.0f);
+    const float bodyHeight = std::min(previewWidth+150.0f,available.y-220.0f);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(width,0),ImVec2(width,available.y-20));
+    if (!state.modernUi.BeginPanelPopup("Teleport to a map")) return;
+    // Keep editable fields distinguishable from the dark map/list background.
+    ImGui::PushStyleColor(ImGuiCol_FrameBg,ImVec4(0.12f,0.14f,0.16f,1.0f));
+    auto& target = state.teleportTarget;
+    const auto& maps = state.mapTravel.Destinations();
+    ImGui::BeginChild("##travel-body",ImVec2(0,bodyHeight));
+    if (ImGui::BeginTable("##travel-layout",2,ImGuiTableFlags_SizingStretchProp))
+    {
+        ImGui::TableSetupColumn("Destinations",ImGuiTableColumnFlags_WidthStretch,1.0f);
+        ImGui::TableSetupColumn("Position",ImGuiTableColumnFlags_WidthFixed,positionWidth);
+        ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(-1);
+        if (ImGui::InputTextWithHint("##map-search","Search maps / regions",
+                                    state.teleportFilter.InputBuf,
+                                    IM_ARRAYSIZE(state.teleportFilter.InputBuf)))
+            state.teleportFilter.Build();
+        ImGui::SetNextItemWidth(-1);
+        ImGui::Combo("##map-kind",&state.teleportKind,"All maps\0Towns and interiors\0Dungeons\0Overworld\0");
+        ImGui::BeginChild("##destinations",ImVec2(0,bodyHeight-64),ImGuiChildFlags_Borders);
+        int matches = 0;
+        for (int i=0;i<static_cast<int>(maps.size());++i)
+        {
+            const auto& map = maps[i];
+            if (state.teleportKind && map.type != (state.teleportKind==1 ? 0 : state.teleportKind==2 ? 2 : 1)) continue;
+            const std::string label = map.name + "  [" + map.region + "]";
+            if (!state.teleportFilter.PassFilter(label.c_str())) continue;
+            ++matches;
+            ImGui::PushID(i);
+            if (ImGui::Selectable(map.name.c_str(),state.teleportSelection==i))
+            {
+                state.teleportSelection = i;
+                target = {map,1,0,0};
+                RefreshTeleportPreview(state,true);
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s\n%s",map.name.c_str(),map.region.c_str());
+            ImGui::PopID();
+        }
+        if (!matches) ImGui::TextDisabled("No matching maps");
+        ImGui::EndChild();
+        ImGui::TableNextColumn();
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX()+positionWidth);
+        ImGui::TextUnformatted(target.destination.name.c_str());
+        ImGui::PopTextWrapPos();
+        ImGui::TextDisabled("%s",target.destination.region.c_str());
+        if (target.destination.type == 2)
+        {
+            ImGui::SetNextItemWidth(-60);
+            if (ImGui::SliderInt("Floor",&target.floor,1,target.destination.floors))
+                RefreshTeleportPreview(state,true);
+        }
+        else if (target.destination.name == "World - any sector")
+        {
+            int sector[2] = {target.destination.worldX,target.destination.worldY};
+            ImGui::SetNextItemWidth(-65);
+            if (ImGui::InputInt2("Sector",sector))
+            {
+                target.destination.worldX = std::clamp(sector[0],0,15);
+                target.destination.worldY = std::clamp(sector[1],0,15);
+                RefreshTeleportPreview(state,true);
+            }
+        }
+        else ImGui::TextDisabled("Click to choose a tile");
+        const int size = dlrl::MapTravel::Size(target.destination);
+        state.modernUi.RenderTeleportPreview(state.teleportTiles,target.destination.type==1,
+                                             size,previewWidth,target.x,target.y);
+        ImGui::SetNextItemWidth((previewWidth-52)*0.5f);
+        ImGui::InputInt("X",&target.x,0);
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth((previewWidth-52)*0.5f);
+        ImGui::InputInt("Y",&target.y,0);
+        ImGui::TextDisabled("0-%d, from top left",size-1);
+        ImGui::EndTable();
+    }
+    if (!state.teleportError.empty()) ImGui::TextWrapped("%s",state.teleportError.c_str());
+    std::string validation;
+    const bool valid = state.teleportError.empty() && dlrl::MapTravel::Validate(target,validation);
+    if (!validation.empty()) ImGui::TextWrapped("%s",validation.c_str());
+    ImGui::EndChild();
+    ImGui::Separator();
+    ImGui::TextWrapped("Game paused. Pick a clear tile; hazards still apply.");
+    ImGui::BeginDisabled(!valid || (!state.hooks.CanTeleport() && !state.uiFixture));
+    const bool teleport = state.modernUi.PanelButton("TELEPORT");
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    const bool cancel = state.modernUi.PanelButton("CANCEL") || ImGui::IsKeyPressed(ImGuiKey_Escape);
+    if (cancel || (teleport && state.hooks.QueueTeleport(target,state.teleportError)))
+    {
+        state.teleportOpen = false;
+        state.lastTicksNs = SDL_GetTicksNS();
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::PopStyleColor();
+    state.modernUi.EndPanelPopup();
+}
+
 void RunEmulator(AppState& state)
 {
-    if (state.paused || state.uiFixture) return;
+    if ((state.paused && !state.hooks.TeleportPending()) || state.uiFixture
+        || state.teleportOpen) return;
 
     const uint64_t now = SDL_GetTicksNS();
     uint32_t cycles = 0;
@@ -1379,6 +1540,15 @@ void RenderAppleWindow(AppState& state)
             ImGui::Separator();
             if (ImGui::BeginMenu("Map"))
             {
+                if (ImGui::MenuItem("Fog of War", nullptr, &state.mapFogEnabled))
+                    state.modernUi.SetFogOfWarEnabled(state.mapFogEnabled);
+                if (ImGui::MenuItem("Teleport to Map...",nullptr,false,
+                                    state.hooks.CanTeleport() || state.uiFixture))
+                    state.teleportRequested = true;
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)
+                    && !state.hooks.CanTeleport())
+                    ImGui::SetTooltip("Available at the map movement prompt, outside combat.");
+                ImGui::Separator();
                 if (ImGui::MenuItem("Display Centered / Full", "F1",
                                     state.mapViewMode == dlrl::MapViewMode::FollowPlayer
                                     || state.mapViewMode == dlrl::MapViewMode::Full))
@@ -1527,6 +1697,7 @@ void RenderAppleWindow(AppState& state)
     state.modernUi.RenderSpellWindow(&state.showSpells);
     state.modernUi.RenderLogWindow(&state.showLog);
     RenderPartyEditor(state, activeParty);
+    RenderTeleportDialog(state);
     sa2::PostProcessor::GetInstance()->RenderImGuiWindow();
 
     if (state.showAbout)
@@ -1697,6 +1868,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
         else if (arg == "--show-log") state->showLog = true;
         else if (arg == "--show-party-editor") state->showPartyEditor = true;
         else if (arg == "--show-new-game-confirm") state->newGameRequested = true;
+        else if (arg == "--show-teleport") state->teleportRequested = true;
+        else if (arg == "--no-map-fog") state->mapFogEnabled = false;
         else if (arg == "--show-import-confirmation")
             state->fixtureImportConfirmation = true;
         else if (arg == "--test-clean-reset") state->testCleanReset = true;
@@ -1720,6 +1893,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
             state->uiFixture = true;
             const std::string mode = argv[++i];
             if (mode == "battle") state->uiFixtureMode = UiFixtureMode::Battle;
+            else if (mode == "fog") state->uiFixtureMode = UiFixtureMode::Fog;
             else if (mode == "inventory") state->uiFixtureMode = UiFixtureMode::Inventory;
             else if (mode == "loading") state->uiFixtureMode = UiFixtureMode::Loading;
             else if (mode == "gameover") state->uiFixtureMode = UiFixtureMode::GameOver;
@@ -1783,6 +1957,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
     if (state->smokeFrames == 0 && !state->prefDir.empty())
         state->modernUi.SetFogOfWarPath(
             std::filesystem::path(state->prefDir) / "fogofwar.json");
+    state->modernUi.SetFogOfWarEnabled(state->mapFogEnabled);
     if (state->smokeFrames == 0 && !state->prefDir.empty())
     {
         const auto ppState = std::filesystem::path(state->prefDir) / kPostprocessorFilename;
@@ -1837,6 +2012,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 
     if (event->type == SDL_EVENT_QUIT) return SDL_APP_SUCCESS;
     if (event->type != SDL_EVENT_KEY_DOWN) return SDL_APP_CONTINUE;
+    if (state.teleportOpen) return SDL_APP_CONTINUE;
     if (ImGui::GetIO().WantTextInput) return SDL_APP_CONTINUE;
 
     if ((event->key.key == SDLK_RETURN || event->key.key == SDLK_KP_ENTER)

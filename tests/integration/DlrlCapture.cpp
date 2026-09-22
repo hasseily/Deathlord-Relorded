@@ -1,5 +1,6 @@
 #include "Frame.h"
 #include "DlrlHooks.h"
+#include "MapTravel.h"
 
 #include "Emulator/CardManager.h"
 #include "Emulator/Core.h"
@@ -15,6 +16,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
@@ -31,6 +33,10 @@ struct Options
     struct KeyEvent { int frame; BYTE key; };
     std::filesystem::path hdv;
     std::filesystem::path output = "dlrl-boot.bmp";
+    std::filesystem::path memoryOutput;
+    std::string teleport;
+    bool testMapTravel = false;
+    bool testMapExits = false;
     int frames = 600;
     int keyAtFrame = -1;
     BYTE key = ' ';
@@ -44,6 +50,10 @@ bool ParseOptions(int argc, char** argv, Options& options)
         const std::string arg = argv[i];
         if (arg == "--hdv" && i + 1 < argc) options.hdv = argv[++i];
         else if (arg == "--output" && i + 1 < argc) options.output = argv[++i];
+        else if (arg == "--memory-output" && i + 1 < argc) options.memoryOutput = argv[++i];
+        else if (arg == "--teleport" && i + 1 < argc) options.teleport = argv[++i];
+        else if (arg == "--test-map-travel") options.testMapTravel = true;
+        else if (arg == "--test-map-exits") options.testMapExits = true;
         else if (arg == "--frames" && i + 1 < argc) options.frames = std::stoi(argv[++i]);
         else if (arg == "--key-at" && i + 1 < argc) options.keyAtFrame = std::stoi(argv[++i]);
         else if (arg == "--key" && i + 1 < argc) options.key = static_cast<BYTE>(argv[++i][0]);
@@ -188,9 +198,119 @@ int main(int argc, char** argv)
     }
 
     const uint32_t cyclesPerFrame = NTSC_GetCyclesPerFrame();
+    dlrl::MapTravel travel;
+    std::vector<dlrl::TeleportRequest> trips;
+    std::size_t nextTrip = 0;
+    bool traveling = false;
+    bool exiting = false;
+    int travelStarted = 0;
+    bool travelFailed = false;
+    if (options.testMapTravel || options.testMapExits || !options.teleport.empty())
+    {
+        std::string error;
+        if (!travel.Load(workingHdv,error))
+        { std::fprintf(stderr,"Map catalog: %s\n",error.c_str()); return 6; }
+        for (const auto& map : travel.Destinations())
+        {
+            if (options.testMapExits && map.type != 2) continue;
+            if (!options.testMapTravel && !options.testMapExits && map.name != options.teleport) continue;
+            for (int floor=1;floor<=(options.testMapExits ? 1 : map.floors);++floor)
+            {
+                std::array<std::uint8_t,4096> tiles{};
+                if (!travel.Preview(map,floor,tiles,error))
+                { std::fprintf(stderr,"Preview %s: %s\n",map.name.c_str(),error.c_str()); return 6; }
+                // Choose plain terrain, away from doors, stairs, and monsters.
+                const int size = dlrl::MapTravel::Size(map);
+                int x = 16, y = 1;
+                for (int p=size+1;p<size*(size-1);++p)
+                    if (tiles[p] == (map.type==1 ? 0x34 : 0x2E))
+                    { x=p%size; y=p/size; break; }
+                if (options.testMapExits)
+                {
+                    const auto end = tiles.begin() + size * size;
+                    const auto stairs = std::find_if(tiles.begin(), end,
+                        [](auto tile) { return tile % 80 == 4; });
+                    if (stairs == end || stairs - tiles.begin() >= size * (size - 1))
+                    { std::fprintf(stderr,"No usable exit stairs: %s\n",map.name.c_str()); return 6; }
+                    x = (stairs - tiles.begin()) % size;
+                    y = (stairs - tiles.begin()) / size + 1;
+                }
+                trips.push_back({map,floor,x,y});
+            }
+        }
+        if (trips.empty()) { std::fprintf(stderr,"No matching teleport destination\n"); return 6; }
+    }
     const uint32_t cyclesPerBatch = static_cast<uint32_t>(g_fCurrentCLK6502 * 1e-3);
     for (int frame = 0; frame < options.frames; ++frame)
     {
+        if (exiting)
+        {
+            const auto& map = trips[nextTrip-1].destination;
+            const int expectedType = map.insideTown ? 0 : 1;
+            if (MemGetMainPtr(dlrl::deathlord::MapType)[0] == expectedType && hooks.CanTeleport())
+            {
+                const bool correct = MemGetMainPtr(dlrl::deathlord::MapOverlandX)[0] == map.worldX
+                    && MemGetMainPtr(dlrl::deathlord::MapOverlandY)[0] == map.worldY
+                    && (!map.insideTown || (MemGetMainPtr(0xFC51)[0] == map.parentTown.track
+                                           && MemGetMainPtr(0xFC52)[0] == map.parentTown.sector));
+                std::printf("Exit %s: %s\n",correct ? "PASS" : "FAIL",map.name.c_str());
+                if (!correct) { travelFailed=true; break; }
+                exiting = false;
+                if (nextTrip==trips.size())
+                { std::printf("Map exits verified: %zu dungeons\n",trips.size()); break; }
+            }
+            else if (frame-travelStarted>1500)
+            { std::fprintf(stderr,"Exit timed out: %s at PC $%04X\n",map.name.c_str(),regs.pc); travelFailed=true; break; }
+        }
+        if (traveling && !hooks.TeleportPending())
+        {
+            using namespace dlrl::deathlord;
+            const auto& trip = trips[nextTrip-1];
+            const int expectedX = trip.x + (trip.destination.type==2 ? ((trip.floor-1)&1)*32 : 0);
+            const int expectedY = trip.y + (trip.destination.type==2 ? (((trip.floor-1)&3)/2)*32 : 0);
+            std::array<std::uint8_t,4096> preview{};
+            std::string error;
+            bool terrainOkay = travel.Preview(trip.destination,trip.floor,preview,error);
+            const int size = dlrl::MapTravel::Size(trip.destination);
+            int matchingTiles = 0;
+            for (int y=0;y<size;++y)
+                for (int x=0;x<size;++x)
+                {
+                    const int mapX=x+expectedX-trip.x, mapY=y+expectedY-trip.y;
+                    if (MemGetMainPtr(GameMap)[mapY*64+mapX]%80==preview[y*size+x]%80) ++matchingTiles;
+                }
+            terrainOkay = terrainOkay && matchingTiles > size*size*9/10;
+            const bool okay = terrainOkay && MemGetMainPtr(MapType)[0]==trip.destination.type
+                && MemGetMainPtr(MapX)[0]==expectedX && MemGetMainPtr(MapY)[0]==expectedY
+                && MemGetMainPtr(MapFloor)[0]==trip.floor;
+            std::printf("Travel %s: %s floor %d at %d,%d (expected %d,%d), type %d, matching tiles %d/%d\n",
+                okay?"PASS":"FAIL",trip.destination.name.c_str(),MemGetMainPtr(MapFloor)[0],
+                MemGetMainPtr(MapX)[0],MemGetMainPtr(MapY)[0],expectedX,expectedY,MemGetMainPtr(MapType)[0],matchingTiles,size*size);
+            std::fflush(stdout);
+            traveling = false;
+            if (!okay) { travelFailed=true; break; }
+            if (options.testMapExits)
+            {
+                KeybQueueKeypress('I',ASCII);
+                exiting = true;
+                travelStarted = frame;
+            }
+            else if (nextTrip == trips.size())
+            { std::printf("Map travel verified: %zu destinations and floors\n",trips.size()); break; }
+        }
+        if (traveling && frame-travelStarted>1500)
+        { std::fprintf(stderr,"Teleport timed out at PC $%04X\n",regs.pc); travelFailed=true; break; }
+        if (!traveling && !exiting && nextTrip<trips.size() && hooks.CanTeleport())
+        {
+            std::string error;
+            if (!hooks.QueueTeleport(trips[nextTrip],error))
+            { std::fprintf(stderr,"Teleport failed: %s\n",error.c_str()); travelFailed=true; break; }
+            std::printf("Travel begin: %s floor %d\n",trips[nextTrip].destination.name.c_str(),trips[nextTrip].floor);
+            std::fflush(stdout);
+            ++nextTrip;
+            traveling = true;
+            travelStarted = frame;
+        }
         if (frame == options.keyAtFrame)
             KeybQueueKeypress(options.key, ASCII);
         for (const Options::KeyEvent& event : options.keyEvents)
@@ -210,6 +330,11 @@ int main(int argc, char** argv)
     }
 
     const uint64_t hash = FramebufferHash();
+    if (!options.memoryOutput.empty())
+    {
+        std::ofstream memory(options.memoryOutput, std::ios::binary);
+        memory.write(reinterpret_cast<const char*>(MemGetMainPtr(0)), 0x10000);
+    }
     const bool wrote = WriteFramebufferBmp(options.output);
     std::printf("DLRL HDV capture: frames=%d pc=$%04X framebuffer=%ux%u fnv1a64=%016llx output=%s\n",
                 options.frames, regs.pc,
@@ -226,5 +351,5 @@ int main(int argc, char** argv)
     std::error_code ignored;
     std::filesystem::remove(workingHdv, ignored);
 
-    return wrote ? 0 : 5;
+    return travelFailed || traveling || exiting || nextTrip<trips.size() ? 6 : wrote ? 0 : 5;
 }
