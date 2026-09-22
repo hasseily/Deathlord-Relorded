@@ -1,6 +1,7 @@
 #include "Frame.h"
 #include "DlrlHooks.h"
 #include "MapTravel.h"
+#include "HackingChecks.h"
 
 #include "Emulator/CardManager.h"
 #include "Emulator/Core.h"
@@ -37,6 +38,7 @@ struct Options
     std::string teleport;
     bool testMapTravel = false;
     bool testMapExits = false;
+    bool testHacking = false;
     int frames = 600;
     int keyAtFrame = -1;
     BYTE key = ' ';
@@ -54,6 +56,7 @@ bool ParseOptions(int argc, char** argv, Options& options)
         else if (arg == "--teleport" && i + 1 < argc) options.teleport = argv[++i];
         else if (arg == "--test-map-travel") options.testMapTravel = true;
         else if (arg == "--test-map-exits") options.testMapExits = true;
+        else if (arg == "--test-hacking") options.testHacking = true;
         else if (arg == "--frames" && i + 1 < argc) options.frames = std::stoi(argv[++i]);
         else if (arg == "--key-at" && i + 1 < argc) options.keyAtFrame = std::stoi(argv[++i]);
         else if (arg == "--key" && i + 1 < argc) options.key = static_cast<BYTE>(argv[++i][0]);
@@ -205,6 +208,7 @@ int main(int argc, char** argv)
     bool exiting = false;
     int travelStarted = 0;
     bool travelFailed = false;
+    bool hackingVerified = !options.testHacking;
     if (options.testMapTravel || options.testMapExits || !options.teleport.empty())
     {
         std::string error;
@@ -243,6 +247,11 @@ int main(int argc, char** argv)
     const uint32_t cyclesPerBatch = static_cast<uint32_t>(g_fCurrentCLK6502 * 1e-3);
     for (int frame = 0; frame < options.frames; ++frame)
     {
+        if (options.testHacking && hooks.CanTeleport())
+        {
+            hackingVerified = dlrl::RunHackingChecks(hooks);
+            break;
+        }
         if (exiting)
         {
             const auto& map = trips[nextTrip-1].destination;
@@ -351,5 +360,5 @@ int main(int argc, char** argv)
     std::error_code ignored;
     std::filesystem::remove(workingHdv, ignored);
 
-    return travelFailed || traveling || exiting || nextTrip<trips.size() ? 6 : wrote ? 0 : 5;
+    return !hackingVerified || travelFailed || traveling || exiting || nextTrip<trips.size() ? 6 : wrote ? 0 : 5;
 }

@@ -1,6 +1,7 @@
 # DLRL 3.0 party and clean-game tools
 
-The File menu owns four destructive/persistence-related tools.
+The File menu owns clean-game reset and party import/export. The live editor
+is under **Hacking → Party Editor…**.
 
 ## Clean new game
 

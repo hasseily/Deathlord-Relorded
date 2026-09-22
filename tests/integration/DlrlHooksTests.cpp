@@ -296,6 +296,43 @@ int main()
     Check(hooks.State().hasBeenIdle, "idle hook records a settled game state");
 
     {
+        DlrlHooks cheats;
+        Check(!cheats.Hacking().invincible && !cheats.Hacking().automaticBattleSuccess,
+              "hacking options are disabled by default");
+        const std::array<BYTE,3> combatCall = {0x20,0x38,0xA4};
+        std::copy(combatCall.begin(),combatCall.end(),MemGetMainPtr(PcBattleCombatCall));
+        MemGetMainPtr(PcBattleCombatReturn)[0] = 0x60;
+        MemGetMainPtr(PartySizeAddress)[0] = PartySize;
+        cheats.HandleInstruction(PcBattleEnemyId);
+        MemGetMainPtr(BattleEnemyCount)[0] = 10;
+        MemGetMainPtr(BattleEnemyXp)[0] = 20;
+        MemGetMainPtr(BattleRewardKillLimit)[0] = 2;
+        MemGetMainPtr(BattleXpLow)[0] = 4;
+        MemGetMainPtr(BattleXpHigh)[0] = 0;
+        regs.pc = PcBattleCombatCall;
+        Check(!cheats.HandleInstruction(regs.pc).skipOpcode
+                  && MemGetMainPtr(BattleEnemyCount)[0] == 10,
+              "disabled automatic victory leaves normal combat untouched");
+        cheats.Hacking().automaticBattleSuccess = true;
+        const auto stackBefore = regs.sp;
+        const auto victory = cheats.HandleInstruction(PcBattleCombatCall);
+        Check(victory.skipOpcode && regs.pc == PcBattleCombatCall + 3 && regs.sp == stackBefore,
+              "automatic victory skips only the combat-loop call, preserving its caller stack");
+        Check(MemGetMainPtr(BattleXpLow)[0] == 64
+                  && MemGetMainPtr(BattleRewardKillLimit)[0] == 255,
+              "automatic victory adds remaining XP exactly once and respects the native kill limit");
+        Check(MemGetMainPtr(BattleEnemyCount)[0] == 0
+                  && MemGetMainPtr(BattleEscaped)[0] == 0,
+              "automatic victory records defeated enemies, not a retreat");
+        cheats.HandleInstruction(PcBattleCombatCall);
+        Check(MemGetMainPtr(BattleXpLow)[0] == 64,
+              "completed automatic battles cannot award duplicate XP");
+        cheats.ResetRuntime();
+        Check(cheats.Hacking().automaticBattleSuccess,
+              "reboot clears runtime state without changing the player's hacking settings");
+    }
+
+    {
         TeleportRequest target;
         target.destination.type = 2;
         target.destination.floors = 8;

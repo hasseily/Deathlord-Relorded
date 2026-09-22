@@ -32,6 +32,13 @@ struct RelordedChanges
     bool distributeGold = true;
 };
 
+// Optional cheats are separate from the normally enabled Relorded fixes.
+struct HackingOptions
+{
+    bool invincible = false;
+    bool automaticBattleSuccess = false;
+};
+
 enum class StartMenuState
 {
     Other,
@@ -113,6 +120,8 @@ public:
 
     RelordedChanges& Changes() { return changes_; }
     const RelordedChanges& Changes() const { return changes_; }
+    HackingOptions& Hacking() { return hacking_; }
+    const HackingOptions& Hacking() const { return hacking_; }
     const DlrlRuntimeState& State() const { return state_; }
 
     void SetEventCallback(HookEventCallback callback, void* userData = nullptr);
@@ -131,8 +140,10 @@ private:
     std::uint32_t NextRandom();
     bool HandleTeleport(std::uint16_t pc, CpuInstructionHookResult& result);
     void LoadTeleportDestination(const TeleportRequest& request);
+    bool HandleHacking(std::uint16_t pc, CpuInstructionHookResult& result);
 
     RelordedChanges changes_{};
+    HackingOptions hacking_{};
     DlrlRuntimeState state_{};
     HookEventCallback eventCallback_ = nullptr;
     void* eventUserData_ = nullptr;

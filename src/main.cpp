@@ -130,6 +130,7 @@ struct AppState
     bool showLog = false;
     bool showAbout = false;
     bool showPartyEditor = false;
+    bool showHackingMenuFixture = false;
     bool newGameRequested = false;
     bool importConfirmationRequested = false;
     bool operationErrorRequested = false;
@@ -208,6 +209,14 @@ void LoadHostSettings(AppState& state)
         state.englishNames = json.value("english_names", state.englishNames);
         state.autoHideMenuBar = json.value("menu_auto_hide", state.autoHideMenuBar);
         state.mapFogEnabled = json.value("map_fog_enabled", state.mapFogEnabled);
+        if (json.contains("hacking"))
+        {
+            const auto& saved = json["hacking"];
+            auto& hacking = state.hooks.Hacking();
+            hacking.invincible = saved.value("invincible", hacking.invincible);
+            hacking.automaticBattleSuccess = saved.value(
+                "automatic_battle_success", hacking.automaticBattleSuccess);
+        }
         const int mapViewMode = json.value(
             "map_view_mode", static_cast<int>(state.mapViewMode));
         if ((mapViewMode >= 0 && mapViewMode <= 4) || mapViewMode == 99)
@@ -266,6 +275,10 @@ void SaveSettings(const AppState& state)
         { "map_fog_enabled", state.mapFogEnabled },
         { "map_view_mode", static_cast<int>(state.mapViewMode) },
         { "hdv_path", state.hdvPath.string() },
+        { "hacking", {
+            { "invincible", state.hooks.Hacking().invincible },
+            { "automatic_battle_success", state.hooks.Hacking().automaticBattleSuccess },
+        }},
         { "relorded_changes", {
             { "xp_reallocation", changes.xpReallocation },
             { "exit_pit_by_moving", changes.exitPitByMoving },
@@ -1464,9 +1477,6 @@ void RenderAppleWindow(AppState& state)
                 OpenPartyExportDialog(state);
             if (ImGui::MenuItem("Import party...", nullptr, false, activeParty))
                 OpenPartyImportDialog(state);
-            if (ImGui::MenuItem("Party editor", nullptr,
-                                state.showPartyEditor, activeParty))
-                state.showPartyEditor = !state.showPartyEditor;
             ImGui::Separator();
             if (ImGui::MenuItem("Quit", "Cmd/Ctrl-Q"))
             {
@@ -1574,7 +1584,7 @@ void RenderAppleWindow(AppState& state)
             ImGui::MenuItem("Spell Window", "Alt-S", &state.showSpells);
             ImGui::MenuItem("Log Window", "Alt-L", &state.showLog);
             ImGui::Separator();
-            if (ImGui::BeginMenu("Hacks / Relorded Changes"))
+            if (ImGui::BeginMenu("Relorded Changes"))
             {
                 auto& changes = state.hooks.Changes();
                 ImGui::MenuItem("Fair combat XP allocation", nullptr, &changes.xpReallocation);
@@ -1597,6 +1607,25 @@ void RenderAppleWindow(AppState& state)
                 if (ImGui::MenuItem("Enable all fixes")) changes = {};
                 ImGui::EndMenu();
             }
+            ImGui::EndMenu();
+        }
+        if (state.showHackingMenuFixture)
+            ImGui::OpenPopup("Hacking");
+        if (ImGui::BeginMenu("Hacking"))
+        {
+            if (state.showHackingMenuFixture && state.presentedFrames == state.smokeFrames - 1)
+                std::puts("DLRL hacking menu: visible");
+            if (ImGui::MenuItem("Party Editor...", nullptr,
+                                state.showPartyEditor, activeParty))
+                state.showPartyEditor = !state.showPartyEditor;
+            ImGui::Separator();
+            auto& hacking = state.hooks.Hacking();
+            ImGui::MenuItem("Invincible", nullptr, &hacking.invincible);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Prevent HP loss from combat, spells, traps, and other damage.");
+            ImGui::MenuItem("Automatic Battle Success", nullptr, &hacking.automaticBattleSuccess);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Win battles automatically, keeping normal victory rewards.");
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Help"))
@@ -1867,6 +1896,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
         else if (arg == "--show-spells") state->showSpells = true;
         else if (arg == "--show-log") state->showLog = true;
         else if (arg == "--show-party-editor") state->showPartyEditor = true;
+        else if (arg == "--show-hacking-menu") state->showHackingMenuFixture = true;
+        else if (arg == "--invincible") state->hooks.Hacking().invincible = true;
+        else if (arg == "--automatic-battle-success") state->hooks.Hacking().automaticBattleSuccess = true;
         else if (arg == "--show-new-game-confirm") state->newGameRequested = true;
         else if (arg == "--show-teleport") state->teleportRequested = true;
         else if (arg == "--no-map-fog") state->mapFogEnabled = false;

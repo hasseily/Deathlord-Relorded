@@ -1,5 +1,14 @@
 # Visual regression fixtures
 
+The top-level Hacking menu is captured by `sdl_hacking_menu` with both optional
+cheats checked. Its Party Editor entry opens the existing full editor (covered
+by `sdl_party_editor_smoke`). The old `Hacks / Relorded Changes` submenu is now
+named `Relorded Changes`. This additional top-level menu changes the menu-bar
+pixels in earlier full-window captures below; their content-area checkpoints
+remain applicable. See [hacking.md](../../docs/hacking.md) for behavior/tests.
+The inspected macOS Hacking-menu capture has SHA-256
+`1ae0013ba99a5a7c694e2a1ae002bf176b6fc5ed8066c120135e17f018545b44`.
+
 Map tools are documented in [map-tools.md](../../docs/map-tools.md).
 `sdl_teleport_1280x900` and `sdl_teleport_640x480` capture the searchable
 teleport modal, including the map preview, coordinate fields, and fixed

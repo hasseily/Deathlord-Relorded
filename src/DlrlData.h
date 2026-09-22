@@ -88,6 +88,10 @@ constexpr std::uint16_t BattleEnemyIndex = 0xA574;
 constexpr std::uint16_t BattleEnemyCount = 0x0052;
 constexpr std::uint16_t BattleEnemyDisabled = 0xAF8A;
 constexpr std::uint16_t BattleEnemyHealth = 0xAFAA;
+constexpr std::uint16_t BattleEnemyXp = 0xAF7C;
+constexpr std::uint16_t BattleRewardKillLimit = 0xA91A; // Remaining rewarded kills minus one.
+constexpr std::uint16_t BattleEscaped = 0x0051;
+constexpr std::uint16_t BattleRetreated = 0x0055;
 constexpr std::uint16_t MonsterCurrentHealthMultiplier = 0xAF72;
 constexpr std::uint16_t MonsterCurrentName = 0xAF7E;
 
@@ -168,6 +172,21 @@ constexpr std::uint16_t PcBattleEnemyAttack = 0xAA42;
 constexpr std::uint16_t PcBattleEnemyMissed = 0xAB43;
 constexpr std::uint16_t PcBattleEnemyHit = 0xADC7;
 constexpr std::uint16_t PcBattleBeginXp = 0xA30A;
+// HP reduction paths and safe combat-frame checkpoints in the 2.0.1 HDV.
+constexpr std::uint16_t PcApplyHpDamage = 0x6063;
+constexpr std::uint16_t PcCheckRemainingHp = 0x607B;
+constexpr std::uint16_t PcHalvePartyHp = 0x600D;
+constexpr std::uint16_t PcAfterHalvePartyHp = 0x6013;
+constexpr std::uint16_t PcClearFatalHp = 0xAC09;
+constexpr std::uint16_t PcAfterClearFatalHp = 0xAC12;
+constexpr std::uint16_t PcDrainMaximumHp = 0xAE4A;
+constexpr std::uint16_t PcDestroyMaximumHp = 0xAE15;
+constexpr std::uint16_t PcHpDrainReturn = 0xAE81;
+constexpr std::uint16_t PcBattleCombatCall = 0xA2F2;
+constexpr std::uint16_t PcBattlePartyRound = 0xA440;
+constexpr std::uint16_t PcBattleEnemyRound = 0xA502;
+constexpr std::uint16_t PcBattleCommandPrompt = 0xA46E;
+constexpr std::uint16_t PcBattleCombatReturn = 0xA4CE;
 constexpr std::uint16_t PcDead = 0x897E;
 constexpr std::uint16_t PcGiveOrb = 0x9825;
 

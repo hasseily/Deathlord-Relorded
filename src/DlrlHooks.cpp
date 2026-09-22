@@ -296,11 +296,76 @@ std::uint32_t DlrlHooks::NextRandom()
     return randomState_;
 }
 
+bool DlrlHooks::HandleHacking(std::uint16_t pc, CpuInstructionHookResult& result)
+{
+    if (!state_.inGameMap) return false;
+    if (hacking_.invincible && regs.x < PartySize)
+    {
+        switch (pc)
+        {
+        case PcApplyHpDamage:
+            // Combat, poison, starvation, traps, spells, and tile damage all
+            // enter this 16-bit subtractor. Keep its native alive/dead return
+            // flags without performing either byte of the subtraction.
+            regs.a = regs.y = PartyByte(PartyHealthLow, regs.x);
+            SkipTo(result, PcCheckRemainingHp, 2, true);
+            return true;
+        case PcHalvePartyHp:
+            SkipTo(result, PcAfterHalvePartyHp, 14, true);
+            return true;
+        case PcClearFatalHp:
+            if (PartyWord(PartyHealthLow, PartyHealthHigh, regs.x) == 0) break;
+            // Death/ashes effects bypass ordinary damage. Do not turn a
+            // protected living character into a corpse with nonzero HP.
+            PartyByte(PartyStatus, regs.x) &= ~0xC0;
+            SkipTo(result, PcAfterClearFatalHp, 15, true);
+            return true;
+        case PcDrainMaximumHp:
+        case PcDestroyMaximumHp:
+            SkipTo(result, PcHpDrainReturn, 2, true);
+            return true;
+        default:
+            break;
+        }
+    }
+    if (!hacking_.automaticBattleSuccess || !state_.inBattle) return false;
+    if (pc != PcBattleCombatCall && pc != PcBattlePartyRound
+        && pc != PcBattleEnemyRound && pc != PcBattleCommandPrompt) return false;
+    // These checkpoints share the combat-loop stack frame. Never jump out
+    // from a nested attack/spell routine or an unrecognized game overlay.
+    if (Ram(PcBattleCombatCall) != 0x20 || Ram(PcBattleCombatCall + 1) != 0x38
+        || Ram(PcBattleCombatCall + 2) != 0xA4 || Ram(PcBattleCombatReturn) != 0x60)
+        return false;
+    const int enemies = Ram(BattleEnemyCount);
+    const int partySize = Ram(PartySizeAddress);
+    if (enemies < 1 || enemies > 32 || partySize < 1 || partySize > PartySize) return false;
+
+    // Match the native enemy-removal bookkeeping ($A8CB-$A8F5), including
+    // its 32-kill XP limit. The original post-combat code still distributes
+    // XP, checks levels, restores the map/leader, and handles victory loot.
+    const int limit = Ram(BattleRewardKillLimit);
+    const int rewarded = std::min(enemies, limit < 128 ? limit + 1 : 0);
+    const unsigned xp = Ram(BattleXpLow) | (Ram(BattleXpHigh) << 8);
+    const unsigned total = xp + rewarded * Ram(BattleEnemyXp);
+    Ram(BattleXpLow) = static_cast<BYTE>(total);
+    Ram(BattleXpHigh) = static_cast<BYTE>(total >> 8);
+    Ram(BattleRewardKillLimit) = static_cast<BYTE>(limit - rewarded);
+    std::fill_n(MemGetMainPtr(BattleEnemyHealth), 32, static_cast<BYTE>(0));
+    std::fill_n(MemGetMainPtr(BattleEnemyDisabled), 32, static_cast<BYTE>(0));
+    std::fill_n(MemGetMainPtr(BattleGetXp), partySize, static_cast<BYTE>(1));
+    Ram(BattleEnemyCount) = Ram(BattleEscaped) = Ram(BattleRetreated) = 0;
+    KeybReadFlag();
+    SkipTo(result, pc == PcBattleCombatCall ? PcBattleCombatCall + 3
+                                          : PcBattleCombatReturn, 6, true);
+    return true;
+}
+
 CpuInstructionHookResult DlrlHooks::HandleInstruction(std::uint16_t pc)
 {
     CpuInstructionHookResult result{};
     ++state_.hookCalls;
     state_.inGameMap = Ram(MapIsInGame) == 0xE5;
+    if (HandleHacking(pc, result)) return result;
     if (HandleTeleport(pc, result)) return result;
     if (pc == PcDecrementTimer) atMapPrompt_ = true;
     else if (pc == PcMapKey || pc == PcBattleEnter || pc == PcBattleAmbush)

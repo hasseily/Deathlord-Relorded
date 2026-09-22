@@ -219,6 +219,7 @@ if(BUILD_TESTING)
 
     add_executable(dlrl_capture
         tests/integration/DlrlCapture.cpp
+        tests/integration/HackingChecks.cpp
     )
     target_link_libraries(dlrl_capture PRIVATE dlrl_platform)
     target_compile_definitions(dlrl_capture PRIVATE
@@ -250,6 +251,22 @@ if(BUILD_TESTING)
     set_tests_properties(hdv_input_capture PROPERTIES
         SKIP_RETURN_CODE 77
         PASS_REGULAR_EXPRESSION "pc=\\$1C27.*fnv1a64=466f292c38add1a7"
+    )
+
+    add_test(NAME hdv_hacking
+        COMMAND dlrl_capture
+            --hdv "${DLRL_TEST_HDV}"
+            --frames 15000
+            --key-event 3500:X
+            --key-event 4400:P
+            --key-event "5500: "
+            --test-hacking
+            --output "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-hacking.bmp"
+    )
+    set_tests_properties(hdv_hacking PROPERTIES
+        SKIP_RETURN_CODE 77
+        LABELS "hdv;hacking"
+        TIMEOUT 120
     )
 
     foreach(map_test IN ITEMS travel exits)
@@ -331,6 +348,19 @@ if(BUILD_TESTING)
         )
     endif()
     if(DLRL_ENABLE_GUI_TESTS)
+        add_test(NAME sdl_hacking_menu
+            COMMAND $<TARGET_FILE:dlrl>
+                --smoke-frames 3
+                --ui-fixture
+                --show-hacking-menu
+                --invincible
+                --automatic-battle-success
+                --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-hacking-menu.bmp"
+        )
+        set_tests_properties(sdl_hacking_menu PROPERTIES
+            LABELS "gui;visual;hacking"
+            PASS_REGULAR_EXPRESSION "DLRL hacking menu: visible"
+        )
         foreach(fog_mode IN ITEMS enabled disabled)
             set(fog_option "")
             if(fog_mode STREQUAL "disabled")
