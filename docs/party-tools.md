@@ -6,7 +6,8 @@ is under **Hacking → Party Editor…**.
 ## Clean new game
 
 The active writable HDV is a per-user copy. The immutable clean template comes
-from `assets/Images/Deathlord PRODOS.hdv` and is staged as
+from `DLRL_CLEAN_HDV_SOURCE` (local default: `assets/Images/Deathlord PRODOS.hdv`;
+CI packages use the verified original from Git history) and is staged as
 `Resources/Images/Deathlord PRODOS.hdv` in the macOS bundle or
 `Images/Deathlord PRODOS.hdv` beside the Windows/Linux executable.
 After confirmation, DLRL closes the SmartPort image, prepares a complete

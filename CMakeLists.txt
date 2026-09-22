@@ -179,11 +179,12 @@ add_custom_command(TARGET dlrl POST_BUILD
     VERBATIM
 )
 
-# The tracked image tree supplies the immutable clean-game HDV and the
-# original master images. Normal play copies the HDV to per-user storage and
-# never writes to this packaged template.
+# Local builds use the tracked HDV by default. Release builds can supply the
+# verified original from Git history without changing the source image tree.
+# Normal play copies the packaged template to per-user storage.
 set(DLRL_IMAGE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/assets/Images")
-set(DLRL_CLEAN_HDV_SOURCE "${DLRL_IMAGE_SOURCE_DIR}/Deathlord PRODOS.hdv")
+set(DLRL_CLEAN_HDV_SOURCE "${DLRL_IMAGE_SOURCE_DIR}/Deathlord PRODOS.hdv"
+    CACHE FILEPATH "HDV template staged into the application and packages")
 if(NOT EXISTS "${DLRL_CLEAN_HDV_SOURCE}")
     message(FATAL_ERROR "Missing canonical game HDV: ${DLRL_CLEAN_HDV_SOURCE}")
 endif()
@@ -191,6 +192,9 @@ add_custom_command(TARGET dlrl POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${DLRL_IMAGE_SOURCE_DIR}"
         "${DLRL_RESOURCE_DIR}/Images"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${DLRL_CLEAN_HDV_SOURCE}"
+        "${DLRL_RESOURCE_DIR}/Images/Deathlord PRODOS.hdv"
     COMMAND ${CMAKE_COMMAND} -E rm -f
         "${DLRL_RESOURCE_DIR}/Images/.DS_Store"
         "${DLRL_RESOURCE_DIR}/Images/Original Master Images/.DS_Store"
@@ -227,11 +231,11 @@ if(BUILD_TESTING)
     )
 
     set(DLRL_TEST_HDV
-        "${DLRL_CLEAN_HDV_SOURCE}"
-        CACHE FILEPATH "DLRL HDV used by integration tests")
+        "${DLRL_IMAGE_SOURCE_DIR}/Deathlord PRODOS.hdv"
+        CACHE FILEPATH "Playable-party HDV used by gameplay integration tests")
     add_test(NAME hdv_boot_capture
         COMMAND dlrl_capture
-            --hdv "${DLRL_TEST_HDV}"
+            --hdv "${DLRL_CLEAN_HDV_SOURCE}"
             --frames 600
             --output "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-boot.bmp"
     )
@@ -242,7 +246,7 @@ if(BUILD_TESTING)
 
     add_test(NAME hdv_input_capture
         COMMAND dlrl_capture
-            --hdv "${DLRL_TEST_HDV}"
+            --hdv "${DLRL_CLEAN_HDV_SOURCE}"
             --frames 1800
             --key-at 800
             --key X

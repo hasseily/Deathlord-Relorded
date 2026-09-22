@@ -4,11 +4,21 @@ DLRL uses CMake 3.20+, C++17, SDL3, OpenGL, and Dear ImGui. CMake uses an
 installed SDL3 when available and otherwise fetches the same pinned SDL release
 as NAC. ImGui is fetched at configure time.
 
-The canonical clean HDV and original master images are tracked in
-`assets/Images`. CMake stages that complete directory into every runnable
-build and package. CI verifies the checked-in image hashes before building;
-normal play copies the clean HDV to per-user storage and never mutates the
-source or packaged template.
+Local builds stage the HDV and original master images from `assets/Images`.
+CI packages the checksum-verified original HDV from Git history instead of the
+tracked saved-party image, without changing `assets/Images`. Normal play copies
+the packaged template to per-user storage and never mutates it.
+
+To build locally with the same original template as the tester packages:
+
+```sh
+git fetch --no-tags --depth=1 origin 645e8eb0c28b984fa42a05bac314d4d509e8a711
+cmake -P cmake/PrepareCleanHdv.cmake
+cmake -S . -B build -DDLRL_CLEAN_HDV_SOURCE="$PWD/build-package-input/Deathlord PRODOS.hdv"
+```
+
+The preparation script extracts into ignored build output and verifies SHA-256
+`32311bcd479d902c693a0e14fee572f64cc4661d2c0cf32b28400170d3cf33d9`.
 
 ## Windows
 
@@ -60,9 +70,10 @@ cmake -S . -B build-mac \
   -DFETCHCONTENT_SOURCE_DIR_IMGUI="$PWD/../NoxArchaistCompanion/build-mac/_deps/imgui-src"
 ```
 
-The HDV tests use `assets/Images/Deathlord PRODOS.hdv` by default or accept
-`-DDLRL_TEST_HDV=/path/to/Deathlord.hdv`. A clean clone therefore runs them
-without any separate game download.
+Boot/input tests use `DLRL_CLEAN_HDV_SOURCE`. Gameplay tests need an existing
+party and use `assets/Images/Deathlord PRODOS.hdv` by default, or accept
+`-DDLRL_TEST_HDV=/path/to/played-game.hdv`. Tests use disposable copies, leaving
+both source images untouched. A clone runs them without a separate game download.
 
 Native visual tests are opt-in because they open a real window:
 
@@ -120,9 +131,13 @@ map loading, and automatic attribute rerolls, then restore 1x.
 
 `.github/workflows/cmake.yml` follows the NAC matrix on Linux, Windows, and
 macOS. It builds SDL3 from the pinned FetchContent source, runs core, hook, and
-real-HDV boot/input tests, launches and captures the packaged Linux SDL app,
+real-HDV boot/input and gameplay tests, launches and captures the packaged Linux SDL app,
 and uploads a directly testable portable archive for each platform on every
 run. A version tag such as `3.0.0-rc1` also collects those archives into a draft
 prerelease. Each archive includes a verified clean HDV; the application copies
 it to per-user storage before normal play and never mutates the packaged
 template.
+
+Windows packages statically link the Release MSVC runtime; Linux packages target
+Ubuntu 24.04 and bundle SDL3. Both include [tester instructions](testing-builds.md)
+and build provenance. CI verifies the staged HDV again before archiving it.

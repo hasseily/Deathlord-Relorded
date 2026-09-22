@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             generator: Ninja
             artifact: dlrl-linux-x64
           - os: windows-latest
@@ -32,8 +32,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # The tracked image tree is the canonical source for the immutable clean
-      # HDV and the original master images. Verify it before tests/package work.
+      # Keep the working tree and saved-party test fixture untouched. Packages
+      # get the checksum-pinned original HDV from history in a separate directory.
+      - name: Prepare original clean HDV
+        shell: bash
+        run: |
+          git fetch --no-tags --depth=1 origin 645e8eb0c28b984fa42a05bac314d4d509e8a711
+          cmake -P cmake/PrepareCleanHdv.cmake
+
       - name: Verify game images
         shell: bash
         run: |
@@ -51,7 +57,7 @@ jobs:
           }
           verify_sha256 \
             32311bcd479d902c693a0e14fee572f64cc4661d2c0cf32b28400170d3cf33d9 \
-            "assets/Images/Deathlord PRODOS.hdv"
+            "build-package-input/Deathlord PRODOS.hdv"
           verify_sha256 \
             c63561b59e56016324b568843c24dfa90b16cfb5b902dc95bcfca2b344da1d03 \
             "assets/Images/Original Master Images/Deathlord - Disk 1, Side A Boot disk.woz"
@@ -78,15 +84,37 @@ jobs:
             libibus-1.0-dev
 
       - name: Configure
-        run: cmake -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release
+        shell: bash
+        # Link the Release MSVC runtime statically, including SDL, so Windows
+        # testers do not need a separately installed Visual C++ redistributable.
+        run: |
+          cmake -B build -G "${{ matrix.generator }}" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded \
+            -DDLRL_CLEAN_HDV_SOURCE="$GITHUB_WORKSPACE/build-package-input/Deathlord PRODOS.hdv"
 
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      # Includes deterministic boot and input captures against the canonical
-      # clean HDV, in addition to core and hook tests.
+      # Boot/input captures use the packaged clean HDV. Hacking and map travel
+      # use disposable copies of the tracked playable-party HDV as their fixture.
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Verify staged HDV and write build information
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$RUNNER_OS" in
+            Windows) image_dir="build/Release/Images" ;;
+            macOS) image_dir="build/dlrl.app/Contents/Resources/Images" ;;
+            *) image_dir="build/Images" ;;
+          esac
+          expected=32311bcd479d902c693a0e14fee572f64cc4661d2c0cf32b28400170d3cf33d9
+          actual="$(cmake -E sha256sum "$image_dir/Deathlord PRODOS.hdv")"
+          test "${actual%% *}" = "$expected"
+          printf 'DLRL tester build\nCommit: %s\nPlatform: %s\nClean HDV SHA-256: %s\n' \
+            "$GITHUB_SHA" "${{ matrix.os }}" "$expected" > build/BUILD-INFO.txt
 
       - name: Package Linux
         if: runner.os == 'Linux'
@@ -99,6 +127,8 @@ jobs:
             cp -r "build/$d" "$OUT/"
           done
           cp -P build/_deps/sdl3-build/libSDL3.so* "$OUT/"
+          cp docs/testing-builds.md "$OUT/README.md"
+          cp build/BUILD-INFO.txt "$OUT/"
           patchelf --set-rpath '$ORIGIN' "$OUT/dlrl"
           (cd dist && tar -czf ${{ matrix.artifact }}.tar.gz ${{ matrix.artifact }})
 
@@ -125,6 +155,8 @@ jobs:
           foreach ($d in 'Resources','DLRLAssets','assets','presets','shaders','Images') {
               Copy-Item -Recurse "build/Release/$d" "$out/"
           }
+          Copy-Item docs/testing-builds.md "$out/README.md"
+          Copy-Item build/BUILD-INFO.txt "$out/"
           Compress-Archive -Path "$out/*" -DestinationPath "dist/${{ matrix.artifact }}.zip"
 
       - name: Package macOS
@@ -132,6 +164,7 @@ jobs:
         run: |
           set -e
           APP="build/dlrl.app"
+          cp build/BUILD-INFO.txt "$APP/Contents/Resources/"
           mkdir -p "$APP/Contents/Frameworks"
           SDL_DYLIB=$(ls build/_deps/sdl3-build/libSDL3*.dylib 2>/dev/null \
                        | grep -v '^l' | head -1 || true)
