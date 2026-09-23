@@ -201,8 +201,8 @@ jobs:
               "$APP/Contents/MacOS/dlrl" 2>/dev/null || true
           install_name_tool -delete_rpath "$GITHUB_WORKSPACE/build/_deps/sdl3-build" \
               "$APP/Contents/MacOS/dlrl"
-          lipo -verify_arch arm64 x86_64 "$APP/Contents/MacOS/dlrl"
-          lipo -verify_arch arm64 x86_64 "$APP/Contents/Frameworks/$BASE"
+          lipo "$APP/Contents/MacOS/dlrl" -verify_arch arm64 x86_64
+          lipo "$APP/Contents/Frameworks/$BASE" -verify_arch arm64 x86_64
           # install_name_tool invalidates the linker signatures. Sign nested
           # code first, then seal the complete bundle after all resource copies.
           # These test builds are ad-hoc signed, not Apple-notarized.
