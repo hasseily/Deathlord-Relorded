@@ -1,0 +1,4 @@
+[[actions]]
+name = "play"
+path = "dlrl.exe"
+platform = "windows"

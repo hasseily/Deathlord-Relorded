@@ -1,4 +1,8 @@
-# DLRL tester builds
+# Deathlord Relorded 3.0 — test version
+
+This is the complete playable game, not a time-limited demo. It is a prerelease
+for testing; please back up important parties and report any problems. The
+stable 2.x download remains available separately on itch.io.
 
 Extract the entire archive before launching. Keep all the folders and libraries
 beside the executable; copying only the executable will not work. `BUILD-INFO.txt`
@@ -24,11 +28,30 @@ required. From the extracted directory, run:
 If it will not start, launch it from a terminal and include the error output in
 your report. `ldd ./dlrl` and `ldd ./libSDL3.so.0` help identify missing libraries.
 
+## macOS — Intel and Apple Silicon
+
+Requires macOS 11 or newer. Extract the ZIP and open `dlrl.app`; you can move the
+app to Applications. SDL3 and all game resources are inside the app bundle.
+
+The test app is ad-hoc signed for integrity, but is not Developer ID-signed or
+Apple-notarized. macOS may block the first launch. If you trust this download,
+follow [Apple's instructions for opening an unnotarized app](https://support.apple.com/102445)
+using the per-app **Open Anyway** option in Privacy & Security. Do not disable
+Gatekeeper globally.
+
 ## Game image and saves
 
 The package includes the original clean HDV from Git history, not a developer's
 saved party. Create a party through the game's normal menus before trying the
 party editor or teleport tools.
+
+Press a key at the title screen, then use the original game's **Character
+Options** to create characters and assemble a six-character party. Return to
+the main menu and choose **Play Game**; press Space when prompted. Everything
+is on the included hard disk image; no separate game download or disk swapping
+is required. The original game manual (commands, spells, races and classes) is
+available in the documentation download on the
+[itch.io game page](https://rikkles.itch.io/deathlord-relorded).
 
 On first launch DLRL copies the template into per-user storage; normal play does
 not modify the packaged image. An existing installation keeps its existing save.

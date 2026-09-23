@@ -141,3 +141,9 @@ template.
 Windows packages statically link the Release MSVC runtime; Linux packages target
 Ubuntu 24.04 and bundle SDL3. Both include [tester instructions](testing-builds.md)
 and build provenance. CI verifies the staged HDV again before archiving it.
+
+The macOS tester archive is universal (Intel + Apple Silicon), targets macOS 11,
+and includes SDL3 in the app bundle. CI ad-hoc signs the complete bundle after
+relocating SDL3, validates its signature, then extracts and launches the archived
+app away from the source tree. The builds are not Apple-notarized. Every platform
+package contains an itch app launch manifest under `.itch.toml`.

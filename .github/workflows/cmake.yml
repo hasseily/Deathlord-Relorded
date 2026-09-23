@@ -27,7 +27,7 @@ jobs:
             artifact: dlrl-windows-x64
           - os: macos-latest
             generator: Ninja
-            artifact: dlrl-macos-arm64
+            artifact: dlrl-macos-universal
 
     steps:
       - uses: actions/checkout@v5
@@ -88,10 +88,15 @@ jobs:
         # Link the Release MSVC runtime statically, including SDL, so Windows
         # testers do not need a separately installed Visual C++ redistributable.
         run: |
+          platform_args=()
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            platform_args+=("-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" "-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0")
+          fi
           cmake -B build -G "${{ matrix.generator }}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded \
-            -DDLRL_CLEAN_HDV_SOURCE="$GITHUB_WORKSPACE/build-package-input/Deathlord PRODOS.hdv"
+            -DDLRL_CLEAN_HDV_SOURCE="$GITHUB_WORKSPACE/build-package-input/Deathlord PRODOS.hdv" \
+            "${platform_args[@]}"
 
       - name: Build
         run: cmake --build build --config Release --parallel
@@ -129,6 +134,7 @@ jobs:
           cp -P build/_deps/sdl3-build/libSDL3.so* "$OUT/"
           cp docs/testing-builds.md "$OUT/README.md"
           cp build/BUILD-INFO.txt "$OUT/"
+          cp packaging/itch/linux.toml "$OUT/.itch.toml"
           patchelf --set-rpath '$ORIGIN' "$OUT/dlrl"
           (cd dist && tar -czf ${{ matrix.artifact }}.tar.gz ${{ matrix.artifact }})
 
@@ -157,14 +163,24 @@ jobs:
           }
           Copy-Item docs/testing-builds.md "$out/README.md"
           Copy-Item build/BUILD-INFO.txt "$out/"
-          Compress-Archive -Path "$out/*" -DestinationPath "dist/${{ matrix.artifact }}.zip"
+          # Compress-Archive skips dotfiles; stage this manifest for butler and
+          # use tar's ZIP writer so direct-download archives include it too.
+          Copy-Item packaging/itch/windows.toml "$out/.itch.toml"
+          tar -a -c -f "dist/${{ matrix.artifact }}.zip" -C $out .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Package macOS
         if: runner.os == 'macOS'
         run: |
           set -e
-          APP="build/dlrl.app"
+          OUT="dist/${{ matrix.artifact }}"
+          mkdir -p "$OUT"
+          ditto build/dlrl.app "$OUT/dlrl.app"
+          APP="$OUT/dlrl.app"
           cp build/BUILD-INFO.txt "$APP/Contents/Resources/"
+          cp build/BUILD-INFO.txt "$OUT/"
+          cp docs/testing-builds.md "$OUT/README.md"
+          cp packaging/itch/macos.toml "$OUT/.itch.toml"
           mkdir -p "$APP/Contents/Frameworks"
           SDL_DYLIB=$(ls build/_deps/sdl3-build/libSDL3*.dylib 2>/dev/null \
                        | grep -v '^l' | head -1 || true)
@@ -183,8 +199,30 @@ jobs:
           fi
           install_name_tool -add_rpath "@executable_path/../Frameworks" \
               "$APP/Contents/MacOS/dlrl" 2>/dev/null || true
-          mkdir -p dist
-          ditto -c -k --keepParent "$APP" "dist/${{ matrix.artifact }}.zip"
+          install_name_tool -delete_rpath "$GITHUB_WORKSPACE/build/_deps/sdl3-build" \
+              "$APP/Contents/MacOS/dlrl"
+          lipo -verify_arch arm64 x86_64 "$APP/Contents/MacOS/dlrl"
+          lipo -verify_arch arm64 x86_64 "$APP/Contents/Frameworks/$BASE"
+          # install_name_tool invalidates the linker signatures. Sign nested
+          # code first, then seal the complete bundle after all resource copies.
+          # These test builds are ad-hoc signed, not Apple-notarized.
+          codesign --force --timestamp=none --sign - "$APP/Contents/Frameworks/$BASE"
+          codesign --force --timestamp=none --sign - "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          ditto -c -k "$OUT" "dist/${{ matrix.artifact }}.zip"
+
+      - name: Smoke test archived macOS app
+        if: runner.os == 'macOS'
+        run: |
+          set -e
+          ditto -x -k "dist/${{ matrix.artifact }}.zip" build/archive-check
+          APP="$GITHUB_WORKSPACE/build/archive-check/dlrl.app"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          cd "$RUNNER_TEMP"
+          "$APP/Contents/MacOS/dlrl" --smoke-frames 600 \
+            --capture "$GITHUB_WORKSPACE/build/Testing/dlrl-macos-packaged.bmp"
+          "$APP/Contents/MacOS/dlrl" --smoke-frames 3 --ui-fixture \
+            --capture "$GITHUB_WORKSPACE/build/Testing/dlrl-macos-modern-ui.bmp"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
