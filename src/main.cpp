@@ -65,6 +65,9 @@ enum class UiFixtureMode
 {
     Gameplay,
     Fog,
+    Pit,
+    PitExit,
+    Camp,
     Battle,
     Inventory,
     Loading,
@@ -696,6 +699,18 @@ void SeedModernUiFixture(AppState& state)
     }
     MemGetMainPtr(PartyCurrentClass)[0] = classes[0];
     state.modernUi.SeedVisualFixture(state.uiFixtureMode == UiFixtureMode::Fog);
+    MemGetMainPtr(PartyIconType)[0] = 0;
+    if (state.uiFixtureMode == UiFixtureMode::Pit
+        || state.uiFixtureMode == UiFixtureMode::PitExit)
+    {
+        MemGetMainPtr(MapType)[0] = 2;
+        std::fill_n(map, 64 * 64, static_cast<BYTE>(0x2E));
+        map[31 + 30 * 64] = 0x7E;
+        map[32 + 30 * 64] = 0x3B; // Nearby chest from issue #13.
+        MemGetMainPtr(PartyIconType)[0] = 2;
+    }
+    if (state.uiFixtureMode == UiFixtureMode::Camp)
+        MemGetMainPtr(PartyIconType)[0] = 3;
     if (state.uiFixtureMode == UiFixtureMode::Battle)
         state.modernUi.SeedBattleFixture();
     if (state.uiFixtureMode == UiFixtureMode::Inventory)
@@ -1926,6 +1941,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
             const std::string mode = argv[++i];
             if (mode == "battle") state->uiFixtureMode = UiFixtureMode::Battle;
             else if (mode == "fog") state->uiFixtureMode = UiFixtureMode::Fog;
+            else if (mode == "pit") state->uiFixtureMode = UiFixtureMode::Pit;
+            else if (mode == "pit-exit") state->uiFixtureMode = UiFixtureMode::PitExit;
+            else if (mode == "camp") state->uiFixtureMode = UiFixtureMode::Camp;
             else if (mode == "inventory") state->uiFixtureMode = UiFixtureMode::Inventory;
             else if (mode == "loading") state->uiFixtureMode = UiFixtureMode::Loading;
             else if (mode == "gameover") state->uiFixtureMode = UiFixtureMode::GameOver;
@@ -2232,6 +2250,11 @@ SDL_AppResult SDL_AppIterate(void* appstate)
         SetPaused(state, true);
 
     state.renderer.BeginFrame();
+    // Leave the pit after its texture was cached, without moving or changing
+    // the map bytes. This fixture catches stale party-icon cache entries.
+    if (state.uiFixture && state.uiFixtureMode == UiFixtureMode::PitExit
+        && state.presentedFrames == 1)
+        MemGetMainPtr(dlrl::deathlord::PartyIconType)[0] = 0;
     if (state.hooks.State().inGameMap)
         state.modernUi.UpdateMapTexture(state.hooks.State().inBattle,
                                         state.hooks.State().inTransition,

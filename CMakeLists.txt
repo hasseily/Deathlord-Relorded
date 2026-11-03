@@ -352,6 +352,18 @@ if(BUILD_TESTING)
         )
     endif()
     if(DLRL_ENABLE_GUI_TESTS)
+        foreach(party_state IN ITEMS pit pit-exit camp)
+            add_test(NAME sdl_party_${party_state}
+                COMMAND $<TARGET_FILE:dlrl>
+                    --smoke-frames 3
+                    --ui-fixture-mode ${party_state}
+                    --capture "${CMAKE_CURRENT_BINARY_DIR}/Testing/dlrl-party-${party_state}.bmp"
+            )
+            set_tests_properties(sdl_party_${party_state} PROPERTIES
+                LABELS "gui;visual;maps"
+                PASS_REGULAR_EXPRESSION "frames=3"
+            )
+        endforeach()
         add_test(NAME sdl_hacking_menu
             COMMAND $<TARGET_FILE:dlrl>
                 --smoke-frames 3

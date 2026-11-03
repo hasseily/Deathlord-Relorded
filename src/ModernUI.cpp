@@ -1019,9 +1019,13 @@ void ModernUI::UpdateMapTexture(bool inBattle, bool inTransition,
         signature ^= map[i];
         signature *= 1099511628211ull;
     }
-    const std::array<BYTE, 4> state = {
+    const BYTE partyIcon = MemGetMainPtr(PartyIconType)[0];
+    const BYTE minuteDigit = MemGetMainPtr(DayMinute)[0] & 0x0F;
+    const BYTE campFrame = partyIcon == 3
+        && ((minuteDigit > 2 && minuteDigit < 6) || minuteDigit > 7) ? 1 : 0;
+    const std::array<BYTE, 6> state = {
         MemGetMainPtr(MapType)[0], MemGetMainPtr(MapX)[0], MemGetMainPtr(MapY)[0],
-        MemGetMainPtr(PartyCurrentClass)[0]
+        MemGetMainPtr(PartyCurrentClass)[0], partyIcon, campFrame
     };
     for (BYTE value : state)
     {
@@ -1132,8 +1136,26 @@ void ModernUI::UpdateMapTexture(bool inBattle, bool inTransition,
     const int avatarX = MemGetMainPtr(MapX)[0];
     const int avatarY = MemGetMainPtr(MapY)[0];
     if (avatarX < 64 && avatarY < 64)
-        blit(monsters_, MemGetMainPtr(PartyCurrentClass)[0] & 0x0F, 16,
-             avatarX, avatarY, 1.0f);
+    {
+        // Match v2's party states. In a pit the leader disappears and the
+        // pit marker remains visible, even though $7E has floor as its base.
+        switch (partyIcon)
+        {
+        case 0:
+            blit(monsters_, MemGetMainPtr(PartyCurrentClass)[0] & 0x0F, 16,
+                 avatarX, avatarY, 1.0f);
+            break;
+        case 1:
+            blit(tilesOverland_, 0x12, 16, avatarX, avatarY, 1.0f);
+            break;
+        case 2:
+            blit(autoMapSprites_, 4 * 4, 4, avatarX, avatarY, 1.0f);
+            break;
+        case 3:
+            blit(tilesOverland_, 0x3D + campFrame, 16, avatarX, avatarY, 1.0f);
+            break;
+        }
+    }
 
     // Match the DX12 AutoMap: compose native 28x32 sprites first, then let
     // linear filtering scale the complete 1792x2048 map into 896x1024.

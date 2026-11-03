@@ -1,5 +1,21 @@
 # Visual regression fixtures
 
+Issue #13's pit presentation has two fixtures: `sdl_party_pit` shows a pit
+marker beside a chest with no leader sprite over it, and `sdl_party_pit-exit`
+restores the leader at the same position after the pit texture has been cached.
+The latter changes only `$FC1D`, so it catches cache invalidation regressions.
+`sdl_party_camp` shows the original camp tile instead of the leader sprite.
+
+The inspected Windows 1280x900 captures have these SHA-256 hashes:
+
+```
+pit:      1af18f3903a8e073d6168e45413dcde42215ee8a6081a76f4060a44fae23cb29
+pit-exit: e65b0549e60c71991da0d95ee16333079c5c62034262bb425ce11b588975a930
+camp:     a4b4ffaa188fd526047fbafbac01fcffabb043f72a4f0229c61aee4182abfb51
+```
+
+Only the party-icon region differs between the pit and pit-exit captures.
+
 The top-level Hacking menu is captured by `sdl_hacking_menu` with both optional
 cheats checked. Its Party Editor entry opens the existing full editor (covered
 by `sdl_party_editor_smoke`). The old `Hacks / Relorded Changes` submenu is now

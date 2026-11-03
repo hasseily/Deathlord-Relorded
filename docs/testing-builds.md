@@ -60,6 +60,8 @@ before proceeding. Export any party you want to keep first.
 
 ## Features to test
 
+- Pits display the pit marker while the party is trapped. Climbing out with
+  `^` (or movement keys with the Relorded fix enabled) restores the leader icon.
 - **Relorded > Map > Fog of War**: toggle visibility fog off and on.
 - **Relorded > Map > Teleport to Map...**: choose a map/floor and X/Y coordinates.
   Available at the map movement prompt, outside combat.
