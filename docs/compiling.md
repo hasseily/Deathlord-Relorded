@@ -122,6 +122,8 @@ Replace `battle` with `inventory`, `loading`, or `gameover` for the other states
 - `F11`: original Apple //e interface
 - `Alt-S`: spell reference
 - `Alt-L`: game log
+- `Ctrl-P`: pitch camp (sent to Deathlord on every platform)
+- `Alt-P`: pause/resume the emulator
 
 Emulator speed is deliberately not user-selectable. Normal interaction is
 locked to 1x; DLRL hooks request temporary acceleration for boot, Play Game,

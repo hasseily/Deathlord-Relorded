@@ -89,6 +89,7 @@ add_library(dlrl_platform STATIC
     src/PartyTransfer.cpp
     src/FileUtil.cpp
     src/MapTravel.cpp
+    src/KeyboardInput.cpp
 )
 target_include_directories(dlrl_platform PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -211,6 +212,10 @@ if(BUILD_TESTING)
         DLRL_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/Deathlord-Relorded/Emulator/Resources"
     )
     add_test(NAME core_smoke COMMAND dlrl_core_smoke)
+
+    add_executable(dlrl_host_input_tests tests/integration/HostInputTests.cpp)
+    target_link_libraries(dlrl_host_input_tests PRIVATE dlrl_platform)
+    add_test(NAME host_input COMMAND dlrl_host_input_tests)
 
     add_executable(dlrl_hooks_tests
         tests/integration/DlrlHooksTests.cpp

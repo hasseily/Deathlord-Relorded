@@ -5,6 +5,9 @@ marker beside a chest with no leader sprite over it, and `sdl_party_pit-exit`
 restores the leader at the same position after the pit texture has been cached.
 The latter changes only `$FC1D`, so it catches cache invalidation regressions.
 `sdl_party_camp` shows the original camp tile instead of the leader sprite.
+`host_input` separately checks that left/right Ctrl-P reach the Apple II
+keyboard latch as `$90` (control code `$10` plus strobe), with either Caps Lock
+state, and that Alt-P is the pause shortcut (issue #16).
 
 The inspected Windows 1280x900 captures have these SHA-256 hashes:
 

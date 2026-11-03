@@ -13,6 +13,7 @@
 #include "DlrlHooks.h"
 #include "Frame.h"
 #include "InventoryRules.h"
+#include "KeyboardInput.h"
 #include "FileUtil.h"
 #include "ModernUI.h"
 #include "PartyTransfer.h"
@@ -851,41 +852,6 @@ void OpenPartyImportDialog(AppState& state)
                            filters, static_cast<int>(std::size(filters)), initial, false);
 }
 
-BYTE SdlKeyToAscii(SDL_Keycode key, SDL_Keymod mod)
-{
-    const bool shift = (mod & SDL_KMOD_SHIFT) != 0;
-    switch (key)
-    {
-    case SDLK_RETURN: case SDLK_KP_ENTER: return 0x0D;
-    case SDLK_BACKSPACE: return 0x08;
-    case SDLK_TAB: return 0x09;
-    case SDLK_ESCAPE: return 0x1B;
-    case SDLK_SPACE: return ' ';
-    case SDLK_MINUS: return shift ? '_' : '-';
-    case SDLK_EQUALS: return shift ? '+' : '=';
-    case SDLK_LEFTBRACKET: return shift ? '{' : '[';
-    case SDLK_RIGHTBRACKET: return shift ? '}' : ']';
-    case SDLK_BACKSLASH: return shift ? '|' : '\\';
-    case SDLK_SEMICOLON: return shift ? ':' : ';';
-    case SDLK_APOSTROPHE: return shift ? '"' : '\'';
-    case SDLK_COMMA: return shift ? '<' : ',';
-    case SDLK_PERIOD: return shift ? '>' : '.';
-    case SDLK_SLASH: return shift ? '?' : '/';
-    default: break;
-    }
-    if (key >= 'a' && key <= 'z') return shift ? key - 'a' + 'A' : key;
-    if (key >= '0' && key <= '9')
-    {
-        if (shift)
-        {
-            static const char shifted[] = ")!@#$%^&*(";
-            return shifted[key - '0'];
-        }
-        return key;
-    }
-    return 0;
-}
-
 WPARAM SdlKeyToVirtualKey(SDL_Keycode key)
 {
     switch (key)
@@ -1541,7 +1507,7 @@ void RenderAppleWindow(AppState& state)
                 ImGui::EndMenu();
             }
             ImGui::Separator();
-            if (ImGui::MenuItem(state.paused ? "Resume" : "Pause", "Cmd/Ctrl+P"))
+            if (ImGui::MenuItem(state.paused ? "Resume" : "Pause", "Alt+P"))
                 SetPaused(state, !state.paused);
             if (ImGui::MenuItem("Reboot", "Cmd/Alt+R")) state.rebootRequested = true;
             if (ImGui::MenuItem("Fullscreen", "Alt+Enter", state.fullscreen))
@@ -2071,7 +2037,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
         SetFullscreen(state, !state.fullscreen);
         return SDL_APP_CONTINUE;
     }
-    if (event->key.key == SDLK_P && (event->key.mod & kPrimaryModifier))
+    if (dlrl::IsPauseShortcut(event->key.key, event->key.mod))
     {
         SetPaused(state, !state.paused);
         return SDL_APP_CONTINUE;
@@ -2144,7 +2110,7 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     }
 
     KeybUpdateCtrlShiftStatus();
-    if (const BYTE ascii = SdlKeyToAscii(event->key.key, event->key.mod))
+    if (const BYTE ascii = dlrl::SdlKeyToAscii(event->key.key, event->key.mod))
     {
         const BYTE plain = ascii & 0x7F;
         if ((plain == 'P' || plain == 'p')
