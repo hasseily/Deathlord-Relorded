@@ -217,6 +217,21 @@ if(BUILD_TESTING)
     target_link_libraries(dlrl_host_input_tests PRIVATE dlrl_platform)
     add_test(NAME host_input COMMAND dlrl_host_input_tests)
 
+    # Exercise the POSIX keyboard on Windows as well, so local/Windows CI
+    # validation catches portable-input regressions before Mac/Linux builds.
+    if(WIN32)
+        add_executable(dlrl_host_input_posix_tests
+            tests/integration/HostInputTests.cpp
+            Deathlord-Relorded/Emulator/Keyboard_posix.cpp
+        )
+        target_link_libraries(dlrl_host_input_posix_tests PRIVATE dlrl_platform)
+        add_test(NAME host_input_posix COMMAND dlrl_host_input_posix_tests)
+    endif()
+
+    add_executable(dlrl_host_timing_tests tests/integration/HostTimingTests.cpp)
+    target_include_directories(dlrl_host_timing_tests PRIVATE src)
+    add_test(NAME host_timing COMMAND dlrl_host_timing_tests)
+
     add_executable(dlrl_hooks_tests
         tests/integration/DlrlHooksTests.cpp
     )

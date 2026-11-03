@@ -14,6 +14,19 @@ int main()
     };
 
     SetApple2Type(A2TYPE_APPLE2EENHANCED);
+    KeybReset();
+    check(KeybReadData() == 0, "reset clears the keyboard latch");
+    for (int repeat = 0; repeat < 8; ++repeat) KeybQueueKeypress(VK_RIGHT, NOT_ASCII);
+    KeybQueueKeypress(VK_LEFT, NOT_ASCII);
+    check(KeybReadData() == 0x88, "a direction change replaces unread key repeats");
+    check(KeybReadData() == 0x88, "reading the latch does not consume the key");
+    KeybQueueKeypress(VK_HOME, NOT_ASCII);
+    check(KeybReadData() == 0x88, "an unsupported key preserves the pending direction");
+    KeybClearStrobe();
+    check(KeybReadData() == 0x08, "clearing the strobe retains the last key without queued repeats");
+    KeybQueueKeypress('x', ASCII);
+    KeybReadFlag();
+    check(KeybReadData() == 'X', "reading C010 clears the strobe without discarding the key byte");
     for (bool capsLock : {false, true})
     {
         KeybSetCapsLock(capsLock);

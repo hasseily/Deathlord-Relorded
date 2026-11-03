@@ -1,5 +1,13 @@
 # Visual regression fixtures
 
+The normal host loop polls input/emulates at 1 ms intervals and draws at the
+display refresh rate. Bounded smoke fixtures bypass those deadlines, keeping
+their emulated-frame counts and visual checkpoints deterministic.
+`host_input` and (on Windows) `host_input_posix` check that a new direction
+replaces unread repeats, latch reads retain the key, and strobe clears cannot
+replay a backlog. `host_timing` checks that frequent CPU ticks retain 1x speed
+independently of display cadence.
+
 Issue #13's pit presentation has two fixtures: `sdl_party_pit` shows a pit
 marker beside a chest with no leader sprite over it, and `sdl_party_pit-exit`
 restores the leader at the same position after the pit texture has been cached.

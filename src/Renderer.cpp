@@ -72,7 +72,9 @@ bool Renderer::Init(const char* title, int width, int height)
     }
 
     SDL_GL_MakeCurrent(m_window, m_glctx);
-    SDL_GL_SetSwapInterval(1);
+    // Drawing is paced to the display refresh rate by the host. A blocking
+    // vsync swap would also block its 1 ms input/emulation callbacks.
+    SDL_GL_SetSwapInterval(0);
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();

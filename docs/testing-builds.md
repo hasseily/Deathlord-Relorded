@@ -61,6 +61,7 @@ before proceeding. Export any party you want to keep first.
 ## Features to test
 
 - **Ctrl-P**: pitch camp; **Alt-P**: pause/resume the emulator.
+- Check movement responsiveness when changing direction after holding a key.
 - Pits display the pit marker while the party is trapped. Climbing out with
   `^` (or movement keys with the Relorded fix enabled) restores the leader icon.
 - **Relorded > Map > Fog of War**: toggle visibility fog off and on.

@@ -14,6 +14,7 @@
 #include "Frame.h"
 #include "InventoryRules.h"
 #include "KeyboardInput.h"
+#include "HostTiming.h"
 #include "FileUtil.h"
 #include "ModernUI.h"
 #include "PartyTransfer.h"
@@ -120,7 +121,9 @@ struct AppState
     std::filesystem::path capturePath;
     std::string prefDir;
     std::string imguiIniPath;
-    uint64_t lastTicksNs = 0;
+    dlrl::EmulationClock emulationClock;
+    dlrl::RenderClock renderClock;
+    int scheduledKeyFrame = -1;
     int smokeFrames = 0;
     int presentedFrames = 0;
     int fixtureMouseX = -1;
@@ -315,10 +318,17 @@ void SaveSettings(const AppState& state)
     }
 }
 
-void ApplySpeed(const AppState& state)
+void ApplySpeed(AppState& state)
 {
     g_fCurrentCLK6502 = kSpeedPresets[state.speedIndex].cyclesPerSecond;
+    state.emulationClock.Reset(SDL_GetTicksNS());
     SpkrReinitialize();
+}
+
+void UpdateRenderRate(AppState& state)
+{
+    const auto* mode = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(state.renderer.Window()));
+    state.renderClock.SetRefreshRate(mode ? mode->refresh_rate : 60);
 }
 
 void BeginPlayLoadingAcceleration(AppState& state)
@@ -369,6 +379,7 @@ void RecalculateArmorClasses()
 void SetPaused(AppState& state, bool paused)
 {
     state.paused = paused;
+    state.emulationClock.Reset(SDL_GetTicksNS());
     g_nAppMode = paused ? MODE_PAUSED : MODE_RUNNING;
     if (paused)
     {
@@ -1016,7 +1027,7 @@ void RenderTeleportDialog(AppState& state)
     if (cancel || (teleport && state.hooks.QueueTeleport(target,state.teleportError)))
     {
         state.teleportOpen = false;
-        state.lastTicksNs = SDL_GetTicksNS();
+        state.emulationClock.Reset(SDL_GetTicksNS());
         ImGui::CloseCurrentPopup();
     }
     ImGui::PopStyleColor();
@@ -1025,10 +1036,14 @@ void RenderTeleportDialog(AppState& state)
 
 void RunEmulator(AppState& state)
 {
-    if ((state.paused && !state.hooks.TeleportPending()) || state.uiFixture
-        || state.teleportOpen) return;
-
     const uint64_t now = SDL_GetTicksNS();
+    if ((state.paused && !state.hooks.TeleportPending()) || state.uiFixture
+        || state.teleportOpen)
+    {
+        state.emulationClock.Reset(now);
+        return;
+    }
+
     uint32_t cycles = 0;
     if (state.smokeFrames > 0)
     {
@@ -1036,16 +1051,13 @@ void RunEmulator(AppState& state)
     }
     else
     {
-        const uint64_t delta = now - state.lastTicksNs;
-        cycles = static_cast<uint32_t>(
-            delta * kSpeedPresets[state.speedIndex].cyclesPerSecond * 1e-9);
         // Autoroll's v2 speed 6 is AppleWin's unrestricted/full-speed mode.
         // Keep the ordinary catch-up guard, but let this hidden mode consume
         // its full 200 MHz budget while it searches for qualifying stats.
         const uint32_t maximumFrames = state.speedIndex == 6 ? 256u : 16u;
-        cycles = std::clamp(cycles, 1u, NTSC_GetCyclesPerFrame() * maximumFrames);
+        cycles = state.emulationClock.Budget(now, g_fCurrentCLK6502,
+                                             NTSC_GetCyclesPerFrame() * maximumFrames);
     }
-    state.lastTicksNs = now;
 
     const uint32_t batchSize = static_cast<uint32_t>(g_fCurrentCLK6502 * 1e-3);
     uint32_t total = 0;
@@ -1058,8 +1070,8 @@ void RunEmulator(AppState& state)
         GetCardMgr().Update(executed);
         SpkrUpdate(executed);
     }
+    if (state.smokeFrames == 0) state.emulationClock.Consume(total);
     g_dwCyclesThisFrame = (g_dwCyclesThisFrame + total) % NTSC_GetCyclesPerFrame();
-    GetFrame().VideoRedrawScreen();
 }
 
 void ReceiveDlrlEvent(const dlrl::HookEvent& event, void* userData)
@@ -1932,6 +1944,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
     }
 
     if (state->smokeFrames > 0) SDL_SetHint(SDL_HINT_AUDIO_DRIVER, "dummy");
+    // Poll events and execute small CPU budgets between display frames.
+    // Deterministic smoke runs remain unrestricted and render every tick.
+    SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, state->smokeFrames > 0 ? "0" : "1000");
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
     {
         std::fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
@@ -2016,7 +2031,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
                               static_cast<float>(state->fixtureMouseY));
     if (state->hdvPath.empty() && !state->uiFixture) OpenHdvDialog(*state);
 
-    state->lastTicksNs = SDL_GetTicksNS();
+    UpdateRenderRate(*state);
+    state->emulationClock.Reset(SDL_GetTicksNS());
     *appstate = state.release();
     return SDL_APP_CONTINUE;
 }
@@ -2027,6 +2043,9 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
     ImGui_ImplSDL3_ProcessEvent(event);
 
     if (event->type == SDL_EVENT_QUIT) return SDL_APP_SUCCESS;
+    if (event->type == SDL_EVENT_WINDOW_DISPLAY_CHANGED
+        || event->type == SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED)
+        UpdateRenderRate(state);
     if (event->type != SDL_EVENT_KEY_DOWN) return SDL_APP_CONTINUE;
     if (state.teleportOpen) return SDL_APP_CONTINUE;
     if (ImGui::GetIO().WantTextInput) return SDL_APP_CONTINUE;
@@ -2184,20 +2203,26 @@ SDL_AppResult SDL_AppIterate(void* appstate)
             }
         }
     }
-    for (const AppState::ScheduledKey& event : state.scheduledKeys)
-        if (event.frame == state.presentedFrames)
-        {
-            const BYTE plain = event.key & 0x7F;
-            if (state.startupSplash)
+    // A rendered frame can now span several callbacks. Deliver each scheduled
+    // test key once, rather than once per callback until that frame is drawn.
+    if (state.scheduledKeyFrame != state.presentedFrames)
+    {
+        state.scheduledKeyFrame = state.presentedFrames;
+        for (const AppState::ScheduledKey& event : state.scheduledKeys)
+            if (event.frame == state.presentedFrames)
             {
-                if (plain == ' ') DismissStartupSplash(state);
-                continue;
+                const BYTE plain = event.key & 0x7F;
+                if (state.startupSplash)
+                {
+                    if (plain == ' ') DismissStartupSplash(state);
+                    continue;
+                }
+                if ((plain == 'P' || plain == 'p')
+                    && state.hooks.State().startMenu == dlrl::StartMenuState::Menu)
+                    BeginPlayLoadingAcceleration(state);
+                KeybQueueKeypress(event.key, ASCII);
             }
-            if ((plain == 'P' || plain == 'p')
-                && state.hooks.State().startMenu == dlrl::StartMenuState::Menu)
-                BeginPlayLoadingAcceleration(state);
-            KeybQueueKeypress(event.key, ASCII);
-        }
+    }
     RunEmulator(state);
     if (state.playLoadingAcceleration && state.hooks.State().inGameMap)
     {
@@ -2208,13 +2233,23 @@ SDL_AppResult SDL_AppIterate(void* appstate)
     }
     if (state.requestedSpeedIndex >= 0)
     {
-        state.speedIndex = state.requestedSpeedIndex;
+        const int requested = state.requestedSpeedIndex;
         state.requestedSpeedIndex = -1;
-        ApplySpeed(state);
+        // Title/menu polling can request the current speed repeatedly. Keep
+        // fractional CPU time and speaker state until the speed really changes.
+        if (state.speedIndex != requested)
+        {
+            state.speedIndex = requested;
+            ApplySpeed(state);
+        }
     }
     if (state.startupSplash && state.startupSplashReady && !state.paused)
         SetPaused(state, true);
 
+    if (state.smokeFrames == 0 && !state.renderClock.Due(SDL_GetTicksNS()))
+        return SDL_APP_CONTINUE;
+
+    GetFrame().VideoRedrawScreen();
     state.renderer.BeginFrame();
     // Leave the pit after its texture was cached, without moving or changing
     // the map bytes. This fixture catches stale party-icon cache entries.

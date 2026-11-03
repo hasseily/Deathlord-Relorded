@@ -63,6 +63,28 @@ Cmd/Ctrl-I toggles it, the overlay reads party inventory RAM, and the host
 consumes input while it is open. Its catalog names and slot metadata come from
 the existing `InventoryList.csv` parser.
 
+## Input and timing
+
+Normal play targets 1 ms SDL callbacks. Each callback advances the CPU using
+elapsed wall time, carrying fractional cycles and instruction overshoot into
+the next budget so gameplay remains at 1x. Pauses, teleport dialogs, and speed
+changes reset that budget; long stalls retain a bounded catch-up limit.
+
+Drawing has separate deadlines at the current display refresh rate (60 Hz
+when unknown). Swap does not wait for vsync, and full Apple framebuffer
+redraws happen only on drawing callbacks. Input and emulation therefore keep
+running between display frames on the same thread. Rendering work can still
+lengthen an individual callback. Smoke tests retain one deterministic emulated
+frame and one draw per callback, without wall-clock pacing.
+
+The portable keyboard uses the same single unread-key latch as the Windows
+core. A newer key replaces earlier unread auto-repeats; reading `$C000` keeps
+the strobe set until `$C010` clears it. This prevents old movement repeats
+from delaying a direction change. `host_input` tests the active backend;
+Windows also runs `host_input_posix` against the portable implementation.
+`host_timing` checks CPU rate, drawing deadlines, pause/reset behavior, and
+catch-up limits at several display rates.
+
 ## Hook boundary
 
 The old interpreter called frontend singletons directly. DLRL 3.0 instead uses

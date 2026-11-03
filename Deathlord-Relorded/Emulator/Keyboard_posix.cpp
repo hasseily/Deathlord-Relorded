@@ -16,14 +16,11 @@
 #include "StdAfx.h"
 #include "Keyboard.h"
 
-#include <queue>
-
 namespace
 {
     bool  g_bCapsLock = true;
     BYTE  keycode     = 0;
-    bool  bKeyWasRead = false;
-    std::queue<BYTE> keys;
+    bool  keywaiting  = false;
 
     // Apple //e Enhanced arrow / delete keycodes, indexed by
     // (virtualKey - 0x25 = VK_LEFT). 0 entries are dropped.
@@ -36,8 +33,7 @@ namespace
 void KeybReset()
 {
     keycode = 0;
-    bKeyWasRead = false;
-    std::queue<BYTE>().swap(keys);
+    keywaiting = false;
 }
 
 void KeybSetCapsLock(bool state)            { g_bCapsLock = state; }
@@ -77,45 +73,31 @@ void KeybQueueKeypress(WPARAM key, Keystroke_e bASCII)
         keycode = n;
     }
 
-    keys.push(keycode);
-    bKeyWasRead = false;
+    // The Apple II has one latch, matching the Windows core. In particular,
+    // auto-repeat must not build a backlog of moves after a direction change.
+    keywaiting = true;
 }
 
 // $C000 read — return the latch byte with the strobe bit (high bit) set
 // while a key is waiting.
 BYTE KeybReadData()
 {
-    if (!keys.empty())
-    {
-        keycode = keys.front();
-        bKeyWasRead = true;
-        return keycode | 0x80;
-    }
+    return keycode | (keywaiting ? 0x80 : 0);
+}
+
+// $C010 read clears the strobe and retains the last key byte. This frontend
+// has no separate physical-key/AKD tracking (KeybAnyKeyDown is a no-op).
+BYTE KeybReadFlag()
+{
+    KeybClearStrobe();
     return keycode;
 }
 
-// $C010 read — return the AKD-style "any key down" flag combined with
-// the current keycode. Mirrors upstream Linux duplicates.
-BYTE KeybReadFlag()
-{
-    BYTE flag = keys.empty() ? 0 : 0x80;
-    if (!keys.empty())
-    {
-        keycode = keys.front();
-        keys.pop();
-        bKeyWasRead = false;
-    }
-    return keycode | flag;
-}
-
-// $C010 write — clear the strobe bit by popping any queued key.
+// $C010 write — clear only the strobe, as on the Windows core.
 BYTE KeybClearStrobe()
 {
-    if (keys.empty()) return 0;
-    keycode = keys.front();
-    keys.pop();
-    bKeyWasRead = false;
-    return keycode | 0x80;
+    keywaiting = false;
+    return 0;
 }
 
 // Snapshots are NAC-irrelevant (no save-state UI), but the symbols are
