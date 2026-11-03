@@ -2,6 +2,7 @@
 #include "KeyboardInput.h"
 
 #include "Emulator/Core.h"
+#include "Emulator/Interface.h"
 #include "Emulator/Keyboard.h"
 
 #include <cstdio>
@@ -13,6 +14,9 @@ int main()
         if (!okay) { ++failures; std::fprintf(stderr, "FAIL: %s\n", description); }
     };
 
+    // Initialize the host reset filter explicitly. This also binds the host
+    // frame before the emulator archive is scanned by single-pass linkers.
+    GetFrame().g_bFreshReset = false;
     SetApple2Type(A2TYPE_APPLE2EENHANCED);
     KeybReset();
     check(KeybReadData() == 0, "reset clears the keyboard latch");
