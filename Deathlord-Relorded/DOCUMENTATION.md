@@ -116,7 +116,7 @@ You can then return to the main menu, insert the boot disk (again via the "Emula
 ## "Hacks" window
 
 The hacks window (available in the main menu under 'Relorded') lets you modify your gaming experience to suit your playstyle and level of masochism.
-The most important is the top button that revives the whole party to full health, any time you want. Yes it's a big cheat, but you decided if you want to use it.
+The most important is the top button that revives the whole party to full health, any time you want. Yes it's a big cheat, but you decide if you want to use it.
 Just below it is a laundry list of changes that Relorded implements to the base game, which you can selectively turn off. They are:
 
 - "Distribute Food": Automatically distributes food so that when the active character buys food, they can buy the maximum amound (100) in one shot.
