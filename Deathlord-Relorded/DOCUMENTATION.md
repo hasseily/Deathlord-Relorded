@@ -1,6 +1,12 @@
 # DEATHLORD RELORDED
 
 Thank you for downloading Deathlord Relorded!
+
+This guide accompanies the 3.0 test build for Windows, Linux, and macOS. Read
+the included `README.md` for installation, platform requirements, and save-file
+handling. The game runs from the included hard disk image; no disk swapping is
+required. `Ctrl-P` pitches camp, and `Alt-P` pauses or resumes the emulator.
+
 Deathlord was an RPG released in 1987 for the Apple 2 and C64 platforms, highly influenced by the likes of Ultima, Wizardry and Bard's Tale. It was a lot less successful than these 3 franchises, partly due to a couple of significant errors:
 
 - About 5 weeks before release, Electronic Arts requested of the developers David Wong and Al Escudero to change the setting of the game from Nordic to Japanese, in order to capitalize on the wave of JRPGs during that time (although Deathlord is certainly not a JRPG).
@@ -28,9 +34,9 @@ When you first launch the game, you will be greeted by the original interface, c
 
 Press `C` to go into character options. In general, press `ESC` to go back and exit whatever screen you're on, if you need to.
 
-**Whenever the game asks you to enter scenario or boot disks, you can go in the menu "Emulator" and select "Insert Scenarios" or "Insert Boot Disk" (or use Alt-> or Alt-<), then press `Enter`.**
+**DLRL 3.0 includes the boot and scenario data in one hard disk image. There are no separate boot or scenario disks to insert.**
 
-Using the arrow keys and `Enter`, select "Conjure a New Character". Select a race, and it will ask you if you're happy with the attributes. You most certainly will not be. So say "N", and then comes the first feature of Deathlord Relorded: an automatic roller of attributes that will stop only when the attributes found are extremely good.
+Using the arrow keys and `Enter`, select "Conjure a New Character". Select a race, and it will ask you if you're happy with the attributes. Press `A` when the Relorded hint offers automatic rolling. It stops when Strength, Constitution, Intelligence, and Dexterity are all at least one below the maximum for that race. Almost any key cancels automatic rolling.
 
 ### RACES AND CLASSES FEATURES IN DEATHLORD RELORDED
 
@@ -97,7 +103,7 @@ Once you've created 6 characters, it is time to assemble a group. First, make su
 
 **DEATHLORD RELORDED ONLY SUPPORTS A FULL PARTY OF 6 CHARACTERS!!!!**
 
-You can then return to the main menu, insert the boot disk (again via the "Emulator" menu at the top), and prepare to play the game.
+Return to the main menu and choose **Play Game** (`P`). Press `Space` when the Relorded startup screen prompts you to continue.
 
 ## Special features of DLRL in-game
 
@@ -113,15 +119,13 @@ You can then return to the main menu, insert the boot disk (again via the "Emula
 - Toggle with `F10` between the pseudo-Japanese words and classic English language D&D. I took the liberty to significantly change the meaning to some of them in order to better align them with their stats.
 - Cheat-sheet spell window accessible via `Alt-S` or the "Relorded" menu.
 
-## "Hacks" window
+## Relorded changes and the Hacking menu
 
-The hacks window (available in the main menu under 'Relorded') lets you modify your gaming experience to suit your playstyle and level of masochism.
-The most important is the top button that revives the whole party to full health, any time you want. Yes it's a big cheat, but you decide if you want to use it.
-Just below it is a laundry list of changes that Relorded implements to the base game, which you can selectively turn off. They are:
+Open **Relorded > Relorded Changes** to enable or disable the changes to the base game described below. For direct character, health, status, and inventory edits, use **Hacking > Party Editor...** with an active party. The Hacking menu also provides **Invincible** and **Automatic Battle Success**; both default to off.
 
 - "Distribute Food": Automatically distributes food so that when the active character buys food, they can buy the maximum amound (100) in one shot.
 - "Distribute Gold": Automatically distributes gold when it's acquired, so that it isn't wasted if the active character has reached the 10,000 limit.
-- "Expanded Weapon Use": Changes weapon restrictions to conform to the Relorded file `assets/InventoryList.csv`.
+- "Expanded Weapon Use": Changes weapon restrictions to conform to the Relorded file `DLRLAssets/InventoryList.csv`.
 - "Extra Race And Class Bonuses": See the section on races and classes.
 - "Exit Pit By Moving": Exit a pit by moving in addition to using the '^' key.
 - "Fix Gold Pooling": When pooling gold, ensure that any gold above the 10,000 limit is redistributed to others and not lost.
@@ -136,11 +140,7 @@ Just below it is a laundry list of changes that Relorded implements to the base 
 - "Search Always Succeeds": In the original, search success is between 29% and 68% depending on the race of the party leader. See <https://github.com/hasseily/Deathlord-Relorded/wiki/Logic-for-random-checks#searching>.
 - "XP Reallocation": After battle, properly allocate XP to the whole party. The original favors the leader and doesn't give out XP to those who don't act.
 
-The next control is a slider that determines how opaque the original interface (F11) will be when viewed over the main window. If you want to play the original the way it was released in 1987, make it fully opaque. You can also press Alt-Enter to go into windowed mode and shrink the window to the size of the Apple 2 output.
-
-Further down the Hacks window is a line that allows to view the value and change a byte of the Apple 2 memory. ** DO NOT USE IT UNLESS YOU KNOW WHAT YOU'RE DOING **. It can completely mess up the game.
-
-And finally, at the bottom of the hacks window you have functionality to export map and sprite data, which is only of value to other game developers or those who are interested in the innards of the game. 
+**Relorded > Original Interface Darkness** controls the curtain behind the original interface (`F11`). `Alt-Enter` switches between full screen and windowed mode. **File > Export active party...** and **Import party...** manage party backups; use these before trying party edits or other gameplay tools.
 
 Thank you for playing!
 

@@ -2,10 +2,10 @@ name: CMake
 
 on:
   push:
-    branches: [master, multi]
+    branches: [main, master, multi]
     tags: ['[0-9]*']
   pull_request:
-    branches: [master]
+    branches: [main, master]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -68,6 +68,12 @@ jobs:
             1ad716e3b17f56ca8a1038715d5b5615ebf55dd58283479390892b26889f669f \
             "assets/Images/Original Master Images/Deathlord - Disk 2, Side A Master scenario B.woz"
 
+      - name: Test archive verification
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == Windows ]]; then py=python; else py=python3; fi
+          "$py" -m unittest discover -s packaging -p 'test_*.py' -v
+
       # SDL3 is built by FetchContent. These are the same runner dependencies
       # used by NAC so SDL detects complete Linux video/audio/GL backends.
       - name: Install Linux deps
@@ -118,8 +124,8 @@ jobs:
           expected=32311bcd479d902c693a0e14fee572f64cc4661d2c0cf32b28400170d3cf33d9
           actual="$(cmake -E sha256sum "$image_dir/Deathlord PRODOS.hdv")"
           test "${actual%% *}" = "$expected"
-          printf 'DLRL tester build\nCommit: %s\nPlatform: %s\nClean HDV SHA-256: %s\n' \
-            "$GITHUB_SHA" "${{ matrix.os }}" "$expected" > build/BUILD-INFO.txt
+          printf 'DLRL tester build\nCommit: %s\nRef: %s\nPlatform: %s\nClean HDV SHA-256: %s\n' \
+            "$GITHUB_SHA" "$GITHUB_REF_NAME" "${{ matrix.os }}" "$expected" > build/BUILD-INFO.txt
 
       - name: Package Linux
         if: runner.os == 'Linux'
@@ -133,6 +139,7 @@ jobs:
           done
           cp -P build/_deps/sdl3-build/libSDL3.so* "$OUT/"
           cp docs/testing-builds.md "$OUT/README.md"
+          cp build/DOCUMENTATION.md "$OUT/"
           cp build/BUILD-INFO.txt "$OUT/"
           cp packaging/itch/linux.toml "$OUT/.itch.toml"
           patchelf --set-rpath '$ORIGIN' "$OUT/dlrl"
@@ -162,6 +169,7 @@ jobs:
               Copy-Item -Recurse "build/Release/$d" "$out/"
           }
           Copy-Item docs/testing-builds.md "$out/README.md"
+          Copy-Item build/Release/DOCUMENTATION.md "$out/"
           Copy-Item build/BUILD-INFO.txt "$out/"
           # Compress-Archive skips dotfiles; stage this manifest for butler and
           # use tar's ZIP writer so direct-download archives include it too.
@@ -180,6 +188,7 @@ jobs:
           cp build/BUILD-INFO.txt "$APP/Contents/Resources/"
           cp build/BUILD-INFO.txt "$OUT/"
           cp docs/testing-builds.md "$OUT/README.md"
+          cp "$APP/Contents/Resources/DOCUMENTATION.md" "$OUT/"
           cp packaging/itch/macos.toml "$OUT/.itch.toml"
           mkdir -p "$APP/Contents/Frameworks"
           SDL_DYLIB=$(ls build/_deps/sdl3-build/libSDL3*.dylib 2>/dev/null \
@@ -223,6 +232,20 @@ jobs:
             --capture "$GITHUB_WORKSPACE/build/Testing/dlrl-macos-packaged.bmp"
           "$APP/Contents/MacOS/dlrl" --smoke-frames 3 --ui-fixture \
             --capture "$GITHUB_WORKSPACE/build/Testing/dlrl-macos-modern-ui.bmp"
+
+      - name: Verify release archive contents
+        shell: bash
+        run: |
+          case "$RUNNER_OS" in
+            Windows) platform=windows; extension=zip; py=python ;;
+            macOS) platform=macos; extension=zip; py=python3 ;;
+            *) platform=linux; extension=tar.gz; py=python3 ;;
+          esac
+          "$py" packaging/verify_archive.py "dist/${{ matrix.artifact }}.$extension" \
+            --platform "$platform" \
+            --documentation Deathlord-Relorded/DOCUMENTATION.md \
+            --clean-hdv "build-package-input/Deathlord PRODOS.hdv" \
+            --commit "$GITHUB_SHA"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

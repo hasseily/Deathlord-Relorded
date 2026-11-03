@@ -166,6 +166,9 @@ else()
 endif()
 
 add_custom_command(TARGET dlrl POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/Deathlord-Relorded/DOCUMENTATION.md"
+        "${DLRL_RESOURCE_DIR}/DOCUMENTATION.md"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/assets/pp/assets ${DLRL_RESOURCE_DIR}/assets
     COMMAND ${CMAKE_COMMAND} -E copy_directory

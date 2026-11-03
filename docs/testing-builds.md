@@ -4,9 +4,15 @@ This is the complete playable game, not a time-limited demo. It is a prerelease
 for testing; please back up important parties and report any problems. The
 stable 2.x download remains available separately on itch.io.
 
+This test update fixes pit/party icon rendering, restores **Ctrl-P** for Pitch
+Camp (**Alt-P** pauses), improves movement input responsiveness, and includes
+`DOCUMENTATION.md` beside this README in every platform archive. On macOS the
+documentation is also kept inside the app bundle.
+
 Extract the entire archive before launching. Keep all the folders and libraries
 beside the executable; copying only the executable will not work. `BUILD-INFO.txt`
 identifies the exact source commit and clean game image included in the package.
+Read `DOCUMENTATION.md` for the gameplay guide and Relorded changes.
 
 ## Windows x64
 
