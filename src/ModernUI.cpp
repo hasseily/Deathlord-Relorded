@@ -257,9 +257,9 @@ constexpr float PanelSourceY0 = 839.0f;
 constexpr float PanelSourceX1 = 1560.0f;
 constexpr float PanelSourceY1 = 1034.0f;
 constexpr float PanelSourceBorder = 24.0f;
-// Heading text sits at y 15 with 18px glyphs; the divider lives at
-// PanelHeaderHeight - 6, giving the same 18px gap above the divider as the
-// content keeps below it.
+// Keep text two pixels lower inside every wooden-framed window.
+constexpr float PanelTextOffsetY = 2.0f;
+// The divider stays at PanelHeaderHeight - 6, independent of the text inset.
 constexpr float PanelHeaderHeight = 57.0f;
 constexpr ImU32 PanelGold = IM_COL32(226, 183, 110, 255);
 constexpr ImU32 PanelGoldBright = IM_COL32(255, 216, 130, 255);
@@ -467,7 +467,8 @@ void ModernUI::DrawPanelChrome(const char* title, bool* open)
     if (!heading.empty())
     {
         AddDeathlordText(draw, deathlordCharset_, pos, 1.0f,
-                         (size.x - DeathlordTextWidth(heading, 18.0f)) * 0.5f, 15.0f,
+                         (size.x - DeathlordTextWidth(heading, 18.0f)) * 0.5f,
+                         15.0f + PanelTextOffsetY,
                          PanelGold, heading, 18.0f);
         draw->AddLine(ImVec2(pos.x + 20.0f, pos.y + PanelHeaderHeight - 6.0f),
                       ImVec2(pos.x + size.x - 20.0f, pos.y + PanelHeaderHeight - 6.0f),
@@ -476,7 +477,7 @@ void ModernUI::DrawPanelChrome(const char* title, bool* open)
     if (open)
     {
         const ImVec2 restore = ImGui::GetCursorPos();
-        ImGui::SetCursorPos(ImVec2(size.x - 62.0f, 11.0f));
+        ImGui::SetCursorPos(ImVec2(size.x - 62.0f, 11.0f + PanelTextOffsetY));
         if (ImGui::InvisibleButton("##panel-close", ImVec2(46.0f, 24.0f)))
             *open = false;
         const bool hovered = ImGui::IsItemHovered();
@@ -486,9 +487,9 @@ void ModernUI::DrawPanelChrome(const char* title, bool* open)
                          16.0f, hovered);
         ImGui::SetCursorPos(restore);
     }
-    // Content starts a full padding step below the divider so the top gap
-    // matches the bottom one.
-    if (!heading.empty()) ImGui::SetCursorPosY(PanelHeaderHeight + 14.0f);
+    const float contentTop = heading.empty() ? ImGui::GetCursorPosY()
+                                             : PanelHeaderHeight + 14.0f;
+    ImGui::SetCursorPosY(contentTop + PanelTextOffsetY);
 }
 
 bool ModernUI::BeginPanel(const char* title, bool* open, float defaultWidth,
@@ -2152,7 +2153,7 @@ void ModernUI::RenderSpellWindow(bool* open)
     const std::string heading = "SPELL REFERENCE";
     AddDeathlordText(draw, deathlordCharset_, origin, scale,
                      panelX + (panelWidth - DeathlordTextWidth(heading, 20.0f)) * 0.5f,
-                     panelY + 16.0f, PanelGold, heading, 20.0f);
+                     panelY + 16.0f + PanelTextOffsetY, PanelGold, heading, 20.0f);
 
     const ImVec2 mouse = ImGui::GetMousePos();
     auto hit = [&](float x, float y, float width, float height)
@@ -2162,9 +2163,10 @@ void ModernUI::RenderSpellWindow(bool* open)
         return mouse.x >= a.x && mouse.x < b.x && mouse.y >= a.y && mouse.y < b.y;
     };
     const float closeX = panelX + panelWidth - 24.0f - 3.0f * DeathlordGlyphWidth;
-    const bool closeHovered = hit(closeX, panelY + 16.0f,
+    const bool closeHovered = hit(closeX, panelY + 16.0f + PanelTextOffsetY,
                                   3.0f * DeathlordGlyphWidth + 4.0f, 20.0f);
-    AddDeathlordText(draw, deathlordCharset_, origin, scale, closeX, panelY + 18.0f,
+    AddDeathlordText(draw, deathlordCharset_, origin, scale, closeX,
+                     panelY + 18.0f + PanelTextOffsetY,
                      closeHovered ? PanelGoldBright : PanelGold, "\x7eX\x7f",
                      16.0f, closeHovered);
     if (closeHovered && ImGui::IsMouseClicked(0))
@@ -2174,7 +2176,7 @@ void ModernUI::RenderSpellWindow(bool* open)
     }
 
     const float contentX = panelX + 26.0f;
-    const float contentY = panelY + PanelHeaderHeight + 4.0f;
+    const float contentY = panelY + PanelHeaderHeight + 4.0f + PanelTextOffsetY;
     const float contentWidth = panelWidth - 52.0f;
     const float contentHeight = panelHeight - PanelHeaderHeight - 30.0f;
     const float fit = std::min(contentWidth / spellList_.Width(),
@@ -2207,7 +2209,8 @@ void ModernUI::RenderLogWindow(bool* open)
     auto text = [&](float x, float y, ImU32 color, const std::string& value,
                     float size, bool inverse = false)
     {
-        AddDeathlordText(draw, deathlordCharset_, origin, scale, x, y, color,
+        AddDeathlordText(draw, deathlordCharset_, origin, scale,
+                         x, y + PanelTextOffsetY, color,
                          value, size, inverse);
     };
     const std::string heading = "GAME LOG";
@@ -2224,7 +2227,7 @@ void ModernUI::RenderLogWindow(bool* open)
 
     const std::string clearLabel = "\x7e" "CLEAR\x7f";
     const float clearWidth = DeathlordTextWidth(clearLabel, 16.0f);
-    const bool clearHovered = hit(panelX + 26.0f, panelY + 16.0f,
+    const bool clearHovered = hit(panelX + 26.0f, panelY + 16.0f + PanelTextOffsetY,
                                   clearWidth + 4.0f, 20.0f);
     text(panelX + 26.0f, panelY + 18.0f,
          clearHovered ? PanelGoldBright : PanelGold, clearLabel, 16.0f, clearHovered);
@@ -2235,7 +2238,7 @@ void ModernUI::RenderLogWindow(bool* open)
     }
 
     const float closeX = panelX + panelWidth - 26.0f - 3.0f * DeathlordGlyphWidth;
-    const bool closeHovered = hit(closeX, panelY + 16.0f,
+    const bool closeHovered = hit(closeX, panelY + 16.0f + PanelTextOffsetY,
                                   3.0f * DeathlordGlyphWidth + 4.0f, 20.0f);
     text(closeX, panelY + 18.0f, closeHovered ? PanelGoldBright : PanelGold,
          "\x7eX\x7f", 16.0f, closeHovered);
