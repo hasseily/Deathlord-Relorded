@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 import tarfile
+import tempfile
 import zipfile
 
 
@@ -18,6 +19,20 @@ def verify_archive(archive, platform, documentation, clean_hdv, commit):
     container = zipfile.ZipFile(archive) if zipfile.is_zipfile(archive) else tarfile.open(archive)
     with container:
         if isinstance(container, zipfile.ZipFile):
+            if platform == "windows":
+                for item in container.infolist():
+                    name = item.filename.rstrip("/")
+                    if (not name or "\\" in name
+                            or any(part in {"", ".", ".."} for part in name.split("/"))):
+                        raise ValueError(f"Non-portable Windows ZIP entry: {item.filename}")
+            bad_member = container.testzip()
+            if bad_member is not None:
+                raise ValueError(f"ZIP CRC check failed: {bad_member}")
+            if platform == "windows":
+                # Exercise the unmodified extraction path. Filtering './'
+                # entries here would conceal archives that users cannot open.
+                with tempfile.TemporaryDirectory(prefix="dlrl-zip-check-") as extracted:
+                    container.extractall(extracted)
             files = {item.filename: item for item in container.infolist() if not item.is_dir()}
             read = lambda item: container.read(item)
         else:

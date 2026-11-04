@@ -171,10 +171,10 @@ jobs:
           Copy-Item docs/testing-builds.md "$out/README.md"
           Copy-Item build/Release/DOCUMENTATION.md "$out/"
           Copy-Item build/BUILD-INFO.txt "$out/"
-          # Compress-Archive skips dotfiles; stage this manifest for butler and
-          # use tar's ZIP writer so direct-download archives include it too.
+          # Include dotfiles without tar's './' root entry, which breaks some
+          # ZIP extractors. The checker also exercises normal ZIP extraction.
           Copy-Item packaging/itch/windows.toml "$out/.itch.toml"
-          tar -a -c -f "dist/${{ matrix.artifact }}.zip" -C $out .
+          python packaging/make_windows_zip.py $out "dist/${{ matrix.artifact }}.zip"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Package macOS

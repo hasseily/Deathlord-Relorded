@@ -51,7 +51,7 @@ class ArchiveTests(unittest.TestCase):
         else:
             with zipfile.ZipFile(archive, "w") as container:
                 for name, data in files.items():
-                    container.writestr("./" + name, data)
+                    container.writestr(name if platform == "windows" else "./" + name, data)
         return archive
 
     def verify(self, platform, **options):
@@ -83,6 +83,31 @@ class ArchiveTests(unittest.TestCase):
     def test_mac_documentation_stays_with_the_app(self):
         with self.assertRaisesRegex(ValueError, "DOCUMENTATION.md"):
             self.verify("macos", omit="dlrl.app/Contents/Resources/DOCUMENTATION.md")
+
+    def test_windows_dot_root_entry_is_rejected(self):
+        archive = self.package("windows")
+        with zipfile.ZipFile(archive, "a") as container:
+            container.writestr("./", b"")
+        with self.assertRaisesRegex(ValueError, "Non-portable Windows ZIP entry"):
+            verify_archive(archive, "windows", self.doc, self.hdv, self.commit)
+
+    def test_windows_dot_prefixed_file_is_rejected(self):
+        archive = self.package("windows")
+        with zipfile.ZipFile(archive, "a") as container:
+            container.writestr("./extra.txt", b"extra")
+        with self.assertRaisesRegex(ValueError, "Non-portable Windows ZIP entry"):
+            verify_archive(archive, "windows", self.doc, self.hdv, self.commit)
+
+    def test_corruption_in_an_extra_file_is_rejected(self):
+        archive = self.package("windows")
+        with zipfile.ZipFile(archive, "a") as container:
+            container.writestr("extra.bin", b"test payload")
+            info = container.getinfo("extra.bin")
+        data = bytearray(archive.read_bytes())
+        data[info.header_offset + 30 + len(info.filename)] ^= 1
+        archive.write_bytes(data)
+        with self.assertRaisesRegex(ValueError, "ZIP CRC check failed"):
+            verify_archive(archive, "windows", self.doc, self.hdv, self.commit)
 
 
 if __name__ == "__main__":
